@@ -1065,6 +1065,38 @@
     }
   ];
 
+
+  /* ============================================================
+     COMPANY STATE (Save Data)
+  ============================================================ */
+  const SAVE_KEY = 'floorplan_save_v1';
+  const GameState = {
+    companyName: '和歌山不動産',
+    funds: 300.0,
+    month: 1,
+    level: 0,
+    properties: [],
+    discovered: {
+      combos: []
+    }
+  };
+
+  function saveGame() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(GameState));
+    } catch(e) {}
+  }
+
+  function loadGame() {
+    try {
+      const data = localStorage.getItem(SAVE_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        Object.assign(GameState, parsed);
+      }
+    } catch(e) {}
+  }
+
   let currentLevelIdx = 0;
   let STAGE = LEVELS[currentLevelIdx];
 
@@ -2702,6 +2734,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const isClear = rent >= STAGE.targetRent;
     const catch_ = genCatchphrase(counts, combos, hiddenTriggered);
     const comment = genComment(counts, combos, hiddenTriggered, isClear);
+    
+    // 家賃収入と経過月の反映
+    budget += rent;
+    GameState.funds = budget;
+    GameState.month += 1;
+    saveGame();
+
 
     // Populate result UI
     document.getElementById('flyer-sub-catch').textContent = catch_.sub;
@@ -2864,6 +2903,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      GAME START
   ============================================================ */
   function startGame() {
+    loadGame();
+    budget = GameState.funds;
+    currentLevelIdx = GameState.level;
+    let safeLevelIdx = currentLevelIdx % LEVELS.length;
+    STAGE = LEVELS[safeLevelIdx];
+    
+    // UI反映（ホーム画面用）
+    const headerTitle = document.querySelector('.game-header h1');
+    if (headerTitle) headerTitle.innerHTML = `<i class="ph-bold ph-buildings"></i> ${GameState.companyName} <span style="font-size:12px; font-weight:normal; margin-left:8px;">第${GameState.month}ヶ月</span>`;
+
     initGrid();
     selectedSlot = 0; selectedRot = 0;
     previewMode = false; hoverCell = null;
@@ -2964,9 +3013,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return;
     }
     budget -= 50;
+    GameState.month += 1;
+    GameState.funds = budget;
+    saveGame();
     updateBudgetUI();
     showFloatingText('-50万', 'var(--c-rose)');
     
+    const headerTitle = document.querySelector('.game-header h1');
+    if (headerTitle) headerTitle.innerHTML = `<i class="ph-bold ph-buildings"></i> ${GameState.companyName} <span style="font-size:12px; font-weight:normal; margin-left:8px;">第${GameState.month}ヶ月</span>`;
+
     draftSlots = [null, null, null];
     refillDraft();
     isMirrored = false;
