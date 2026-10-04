@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.5 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.6 (10/04)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -3166,9 +3166,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       startGame();
       showScreen('game');
     } else {
+      // 資金をまず挑戦前にロールバックする
+      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+      
+      // その後で月送り＆家賃の振り込みを行う
       const income = processMonthEnd();
       alert(`3回失敗したため、この依頼は破棄されました...\n（今月の家賃収入: +${income.toFixed(1)}万）`);
-      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+      
       GameState.level++;
       GameState.attempts = 3;
       saveGame();
