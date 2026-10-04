@@ -787,7 +787,7 @@
       <!-- Draft tray -->
       <div id="draft-area">
         <div id="hold-zone">
-          <button class="btn btn-slate" id="btn-hold" style="padding:4px; font-size:10px; width:100%;"><i class="ph-bold ph-download-simple"></i> HOLD (-20万)</button>
+          <button class="btn btn-slate" id="btn-hold" style="padding:4px; font-size:10px; width:100%;"><i class="ph-bold ph-download-simple"></i> HOLD (-2万)</button>
           <div id="hold-card-wrap" style="flex:1;"></div>
         </div>
         <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
@@ -2820,14 +2820,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       diff.className    = 'flyer-rent-diff clear';
       playSound('clear');
       
-      if (currentLevelIdx < LEVELS.length - 1) {
-        btnNext.style.display = 'block';
-        btnRestart.style.display = 'none';
-      } else {
-        btnNext.style.display = 'none';
-        btnRestart.style.display = 'block';
-        btnRestart.innerHTML = '<i class="ph-bold ph-check-circle" style="font-size:13px;"></i> 全ステージクリア！';
-      }
+      // クリア時は常に次へボタンを表示する（無限ループ対応）
+      btnNext.style.display = 'block';
+      btnRestart.style.display = 'none';
     } else {
       badge.textContent = 'ノルマ未達';
       badge.className   = 'flyer-badge fail';
@@ -3018,6 +3013,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
     GameState.attempts -= 1;
+    GameState.lastFunds = GameState.funds; // 開始時の資金を記録
     saveGame();
     startGame();
   });
@@ -3155,17 +3151,40 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
 
   document.getElementById('btn-restart').addEventListener('click', () => {
-    restart();
+    initAudio();
+    if (GameState.attempts > 0) {
+      alert(`残り挑戦回数: ${GameState.attempts}回`);
+      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+      saveGame();
+      startGame();
+      showScreen('game');
+    } else {
+      const income = processMonthEnd();
+      alert(`3回失敗したため、この依頼は破棄されました...\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+      GameState.level++;
+      GameState.attempts = 3;
+      saveGame();
+      setupMissionScreen();
+      updateCompanyCard();
+      showScreen('mission');
+    }
   });
 
   document.getElementById('btn-next-stage')?.addEventListener('click', () => {
     initAudio();
-    if (currentLevelIdx < LEVELS.length - 1) {
-      currentLevelIdx++;
-      STAGE = LEVELS[currentLevelIdx];
-      setupMissionScreen();
-      showScreen('mission');
-    }
+    const rentText = document.getElementById('flyer-rent').textContent;
+    const rent = parseFloat(rentText);
+    GameState.properties.push({ level: GameState.level, rent: rent });
+    const income = processMonthEnd();
+    alert(`依頼達成！ 物件を管理リストに登録しました。\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+    
+    GameState.level++;
+    GameState.attempts = 3;
+    saveGame();
+    setupMissionScreen();
+    updateCompanyCard();
+    showScreen('mission');
   });
 
   document.getElementById('btn-view-plan').addEventListener('click', () => {
