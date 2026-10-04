@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.6 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.7 (10/04)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -1091,6 +1091,12 @@
     }
   ];
 
+
+  function updateStage() {
+    currentLevelIdx = GameState.level;
+    let safeLevelIdx = currentLevelIdx % LEVELS.length;
+    STAGE = LEVELS[safeLevelIdx];
+  }
 
   /* ============================================================
      COMPANY STATE (Save Data)
@@ -3193,6 +3199,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.level++;
     GameState.attempts = 3;
     saveGame();
+    updateStage();
     setupMissionScreen();
     updateCompanyCard();
     showScreen('mission');
@@ -3210,6 +3217,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      INIT
   ============================================================ */
   loadGame();
+  updateStage();
   setupMissionScreen();
   updateCompanyCard();
   </script>
