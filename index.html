@@ -1081,6 +1081,11 @@
     }
   };
 
+  function updateCompanyUI() {
+    const el = document.getElementById('game-subtitle');
+    if (el) el.textContent = `${GameState.companyName} 第${GameState.month}ヶ月 ｜ ステージ ${currentLevelIdx + 1}`;
+  }
+
   function saveGame() {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(GameState));
@@ -2909,9 +2914,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     let safeLevelIdx = currentLevelIdx % LEVELS.length;
     STAGE = LEVELS[safeLevelIdx];
     
-    // UI反映（ホーム画面用）
-    const headerTitle = document.querySelector('.game-header h1');
-    if (headerTitle) headerTitle.innerHTML = `<i class="ph-bold ph-buildings"></i> ${GameState.companyName} <span style="font-size:12px; font-weight:normal; margin-left:8px;">第${GameState.month}ヶ月</span>`;
+    updateCompanyUI();
 
     initGrid();
     selectedSlot = 0; selectedRot = 0;
@@ -2924,7 +2927,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     refillDraft();
     
     // Update Header UI
-    document.getElementById('game-subtitle').textContent = `ステージ ${currentLevelIdx + 1}`;
+    updateCompanyUI();
     document.getElementById('hdr-target-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
     updateBudgetUI();
     
@@ -3019,8 +3022,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updateBudgetUI();
     showFloatingText('-50万', 'var(--c-rose)');
     
-    const headerTitle = document.querySelector('.game-header h1');
-    if (headerTitle) headerTitle.innerHTML = `<i class="ph-bold ph-buildings"></i> ${GameState.companyName} <span style="font-size:12px; font-weight:normal; margin-left:8px;">第${GameState.month}ヶ月</span>`;
+    updateCompanyUI();
 
     draftSlots = [null, null, null];
     refillDraft();
