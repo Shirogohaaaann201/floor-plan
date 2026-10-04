@@ -608,6 +608,11 @@
     </div>
 
     <!-- Company status -->
+    <div class="mission-card" style="background:#450a0a; border-color:#991b1b; display:none;" id="attempts-warning">
+      <div style="color:#fca5a5; font-weight:bold; text-align:center;">
+        ⚠️ 残り挑戦回数: <span id="attempts-count">3</span> 回
+      </div>
+    </div>
     <div class="mission-card" id="company-card">
       <div class="mission-card-title">
         <i class="ph-bold ph-buildings"></i> 会社の状況
@@ -945,23 +950,23 @@
 
   // Piece library (GDD compliant)
   const PIECE_LIB = [
-    { id:'corr-i2',   name:'廊下(直)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1]], cost:20.0 },
-    { id:'corr-i3',   name:'廊下(長)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1]], cost:30.0 },
-    { id:'corr-l',    name:'廊下(L)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,0],[1,1]], cost:30.0 },
-    { id:'corr-t',    name:'廊下(T)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1],[0,1,0]], cost:40.0 },
-    { id:'corr-s',    name:'廊下(Z)',   cat:T.CORRIDOR, label:'廊下', shape:[[0,1],[1,1],[1,0]], cost:40.0 },
-    { id:'ldk-23',    name:'LDK',       cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,1]], cost:300.0 },
-    { id:'ldk-l',     name:'LDK(L)',    cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,0]], cost:250.0 },
-    { id:'dk-22',     name:'DK',        cat:T.LDK,      label:'DK',   shape:[[1,1],[1,1]], cost:180.0 },
-    { id:'k-1',       name:'キッチン',  cat:T.LDK,      label:'K',    shape:[[1]], cost:50.0 },
-    { id:'room-22',   name:'洋室(小)',  cat:T.ROOM,     label:'洋室', shape:[[1,1],[1,1]], cost:150.0 },
-    { id:'room-23',   name:'洋室(中)',  cat:T.ROOM,     label:'洋室', shape:[[1,1,1],[1,1,1]], cost:200.0 },
-    { id:'room-wa',   name:'和室',      cat:T.ROOM,     label:'和室', shape:[[1,1],[1,1]], cost:120.0 },
-    { id:'closet', name:'収納', cat:T.CLOSET, label:'収納', shape:[[1]], cost:10.0 },
-    { id:'toilet',    name:'トイレ',    cat:T.TOILET,   label:'WC',   shape:[[1]], cost:40.0 },
-    { id:'wash',      name:'洗面所',    cat:T.WASHROOM, label:'洗面', shape:[[1]], cost:60.0 },
-    { id:'bath',      name:'浴室',      cat:T.BATH,     label:'浴室', shape:[[1,1]], cost:120.0 },
-    { id:'unit-bath', name:'ユニット',  cat:T.BATH,     label:'UB',   shape:[[1,1]], cost:100.0 },
+    { id:'corr-i2',   name:'廊下(直)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1]], cost:2.0 },
+    { id:'corr-i3',   name:'廊下(長)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1]], cost:3.0 },
+    { id:'corr-l',    name:'廊下(L)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,0],[1,1]], cost:3.0 },
+    { id:'corr-t',    name:'廊下(T)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1],[0,1,0]], cost:4.0 },
+    { id:'corr-s',    name:'廊下(Z)',   cat:T.CORRIDOR, label:'廊下', shape:[[0,1],[1,1],[1,0]], cost:4.0 },
+    { id:'ldk-23',    name:'LDK',       cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,1]], cost:30.0 },
+    { id:'ldk-l',     name:'LDK(L)',    cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,0]], cost:25.0 },
+    { id:'dk-22',     name:'DK',        cat:T.LDK,      label:'DK',   shape:[[1,1],[1,1]], cost:18.0 },
+    { id:'k-1',       name:'キッチン',  cat:T.LDK,      label:'K',    shape:[[1]], cost:5.0 },
+    { id:'room-22',   name:'洋室(小)',  cat:T.ROOM,     label:'洋室', shape:[[1,1],[1,1]], cost:15.0 },
+    { id:'room-23',   name:'洋室(中)',  cat:T.ROOM,     label:'洋室', shape:[[1,1,1],[1,1,1]], cost:20.0 },
+    { id:'room-wa',   name:'和室',      cat:T.ROOM,     label:'和室', shape:[[1,1],[1,1]], cost:12.0 },
+    { id:'closet', name:'収納', cat:T.CLOSET, label:'収納', shape:[[1]], cost:1.0 },
+    { id:'toilet',    name:'トイレ',    cat:T.TOILET,   label:'WC',   shape:[[1]], cost:4.0 },
+    { id:'wash',      name:'洗面所',    cat:T.WASHROOM, label:'洗面', shape:[[1]], cost:6.0 },
+    { id:'bath',      name:'浴室',      cat:T.BATH,     label:'浴室', shape:[[1,1]], cost:12.0 },
+    { id:'unit-bath', name:'ユニット',  cat:T.BATH,     label:'UB',   shape:[[1,1]], cost:10.0 },
   ];
 
   // ============================================================
@@ -973,7 +978,7 @@
       name: 'Stage 1: はじめての1K',
       initialBudget: 1000.0,
       maxTurns: 10,
-      targetRent: 6.0,
+      targetRent: 4.8,
       entranceRow: 9,
       entranceCol: 5,
       // 10x10のプレイエリアになるよう、外周を障害物で埋める
@@ -1012,7 +1017,7 @@
       name: 'Stage 2: ファミリー向け3LDK',
       initialBudget: 3500.0,
       maxTurns: 15,
-      targetRent: 12.0,
+      targetRent: 9.6,
       entranceRow: 11,
       entranceCol: 5,
       // 12x12フルに使えるが、変な場所に障害物がある
@@ -1051,7 +1056,7 @@
       name: 'Stage 3: 富豪の要塞邸宅',
       initialBudget: 5000.0,
       maxTurns: 20,
-      targetRent: 18.0,
+      targetRent: 14.4,
       entranceRow: 11,
       entranceCol: 2,
       // L字型の土地
@@ -1093,9 +1098,10 @@
   const SAVE_KEY = 'floorplan_save_v1';
   const GameState = {
     companyName: '和歌山不動産',
-    funds: 300.0,
+    funds: 500.0,
     month: 1,
     level: 0,
+    attempts: 0,
     properties: [],
     discovered: {
       combos: []
@@ -1108,8 +1114,30 @@
     n.textContent = GameState.companyName;
     document.getElementById('co-month').innerHTML = `${GameState.month}<span class="stat-unit">ヶ月目</span>`;
     document.getElementById('co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>`;
+    
+    const w = document.getElementById('attempts-warning');
+    if (w) {
+      if (GameState.attempts > 0 && GameState.attempts < 3) {
+        w.style.display = 'block';
+        document.getElementById('attempts-count').textContent = GameState.attempts;
+      } else {
+        w.style.display = 'none';
+      }
+    }
   }
 
+
+  function processMonthEnd() {
+    GameState.month += 1;
+    let totalIncome = 0;
+    for (const p of GameState.properties) {
+      totalIncome += p.rent;
+    }
+    GameState.funds += totalIncome;
+    saveGame();
+    return totalIncome;
+  }
+  
   function updateCompanyUI() {
     updateCompanyCard();
     const el = document.getElementById('game-subtitle');
@@ -1456,7 +1484,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function updatePieceLabel() {
     const p = selectedSlot === 3 ? holdSlot : draftSlots[selectedSlot];
-    const cost = p ? (p.cost + (isMirrored ? 20.0 : 0)).toFixed(1) : 0;
+    const cost = p ? (p.cost + (isMirrored ? 2.0 : 0)).toFixed(1) : 0;
     const mirText = isMirrored ? '・反転' : '';
     const name = p ? p.name : '';
     const rot = selectedRot * 90;
@@ -1547,7 +1575,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!piece) return;
     const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
-    const pieceCost = (piece.cost || 0) + (isMirrored ? 20.0 : 0);
+    const pieceCost = (piece.cost || 0) + (isMirrored ? 2.0 : 0);
     const canAfford = budget >= pieceCost;
     const valid = canPlace(hoverCell.r, hoverCell.c, shape) && canAfford;
     ctx.save();
@@ -1874,7 +1902,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!piece) return false;
     
     // Check Budget
-    const pieceCost = (piece.cost || 0) + (isMirrored ? 20.0 : 0);
+    const pieceCost = (piece.cost || 0) + (isMirrored ? 2.0 : 0);
     if (budget < pieceCost) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
@@ -2770,10 +2798,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const catch_ = genCatchphrase(counts, combos, hiddenTriggered);
     const comment = genComment(counts, combos, hiddenTriggered, isClear);
     
-    // 家賃収入と経過月の反映
-    budget += rent;
-    GameState.funds = budget;
-    GameState.month += 1;
+    // ここでは資金加算しない。結果画面のボタンで処理する。
+    GameState.funds = budget; // 消費した分の同期
     saveGame();
 
 
@@ -2947,7 +2973,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updateCompanyUI();
 
     initGrid();
-    budget = GameState.funds; // initGrid が initialBudget で上書きするため再設定
+    budget = GameState.funds;
+    // 初回のみ挑戦回数をセット
+    if (GameState.attempts === 0) GameState.attempts = 3;
     selectedSlot = 0; selectedRot = 0;
     previewMode = false; hoverCell = null;
     const co = document.getElementById('confirm-overlay');
@@ -2988,6 +3016,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   document.getElementById('btn-start').addEventListener('click', () => {
     initAudio();
+    if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
+    GameState.attempts -= 1;
+    saveGame();
     startGame();
   });
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
@@ -3021,9 +3052,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const currentPiece = draftSlots[selectedSlot];
     if (!currentPiece) return;
 
-    budget -= 20;
+    budget -= 2;
     updateBudgetUI();
-    showFloatingText('-20万', 'var(--c-rose)');
+    showFloatingText('-2.0万', 'var(--c-rose)');
 
     const temp = holdSlot;
     holdSlot = currentPiece;
@@ -3041,17 +3072,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-reroll')?.addEventListener('click', () => {
     initAudio();
-    if (budget < 50) {
+    if (budget < 5) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
       return;
     }
-    budget -= 50;
-    GameState.month += 1;
-    GameState.funds = budget;
-    saveGame();
+    budget -= 5;
+    GameState.funds = budget; // update before month end
+    const income = processMonthEnd();
+    budget = GameState.funds; // sync back
+    showFloatingText(`家賃収入 +${income.toFixed(1)}万`, 'var(--c-emerald)');
     updateBudgetUI();
-    showFloatingText('-50万', 'var(--c-rose)');
+    showFloatingText('-5.0万', 'var(--c-rose)');
     
     updateCompanyUI();
 
@@ -3106,15 +3138,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
 
   document.getElementById('btn-buy-hint').addEventListener('click', () => {
-    if (budget < 300) {
+    if (budget < 30) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
       return;
     }
-    budget -= 300;
+    budget -= 30;
     updateBudgetUI();
     playSound('combo');
-    showFloatingText('-300万', 'var(--c-rose)');
+    showFloatingText('-30.0万', 'var(--c-rose)');
     
     document.getElementById('btn-buy-hint').style.display = 'none';
     const hintEl = document.getElementById('mission-hint-text');
