@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.8 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.9 (10/04)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -2842,13 +2842,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       playSound('error');
       
       btnNext.style.display = 'none';
+      btnRestart.style.display = 'block';
+      if (btnGiveup) btnGiveup.style.display = 'block';
       if (GameState.attempts > 0) {
-        btnRestart.style.display = 'block';
+        btnRestart.disabled = false;
+        btnRestart.style.opacity = '1';
         btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
-        if (btnGiveup) btnGiveup.style.display = 'block';
       } else {
-        btnRestart.style.display = 'none';
-        if (btnGiveup) btnGiveup.style.display = 'block';
+        btnRestart.disabled = true;
+        btnRestart.style.opacity = '0.5';
+        btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
       }
     }
 
@@ -3170,35 +3173,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-restart').addEventListener('click', () => {
     initAudio();
     if (GameState.attempts > 0) {
-      alert(`目標未達のため、間取りを破棄します。\n残り挑戦回数: ${GameState.attempts}回`);
-      
-      // 資金を挑戦前の状態にロールバック
+      alert(`間取りを破棄し、再挑戦します。`);
       if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
-      
-      // 次の挑戦として回数を消費
       GameState.attempts -= 1;
-      GameState.lastFunds = GameState.funds; // 新たな挑戦前の資金として記録
-      
+      GameState.lastFunds = GameState.funds;
       saveGame();
       startGame();
       showScreen('game');
-    } else {
-      // 資金をまず挑戦前にロールバックする
-      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
-      
-      // その後で月送り＆家賃の振り込みを行う
-      const income = processMonthEnd();
-      alert(`3回失敗したため、この依頼は破棄されました...\n（今月の家賃収入: +${income.toFixed(1)}万）`);
-      
-      GameState.level++;
-      GameState.attempts = 3;
-      saveGame();
-      setupMissionScreen();
-      updateCompanyCard();
-      showScreen('mission');
     }
   });
 
+  document.getElementById('btn-giveup')?.addEventListener('click', () => {
+    initAudio();
+    if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+    const income = processMonthEnd();
+    alert(`依頼を破棄し、翌月へ進みます。\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+    
+    GameState.level++;
+    GameState.attempts = 3;
+    saveGame();
+    updateStage();
+    setupMissionScreen();
+    updateCompanyCard();
+    showScreen('mission');
+  });
   document.getElementById('btn-next-stage')?.addEventListener('click', () => {
     initAudio();
     const rentText = document.getElementById('flyer-rent').textContent;
