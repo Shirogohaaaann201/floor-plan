@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.3 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.5 (10/04)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -772,7 +772,7 @@
           </button>
           <button class="btn btn-slate" id="btn-mirror" style="padding:8px 12px;font-size:12px;gap:5px;">
             <i class="ph-bold ph-arrows-left-right" style="font-size:15px;color:var(--c-indigo);"></i>
-            反転 <span style="font-size:9px;color:var(--c-text2);">(+20万)</span>
+            反転 <span style="font-size:9px;color:var(--c-text2);">(+2.0万)</span>
           </button>
           <span id="piece-label" style="font-size:11px;color:var(--c-text2);">選択中: —</span>
           <button class="btn btn-slate" id="btn-show-mission" style="padding:6px; font-size:11px; margin-left:auto;"><i class="ph-bold ph-list-checks"></i> 依頼</button>
@@ -792,7 +792,7 @@
         </div>
         <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
           <div id="draft-container" style="display:flex; gap:8px;"></div>
-          <button class="btn btn-slate" id="btn-reroll" style="padding:6px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> リロール (-50万)</button>
+          <button class="btn btn-slate" id="btn-reroll" style="padding:6px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> リロール (-5.0万)</button>
         </div>
       </div>
     </footer>
@@ -3153,8 +3153,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-restart').addEventListener('click', () => {
     initAudio();
     if (GameState.attempts > 0) {
-      alert(`残り挑戦回数: ${GameState.attempts}回`);
+      alert(`目標未達のため、間取りを破棄します。\n残り挑戦回数: ${GameState.attempts}回`);
+      
+      // 資金を挑戦前の状態にロールバック
       if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+      
+      // 次の挑戦として回数を消費
+      GameState.attempts -= 1;
+      GameState.lastFunds = GameState.funds; // 新たな挑戦前の資金として記録
+      
       saveGame();
       startGame();
       showScreen('game');
