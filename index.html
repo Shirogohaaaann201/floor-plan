@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.7 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.8 (10/04)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -890,6 +890,10 @@
         <button class="btn btn-dark" id="btn-restart">
           <i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i>
           もう一度設計
+        </button>
+        <button class="btn btn-dark" id="btn-giveup" style="display:none; background:var(--c-rose);">
+          <i class="ph-bold ph-x" style="font-size:13px;"></i>
+          諦める
         </button>
         <button class="btn btn-light" id="btn-view-plan">
           <i class="ph-bold ph-magnifying-glass" style="font-size:13px;"></i>
@@ -2818,6 +2822,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const diff  = document.getElementById('flyer-rent-diff');
     const btnNext = document.getElementById('btn-next-stage');
     const btnRestart = document.getElementById('btn-restart');
+    const btnGiveup = document.getElementById('btn-giveup');
     
     if (isClear) {
       badge.textContent = 'ノルマ達成 🎉';
@@ -2826,9 +2831,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       diff.className    = 'flyer-rent-diff clear';
       playSound('clear');
       
-      // クリア時は常に次へボタンを表示する（無限ループ対応）
       btnNext.style.display = 'block';
       btnRestart.style.display = 'none';
+      if (btnGiveup) btnGiveup.style.display = 'none';
     } else {
       badge.textContent = 'ノルマ未達';
       badge.className   = 'flyer-badge fail';
@@ -2837,8 +2842,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       playSound('error');
       
       btnNext.style.display = 'none';
-      btnRestart.style.display = 'block';
-      btnRestart.innerHTML = '<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計';
+      if (GameState.attempts > 0) {
+        btnRestart.style.display = 'block';
+        btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
+        if (btnGiveup) btnGiveup.style.display = 'block';
+      } else {
+        btnRestart.style.display = 'none';
+        if (btnGiveup) btnGiveup.style.display = 'block';
+      }
     }
 
     // Hidden request reveal
