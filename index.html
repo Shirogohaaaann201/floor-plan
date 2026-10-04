@@ -600,11 +600,32 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.2 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.3 (10/04)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
       </button>
+    </div>
+
+    <!-- Company status -->
+    <div class="mission-card" id="company-card">
+      <div class="mission-card-title">
+        <i class="ph-bold ph-buildings"></i> 会社の状況
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">会社名</div>
+          <div class="stat-value" id="co-name" style="font-size:13px;">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">経過月</div>
+          <div class="stat-value font-num" id="co-month">1<span class="stat-unit">ヶ月目</span></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">会社の資金</div>
+          <div class="stat-value font-num" id="co-funds">300<span class="stat-unit">万</span></div>
+        </div>
+      </div>
     </div>
 
     <!-- Client info -->
@@ -1081,7 +1102,16 @@
     }
   };
 
+  function updateCompanyCard() {
+    const n = document.getElementById('co-name');
+    if (!n) return;
+    n.textContent = GameState.companyName;
+    document.getElementById('co-month').innerHTML = `${GameState.month}<span class="stat-unit">ヶ月目</span>`;
+    document.getElementById('co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>`;
+  }
+
   function updateCompanyUI() {
+    updateCompanyCard();
     const el = document.getElementById('game-subtitle');
     if (el) el.textContent = `${GameState.companyName} 第${GameState.month}ヶ月 ｜ ステージ ${currentLevelIdx + 1}`;
   }
@@ -2917,6 +2947,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updateCompanyUI();
 
     initGrid();
+    budget = GameState.funds; // initGrid が initialBudget で上書きするため再設定
     selectedSlot = 0; selectedRot = 0;
     previewMode = false; hoverCell = null;
     const co = document.getElementById('confirm-overlay');
@@ -3116,7 +3147,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   /* ============================================================
      INIT
   ============================================================ */
+  loadGame();
   setupMissionScreen();
+  updateCompanyCard();
   </script>
 </body>
 </html>
