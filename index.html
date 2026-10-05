@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.16 (10/05)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.17 (10/05)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -1341,10 +1341,13 @@
         }
       }
     }
-    // 最大値を「ピースの外周 - 1」に設定（1箇所しか出入りできない鬼畜ピースも生成される）
+    // 最大値を「ピースの外周 - 1」に設定
     const maxWalls = Math.max(0, edges.length - 1);
-    // 0 〜 maxWalls の間でランダムに壁の数を決定
-    const count = Math.floor(Math.random() * (maxWalls + 1));
+    
+    // 3つの乱数の平均を取ることで、擬似的な正規分布（ベルカーブ）を作る
+    // これにより、両端（0 や maxWalls）が出にくく、中央付近が出やすくなる
+    const r = (Math.random() + Math.random() + Math.random()) / 3;
+    const count = Math.round(r * maxWalls);
     for(let i=0; i<count; i++){
       if(edges.length > 0) {
         const idx = Math.floor(Math.random() * edges.length);
