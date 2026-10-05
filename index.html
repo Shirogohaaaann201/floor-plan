@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.9 (10/04)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.10 (10/05)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -3094,14 +3094,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return;
     }
     budget -= 5;
-    GameState.funds = budget; // update before month end
-    const income = processMonthEnd();
-    budget = GameState.funds; // sync back
-    showFloatingText(`家賃収入 +${income.toFixed(1)}万`, 'var(--c-emerald)');
     updateBudgetUI();
     showFloatingText('-5.0万', 'var(--c-rose)');
-    
-    updateCompanyUI();
 
     draftSlots = [null, null, null];
     refillDraft();
