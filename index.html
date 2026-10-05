@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.15 (10/05)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.16 (10/05)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -1548,16 +1548,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const btn = document.getElementById('btn-reroll');
     if (!btn) return;
     
-    let hasPiece = false;
-    let allKept = true;
+    let canReroll = false;
     for (let i = 0; i < 3; i++) {
-      if (draftSlots[i] !== null) {
-        hasPiece = true;
-        if (!keepStates[i]) allKept = false;
+      if (draftSlots[i] === null) {
+        canReroll = true; // 空枠補充のため
+      } else if (!keepStates[i]) {
+        canReroll = true; // 破棄できるピースがあるため
       }
     }
     
-    if (!hasPiece || allKept) {
+    if (!canReroll) {
       btn.disabled = true;
       btn.style.opacity = '0.5';
       btn.innerHTML = `<i class="ph-bold ph-arrows-clockwise" style="color:var(--c-text3);"></i> 更新不可`;
@@ -2340,8 +2340,32 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       combos.push({ name:'水門', bonus:2.0, icon:'ph-waves text-blue-600', type:'funny',
         text:'【珍間取り】水門 — 玄関から水回りしか行けない (+2.0万)' });
     }
-    // 新コンボ4: 秘密のトイレ（クローゼット直結のトイレ）
-    if (isDirectlyConnected(T.CLOSET, T.TOILET)) {
+    // 新コンボ4: 秘密のトイレ（収納からしか行けないトイレ）
+    let hasAccessibleToilet = false;
+    let connectedToNonCloset = false;
+    let connectedToCloset = false;
+    for (let r=0; r<GRID; r++) {
+      for (let c=0; c<GRID; c++) {
+        if (grid[r][c].type === T.TOILET && visited.has(`${r},${c}`)) {
+          hasAccessibleToilet = true;
+          const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+          for (const {dr,dc} of dirs) {
+            const nr = r+dr, nc = c+dc;
+            if (nr>=0&&nr<GRID&&nc>=0&&nc<GRID) {
+              const et = edgeType(r, c, nr, nc);
+              if (et === E.NONE || et === E.DOOR) {
+                const nType = grid[nr][nc].type;
+                if (nType !== T.TOILET) {
+                  if (nType === T.CLOSET) connectedToCloset = true;
+                  else connectedToNonCloset = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    if (hasAccessibleToilet && connectedToCloset && !connectedToNonCloset) {
       combos.push({ name:'秘密のトイレ', bonus:1.0, icon:'ph-lock-key text-slate-600', type:'funny',
         text:'【珍間取り】秘密のトイレ — 収納の奥に潜む便器 (+1.0万)' });
     }
@@ -3176,13 +3200,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     for (let i = 0; i < 3; i++) {
-      if (draftSlots[i] !== null) {
-        if (keepStates[i]) {
-          keepCounts[i]++;
-        } else {
-          draftSlots[i] = generatePiece();
-          keepCounts[i] = 0;
-        }
+      if (draftSlots[i] !== null && keepStates[i]) {
+        keepCounts[i]++;
+      } else {
+        draftSlots[i] = generatePiece();
+        keepStates[i] = false;
+        keepCounts[i] = 0;
       }
     }
     
