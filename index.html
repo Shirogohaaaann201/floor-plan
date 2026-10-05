@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.14 (10/05)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.15 (10/05)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -1176,6 +1176,7 @@
   let nextRoomId = 1;
   let draftSlots = [null, null, null];
   let keepStates = [false, false, false];
+  let keepCounts = [0, 0, 0];
   let discardCount = 0;
   let selectedSlot = 0; // 0-2 for draft
   let selectedRot = 0;
@@ -1413,16 +1414,26 @@
     return 8.0;
   }
 
+  function getKeepCost(count) {
+    if (count === 0) return 0.0;
+    return Math.pow(2, count - 1);
+  }
+
   function getRerollCost() {
-    let cost = 0;
+    let discardCost = 0;
+    let keepCost = 0;
     let tempCount = discardCount;
     for (let i = 0; i < 3; i++) {
-      if (draftSlots[i] !== null && !keepStates[i]) {
-        cost += getDiscardCostForNext(tempCount);
-        tempCount++;
+      if (draftSlots[i] !== null) {
+        if (!keepStates[i]) {
+          discardCost += getDiscardCostForNext(tempCount);
+          tempCount++;
+        } else {
+          keepCost += getKeepCost(keepCounts[i]);
+        }
       }
     }
-    return cost;
+    return { total: discardCost + keepCost, discard: discardCost, keep: keepCost };
   }
 
   function generatePiece() {
@@ -1438,6 +1449,7 @@
       if (!draftSlots[i]) {
         draftSlots[i] = generatePiece();
         keepStates[i] = false;
+        keepCounts[i] = 0;
       }
     }
     renderDraftUI();
@@ -1500,10 +1512,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         keepBtn.style.padding = '4px';
         keepBtn.style.fontSize = '10px';
         keepBtn.style.border = '1px solid var(--c-border)';
-        keepBtn.textContent = keepStates[idx] ? '🔒 KEEP' : '🔓 keep';
+        const kCost = getKeepCost(keepCounts[idx]);
+        const kText = kCost > 0 ? ` (維持-${kCost}万)` : '';
+        keepBtn.textContent = keepStates[idx] ? `🔒 KEEP${kText}` : '🔓 keep';
         if (keepStates[idx]) {
           keepBtn.style.background = 'var(--c-amber)';
           keepBtn.style.color = '#fff';
+          if (kCost > 0) keepBtn.style.border = '1px solid var(--c-rose)';
         }
         keepBtn.onclick = () => {
           initAudio();
@@ -1547,14 +1562,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       btn.style.opacity = '0.5';
       btn.innerHTML = `<i class="ph-bold ph-arrows-clockwise" style="color:var(--c-text3);"></i> 更新不可`;
     } else {
-      const cost = getRerollCost();
+      const costs = getRerollCost();
       btn.disabled = false;
       btn.style.opacity = '1';
-      const costText = cost === 0 ? '無料' : `-${cost.toFixed(1)}万`;
+      const costText = costs.total === 0 ? '無料' : `-${costs.total.toFixed(1)}万`;
       let nextCost = getDiscardCostForNext(discardCount);
+      let subText = `破棄:${discardCount}個(次${nextCost.toFixed(1)}万)`;
+      if (costs.keep > 0) subText += ` ＋ 維持:${costs.keep.toFixed(1)}万`;
       btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
         <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> 更新 (${costText})</div>
-        <div style="font-size:8px; color:var(--c-text3); margin-top:2px;">累計破棄:${discardCount}個 (次${nextCost.toFixed(1)}万/個)</div>
+        <div style="font-size:8px; color:var(--c-text3); margin-top:2px;">${subText}</div>
       </div>`;
     }
   }
@@ -2014,6 +2031,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     draftSlots[selectedSlot] = null;
     keepStates[selectedSlot] = false;
+    keepCounts[selectedSlot] = 0;
     
     let allEmpty = true;
     for (let i = 0; i < 3; i++) {
@@ -2023,6 +2041,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       for (let i = 0; i < 3; i++) {
         draftSlots[i] = generatePiece();
         keepStates[i] = false;
+        keepCounts[i] = 0;
       }
       selectedSlot = 0;
     } else {
@@ -3070,6 +3089,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (co) co.style.display = 'none';
     draftSlots = [null, null, null];
     keepStates = [false, false, false];
+    keepCounts = [0, 0, 0];
     discardCount = 0;
     refillDraft();
     
@@ -3132,8 +3152,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-reroll')?.addEventListener('click', () => {
     initAudio();
-    const cost = getRerollCost();
-    if (budget < cost) {
+    const costs = getRerollCost();
+    if (budget < costs.total) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
       return;
@@ -3141,21 +3161,28 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     let discarded = 0;
     for (let i = 0; i < 3; i++) {
-      if (draftSlots[i] !== null && !keepStates[i]) {
-        discarded++;
+      if (draftSlots[i] !== null) {
+        if (!keepStates[i]) {
+          discarded++;
+        }
       }
     }
 
-    budget -= cost;
+    budget -= costs.total;
     discardCount += discarded;
     updateBudgetUI();
-    if (cost > 0) {
-      showFloatingText(`-${cost.toFixed(1)}万`, 'var(--c-rose)');
+    if (costs.total > 0) {
+      showFloatingText(`-${costs.total.toFixed(1)}万`, 'var(--c-rose)');
     }
 
     for (let i = 0; i < 3; i++) {
-      if (!keepStates[i]) {
-        draftSlots[i] = generatePiece();
+      if (draftSlots[i] !== null) {
+        if (keepStates[i]) {
+          keepCounts[i]++;
+        } else {
+          draftSlots[i] = generatePiece();
+          keepCounts[i] = 0;
+        }
       }
     }
     
