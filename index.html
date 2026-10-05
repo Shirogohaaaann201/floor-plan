@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.11 (10/05)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.12 (10/05)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -675,7 +675,7 @@
         </div>
         <div class="stat-item">
           <div class="stat-label">手数制限</div>
-          <div class="stat-value font-num" id="stat-turns">10<span class="stat-unit">手</span></div>
+          <div class="stat-value font-num" id="stat-turns" style="display:none;">10<span class="stat-unit">手</span></div>
         </div>
         <div class="stat-item">
           <div class="stat-label">目標家賃</div>
@@ -785,14 +785,10 @@
       </div>
 
       <!-- Draft tray -->
-      <div id="draft-area">
-        <div id="hold-zone">
-          <button class="btn btn-slate" id="btn-hold" style="padding:4px; font-size:10px; width:100%;"><i class="ph-bold ph-download-simple"></i> HOLD (-2万)</button>
-          <div id="hold-card-wrap" style="flex:1;"></div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+      <div id="draft-area" style="display:flex; width:100%;">
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%;"><div id="reroll-info" style="display:none;"></div>
           <div id="draft-container" style="display:flex; gap:8px;"></div>
-          <button class="btn btn-slate" id="btn-reroll" style="padding:6px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> リロール (-5.0万)</button>
+          <button class="btn btn-slate" id="btn-reroll" style="padding:4px; height:auto; min-height:36px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> リロール (-5.0万)</button>
         </div>
       </div>
     </footer>
@@ -1410,14 +1406,38 @@
   /* ============================================================
      DRAFT CONTROLLER
   ============================================================ */
+  function getDiscardCostForNext(count) {
+    if (count < 5) return 0;
+    if (count < 10) return 2.0;
+    if (count < 15) return 4.0;
+    return 8.0;
+  }
+
+  function getRerollCost() {
+    let cost = 0;
+    let tempCount = discardCount;
+    for (let i = 0; i < 3; i++) {
+      if (draftSlots[i] !== null && !keepStates[i]) {
+        cost += getDiscardCostForNext(tempCount);
+        tempCount++;
+      }
+    }
+    return cost;
+  }
+
+  function generatePiece() {
+    const piece = JSON.parse(JSON.stringify(
+      PIECE_LIB[Math.floor(Math.random() * PIECE_LIB.length)]
+    ));
+    piece.walls = generateRandomWalls(piece.shape);
+    return piece;
+  }
+
   function refillDraft() {
     for (let i = 0; i < 3; i++) {
       if (!draftSlots[i]) {
-        const piece = JSON.parse(JSON.stringify(
-          PIECE_LIB[Math.floor(Math.random() * PIECE_LIB.length)]
-        ));
-        piece.walls = generateRandomWalls(piece.shape);
-        draftSlots[i] = piece;
+        draftSlots[i] = generatePiece();
+        keepStates[i] = false;
       }
     }
     renderDraftUI();
@@ -1459,39 +1479,88 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function renderDraftUI() {
     const container = document.getElementById('draft-container');
     container.innerHTML = '';
+    
     draftSlots.forEach((piece, idx) => {
-      if (!piece) return;
-      const card = createCardElement(piece, idx === selectedSlot, () => {
-        initAudio(); selectedSlot = idx; selectedRot = 0;
-        playSound('rotate'); renderDraftUI(); updatePieceLabel(); drawPlan();
-      });
-      container.appendChild(card);
-    });
+      const isSel = (idx === selectedSlot);
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      wrap.style.gap = '4px';
+      wrap.style.flex = '1';
 
-    const holdWrap = document.getElementById('hold-card-wrap');
-    if (holdWrap) {
-      holdWrap.innerHTML = '';
-      if (holdSlot) {
-        const card = createCardElement(holdSlot, selectedSlot === 3, () => {
-          initAudio(); selectedSlot = 3; selectedRot = 0;
+      if (piece) {
+        const card = createCardElement(piece, isSel, () => {
+          initAudio(); selectedSlot = idx; selectedRot = 0; isMirrored = false;
           playSound('rotate'); renderDraftUI(); updatePieceLabel(); drawPlan();
         });
-        holdWrap.appendChild(card);
+        wrap.appendChild(card);
+        
+        const keepBtn = document.createElement('button');
+        keepBtn.className = 'btn btn-slate';
+        keepBtn.style.padding = '4px';
+        keepBtn.style.fontSize = '10px';
+        keepBtn.style.border = '1px solid var(--c-border)';
+        keepBtn.textContent = keepStates[idx] ? '🔒 KEEP' : '🔓 keep';
+        if (keepStates[idx]) {
+          keepBtn.style.background = 'var(--c-amber)';
+          keepBtn.style.color = '#fff';
+        }
+        keepBtn.onclick = () => {
+          initAudio();
+          keepStates[idx] = !keepStates[idx];
+          renderDraftUI();
+        };
+        wrap.appendChild(keepBtn);
+      } else {
+        const emptyCard = document.createElement('div');
+        emptyCard.className = 'draft-card';
+        emptyCard.style.opacity = '0.3';
+        emptyCard.style.display = 'flex';
+        emptyCard.style.alignItems = 'center';
+        emptyCard.style.justifyContent = 'center';
+        emptyCard.innerHTML = '<span style="font-size:11px;">空枠</span>';
+        wrap.appendChild(emptyCard);
+      }
+
+      container.appendChild(wrap);
+    });
+
+    updatePieceLabel();
+    updateRerollButton();
+  }
+
+  function updateRerollButton() {
+    const btn = document.getElementById('btn-reroll');
+    if (!btn) return;
+    
+    let hasPiece = false;
+    let allKept = true;
+    for (let i = 0; i < 3; i++) {
+      if (draftSlots[i] !== null) {
+        hasPiece = true;
+        if (!keepStates[i]) allKept = false;
       }
     }
     
-    // Update Hold button state
-    const btnHold = document.getElementById('btn-hold');
-    if (btnHold) {
-      btnHold.disabled = !canHold || selectedSlot === 3;
-      btnHold.style.opacity = btnHold.disabled ? '0.5' : '1';
+    if (!hasPiece || allKept) {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.innerHTML = `<i class="ph-bold ph-arrows-clockwise" style="color:var(--c-text3);"></i> 更新不可`;
+    } else {
+      const cost = getRerollCost();
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      const costText = cost === 0 ? '無料' : `-${cost.toFixed(1)}万`;
+      let nextCost = getDiscardCostForNext(discardCount);
+      btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
+        <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> 更新 (${costText})</div>
+        <div style="font-size:8px; color:var(--c-text3); margin-top:2px;">累計破棄:${discardCount}個 (次${nextCost.toFixed(1)}万/個)</div>
+      </div>`;
     }
-
-    updatePieceLabel();
   }
 
   function updatePieceLabel() {
-    const p = selectedSlot === 3 ? holdSlot : draftSlots[selectedSlot];
+    const p = draftSlots[selectedSlot];
     const cost = p ? (p.cost + (isMirrored ? 2.0 : 0)).toFixed(1) : 0;
     const mirText = isMirrored ? '・反転' : '';
     const name = p ? p.name : '';
@@ -1579,7 +1648,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function drawPreview() {
     if (!hoverCell || turnsLeft <= 0) return;
-    const piece = selectedSlot === 3 ? holdSlot : draftSlots[selectedSlot];
+    const piece = draftSlots[selectedSlot];
     if (!piece) return;
     const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
@@ -1906,7 +1975,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   const mergeCorridors = mergeSameType;
 
   function placePiece(gr, gc) {
-    const piece = selectedSlot === 3 ? holdSlot : draftSlots[selectedSlot];
+    const piece = draftSlots[selectedSlot];
     if (!piece) return false;
     
     // Check Budget
@@ -1943,19 +2012,25 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('hint-overlay').style.opacity = '0';
     playSound('place');
     
-    if (selectedSlot === 3) {
-      holdSlot = null;
-      selectedSlot = 0;
-      if (!draftSlots[0]) {
-        if (draftSlots[1]) selectedSlot = 1;
-        else if (draftSlots[2]) selectedSlot = 2;
+    draftSlots[selectedSlot] = null;
+    keepStates[selectedSlot] = false;
+    
+    let allEmpty = true;
+    for (let i = 0; i < 3; i++) {
+      if (draftSlots[i] !== null) allEmpty = false;
+    }
+    if (allEmpty) {
+      for (let i = 0; i < 3; i++) {
+        draftSlots[i] = generatePiece();
+        keepStates[i] = false;
       }
+      selectedSlot = 0;
     } else {
-      draftSlots[selectedSlot] = null;
-      refillDraft();
+      let next = draftSlots.findIndex(p => p !== null);
+      if (next !== -1) selectedSlot = next;
     }
     
-    canHold = true;
+    renderDraftUI();
     selectedRot = 0;
     isMirrored = false;
     updatePieceLabel();
@@ -1995,7 +2070,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const pr = Math.floor((cy - rect.top)  / cellSize);
     
     let offR = 0, offC = 0;
-    const piece = selectedSlot === 3 ? holdSlot : draftSlots[selectedSlot];
+    const piece = draftSlots[selectedSlot];
     if (piece) {
       const shape = getShape(piece, selectedRot, isMirrored);
       offR = Math.floor(shape.length / 2);
@@ -2911,7 +2986,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     // Update Stats
     document.getElementById('stat-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span class="stat-unit">万</span>`;
-    document.getElementById('stat-turns').innerHTML = `${STAGE.maxTurns}<span class="stat-unit">手</span>`;
+    
 
     // Site preview canvas
     drawSitePreview();
@@ -2994,8 +3069,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const co = document.getElementById('confirm-overlay');
     if (co) co.style.display = 'none';
     draftSlots = [null, null, null];
-    holdSlot = null;
-    canHold = true;
+    keepStates = [false, false, false];
+    discardCount = 0;
     refillDraft();
     
     // Update Header UI
@@ -3055,49 +3130,44 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     drawPlan();
   });
 
-  document.getElementById('btn-hold')?.addEventListener('click', () => {
-    initAudio();
-    if (!canHold || selectedSlot === 3) { playSound('error'); return; }
-    if (budget < 20) {
-      playSound('error');
-      showFloatingText('資金不足！', 'var(--c-rose)');
-      return;
-    }
-    const currentPiece = draftSlots[selectedSlot];
-    if (!currentPiece) return;
-
-    budget -= 2;
-    updateBudgetUI();
-    showFloatingText('-2.0万', 'var(--c-rose)');
-
-    const temp = holdSlot;
-    holdSlot = currentPiece;
-    draftSlots[selectedSlot] = temp;
-    
-    canHold = false;
-    if (!draftSlots[selectedSlot]) refillDraft();
-    else renderDraftUI();
-    
-    isMirrored = false;
-    updatePieceLabel();
-    playSound('rotate');
-    drawPlan();
-  });
-
   document.getElementById('btn-reroll')?.addEventListener('click', () => {
     initAudio();
-    if (budget < 5) {
+    const cost = getRerollCost();
+    if (budget < cost) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
       return;
     }
-    budget -= 5;
-    updateBudgetUI();
-    showFloatingText('-5.0万', 'var(--c-rose)');
+    
+    let discarded = 0;
+    for (let i = 0; i < 3; i++) {
+      if (draftSlots[i] !== null && !keepStates[i]) {
+        discarded++;
+      }
+    }
 
-    draftSlots = [null, null, null];
-    refillDraft();
+    budget -= cost;
+    discardCount += discarded;
+    updateBudgetUI();
+    if (cost > 0) {
+      showFloatingText(`-${cost.toFixed(1)}万`, 'var(--c-rose)');
+    }
+
+    for (let i = 0; i < 3; i++) {
+      if (!keepStates[i]) {
+        draftSlots[i] = generatePiece();
+      }
+    }
+    
+    if (draftSlots[selectedSlot] === null) {
+      let next = draftSlots.findIndex(p => p !== null);
+      if (next !== -1) selectedSlot = next;
+      else selectedSlot = 0;
+    }
+
     isMirrored = false;
+    selectedRot = 0;
+    renderDraftUI();
     updatePieceLabel();
     drawPlan();
     playSound('clear');
