@@ -600,7 +600,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.13 (10/05)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.14 (10/05)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -1175,9 +1175,9 @@
   let grid = [];
   let nextRoomId = 1;
   let draftSlots = [null, null, null];
-  let holdSlot = null;
-  let canHold = true;
-  let selectedSlot = 0; // 0-2 for draft, 3 for hold
+  let keepStates = [false, false, false];
+  let discardCount = 0;
+  let selectedSlot = 0; // 0-2 for draft
   let selectedRot = 0;
   let isMirrored = false;
   let turnsLeft = 0;
