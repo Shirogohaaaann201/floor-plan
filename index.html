@@ -589,22 +589,6 @@
     }
   </style>
 
-<script>
-window.onerror = function(message, source, lineno, colno, error) {
-  const errDiv = document.createElement('div');
-  errDiv.style.position = 'fixed';
-  errDiv.style.top = '0';
-  errDiv.style.left = '0';
-  errDiv.style.width = '100%';
-  errDiv.style.backgroundColor = 'rgba(255,0,0,0.8)';
-  errDiv.style.color = 'white';
-  errDiv.style.padding = '10px';
-  errDiv.style.zIndex = '9999';
-  errDiv.style.wordBreak = 'break-all';
-  errDiv.innerText = 'JS Error: ' + message + ' at ' + source + ':' + lineno + ':' + colno + '\n' + (error ? error.stack : '');
-  document.body.appendChild(errDiv);
-};
-</script>
 </head>
 
 <body>
@@ -618,7 +602,7 @@ window.onerror = function(message, source, lineno, colno, error) {
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.21 (10/06)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.22 (10/06)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -1458,25 +1442,25 @@ window.onerror = function(message, source, lineno, colno, error) {
     return { total: discardCost + keepCost, discard: discardCost, keep: keepCost };
   }
 
-  const CATEGORY_WEIGHTS = {
-    [T.WASHROOM]: 10,
-    [T.TOILET]: 10,
-    [T.BATH]: 10,
-    [T.ROOM]: 25,
-    [T.LDK]: 15,
-    [T.CORRIDOR]: 15,
-    [T.CLOSET]: 15
-  };
-
   function generatePiece() {
+    const weights = [
+      { cat: T.WASHROOM, w: 10 },
+      { cat: T.TOILET, w: 10 },
+      { cat: T.BATH, w: 10 },
+      { cat: T.ROOM, w: 25 },
+      { cat: T.LDK, w: 15 },
+      { cat: T.CORRIDOR, w: 15 },
+      { cat: T.CLOSET, w: 15 }
+    ];
     let totalWeight = 0;
-    for (const cat in CATEGORY_WEIGHTS) totalWeight += CATEGORY_WEIGHTS[cat];
+    for (const item of weights) totalWeight += item.w;
+    
     let r = Math.random() * totalWeight;
     let selectedCat = T.CORRIDOR;
-    for (const cat in CATEGORY_WEIGHTS) {
-      r -= CATEGORY_WEIGHTS[cat];
+    for (const item of weights) {
+      r -= item.w;
       if (r <= 0) {
-        selectedCat = parseInt(cat);
+        selectedCat = item.cat;
         break;
       }
     }
@@ -3204,16 +3188,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      BUTTON WIRING
   ============================================================ */
   document.getElementById('btn-start').addEventListener('click', () => {
-    try {
-      initAudio();
-      if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
-      GameState.attempts -= 1;
-      GameState.lastFunds = GameState.funds; // 開始時の資金を記録
-      saveGame();
-      startGame();
-    } catch(e) {
-      alert('エラー発生: ' + e.message + '\n' + e.stack);
-    }
+    initAudio();
+    if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
+    GameState.attempts -= 1;
+    GameState.lastFunds = GameState.funds; // 開始時の資金を記録
+    saveGame();
+    startGame();
   });
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
   document.getElementById('btn-sound-game').addEventListener('click', toggleSound);
