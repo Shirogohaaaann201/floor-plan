@@ -596,7 +596,42 @@
   <!-- ==============================
        SCREEN 1: MISSION BRIEFING
   ============================== -->
-  <section id="screen-mission" class="screen active blueprint-bg">
+    <!-- ==============================
+       SCREEN 0: HOME
+  ============================== -->
+  <section id="screen-home" class="screen active blueprint-bg">
+    <div class="mission-container" style="max-width:500px; margin:40px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
+      <div style="text-align:center; margin-bottom:24px;">
+        <i class="ph-bold ph-buildings" style="font-size:48px; color:var(--c-blue);"></i>
+        <h2 id="home-co-name" style="margin:8px 0 4px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
+        <div style="color:var(--c-text2); font-weight:bold;">第<span id="home-co-month" style="font-size:18px; color:#0f172a;">1</span>ヶ月目</div>
+      </div>
+      
+      <div style="display:flex; gap:12px; margin-bottom:24px;">
+        <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:12px; color:var(--c-text2); margin-bottom:4px; font-weight:bold;">総資産（手元資金）</div>
+          <div id="home-co-funds" style="font-size:24px; font-weight:800; color:var(--c-blue);">500.0<span class="stat-unit">万</span></div>
+        </div>
+        <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:12px; color:var(--c-text2); margin-bottom:4px; font-weight:bold;">毎月の家賃収入</div>
+          <div id="home-co-income" style="font-size:24px; font-weight:800; color:var(--c-emerald);">+0.0<span class="stat-unit">万/月</span></div>
+        </div>
+      </div>
+      
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-bottom:24px;">
+        <h3 style="margin:0 0 12px; color:#0f172a; font-size:16px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">所有物件一覧</h3>
+        <div id="property-list" style="max-height:200px; overflow-y:auto; font-size:13px; color:#475569;">
+          <!-- 挿入される -->
+        </div>
+      </div>
+      
+      <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold;">
+        <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
+      </button>
+    </div>
+  </section>
+
+  <section id="screen-mission" class="screen blueprint-bg">
 
     <div class="mission-header">
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
