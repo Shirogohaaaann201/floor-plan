@@ -784,9 +784,8 @@
             ピースを選んで敷地をタップ
           </div>
         </div>
-        <div id="confirm-overlay" style="display:none; position:absolute; bottom:12px; left:50%; transform:translateX(-50%); gap:12px; z-index:100; align-items:center; width:max-content;">
-          <button id="btn-cancel-place" class="btn btn-slate" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(0,0,0,0.4); font-size:15px; white-space:nowrap;"><i class="ph-bold ph-x"></i></button>
-          <button id="btn-confirm-place" class="btn btn-amber" style="padding:10px 24px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:15px; color:#0f172a; white-space:nowrap;"><i class="ph-bold ph-check"></i> 決定</button>
+        <div id="confirm-overlay" style="display:none; position:absolute; z-index:100; align-items:center; width:max-content; pointer-events:none;">
+          <button id="btn-confirm-place" class="btn btn-amber" style="padding:8px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:13px; color:#0f172a; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 配置する</button>
         </div>
       </div>
     </main>
@@ -808,9 +807,9 @@
           <button class="btn btn-slate" id="btn-show-mission" style="padding:6px; font-size:11px; margin-left:auto;"><i class="ph-bold ph-list-checks"></i> 依頼</button>
           <span class="badge" id="realtime-rent-badge" style="background:#0f172a; color:#f59e0b; font-size:11px; padding:4px 8px; transition: transform 0.2s, background 0.2s;">現在査定: 0.0万円</span>
         </div>
-        <button class="btn btn-amber" id="btn-finish" style="padding:8px 14px;font-size:12px;gap:5px;">
-          <i class="ph-bold ph-check-circle" style="font-size:15px;"></i>
-          間取り査定
+        <button class="btn btn-slate" id="btn-finish" style="padding:6px 10px;font-size:11px;gap:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;box-shadow:none;">
+          <i class="ph-bold ph-check-square-offset" style="font-size:14px;color:var(--c-emerald);"></i>
+          設計完了
         </button>
       </div>
 
@@ -830,6 +829,10 @@
         <div class="mission-card-title"><i class="ph-fill ph-clipboard-text"></i> クライアントの要望</div>
         <div id="modal-client-quote" style="font-size:12px; line-height:1.6; color:var(--c-text); background:var(--c-surface2); padding:10px 12px; border-radius:6px; margin-bottom:12px; border-left:3px solid var(--c-amber);"></div>
         <div class="req-list" id="modal-req-list"></div>
+        
+        <div class="mission-card-title" style="margin-top:16px; font-size:12px;"><i class="ph-bold ph-magic-wand"></i> 現在の発生コンボ</div>
+        <div id="modal-combo-list" style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:10px 12px; border-radius:6px; min-height:30px; line-height:1.5;"></div>
+        
         <button id="btn-close-mission-bottom" class="btn btn-slate" style="width:100%; margin-top:16px; padding:12px; font-size:14px;">閉じる</button>
       </div>
     </div>
@@ -2168,7 +2171,27 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function showConfirmUI(show) {
-    document.getElementById('confirm-overlay').style.display = show ? 'flex' : 'none';
+    const co = document.getElementById('confirm-overlay');
+    co.style.display = show ? 'flex' : 'none';
+    
+    if (show && hoverCell && draftSlots[selectedSlot]) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = rect.width / canvas.width;
+      const piece = draftSlots[selectedSlot];
+      const shape = getShape(piece, selectedRot, isMirrored);
+      const w = shape[0].length * cellSize;
+      
+      let targetX = rect.left + (hoverCell.c * cellSize + w + 5) * scale;
+      let targetY = rect.top + (hoverCell.r * cellSize) * scale;
+      
+      if (targetX + 100 > window.innerWidth) {
+        targetX = rect.left + (hoverCell.c * cellSize) * scale - 110; // 左側に出す
+      }
+      
+      co.style.left = `${targetX}px`;
+      co.style.top = `${targetY}px`;
+    }
+    
     const hint = document.getElementById('hint-overlay');
     if (hint) {
       hint.style.opacity = (show || turnsLeft < STAGE.maxTurns) ? '0' : '1';
@@ -2194,6 +2217,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const pos = getCellFromPointer(e);
     if (pos && (!hoverCell || hoverCell.r !== pos.r || hoverCell.c !== pos.c)) {
       hoverCell = pos;
+      if (previewMode) showConfirmUI(true);
       drawPlan();
     }
   });
@@ -2215,13 +2239,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
-  document.getElementById('btn-cancel-place').addEventListener('click', () => {
-    initAudio();
-    previewMode = false;
-    hoverCell = null;
-    showConfirmUI(false);
-    drawPlan();
-  });
 
   /* ============================================================
      BFS EVALUATOR
@@ -3296,29 +3313,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-show-mission')?.addEventListener('click', () => {
     initAudio();
-    const modal = document.getElementById('mission-modal');
-    const reqList = document.getElementById('modal-req-list');
-    const sourceList = document.querySelector('#screen-mission .req-list');
-    if (sourceList) reqList.innerHTML = sourceList.innerHTML;
     
-    // Add banner text so user can read the truncated text
-    const bannerText = document.getElementById('mission-banner-text').textContent;
-    document.getElementById('modal-client-quote').innerHTML = `
-      <div style="margin-bottom:8px; font-weight:bold; color:var(--c-amber);">${bannerText}</div>
-      <div style="font-size:11px; color:var(--c-text2);">※詳細：「${STAGE.client.quote}」</div>
-    `;
-
-    // Append hidden hint if bought
-    if (document.getElementById('btn-buy-hint').style.display === 'none' && activeHiddenReq) {
-      reqList.innerHTML += `
-        <div style="margin-top:12px; padding:10px; background:#2d1f06; border:1px dashed var(--c-amber); border-radius:6px; color:var(--c-amber-lt); font-size:12px;">
-          <div style="font-weight:bold; margin-bottom:4px;"><i class="ph-bold ph-detective"></i> 購入済みの裏情報</div>
-          ${activeHiddenReq.hint}
-        </div>
-      `;
+    // 現在のコンボ状況を計算して表示
+    const visited = runBFS();
+    const counts  = countCells(visited);
+    const combos  = detectCombos(counts, visited);
+    
+    const cl = document.getElementById('modal-combo-list');
+    if (cl) {
+      if (combos.length === 0) {
+        cl.innerHTML = '<span style="color:var(--c-text2);">発生中のコンボはありません</span>';
+      } else {
+        cl.innerHTML = combos.map(c => `<div style="margin-bottom:4px;"><i class="ph-bold ${c.icon}" style="margin-right:4px;"></i>${c.text}</div>`).join('');
+      }
     }
-
-    modal.style.display = 'flex';
+    
+    document.getElementById('mission-modal').style.display = 'flex';
   });
 
   function closeMissionModal() {
@@ -3333,7 +3343,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-finish').addEventListener('click', () => {
     initAudio();
-    evaluate();
+    if (confirm("設計を完了して査定に進みますか？\n（現在の状態から家賃が確定されます）")) {
+      evaluate();
+    }
   });
 
   document.getElementById('btn-buy-hint').addEventListener('click', () => {
