@@ -602,7 +602,7 @@
       <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
       <div class="mission-title-wrap">
         <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.22 (10/06)</span></p>
+        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.23 (10/06)</span></p>
       </div>
       <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
@@ -2236,7 +2236,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         counts.totalOcc++;
         const reach = visited.has(`${r},${c}`);
         if (!reach && cell.type !== T.ENTRANCE) { counts.unreachable++; continue; }
-        counts.totalBaseRent += (cell.costPerCell || 0) * 0.1;
+        counts.totalBaseRent += (cell.costPerCell || 0) * 0.05;
         if (cell.pieceId && !seenRooms.has(cell.pieceId)) {
           seenRooms.set(cell.pieceId, cell.type);
           if (cell.type === T.LDK)      counts.ldkRooms++;
