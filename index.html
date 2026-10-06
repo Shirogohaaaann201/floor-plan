@@ -3377,6 +3377,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
+  document.getElementById('btn-go-mission')?.addEventListener('click', () => {
+    initAudio();
+    updateStage();
+    setupMissionScreen();
+    showScreen('mission');
+  });
+
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
     if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
@@ -3386,26 +3393,32 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.level++;
     GameState.attempts = 3;
     saveGame();
-    updateStage();
-    setupMissionScreen();
-    updateCompanyCard();
-    showScreen('mission');
+    updateHomeUI();
+    showScreen('home');
   });
+
   document.getElementById('btn-next-stage')?.addEventListener('click', () => {
     initAudio();
-    const rentText = document.getElementById('flyer-rent').textContent;
-    const rent = parseFloat(rentText);
-    GameState.properties.push({ level: GameState.level, rent: rent });
+    if (!GameState.properties) GameState.properties = [];
+    const p = window.currentPropertyData || {};
+    // currentPropertyData がない場合のフォールバック（念のため）
+    const rentToSave = p.rent !== undefined ? p.rent : parseFloat(document.getElementById('flyer-rent').textContent);
+    GameState.properties.push({
+      level: GameState.level,
+      rent: rentToSave,
+      targetRent: p.targetRent || STAGE.targetRent,
+      baseRent: p.baseRent || 0,
+      isClear: p.isClear || false
+    });
+    
     const income = processMonthEnd();
-    alert(`依頼達成！ 物件を管理リストに登録しました。\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+    alert(`物件を納品しました！\n（今月の家賃収入: +${income.toFixed(1)}万）`);
     
     GameState.level++;
     GameState.attempts = 3;
     saveGame();
-    updateStage();
-    setupMissionScreen();
-    updateCompanyCard();
-    showScreen('mission');
+    updateHomeUI();
+    showScreen('home');
   });
 
   document.getElementById('btn-view-plan').addEventListener('click', () => {
