@@ -588,7 +588,25 @@
       50%       { opacity: 0; }
     }
   </style>
+
+<script>
+window.onerror = function(message, source, lineno, colno, error) {
+  const errDiv = document.createElement('div');
+  errDiv.style.position = 'fixed';
+  errDiv.style.top = '0';
+  errDiv.style.left = '0';
+  errDiv.style.width = '100%';
+  errDiv.style.backgroundColor = 'rgba(255,0,0,0.8)';
+  errDiv.style.color = 'white';
+  errDiv.style.padding = '10px';
+  errDiv.style.zIndex = '9999';
+  errDiv.style.wordBreak = 'break-all';
+  errDiv.innerText = 'JS Error: ' + message + ' at ' + source + ':' + lineno + ':' + colno + '\n' + (error ? error.stack : '');
+  document.body.appendChild(errDiv);
+};
+</script>
 </head>
+
 <body>
 
   <!-- ==============================
@@ -1463,7 +1481,7 @@
       }
     }
     const candidates = PIECE_LIB.filter(p => p.cat === selectedCat);
-    const basePiece = candidates[Math.floor(Math.random() * candidates.length)];
+    const basePiece = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : PIECE_LIB[0];
     const piece = JSON.parse(JSON.stringify(basePiece));
     piece.walls = generateRandomWalls(piece.shape);
     return piece;
@@ -3186,12 +3204,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      BUTTON WIRING
   ============================================================ */
   document.getElementById('btn-start').addEventListener('click', () => {
-    initAudio();
-    if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
-    GameState.attempts -= 1;
-    GameState.lastFunds = GameState.funds; // 開始時の資金を記録
-    saveGame();
-    startGame();
+    try {
+      initAudio();
+      if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
+      GameState.attempts -= 1;
+      GameState.lastFunds = GameState.funds; // 開始時の資金を記録
+      saveGame();
+      startGame();
+    } catch(e) {
+      alert('エラー発生: ' + e.message + '\n' + e.stack);
+    }
   });
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
   document.getElementById('btn-sound-game').addEventListener('click', toggleSound);
