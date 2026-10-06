@@ -3016,36 +3016,42 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const btnRestart = document.getElementById('btn-restart');
     const btnGiveup = document.getElementById('btn-giveup');
     
+    // 足切り撤廃：常に納品可能
+    btnNext.style.display = 'block';
+    btnNext.textContent = isClear ? '✨ 納品する' : '💦 妥協して納品する';
+    if (btnGiveup) btnGiveup.style.display = 'block';
+    
     if (isClear) {
       badge.textContent = 'ノルマ達成 🎉';
       badge.className   = 'flyer-badge clear';
       diff.textContent  = `(目標+${(rent - STAGE.targetRent).toFixed(1)}万)`;
       diff.className    = 'flyer-rent-diff clear';
       playSound('clear');
-      
-      btnNext.style.display = 'block';
-      btnRestart.style.display = 'none';
-      if (btnGiveup) btnGiveup.style.display = 'none';
     } else {
       badge.textContent = 'ノルマ未達';
       badge.className   = 'flyer-badge fail';
       diff.textContent  = `(あと${(STAGE.targetRent - rent).toFixed(1)}万)`;
       diff.className    = 'flyer-rent-diff fail';
       playSound('error');
-      
-      btnNext.style.display = 'none';
-      btnRestart.style.display = 'block';
-      if (btnGiveup) btnGiveup.style.display = 'block';
-      if (GameState.attempts > 0) {
-        btnRestart.disabled = false;
-        btnRestart.style.opacity = '1';
-        btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
-      } else {
-        btnRestart.disabled = true;
-        btnRestart.style.opacity = '0.5';
-        btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
-      }
     }
+    
+    btnRestart.style.display = 'block';
+    if (GameState.attempts > 0) {
+      btnRestart.disabled = false;
+      btnRestart.style.opacity = '1';
+      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
+    } else {
+      btnRestart.disabled = true;
+      btnRestart.style.opacity = '0.5';
+      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
+    }
+    
+    window.currentPropertyData = {
+      rent: rent,
+      targetRent: STAGE.targetRent,
+      baseRent: counts.totalBaseRent,
+      isClear: isClear
+    };
 
     // Hidden request reveal
     const hBox  = document.getElementById('hidden-req-box');
