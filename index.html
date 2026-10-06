@@ -2750,22 +2750,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     reports.push({ icon:'ph-check text-emerald-600', text:`資産価値ベース利回り (+${baseRent.toFixed(1)}万)` });
 
     // 2. Public requests
-    let reqBonus = 0;
+    // ※資産価値ベース移行に伴い、依頼達成は家賃には加算せず「入居率（顧客満足度）」へ影響させる
+    let satisfiedCount = 0;
     for (const req of STAGE.requests) {
       const ok = req.fn(counts, {unreachable: counts.unreachable});
       if (ok) {
-        let b = 2.0;
-        if (req.id === 'ldk2') b = 3.5;
-        if (req.id === 'btsep') b = 2.0;
-        if (req.id === 'wash') b = 1.0;
-        if (req.id === 'reach') b = 1.5;
-        reqBonus += b;
-        reports.push({ icon:'ph-star-fill text-amber-500', text:`【依頼達成】${req.text} (+${b.toFixed(1)}万)` });
+        satisfiedCount++;
+        reports.push({ icon:'ph-star-fill text-amber-500', text:`【依頼達成】${req.text} (入居率UP)` });
       } else {
-        reports.push({ icon:'ph-x text-rose-500', text:`【依頼未達】${req.text}` });
+        reports.push({ icon:'ph-x text-rose-500', text:`【依頼未達】${req.text} (退去リスクUP)` });
       }
     }
-    rent += reqBonus;
+    // rent には加算しない！
 
     // 3. Movement factor
     const moveFactor = Math.max(0.1, 1.0 - counts.unreachable * 0.3);
@@ -3381,6 +3377,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     updateStage();
     setupMissionScreen();
+    updateCompanyCard(); // UI同期
     showScreen('mission');
   });
 
@@ -3388,7 +3385,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
     const income = processMonthEnd();
-    alert(`依頼を破棄し、翌月へ進みます。\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+    alert(`【第${GameState.month - 1}ヶ月目終了】\n依頼を破棄しました。\n（今月の家賃収入: +${income.toFixed(1)}万）`);
     
     GameState.level++;
     GameState.attempts = 3;
@@ -3412,7 +3409,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     });
     
     const income = processMonthEnd();
-    alert(`物件を納品しました！\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+    alert(`【第${GameState.month - 1}ヶ月目終了】\n物件を納品しました！\n（今月の家賃収入: +${income.toFixed(1)}万）`);
     
     GameState.level++;
     GameState.attempts = 3;
