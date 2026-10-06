@@ -2463,7 +2463,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:'【王道コンボ】水回り集約 — 配管効率化ボーナス (+2.0万)' });
     }
     // 2. 家事ラク動線: LDKと洗面所が直通接続
-    if (isDirectlyConnected(T.LDK, T.WASHROOM)) {
+    if (hasDirectConnection(grid, T.LDK, T.WASHROOM)) {
       combos.push({ name:'家事ラク動線', bonus:1.5, icon:'ph-washing-machine text-teal-600', type:'good',
         text:'【王道コンボ】家事ラク動線 — キッチン↔洗面直通 (+1.5万)' });
     }
@@ -3456,7 +3456,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               <div style="font-size:11px; color:#64748b;">目標家賃: ${p.targetRent.toFixed(1)}万</div>
             </div>
             <div style="font-weight:900; color:${color}; font-size:15px;">
-              ${p.rent.toFixed(1)}万 <span style="font-size:10px;font-weight:normal;">/月</span>
+              ${p.rent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
             </div>
           </div>
         `;
