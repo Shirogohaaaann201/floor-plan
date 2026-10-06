@@ -630,49 +630,12 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.35 (10/07)
+        Floor Plan v0.36 (10/07)
       </div>
     </div>
   </section>
 
   <section id="screen-mission" class="screen blueprint-bg">
-
-    <div class="mission-header">
-      <div class="mission-header-icon"><i class="ph-bold ph-compass"></i></div>
-      <div class="mission-title-wrap">
-        <h1>間取り図パズル</h1>
-        <p>依頼を受けて、最高の間取りを設計しよう <span style="opacity:.6;">v0.26 (10/06)</span></p>
-      </div>
-      <button id="btn-sound-mission" class="btn-icon btn" style="margin-left:auto;">
-        <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:16px;"></i>
-      </button>
-    </div>
-
-    <!-- Company status -->
-    <div class="mission-card" style="background:#450a0a; border-color:#991b1b; display:none;" id="attempts-warning">
-      <div style="color:#fca5a5; font-weight:bold; text-align:center;">
-        ⚠️ 残り挑戦回数: <span id="attempts-count">3</span> 回
-      </div>
-    </div>
-    <div class="mission-card" id="company-card">
-      <div class="mission-card-title">
-        <i class="ph-bold ph-buildings"></i> 会社の状況
-      </div>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="stat-label">会社名</div>
-          <div class="stat-value" id="co-name" style="font-size:13px;">-</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">経過月</div>
-          <div class="stat-value font-num" id="co-month">1<span class="stat-unit">ヶ月目</span></div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">会社の資金</div>
-          <div class="stat-value font-num" id="co-funds">300<span class="stat-unit">万</span></div>
-        </div>
-      </div>
-    </div>
 
     <!-- Client info -->
     <div class="mission-card">
@@ -1152,23 +1115,6 @@
     }
   };
 
-  function updateCompanyCard() {
-    const n = document.getElementById('co-name');
-    if (!n) return;
-    n.textContent = GameState.companyName;
-    document.getElementById('co-month').innerHTML = `${GameState.month}<span class="stat-unit">ヶ月目</span>`;
-    document.getElementById('co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>`;
-    
-    const w = document.getElementById('attempts-warning');
-    if (w) {
-      if (GameState.attempts > 0 && GameState.attempts < 3) {
-        w.style.display = 'block';
-        document.getElementById('attempts-count').textContent = GameState.attempts;
-      } else {
-        w.style.display = 'none';
-      }
-    }
-  }
 
 
   function processMonthEnd() {
@@ -1183,7 +1129,6 @@
   }
   
   function updateCompanyUI() {
-    updateCompanyCard();
     const el = document.getElementById('game-subtitle');
     if (el) el.textContent = `${GameState.companyName} 第${GameState.month}ヶ月 ｜ ステージ ${currentLevelIdx + 1}`;
   }
@@ -3386,7 +3331,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     updateStage();
     setupMissionScreen();
-    updateCompanyCard(); // UI同期
     showScreen('mission');
   });
 
