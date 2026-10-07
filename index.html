@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.37 (10/07)
+        Floor Plan v0.38 (10/07)
       </div>
     </div>
   </section>
@@ -2129,17 +2129,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     co.style.display = show ? 'flex' : 'none';
     
     if (show && hoverCell && draftSlots[selectedSlot]) {
-      const rect = canvas.getBoundingClientRect();
-      const displayScale = rect.width / (GRID * cellSize);
       const piece = draftSlots[selectedSlot];
       const shape = getShape(piece, selectedRot, isMirrored);
       const w = shape[0].length * cellSize;
       
-      let targetX = rect.left + window.scrollX + (hoverCell.c * cellSize + w) * displayScale + 10;
-      let targetY = rect.top + window.scrollY + (hoverCell.r * cellSize) * displayScale;
+      // 親要素(canvas-container)からの相対座標
+      let targetX = hoverCell.c * cellSize + w + 10;
+      let targetY = hoverCell.r * cellSize;
       
-      if (targetX + 80 > window.innerWidth + window.scrollX) {
-        targetX = rect.left + window.scrollX + (hoverCell.c * cellSize) * displayScale - 90; // 左側に出す
+      const canvasWidth = GRID * cellSize;
+      if (targetX + 80 > canvasWidth) {
+        targetX = hoverCell.c * cellSize - 90; // 左側に出す
       }
       
       co.style.left = `${targetX}px`;
