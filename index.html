@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.36 (10/07)
+        Floor Plan v0.37 (10/07)
       </div>
     </div>
   </section>
@@ -757,7 +757,7 @@
           </div>
         </div>
         <div id="confirm-overlay" style="display:none; position:absolute; z-index:100; align-items:center; width:max-content; pointer-events:none;">
-          <button id="btn-confirm-place" class="btn btn-amber" style="padding:8px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:13px; color:#0f172a; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 配置する</button>
+          <button id="btn-confirm-place" class="btn btn-amber" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:14px; color:#0f172a; font-weight:bold; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 確定</button>
         </div>
       </div>
     </main>
@@ -2130,16 +2130,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     if (show && hoverCell && draftSlots[selectedSlot]) {
       const rect = canvas.getBoundingClientRect();
-      const scale = rect.width / canvas.width;
+      const displayScale = rect.width / (GRID * cellSize);
       const piece = draftSlots[selectedSlot];
       const shape = getShape(piece, selectedRot, isMirrored);
       const w = shape[0].length * cellSize;
       
-      let targetX = rect.left + (hoverCell.c * cellSize + w + 5) * scale;
-      let targetY = rect.top + (hoverCell.r * cellSize) * scale;
+      let targetX = rect.left + window.scrollX + (hoverCell.c * cellSize + w) * displayScale + 10;
+      let targetY = rect.top + window.scrollY + (hoverCell.r * cellSize) * displayScale;
       
-      if (targetX + 100 > window.innerWidth) {
-        targetX = rect.left + (hoverCell.c * cellSize) * scale - 110; // 左側に出す
+      if (targetX + 80 > window.innerWidth + window.scrollX) {
+        targetX = rect.left + window.scrollX + (hoverCell.c * cellSize) * displayScale - 90; // 左側に出す
       }
       
       co.style.left = `${targetX}px`;
