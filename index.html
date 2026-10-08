@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.39 (10/08)
+        Floor Plan v0.40 (10/09)
       </div>
     </div>
   </section>
@@ -1125,12 +1125,36 @@
   function processMonthEnd() {
     GameState.month += 1;
     let totalIncome = 0;
+    let evictedList = [];
     for (const p of GameState.properties) {
-      totalIncome += p.rent;
+      if (p.vacancyTurns > 0) {
+        p.vacancyTurns--;
+      } else {
+        // 退去判定
+        let evictChance = 0.05;
+        evictChance += ((p.totalRequests || 1) - (p.satisfiedCount || 0)) * 0.10;
+        if (p.hasNegativeCombo) evictChance += 0.15;
+        
+        const rentRatio = p.rent / (p.targetRent || 1);
+        if (rentRatio > 1.2) {
+          evictChance += (rentRatio - 1.2) * 0.5;
+        }
+        
+        const age = GameState.month - (p.createdMonth || 1);
+        evictChance += Math.max(0, age) * 0.01;
+        
+        // サイコロを振る
+        if (Math.random() < evictChance) {
+          p.vacancyTurns = 2; // 今月分なし ＋ さらに2ヶ月空室
+          evictedList.push(p.level);
+        } else {
+          totalIncome += p.rent;
+        }
+      }
     }
     GameState.funds += totalIncome;
     saveGame();
-    return totalIncome;
+    return { income: totalIncome, evicted: evictedList };
   }
   
   function updateCompanyUI() {
@@ -3006,11 +3030,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
     }
     
+    let satisfiedCount = 0;
+    for (const req of STAGE.requests) {
+      if (req.fn(counts, {unreachable: counts.unreachable})) satisfiedCount++;
+    }
+    const hasNegativeCombo = combos.some(c => c.bonus < 0) || counts.unreachable > 0;
+
     window.currentPropertyData = {
       rent: rent,
       targetRent: STAGE.targetRent,
       baseRent: counts.totalBaseRent,
-      isClear: isClear
+      isClear: isClear,
+      satisfiedCount: satisfiedCount,
+      totalRequests: STAGE.requests.length,
+      hasNegativeCombo: hasNegativeCombo,
+      createdMonth: GameState.month
     };
 
     // Hidden request reveal
@@ -3375,15 +3409,25 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // currentPropertyData がない場合のフォールバック（念のため）
     const rentToSave = p.rent !== undefined ? p.rent : parseFloat(document.getElementById('flyer-rent').textContent);
     GameState.properties.push({
+      id: Date.now(),
       level: GameState.level,
       rent: rentToSave,
       targetRent: p.targetRent || STAGE.targetRent,
       baseRent: p.baseRent || 0,
-      isClear: p.isClear || false
+      isClear: p.isClear || false,
+      satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
+      totalRequests: p.totalRequests || 1,
+      hasNegativeCombo: p.hasNegativeCombo || false,
+      createdMonth: p.createdMonth || GameState.month,
+      vacancyTurns: 0
     });
     
-    const income = processMonthEnd();
-    alert(`【第${GameState.month - 1}ヶ月目終了】\n物件を納品しました！\n（今月の家賃収入: +${income.toFixed(1)}万）`);
+    const result = processMonthEnd();
+    let msg = `【第${GameState.month - 1}ヶ月目終了】\n物件を納品しました！\n（今月の家賃収入: +${result.income.toFixed(1)}万）`;
+    if (result.evicted.length > 0) {
+      msg += `\n\n⚠️トラブル発生！\n退去者が出ました（物件No.${result.evicted.join(', ')}）`;
+    }
+    alert(msg);
     
     GameState.level++;
     GameState.attempts = 3;
