@@ -3459,21 +3459,68 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       listEl.innerHTML = '<div style="padding:20px; text-align:center; color:#94a3b8;">所有物件はありません</div>';
     } else {
       GameState.properties.forEach((p, idx) => {
-        totalRent += p.rent;
-        const color = p.isClear ? 'var(--c-emerald)' : 'var(--c-rose)';
-        const mark = p.isClear ? '【優良】' : '【妥協】';
+        // フォールバック（古いセーブデータ対応）
+        if (!p.id) p.id = Date.now() + idx;
+        if (p.createdMonth === undefined) p.createdMonth = GameState.month - 1;
+        if (p.baseRent === undefined) p.baseRent = p.rent * 0.8;
+        if (p.vacancyTurns === undefined) p.vacancyTurns = 0;
+
+        const age = Math.max(0, GameState.month - p.createdMonth);
+        const resaleValue = p.baseRent * Math.max(0.3, 1.0 - (age * 0.02));
+        
+        let statusHtml = '';
+        let rentDisplay = p.rent;
+        if (p.vacancyTurns > 0) {
+          statusHtml = `<div style="color:var(--c-rose); font-size:11px; font-weight:bold; margin-top:2px;">⚠️ 空室 (残り${p.vacancyTurns}ヶ月)</div>`;
+          rentDisplay = 0;
+        } else {
+          totalRent += p.rent;
+        }
+
+        const color = p.isClear ? 'var(--c-emerald)' : 'var(--c-amber)';
+        const mark  = p.isClear ? '【優良】' : '【妥協】';
         listEl.innerHTML += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed #cbd5e1;">
-            <div>
-              <div style="font-weight:bold; color:#0f172a;">${mark} 物件 No.${idx+1}</div>
-              <div style="font-size:11px; color:#64748b;">目標家賃: ${p.targetRent.toFixed(1)}万</div>
-            </div>
-            <div style="font-weight:900; color:${color}; font-size:15px;">
-              ${p.rent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
+          <div style="padding:12px 0; border-bottom:1px dashed #cbd5e1;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <span style="font-weight:bold; color:#1e293b;">${mark} 物件 No.${p.level}</span>
+                <span style="font-size:11px; color:#64748b; margin-left:6px;">築${age}ヶ月</span>
+                <div style="font-size:11px; color:var(--c-text2); margin-top:2px;">目標家賃: ${p.targetRent.toFixed(1)}万</div>
+                ${statusHtml}
+              </div>
+              <div style="text-align:right;">
+                <div style="font-weight:900; color:${color}; font-size:15px; margin-bottom:4px;">
+                  ${rentDisplay.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
+                </div>
+                <button class="btn-sell" data-id="${p.id}" style="padding:4px 8px; font-size:10px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer; color:#475569; font-weight:bold;">
+                  売却: ${resaleValue.toFixed(1)}万
+                </button>
+              </div>
             </div>
           </div>
         `;
       });
+      
+      setTimeout(() => {
+        document.querySelectorAll('.btn-sell').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            initAudio();
+            const id = parseInt(e.target.dataset.id);
+            const pIdx = GameState.properties.findIndex(x => x.id === id);
+            if (pIdx > -1) {
+              const p = GameState.properties[pIdx];
+              const age = Math.max(0, GameState.month - p.createdMonth);
+              const resaleValue = p.baseRent * Math.max(0.3, 1.0 - (age * 0.02));
+              if (confirm(`物件 No.${p.level} を ${resaleValue.toFixed(1)}万 で売却しますか？\n（リロール等にかけた資金は戻りません）`)) {
+                GameState.funds += resaleValue;
+                GameState.properties.splice(pIdx, 1);
+                saveGame();
+                updateHomeUI(); // 再描画
+              }
+            }
+          });
+        });
+      }, 0);
     }
     document.getElementById('home-co-income').innerHTML = `+${totalRent.toFixed(1)}<span class="stat-unit">万/月</span>`;
   }
