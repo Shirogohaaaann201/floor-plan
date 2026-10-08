@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.38 (10/07)
+        Floor Plan v0.39 (10/08)
       </div>
     </div>
   </section>
@@ -3067,6 +3067,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       item.className = 'req-item';
       item.innerHTML = `<i class="ph-bold ${req.icon}" style="color:${req.color};font-size:16px;"></i><span>${req.text}</span>`;
       rl.appendChild(item);
+    }
+
+    // Modal Client Info & Request List
+    const mcq = document.getElementById('modal-client-quote');
+    if (mcq) mcq.textContent = STAGE.client.quote;
+
+    const mrl = document.getElementById('modal-req-list');
+    if (mrl) {
+      mrl.innerHTML = '';
+      for (const req of STAGE.requests) {
+        const item = document.createElement('div');
+        item.className = 'req-item';
+        item.style.marginBottom = '6px';
+        item.innerHTML = `<i class="ph-bold ${req.icon}" style="color:${req.color};font-size:14px;margin-right:6px;"></i><span style="font-size:12px;">${req.text}</span>`;
+        mrl.appendChild(item);
+      }
     }
     
     // Update Stats
