@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.41 (10/09)
+        Floor Plan v0.42 (10/09)
       </div>
     </div>
   </section>
@@ -1141,6 +1141,13 @@
         }
         
         const age = GameState.month - (p.createdMonth || 1);
+        
+        // 築0ヶ月（完成した月）は入居したてなので退去判定をスキップ
+        if (age === 0) {
+          totalIncome += p.rent;
+          continue;
+        }
+
         evictChance += Math.max(0, age) * 0.01;
         
         // サイコロを振る
@@ -3470,7 +3477,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (p.vacancyTurns === undefined) p.vacancyTurns = 0;
 
         const age = Math.max(0, GameState.month - p.createdMonth);
-        const resaleValue = p.baseRent * Math.max(0.3, 1.0 - (age * 0.02));
+        const resaleValue = (p.baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02));
         
         let statusHtml = '';
         let rentDisplay = p.rent;
@@ -3514,7 +3521,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             if (pIdx > -1) {
               const p = GameState.properties[pIdx];
               const age = Math.max(0, GameState.month - p.createdMonth);
-              const resaleValue = p.baseRent * Math.max(0.3, 1.0 - (age * 0.02));
+              const resaleValue = (p.baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02));
               if (confirm(`物件 No.${p.level} を ${resaleValue.toFixed(1)}万 で売却しますか？\n（リロール等にかけた資金は戻りません）`)) {
                 GameState.funds += resaleValue;
                 GameState.properties.splice(pIdx, 1);
