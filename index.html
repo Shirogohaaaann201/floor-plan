@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.40 (10/09)
+        Floor Plan v0.41 (10/09)
       </div>
     </div>
   </section>
@@ -3392,9 +3392,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
     if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
-    const income = processMonthEnd();
-    alert(`【第${GameState.month - 1}ヶ月目終了】\n依頼を破棄しました。\n（今月の家賃収入: +${income.toFixed(1)}万）`);
-    
+    const result = processMonthEnd();
+    let msg = `【第${GameState.month - 1}ヶ月目終了】\n依頼を破棄しました。\n（今月の家賃収入: +${result.income.toFixed(1)}万）`;
+    if (result.evicted.length > 0) {
+      msg += `\n\n⚠️トラブル発生！\n退去者が出ました（物件No.${result.evicted.join(', ')}）`;
+    }
+    alert(msg);
+
     GameState.level++;
     GameState.attempts = 3;
     saveGame();
