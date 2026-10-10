@@ -638,6 +638,50 @@
         Floor Plan v0.43 (10/10)
       </div>
     </div>
+    <div id="prop-detail-modal" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:320px; text-align:left;">
+        <button id="btn-close-prop-detail" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title"><i class="ph-fill ph-house"></i> 物件詳細</div>
+        
+        <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-weight:bold; color:var(--c-text);" id="pd-name">物件No.1</span>
+            <span style="font-size:12px; color:var(--c-text2);" id="pd-age">築1ヶ月</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:8px;">
+            <span style="font-size:12px; color:var(--c-text2);">家賃</span>
+            <span style="font-weight:900; color:var(--c-emerald); font-size:16px;" id="pd-rent">4.5<span style="font-size:10px;font-weight:normal;">万/月</span></span>
+          </div>
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">満足度 (初期退去率: <span id="pd-initial-evict">0</span>%)</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="flex:1; height:8px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
+              <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
+            </div>
+            <div style="font-weight:bold; color:var(--c-text);" id="pd-sat-val">80%</div>
+          </div>
+          <div style="font-size:10px; color:var(--c-text2); margin-top:4px;" id="pd-sat-breakdown">家賃+40% / 依頼+50% / コンボ-10%</div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
+            <div style="font-size:10px; color:var(--c-text2);">現在の退去率</div>
+            <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
+          </div>
+          <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
+            <div style="font-size:10px; color:var(--c-text2);">毎月の劣化速度</div>
+            <div style="font-weight:bold; color:var(--c-amber); font-size:14px;" id="pd-deg-rate">+0.5%</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; min-height:40px; margin-bottom:16px;" id="pd-combos">
+          (コンボ情報)
+        </div>
+
+        <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:12px; font-size:14px; border-color:var(--c-border); color:var(--c-amber-lt);">
+          <i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">0.0</span>万)
+        </button>
+      </div>
+    </div>
   </section>
 
   <section id="screen-mission" class="screen blueprint-bg">
@@ -762,50 +806,6 @@
       </div>
     </main>
 
-    <div id="prop-detail-modal" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
-      <div class="mission-card" style="position:relative; width:100%; max-width:320px; text-align:left;">
-        <button id="btn-close-prop-detail" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
-        <div class="mission-card-title"><i class="ph-fill ph-house"></i> 物件詳細</div>
-        
-        <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span style="font-weight:bold; color:var(--c-text);" id="pd-name">物件No.1</span>
-            <span style="font-size:12px; color:var(--c-text2);" id="pd-age">築1ヶ月</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:8px;">
-            <span style="font-size:12px; color:var(--c-text2);">家賃</span>
-            <span style="font-weight:900; color:var(--c-emerald); font-size:16px;" id="pd-rent">4.5<span style="font-size:10px;font-weight:normal;">万/月</span></span>
-          </div>
-          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">満足度 (初期退去率: <span id="pd-initial-evict">0</span>%)</div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div style="flex:1; height:8px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
-              <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
-            </div>
-            <div style="font-weight:bold; color:var(--c-text);" id="pd-sat-val">80%</div>
-          </div>
-          <div style="font-size:10px; color:var(--c-text2); margin-top:4px;" id="pd-sat-breakdown">家賃+40% / 依頼+50% / コンボ-10%</div>
-        </div>
-
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-          <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);">現在の退去率</div>
-            <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
-          </div>
-          <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);">毎月の劣化速度</div>
-            <div style="font-weight:bold; color:var(--c-amber); font-size:14px;" id="pd-deg-rate">+0.5%</div>
-          </div>
-        </div>
-
-        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; min-height:40px; margin-bottom:16px;" id="pd-combos">
-          (コンボ情報)
-        </div>
-
-        <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:12px; font-size:14px; border-color:var(--c-border); color:var(--c-amber-lt);">
-          <i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">0.0</span>万)
-        </button>
-      </div>
-    </div>
     <!-- Footer controls -->
     <footer class="game-footer">
       <!-- Toolbar -->
