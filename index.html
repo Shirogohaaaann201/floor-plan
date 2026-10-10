@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.43 (10/10)
+        Floor Plan v0.47 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -783,10 +783,6 @@
         <button id="btn-buy-hint" class="btn btn-dark" style="padding: 4px 8px; font-size: 10px; border-color: var(--c-border); color: var(--c-amber-lt); margin-right: 4px;">
           <i class="ph-bold ph-detective"></i> 裏情報 (-30万)
         </button>
-        <div class="constraint-item">
-          <i class="ph-bold ph-hand-tap" style="font-size:11px;"></i>
-          残:<span class="constraint-val" id="turns-display">10</span>手
-        </div>
       </div>
     </div>
 
@@ -1793,7 +1789,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function drawPreview() {
-    if (!hoverCell || turnsLeft <= 0) return;
+    if (!hoverCell) return;
     const piece = draftSlots[selectedSlot];
     if (!piece) return;
     const shape = getShape(piece, selectedRot, isMirrored);
@@ -2216,9 +2212,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function updateTurnsDisplay() {
-    document.getElementById('turns-display').textContent = turnsLeft;
-    const el = document.getElementById('turns-display');
-    el.style.color = turnsLeft <= 2 ? 'var(--c-rose)' : 'var(--c-blue)';
+    // UI削除につき無効化
   }
 
   /* ============================================================
@@ -2265,7 +2259,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     const hint = document.getElementById('hint-overlay');
     if (hint) {
-      hint.style.opacity = (show || turnsLeft < STAGE.maxTurns) ? '0' : '1';
+      hint.style.opacity = show ? '0' : '1';
     }
   }
 
