@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.42 (10/09)
+        Floor Plan v0.43 (10/10)
       </div>
     </div>
   </section>
@@ -1140,10 +1140,10 @@
           evictChance += (rentRatio - 1.2) * 0.5;
         }
         
-        const age = GameState.month - (p.createdMonth || 1);
+        const age = GameState.month - (p.createdMonth || GameState.month - 1);
         
-        // 築0ヶ月（完成した月）は入居したてなので退去判定をスキップ
-        if (age === 0) {
+        // 完成直後（1ヶ月目の月次処理）は、入居したてなので退去判定をスキップ
+        if (age <= 1) {
           totalIncome += p.rent;
           continue;
         }
@@ -2267,8 +2267,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const reach = visited.has(`${r},${c}`);
         if (!reach && cell.type !== T.ENTRANCE) { counts.unreachable++; continue; }
         counts.totalBaseRent += (cell.costPerCell || 0) * 0.05;
-        if (cell.pieceId && !seenRooms.has(cell.pieceId)) {
-          seenRooms.set(cell.pieceId, cell.type);
+        if (cell.roomId && !seenRooms.has(cell.roomId)) {
+          seenRooms.set(cell.roomId, cell.type);
           if (cell.type === T.LDK)      counts.ldkRooms++;
           else if (cell.type === T.ROOM) counts.bedRooms++;
           else if (cell.type === T.BATH) counts.bath++;
