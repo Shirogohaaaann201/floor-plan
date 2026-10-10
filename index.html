@@ -3483,6 +3483,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
+
+  // 所有物件リストのクリック委譲（スマホ対応）
+  document.getElementById('property-list')?.addEventListener('click', (e) => {
+    const item = e.target.closest('.prop-list-item');
+    if (item) {
+      initAudio();
+      const id = parseInt(item.dataset.id);
+      const p = GameState.properties.find(x => x.id === id);
+      if (p) showPropertyDetail(p);
+    }
+  });
+
+  // 売却ボタンのリスナーは showPropertyDetail 内で毎回付け直すので委譲しなくても良い
   document.getElementById('btn-go-mission')?.addEventListener('click', () => {
     initAudio();
     updateStage();
@@ -3663,23 +3676,7 @@ function updateHomeUI() {
         `;
       });
 
-      setTimeout(() => {
-        // ホバーエフェクト用 (PC)
-        document.querySelectorAll('.prop-list-item').forEach(el => {
-          el.addEventListener('mouseenter', () => el.style.background = '#f8fafc');
-          el.addEventListener('mouseleave', () => el.style.background = 'transparent');
-        });
 
-        // モーダル表示
-        document.querySelectorAll('.prop-list-item').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            initAudio();
-            const id = parseInt(e.currentTarget.dataset.id);
-            const p = GameState.properties.find(x => x.id === id);
-            if (p) showPropertyDetail(p);
-          });
-        });
-      }, 0);
     }
     document.getElementById('home-co-income').innerHTML = `+${totalRent.toFixed(1)}<span class="stat-unit">万/月</span>`;
   }
