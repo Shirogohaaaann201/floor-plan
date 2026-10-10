@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.47 (10/10)
+        Floor Plan v0.48 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -3579,7 +3579,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%`;
     
-    document.getElementById('pd-current-evict').textContent = `${stats.currentEvictRate}%`;
+    document.getElementById('pd-current-evict').textContent = `${stats.evictRate}%`;
     document.getElementById('pd-deg-rate').textContent = `+${stats.degRate}%`;
     
     let comboHtml = '';
@@ -3656,7 +3656,7 @@ function updateHomeUI() {
               <div style="font-weight:bold; color:#1e293b; font-size:14px;">${mark} 物件 No.${p.level}</div>
               <div style="font-size:11px; color:var(--c-text2); margin-top:4px; display:flex; gap:8px;">
                 <span>築${stats.age}ヶ月</span>
-                <span>退去率: ${stats.currentEvictRate}%</span>
+                <span>退去率: ${stats.evictRate}%</span>
               </div>
               ${statusHtml}
             </div>
