@@ -599,13 +599,13 @@
     <!-- ==============================
        SCREEN 0: HOME
   ============================== -->
-  <section id="screen-home" class="screen active blueprint-bg">
+  <section id="screen-home" class="screen active blueprint-bg" style="overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 40px;">
     <div style="position:absolute; top:16px; right:16px; z-index:10;">
       <button id="btn-sound-mission" class="btn btn-slate" style="padding:8px; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:36px; height:36px; display:flex; align-items:center; justify-content:center;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:18px;"></i>
       </button>
     </div>
-    <div class="mission-container" style="max-width:500px; margin:40px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
+    <div class="mission-container" style="width:92%; max-width:600px; box-sizing:border-box; margin:24px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
       <div style="text-align:center; margin-bottom:24px;">
         <i class="ph-bold ph-buildings" style="font-size:48px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:8px 0 4px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
@@ -625,7 +625,7 @@
       
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-bottom:24px;">
         <h3 style="margin:0 0 12px; color:#0f172a; font-size:16px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">所有物件一覧</h3>
-        <div id="property-list" style="max-height:200px; overflow-y:auto; font-size:13px; color:#475569;">
+        <div id="property-list" style="max-height:350px; overflow-y:auto; font-size:13px; color:#475569;">
           <!-- 挿入される -->
         </div>
       </div>
@@ -635,7 +635,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.48 (10/10)
+        Floor Plan v0.49 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
