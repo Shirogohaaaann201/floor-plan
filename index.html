@@ -630,15 +630,15 @@
         </div>
       </div>
       
-      <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:12px;">
+      <button id="btn-go-mission" onclick="window.onGoMissionClick()" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:12px; cursor:pointer;">
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
-      <button id="btn-skip-month" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px;">
+      <button id="btn-skip-month" onclick="window.onSkipMonthClick()" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
         <i class="ph-bold ph-clock-clockwise" style="margin-right:8px;"></i>何もしない (1ヶ月進める)
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.56 (10/10)
+        Floor Plan v0.57 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -925,6 +925,38 @@
   </section>
 
   <script>
+
+  window.onGoMissionClick = function() {
+    try {
+      initAudio();
+      updateStage();
+      setupMissionScreen();
+      showScreen('mission');
+    } catch(err) {
+      alert('新規案件エラー: ' + err.message + '\n' + err.stack);
+    }
+  };
+
+  window.onSkipMonthClick = function() {
+    try {
+      initAudio();
+      if (confirm('案件を受けずに1ヶ月時間を進めますか？\n(家賃収入が入り、空室や退去の判定が行われます)')) {
+        GameState.month++;
+        const { income, evicted } = processMonthEnd();
+        GameState.funds += income;
+        GameState.lastFunds = income;
+
+        let msg = `${income.toFixed(1)}万 の家賃収入がありました。`;
+        if (evicted && evicted.length > 0) msg += `\n⚠️ ${evicted.length}件の退去が発生しました。`;
+
+        alert(msg);
+        saveGame();
+        updateHomeUI();
+      }
+    } catch(err) {
+      alert('スキップエラー: ' + err.message + '\n' + err.stack);
+    }
+  };
   'use strict';
   /* ============================================================
      CONSTANTS
