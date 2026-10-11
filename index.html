@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.60 (10/10)
+        Floor Plan v0.61 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -2183,7 +2183,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (shape[r][c] === 1) cellsCount++;
       }
     }
-    const costPerCell = pieceCost / cellsCount;
+    // 建築予算からは特注加工費を含めた pieceCost (1.2倍) を引き落とすが、
+    // 基礎家賃や物件の資産価値(リセール)には反転割増を含めないため、定価(piece.cost)で按分する
+    const basePieceCost = piece.cost || 0;
+    const costPerCell = basePieceCost / cellsCount;
 
     const rid = nextRoomId++;
     for (let r = 0; r < shape.length; r++) {
