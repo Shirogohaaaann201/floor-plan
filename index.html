@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.53 (10/10)
+        Floor Plan v0.54 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -647,6 +647,9 @@
         <div class="mission-card-title"><i class="ph-fill ph-house"></i> 物件詳細</div>
         
         <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:12px;">
+          <div style="text-align:center; margin-bottom:12px;">
+            <canvas id="pd-canvas" width="120" height="120" style="background:#1e293b; border-radius:4px; margin:0 auto; display:block; border:1px solid rgba(255,255,255,0.1);"></canvas>
+          </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <span style="font-weight:bold; color:var(--c-text);" id="pd-name">物件No.1</span>
             <span style="font-size:12px; color:var(--c-text2);" id="pd-age">築1ヶ月</span>
@@ -3524,6 +3527,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const p = window.currentPropertyData || {};
     // currentPropertyData がない場合のフォールバック（念のため）
     const rentToSave = p.rent !== undefined ? p.rent : parseFloat(document.getElementById('flyer-rent').textContent);
+    // gridの簡易コピーを保存 (0: EMPTY, それ以外: color/type)
+    const savedGrid = grid.map(row => row.map(cell => {
+      if (cell.type === T.EMPTY) return null;
+      return { type: cell.type, color: cell.color };
+    }));
+    
     const propNo = (GameState.properties.length > 0) ? Math.max(...GameState.properties.map(x => x.propertyNo || 0)) + 1 : 1;
     GameState.properties.push({
       propertyNo: propNo,
@@ -3539,6 +3548,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       goodCombos: p.goodCombos || 0,
       combosList: p.combosList || [],
       createdMonth: p.createdMonth || GameState.month,
+      propertyGrid: savedGrid,
       vacancyTurns: 0
     });
     
@@ -3572,6 +3582,36 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const stats = calcPropertyStats(p);
     
     document.getElementById('pd-name').textContent = `物件 No.${p.propertyNo || p.level}`;
+    
+    // 図面の描画
+    const canvas = document.getElementById('pd-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (p.propertyGrid) {
+      const gSize = p.propertyGrid.length || 12;
+      const cSize = canvas.width / gSize;
+      for (let r=0; r<gSize; r++) {
+        for (let c=0; c<gSize; c++) {
+          const cell = p.propertyGrid[r][c];
+          if (cell) {
+            ctx.fillStyle = cell.color || '#475569';
+            ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+            ctx.strokeRect(c * cSize, r * cSize, cSize, cSize);
+          } else {
+            // Garden / Empty
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
+          }
+        }
+      }
+    } else {
+      ctx.fillStyle = '#475569';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('図面データなし', canvas.width/2, canvas.height/2);
+    }
+
     document.getElementById('pd-age').textContent = `築${stats.age}ヶ月`;
     document.getElementById('pd-rent').innerHTML = `${p.rent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
     
