@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.54 (10/10)
+        Floor Plan v0.55 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -787,10 +787,9 @@
     <footer class="game-footer">
       <!-- Toolbar -->
       <div class="toolbar">
-        <div class="toolbar-left" style="flex-wrap: wrap;">
-          <button class="btn btn-slate" id="btn-rotate" style="padding:8px 12px;font-size:12px;gap:5px;">
-            <i class="ph-bold ph-arrow-clockwise" style="font-size:15px;color:var(--c-blue);"></i>
-            90°回転
+        <div class="toolbar-left" style="flex-wrap: wrap;">          <button class="btn btn-slate" id="btn-reroll" style="padding:8px 12px;font-size:12px;gap:5px;">
+            <i class="ph-bold ph-arrows-clockwise" style="font-size:14px;color:var(--c-blue);"></i>
+            更新 <span style="font-size:9px;color:var(--c-text2);">(5.0万)</span>
           </button>
           <button class="btn btn-slate" id="btn-mirror" style="padding:8px 12px;font-size:12px;gap:5px;">
             <i class="ph-bold ph-arrows-left-right" style="font-size:15px;color:var(--c-indigo);"></i>
@@ -809,8 +808,7 @@
       <!-- Draft tray -->
       <div id="draft-area" style="display:flex; width:100%;">
         <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%;"><div id="reroll-info" style="display:none;"></div>
-          <div id="draft-container" style="display:flex; gap:8px;"></div>
-          <button class="btn btn-slate" id="btn-reroll" style="padding:4px; height:auto; min-height:36px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> リロール (-5.0万)</button>
+          <div id="draft-container" style="display:flex; gap:8px;"></div>          <button class="btn btn-slate" id="btn-rotate" style="padding:4px; height:auto; min-height:36px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber);"></i> 回転</button>
         </div>
       </div>
     </footer>
@@ -1938,7 +1936,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     if (c1_cell.type === T.CORRIDOR && c2_cell.type === T.CORRIDOR) return E.NONE;
     
-    if (isDesignatedDoor(r1, c1, r2, c2, c1_cell.roomId, c2_cell.roomId)) return E.DOOR;
+    if (isDesignatedDoor(r1, c1, r2, c2, c1_cell.roomId, c2_cell.roomId)) {
+      if ((c1_cell.type === T.CORRIDOR && c2_cell.type === T.ENTRANCE) || 
+          (c2_cell.type === T.CORRIDOR && c1_cell.type === T.ENTRANCE)) {
+        return E.NONE;
+      }
+      return E.DOOR;
+    }
     return E.WALL;
   }
 
@@ -1976,7 +1980,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
       if (et === E.WINDOW && !isSolid) drawWindowMark(x1,y1,x2,y2,ori);
     } else if (et === E.DOOR) {
-      drawDoor(x1,y1,x2,y2,ori);
+      const isWashitsu = (c1_cell.pieceId !== null && PIECES[c1_cell.pieceId] && PIECES[c1_cell.pieceId].name.includes('和室')) ||
+                         (c2_cell.pieceId !== null && PIECES[c2_cell.pieceId] && PIECES[c2_cell.pieceId].name.includes('和室'));
+      drawDoor(x1,y1,x2,y2,ori, isWashitsu);
     }
   }
 
@@ -2000,7 +2006,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.restore();
   }
 
-  function drawDoor(x1,y1,x2,y2,ori) {
+  function drawDoor(x1,y1,x2,y2,ori, isWashitsu) {
     const len = ori==='h' ? Math.abs(x2-x1) : Math.abs(y2-y1);
     const post = len * 0.18;
     ctx.strokeStyle = '#1e293b';
@@ -2010,18 +2016,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1+post,y1); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x2-post,y2); ctx.lineTo(x2,y2); ctx.stroke();
       const dw = len - post*2;
-      ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(x1+post, y1, dw, 0, Math.PI/2, false); ctx.stroke();
-      ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x1+post,y1); ctx.lineTo(x1+post+dw*0.7, y1+dw*0.7); ctx.stroke();
+      if (isWashitsu) {
+        ctx.strokeStyle = '#d4d4d8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x1+post, y1-1); ctx.lineTo(x1+post+dw, y1-1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1+post, y1+1.5); ctx.lineTo(x1+post+dw, y1+1.5); ctx.stroke();
+      } else {
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(x1+post, y1, dw, 0, Math.PI/2, false); ctx.stroke();
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x1+post,y1); ctx.lineTo(x1+post+dw*0.7, y1+dw*0.7); ctx.stroke();
+      }
     } else {
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1,y1+post); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x2,y2-post); ctx.lineTo(x2,y2); ctx.stroke();
       const dw = len - post*2;
-      ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(x1, y1+post, dw, -Math.PI/2, 0, false); ctx.stroke();
-      ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x1,y1+post); ctx.lineTo(x1+dw*0.7, y1+post-dw*0.7); ctx.stroke();
+      if (isWashitsu) {
+        ctx.strokeStyle = '#d4d4d8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x1-1, y1+post); ctx.lineTo(x1-1, y1+post+dw); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1+1.5, y1+post); ctx.lineTo(x1+1.5, y1+post+dw); ctx.stroke();
+      } else {
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(x1, y1+post, dw, -Math.PI/2, 0, false); ctx.stroke();
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x1,y1+post); ctx.lineTo(x1+dw*0.7, y1+post-dw*0.7); ctx.stroke();
+      }
     }
   }
 
