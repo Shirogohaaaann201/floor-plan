@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.52 (10/10)
+        Floor Plan v0.53 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -750,31 +750,6 @@
   ============================== -->
   <section id="screen-game" class="screen">
 
-    <!-- Header -->
-    <header class="game-header">
-      <div class="game-header-left">
-        <div class="mission-header-icon" style="width:30px;height:30px;font-size:14px;border-radius:var(--r-sm);">
-          <i class="ph-bold ph-compass"></i>
-        </div>
-        <div class="game-title-wrap">
-          <h2>間取り図パズル</h2>
-          <p id="game-subtitle">ステージ 1 — 整形地 8×8</p>
-        </div>
-      </div>
-      <div class="game-header-right">
-        <div class="target-rent-wrap" style="background:#0f172a; border-color:#334155;">
-          <div class="target-rent-label">残予算</div>
-          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">1000<span style="font-size:10px;color:var(--c-text2);">万</span></div>
-        </div>
-        <div class="target-rent-wrap">
-          <div class="target-rent-label">目標家賃</div>
-          <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:10px;color:var(--c-text2);">万</span></div>
-        </div>
-        <button id="btn-sound-game" class="btn-icon btn">
-          <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
-        </button>
-      </div>
-    </header>
 
     <!-- Mission banner -->
     <div class="mission-banner">
@@ -818,7 +793,7 @@
             <i class="ph-bold ph-arrows-left-right" style="font-size:15px;color:var(--c-indigo);"></i>
             反転 <span style="font-size:9px;color:var(--c-text2);">(+2.0万)</span>
           </button>
-          <span id="piece-label" style="font-size:11px;color:var(--c-text2);">選択中: —</span>
+          <span id="piece-label" style="font-size:11px;color:var(--c-text2);"></span>
           <button class="btn btn-slate" id="btn-show-mission" style="padding:6px; font-size:11px; margin-left:auto;"><i class="ph-bold ph-list-checks"></i> 依頼</button>
           <span class="badge" id="realtime-rent-badge" style="background:#0f172a; color:#f59e0b; font-size:11px; padding:4px 8px; transition: transform 0.2s, background 0.2s;">現在査定: 0.0万円</span>
         </div>
@@ -1719,7 +1694,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const mirText = isMirrored ? '・反転' : '';
     const name = p ? p.name : '';
     const rot = selectedRot * 90;
-    document.getElementById('piece-label').textContent = p ? `選択中: ${name} [${cost}万]（${rot}°${mirText}）` : '選択中: —';
+    document.getElementById('piece-label').innerHTML = p ? `<span style="color:var(--c-emerald); font-weight:bold; font-size:14px;">[${cost}万]</span>` : '';
       
     const btnMirror = document.getElementById('btn-mirror');
     if (btnMirror) {
