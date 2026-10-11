@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.64 (10/10)
+        Floor Plan v0.65 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -774,12 +774,6 @@
     <div class="mission-banner">
       <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:0;">
         <div class="mission-text" id="mission-banner-text">「2LDK・風呂トイレ別で頼むよ！」</div>
-        <div class="mission-text" id="mission-hint-text" style="display:none; font-size:11px; color:var(--c-amber-lt);"></div>
-      </div>
-      <div class="constraint-info">
-        <button id="btn-buy-hint" class="btn btn-dark" style="padding: 4px 8px; font-size: 10px; border-color: var(--c-border); color: var(--c-amber-lt); margin-right: 4px;">
-          <i class="ph-bold ph-detective"></i> 裏情報 (-30万)
-        </button>
       </div>
     </div>
 
@@ -889,12 +883,12 @@
           <canvas id="result-canvas"></canvas>
         </div>
 
-        <!-- Hidden request reveal -->
-        <div class="hidden-req-reveal miss" id="hidden-req-box">
-          <div class="hidden-req-label" id="hidden-req-label">
-            <i class="ph-bold ph-seal-question"></i> 隠れ要望
+        <!-- Optional request card -->
+        <div class="hidden-req-reveal hit" id="hidden-req-box" style="display:none; background:#f0fdf4; border-color:#86efac;">
+          <div class="hidden-req-label" id="hidden-req-label" style="color:#166534;">
+            <i class="ph-bold ph-sparkle"></i> 任意オプション達成状況
           </div>
-          <div class="hidden-req-text" id="hidden-req-text">—</div>
+          <div class="hidden-req-text" id="hidden-req-text" style="color:#15803d; font-size:12px;">—</div>
         </div>
 
         <!-- Report list -->
@@ -1020,12 +1014,11 @@
       targetRent: 4.8,
       entranceRow: 9,
       entranceCol: 5,
-      // 10x10のプレイエリアになるよう、外周を障害物で埋める
       obstacles: [
-        {r:0,c:0,w:12,h:2}, // 上部2行
-        {r:10,c:0,w:12,h:2},// 下部2行
-        {r:2,c:0,w:2,h:8},  // 左部2列
-        {r:2,c:10,w:2,h:8}, // 右部2列
+        {r:0,c:0,w:12,h:2},
+        {r:10,c:0,w:12,h:2},
+        {r:2,c:0,w:2,h:8},
+        {r:2,c:10,w:2,h:8},
       ],
       client: {
         name: '鈴木 太郎',
@@ -1034,22 +1027,19 @@
         typeBadge: '新社会人',
       },
       requests: [
-        { id:'btsep', icon:'ph-shower',        color:'#0891b2', text:'風呂・トイレ別',              fn: counts => counts.bath > 0 && counts.toilet > 0 },
-        { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
+        { id:'btsep', icon:'ph-shower',        color:'#0891b2', text:'風呂・トイレ別',           fn: counts => counts.bath > 0 && counts.toilet > 0 },
+        { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている', fn: (counts, bfs) => bfs.unreachable === 0 },
       ],
-      hiddenRequests: [
-        {
-          id:'mysophobia',
-          label:'潔癖症',
-          question:'玄関周りのこだわりがすごい気がする…？',
-          hint:'「玄関を開けたらすぐにお風呂に飛び込みたいらしい…」',
-          revealText:'「実は玄関のすぐそこに浴室があると最高らしい！」',
-          fn: (counts, bfs, grid) => hasDirectConnection(grid, T.ENTRANCE, T.BATH),
-          partialBonusFn: (counts, bfs, grid) => hasDirectConnection(grid, T.ENTRANCE, T.BATH) ? 2.0 : 0,
-          bonus: rent => 15.0,
-          bonusText: '【隠れ要望達成】玄関直風呂ボーナス (+15.0万)',
-        },
-      ]
+      optionalRequests: [
+        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'収納スペースあり (バリア+5ヶ月)', fn: counts => counts.maxClosetSize >= 1 },
+      ],
+      customCombo: {
+        name: '日当たり良好',
+        isNegativeInversion: false,
+        customBonus: 2.5,
+        normalBonus: 1.5,
+        desc: '日当たり良好 (南向きLDK)'
+      }
     },
     {
       id: 2,
@@ -1059,10 +1049,9 @@
       targetRent: 9.6,
       entranceRow: 11,
       entranceCol: 5,
-      // 12x12フルに使えるが、変な場所に障害物がある
       obstacles: [
-        {r:5,c:5,w:2,h:2}, // 中央に謎の柱
-        {r:0,c:10,w:2,h:2}, // 右上の欠け
+        {r:5,c:5,w:2,h:2},
+        {r:0,c:10,w:2,h:2},
       ],
       client: {
         name: '田中 健一郎',
@@ -1076,37 +1065,27 @@
         { id:'wash',  icon:'ph-drop',          color:'#059669', text:'洗面所あり',                  fn: counts => counts.washroom > 0 },
         { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
       ],
-      hiddenRequests: [
-        {
-          id:'freq-urine',
-          label:'極度の頻尿',
-          question:'なぜかトイレが多いほど喜ぶ…？',
-          hint:'「夜中に何度も起きるから、トイレはとにかく多い方がいいらしい…」',
-          revealText:'「実はトイレが3つ以上だと大喜びでした！頻尿の達人！」',
-          fn: counts => counts.toilet >= 3,
-          partialBonusFn: counts => counts.toilet * 1.5,
-          bonus: rent => 15.0,
-          bonusText: '【隠れ要望達成】頻尿ボーナス (+15.0万)',
-        },
-      ]
+      optionalRequests: [
+        { id:'opt-bath',  icon:'ph-bathtub',      color:'#0891b2', text:'ゆったりした浴室 (2マス以上) (バリア+5ヶ月)', fn: counts => counts.maxBathSize >= 2 },
+      ],
+      customCombo: null
     },
     {
       id: 3,
-      name: 'Stage 3: 富豪の要塞邸宅',
+      name: 'Stage 3: 昼夜逆転のシェルター',
       initialBudget: 5000.0,
       maxTurns: 20,
       targetRent: 14.4,
       entranceRow: 11,
       entranceCol: 2,
-      // L字型の土地
       obstacles: [
-        {r:0,c:6,w:6,h:6}, // 右上の広大な欠け
+        {r:0,c:6,w:6,h:6},
       ],
       client: {
-        name: '西園寺 麗子',
-        avatar: '🦹‍♀️',
-        quote: '「予算はいくらでもあるわ。外界の光を遮断した、静かで完璧な要塞を作ってちょうだい。」',
-        typeBadge: '変態富豪',
+        name: '影山 零',
+        avatar: '🧛',
+        quote: '「光は敵だ…窓など一切不要。外界から完全に遮断された静寂の要塞を頼む。」',
+        typeBadge: '世捨て人',
       },
       requests: [
         { id:'ldk2',  icon:'ph-couch',        color:'#7c3aed', text:'3LDK以上（LDK + 居室3部屋）', fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 3 },
@@ -1114,19 +1093,16 @@
         { id:'wash',  icon:'ph-drop',          color:'#059669', text:'洗面所あり',                  fn: counts => counts.washroom > 0 },
         { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
       ],
-      hiddenRequests: [
-        {
-          id:'hermit',
-          label:'世捨て人',
-          question:'なぜかすべての部屋に窓がなくてもいいと言っている…？',
-          hint:'「太陽の光が憎い。とにかく窓のない閉鎖空間を愛しているらしい…」',
-          revealText:'「実は外の光が大嫌いな引きこもりでした！完全遮光万歳！」',
-          fn: (counts, bfs, grid) => !hasAnyWindow(grid) && (counts.bedRooms + counts.ldkRooms) > 0,
-          partialBonusFn: (counts, bfs, grid) => (!hasAnyWindow(grid) && (counts.bedRooms + counts.ldkRooms) > 0) ? (counts.bedRooms + counts.ldkRooms) * 2.0 : 0,
-          bonus: rent => 30.0,
-          bonusText: '【隠れ要望達成】要塞化ボーナス (+30.0万)',
-        },
-      ]
+      optionalRequests: [
+        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'専用収納あり (バリア+5ヶ月)', fn: counts => counts.maxClosetSize >= 1 },
+      ],
+      customCombo: {
+        name: '要塞化',
+        isNegativeInversion: true,
+        customBonus: 2.5,
+        normalBonus: -1.0,
+        desc: '要塞化 (外部窓なし)'
+      }
     }
   ];
 
@@ -1181,6 +1157,14 @@
           p.vacancyTurns = 2; // 今月分なし ＋ さらに2ヶ月空室
           const pNum = p.propertyNo || (p.level !== undefined ? p.level + 1 : 1);
           evictedList.push(pNum);
+
+          // ★初代が退去した瞬間、一般市場モードへ完全移行！★
+          if (p.isOriginalTenant !== false) {
+            p.isOriginalTenant = false;
+            if (p.normalRent !== undefined) {
+              p.rent = p.normalRent; // 家賃も一般市場家賃へ自動更新
+            }
+          }
         } else {
           totalIncome += p.rent;
         }
@@ -1233,8 +1217,7 @@
   let cellSize = 48;
   let soundEnabled = true;
   let synth = null;
-  let activeHiddenReq = null;  // chosen at game start
-
+  
   /* ============================================================
      SOUND
   ============================================================ */
@@ -1283,50 +1266,84 @@
     }
   }
   function calcPropertyStats(p) {
-    // 古いデータのフォールバック
     const targetRent = p.targetRent || 1;
     const baseRent = p.baseRent || (p.rent * 0.8) || 0;
     const satisfied = p.satisfiedCount !== undefined ? p.satisfiedCount : 1;
     const totalReq = p.totalRequests || 1;
-    const goodC = p.goodCombos || 0;
-    const badC = p.badCombos || 0;
     const created = p.createdMonth || 1;
-    
     const age = Math.max(0, GameState.month - created);
 
-    // 家賃ボーナス: 50% - (倍率 - 1.0) * 50%
-    const rentRatio = p.rent / targetRent;
+    // 初代か2代目以降かによるコンボ・家賃の切り替え
+    const isOriginal = p.isOriginalTenant !== false; // 未定義は初代扱い
+    let currentRent = p.rent;
+    let goodC = p.goodCombos || 0;
+    let badC = p.badCombos || 0;
+
+    if (!isOriginal && p.customCombo) {
+      // 2代目以降（一般市場）: 特注のメッキが剥がれる
+      if (p.normalRent !== undefined) currentRent = p.normalRent;
+      if (p.customCombo.isNegativeInversion) {
+        if (goodC > 0) goodC -= 1;
+        badC += 1; // 本来の大惨事ペナルティが復活 (+0.5%劣化, -20%満足度)
+      }
+    }
+
+    // 1. 家賃ボーナス
+    const rentRatio = currentRent / targetRent;
     const rentBonus = 50 - (rentRatio - 1.0) * 50;
 
-    // 依頼ボーナス
+    // 2. 依頼ボーナス
     const reqBonus = (satisfied / totalReq) * 50;
 
-    // コンボボーナス
+    // 3. コンボボーナス
     const comboBonus = (goodC * 5) - (badC * 20);
 
-    const satisfaction = rentBonus + reqBonus + comboBonus;
+    // 4. 任意オプションボーナス (バリア延長: 1つ達成につき +5%)
+    const optBonus = (p.optionalSatisfied || 0) * 5;
+
+    // 満足度合計
+    const satisfaction = rentBonus + reqBonus + comboBonus + optBonus;
 
     // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
     const unreached = totalReq - satisfied;
     const degRate = 0.5 + (unreached * 0.2) + (badC * 0.5);
 
-    // 退去率 = Max(0, 100 - satisfaction + age * degRate)
+    // 退去率計算
     const initialEvict = 100 - satisfaction;
-    const evictRate = Math.max(0, initialEvict + age * degRate);
+    let evictRateVal = 0;
 
-    // リセール額 (baseRentは0.05倍されているので *20 で元に戻す)
-    const resaleValue = (baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02));
+    if (isOriginal) {
+      if (satisfaction > 100) {
+        const barrierMonths = satisfaction - 100;
+        if (age <= barrierMonths) {
+          evictRateVal = 0;
+        } else {
+          evictRateVal = (age - barrierMonths) * degRate;
+        }
+      } else {
+        evictRateVal = initialEvict + (age * degRate);
+      }
+    } else {
+      // 2代目以降（一般市場）: 初代バリアは消失し、一般基準で劣化
+      evictRateVal = Math.max(0, (100 - satisfaction) + (age * degRate));
+    }
+
+    const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
+    const resaleValue = ((baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02))).toFixed(1);
 
     return {
-      satisfaction: satisfaction.toFixed(1),
+      satisfaction: Math.round(satisfaction),
       degRate: degRate.toFixed(1),
-      evictRate: evictRate.toFixed(1),
-      initialEvict: initialEvict.toFixed(1),
-      resaleValue: resaleValue.toFixed(1),
+      evictRate: evictRate,
+      initialEvict: Math.max(0, Math.round(initialEvict)),
+      resaleValue: resaleValue,
       age,
-      rentBonus: rentBonus.toFixed(1),
-      reqBonus: reqBonus.toFixed(1),
-      comboBonus: comboBonus.toFixed(1)
+      rentBonus: Math.round(rentBonus),
+      reqBonus: Math.round(reqBonus),
+      comboBonus: Math.round(comboBonus),
+      optBonus: Math.round(optBonus),
+      currentRent: currentRent,
+      isOriginal: isOriginal
     };
   }
 
@@ -2614,6 +2631,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:'【大惨事】プライバシーゼロ — トイレ・風呂が通り抜け動線 (-1.5万)' });
     }
 
+    // 10. 要塞化 (外部窓なし)
+    if (!hasAnyWindow(grid) && (counts.bedRooms + counts.ldkRooms) > 0) {
+      combos.push({ name:'要塞化', bonus:-1.0, icon:'ph-shield-slash text-slate-600', type:'funny',
+        text:'【大惨事】要塞化 — 外界の光を拒絶した完全遮光空間 (-1.0万)' });
+    }
+
     return combos;
   }
 
@@ -2871,7 +2894,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     reports.push({ icon:'ph-check text-emerald-600', text:`資産価値ベース利回り (+${baseRent.toFixed(1)}万)` });
 
     // 2. Public requests
-    // ※資産価値ベース移行に伴い、依頼達成は家賃には加算せず「入居率（顧客満足度）」へ影響させる
     let satisfiedCount = 0;
     for (const req of STAGE.requests) {
       const ok = req.fn(counts, {unreachable: counts.unreachable});
@@ -2882,37 +2904,57 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         reports.push({ icon:'ph-x text-rose-500', text:`【依頼未達】${req.text} (退去リスクUP)` });
       }
     }
-    // rent には加算しない！
+
+    // 2.5 任意オプション (バリア延長)
+    let optSatisfiedCount = 0;
+    if (STAGE.optionalRequests) {
+      for (const opt of STAGE.optionalRequests) {
+        const ok = opt.fn(counts, {unreachable: counts.unreachable}, grid);
+        if (ok) {
+          optSatisfiedCount++;
+          reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${opt.text}` });
+        }
+      }
+    }
 
     // 3. Movement factor
     const moveFactor = Math.max(0.1, 1.0 - counts.unreachable * 0.3);
     if (moveFactor < 1.0) {
-      const penalty = counts.unreachable * 0.3;
       reports.push({ icon:'ph-warning-octagon text-rose-500', text:`【欠陥】到達不能部屋 ×${moveFactor.toFixed(1)} (-${(rent * (1-moveFactor)).toFixed(1)}万)` });
     }
     rent *= moveFactor;
 
-    // 4. Combos
+    // 4. Combos & Custom Combos
+    let normalRent = rent;
+    let customBonusDiff = 0;
+
     for (const combo of combos) {
-      rent += combo.bonus;
-      reports.push({ icon:`${combo.icon}`, text: combo.text });
+      let b = combo.bonus;
+      if (STAGE.customCombo && STAGE.customCombo.name === combo.name) {
+        customBonusDiff = STAGE.customCombo.customBonus - combo.bonus;
+        reports.push({ icon:'ph-crown text-amber-500', text:`【特注ボーナス】${combo.name} 初代プレミアム (+${STAGE.customCombo.customBonus.toFixed(1)}万)` });
+      } else {
+        reports.push({ icon:`${combo.icon}`, text: combo.text });
+      }
+      rent += b;
+      normalRent += b;
     }
 
+    rent += customBonusDiff;
     rent = Math.round(rent * 10) / 10;
-    return { rent, reports };
+    normalRent = Math.round(normalRent * 10) / 10;
+    return { rent, normalRent, reports, optSatisfiedCount };
   }
 
   /* ============================================================
      CATCHPHRASE & COMMENT GENERATOR
   ============================================================ */
-  function genCatchphrase(counts, combos, hiddenTriggered) {
+  function genCatchphrase(counts, combos, optSatisfiedCount) {
     const funnyNames = combos.filter(c=>c.type==='funny').map(c=>c.name);
-    if (hiddenTriggered?.id === 'freq-urine')
-      return { main:'「トイレに導かれし者よ…頻尿パラダイスへようこそ」', sub:'【激レア物件】' };
-    if (hiddenTriggered?.id === 'hermit')
-      return { main:'「光なき城。孤独を愛する者のための完全遮断要塞邸宅」', sub:'【世捨て人専用】' };
-    if (hiddenTriggered?.id === 'mysophobia')
-      return { main:'「玄関を開ければ即、浴室。潔癖症の夢が叶う家」', sub:'【衛生最優先物件】' };
+    if (combos.some(c=>c.name==='要塞化'))
+      return { main:'「光なき城。外界を完全に遮断した静寂の要塞邸宅」', sub:'【要塞物件】' };
+    if (combos.some(c=>c.name==='日当たり良好'))
+      return { main:'「太陽が注ぐ特選邸宅。心地よい南向きの光に包まれる暮らし」', sub:'【陽光物件】' };
     if (funnyNames.includes('トイレビュッフェ'))
       return { main:'「急な腹痛も安心！トイレ直通パラダイスハウス」', sub:'【ユニーク物件】' };
     if (funnyNames.includes('無限回廊'))
@@ -2928,19 +2970,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return { main:'「ユニークな間取りが生み出す、他にはない暮らし方」', sub:'【特選物件】' };
   }
 
-  function genComment(counts, combos, hiddenTriggered, isClear) {
+  function genComment(counts, combos, optSatisfiedCount, isClear) {
     if (!isClear && counts.unreachable > 0)
       return '玄関から辿り着けない「開かずの間」が存在します。まずは動線を繋げることが優先です。';
-    if (hiddenTriggered?.id === 'freq-urine')
-      return 'まさかトイレをこれほど愛する方とは…。お腹の弱い方への究極のおもてなし設計です。物件名に「WC付き」と入れましょう。';
-    if (hiddenTriggered?.id === 'hermit')
-      return '一切の陽光を拒絶した完全遮光設計。引きこもりの理想郷ここに誕生。ただし内覧で日当たりを聞かれても対応できません。';
+    if (combos.some(c=>c.name==='要塞化'))
+      return '一切の陽光を拒絶した完全遮光設計。影山様の理想郷ここに誕生。ただし一般入居者には不評かもしれません…';
     if (combos.some(c=>c.name==='トイレビュッフェ'))
       return 'トイレへの愛が止まらない。廊下に並んだトイレの壮観さに圧倒されます。頻尿の方には最強物件です。';
     if (combos.some(c=>c.name==='無限回廊'))
       return '廊下が繋がって無限ループを形成しています。迷子になること間違いなし。アドベンチャー好きにはたまりません。';
-    if (isClear)
+    if (isClear) {
+      if (optSatisfiedCount > 0) {
+        return '依頼条件を完璧に満たし、任意オプションまで達成！入居者も大満足で長く住み続けてくれることでしょう。';
+      }
       return '依頼条件をしっかり押さえた、暮らしやすい間取りです。査定家賃もノルマ達成、お見事な設計力です。';
+    }
     return '惜しい！依頼条件の一部が未達でノルマ到達ならず。再挑戦で王道コンボや珍間取りコンボを狙ってみましょう。';
   }
 
@@ -3050,10 +3094,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const combos  = detectCombos(counts, visited);
     let { rent }  = calcRent(counts, combos, visited);
 
-    if (activeHiddenReq && activeHiddenReq.partialBonusFn) {
-      rent += activeHiddenReq.partialBonusFn(counts, { unreachable: counts.unreachable }, grid);
-    }
-
     const rentEl = document.getElementById('realtime-rent-badge');
     if (rentEl) {
       rentEl.textContent = `現在査定: ${rent.toFixed(1)}万円`;
@@ -3093,29 +3133,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
 
-    let { rent, reports } = calcRent(counts, combos, visited);
-
-    // Add partial bonus to the final evaluation so they don't lose value
-    if (activeHiddenReq && activeHiddenReq.partialBonusFn) {
-      rent += activeHiddenReq.partialBonusFn(counts, { unreachable: counts.unreachable }, grid);
-    }
-
-    // Hidden request check
-    let hiddenTriggered = null;
-    if (activeHiddenReq) {
-      const triggered = activeHiddenReq.fn(counts, { unreachable: counts.unreachable }, grid);
-      if (triggered) {
-        hiddenTriggered = activeHiddenReq;
-        const oldRent = rent;
-        rent += activeHiddenReq.bonus(oldRent);
-        rent = Math.round(rent * 10) / 10;
-        reports.push({ icon:'ph-sparkle text-yellow-500', text: activeHiddenReq.bonusText });
-      }
-    }
+    const { rent, normalRent, reports, optSatisfiedCount } = calcRent(counts, combos, visited);
 
     const isClear = rent >= STAGE.targetRent;
-    const catch_ = genCatchphrase(counts, combos, hiddenTriggered);
-    const comment = genComment(counts, combos, hiddenTriggered, isClear);
+    const catch_ = genCatchphrase(counts, combos, optSatisfiedCount);
+    const comment = genComment(counts, combos, optSatisfiedCount, isClear);
     
     // ここでは資金加算しない。結果画面のボタンで処理する。
     GameState.funds = budget; // 消費した分の同期
@@ -3170,40 +3192,42 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     let badCombos = 0;
     let goodCombos = 0;
     combos.forEach(c => {
-      if (c.bonus < 0) badCombos++;
-      else goodCombos++;
+      if (STAGE.customCombo && STAGE.customCombo.name === c.name && STAGE.customCombo.isNegativeInversion) {
+        goodCombos++; // 初代では特注反転により良コンボ扱い
+      } else if (c.bonus < 0) {
+        badCombos++;
+      } else {
+        goodCombos++;
+      }
     });
     if (counts.unreachable > 0) badCombos++; // 到達不能ペナルティ
 
     window.currentPropertyData = {
       rent: rent,
+      normalRent: normalRent,
       targetRent: STAGE.targetRent,
       baseRent: counts.totalBaseRent,
       isClear: isClear,
       satisfiedCount: satisfiedCount,
       totalRequests: STAGE.requests.length,
+      optionalSatisfied: optSatisfiedCount || 0,
       badCombos: badCombos,
       goodCombos: goodCombos,
       combosList: combos.map(c => ({name:c.name, icon:c.icon, bonus:c.bonus})),
-      createdMonth: GameState.month
+      createdMonth: GameState.month,
+      isOriginalTenant: true,
+      clientName: STAGE.client.name,
+      customCombo: STAGE.customCombo || null
     };
 
-    // Hidden request reveal
+    // 任意オプション達成表示
     const hBox  = document.getElementById('hidden-req-box');
-    const hLabel = document.getElementById('hidden-req-label');
-    const hText  = document.getElementById('hidden-req-text');
-    if (activeHiddenReq) {
-      hBox.className  = 'hidden-req-reveal rolling';
-      hLabel.innerHTML = `<i class="ph-bold ph-seal-question"></i> 隠れ要望「${activeHiddenReq.label}」`;
-      hText.textContent = '…ドキドキ…';
-
-      setTimeout(() => {
-        hBox.className = hiddenTriggered ? 'hidden-req-reveal triggered' : 'hidden-req-reveal miss';
-        hText.textContent = hiddenTriggered
-          ? activeHiddenReq.revealText
-          : `「${activeHiddenReq.label}」の条件は満たせませんでした。条件: ${activeHiddenReq.question}`;
-        if (hiddenTriggered) playSound('reveal');
-      }, 1200);
+    const hText = document.getElementById('hidden-req-text');
+    if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
+      hBox.style.display = 'block';
+      hText.textContent = optSatisfiedCount > 0 
+        ? `✨ 任意オプション ${optSatisfiedCount}件達成！(空室バリア +${optSatisfiedCount * 5}ヶ月延長)` 
+        : '任意オプション未達成（バリア延長なし）';
     } else {
       hBox.style.display = 'none';
     }
@@ -3243,6 +3267,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       item.innerHTML = `<i class="ph-bold ${req.icon}" style="color:${req.color};font-size:16px;"></i><span>${req.text}</span>`;
       rl.appendChild(item);
     }
+    if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
+      const optHeader = document.createElement('div');
+      optHeader.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
+      optHeader.textContent = '🌟 任意オプション (空室バリア延長)';
+      rl.appendChild(optHeader);
+      for (const opt of STAGE.optionalRequests) {
+        const item = document.createElement('div');
+        item.className = 'req-item';
+        item.style.background = '#fefce8';
+        item.style.borderColor = '#fef08a';
+        item.innerHTML = `<i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:16px;"></i><span style="color:#854d0e;">${opt.text}</span>`;
+        rl.appendChild(item);
+      }
+    }
 
     // Modal Client Info & Request List
     const mcq = document.getElementById('modal-client-quote');
@@ -3258,19 +3296,28 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         item.innerHTML = `<i class="ph-bold ${req.icon}" style="color:${req.color};font-size:14px;margin-right:6px;"></i><span style="font-size:12px;">${req.text}</span>`;
         mrl.appendChild(item);
       }
+      if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
+        const optHead = document.createElement('div');
+        optHead.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
+        optHead.textContent = '🌟 任意オプション (空室バリア延長)';
+        mrl.appendChild(optHead);
+        for (const opt of STAGE.optionalRequests) {
+          const item = document.createElement('div');
+          item.className = 'req-item';
+          item.style.marginBottom = '6px';
+          item.style.background = '#fefce8';
+          item.style.borderColor = '#fef08a';
+          item.innerHTML = `<i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:14px;margin-right:6px;"></i><span style="font-size:12px;color:#854d0e;">${opt.text}</span>`;
+          mrl.appendChild(item);
+        }
+      }
     }
     
     // Update Stats
     document.getElementById('stat-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span class="stat-unit">万</span>`;
     
-
     // Site preview canvas
     drawSitePreview();
-
-    // Pick hidden request
-    activeHiddenReq = STAGE.hiddenRequests[
-      Math.floor(Math.random() * STAGE.hiddenRequests.length)
-    ];
   }
 
   function drawSitePreview() {
@@ -3355,9 +3402,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const _hdrT = document.getElementById('hdr-target-rent'); if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
     updateBudgetUI();
     
-    // Reset Hint UI
-    document.getElementById('mission-hint-text').style.display = 'none';
-    document.getElementById('btn-buy-hint').style.display = 'block';
+
 
     document.getElementById('hint-overlay').style.opacity = '1';
     document.getElementById('mission-banner-text').textContent =
@@ -3370,9 +3415,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      RESTART
   ============================================================ */
   function restart() {
-    activeHiddenReq = STAGE.hiddenRequests[
-      Math.floor(Math.random() * STAGE.hiddenRequests.length)
-    ];
     showScreen('mission');
   }
 
@@ -3493,22 +3535,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
-  document.getElementById('btn-buy-hint').addEventListener('click', () => {
-    if (budget < 30) {
-      playSound('error');
-      showFloatingText('資金不足！', 'var(--c-rose)');
-      return;
-    }
-    budget -= 30;
-    updateBudgetUI();
-    playSound('combo');
-    showFloatingText('-30.0万', 'var(--c-rose)');
-    
-    document.getElementById('btn-buy-hint').style.display = 'none';
-    const hintEl = document.getElementById('mission-hint-text');
-    hintEl.style.display = 'block';
-    hintEl.textContent = `裏情報: ${activeHiddenReq.hint}`;
-  });
+
 
   document.getElementById('btn-restart').addEventListener('click', () => {
     initAudio();
@@ -3590,17 +3617,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       id: Date.now(),
       level: GameState.level,
       rent: rentToSave,
+      normalRent: p.normalRent !== undefined ? p.normalRent : rentToSave,
       targetRent: p.targetRent || STAGE.targetRent,
       baseRent: p.baseRent || 0,
       isClear: p.isClear || false,
       satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
       totalRequests: p.totalRequests || 1,
+      optionalSatisfied: p.optionalSatisfied || 0,
       badCombos: p.badCombos || 0,
       goodCombos: p.goodCombos || 0,
       combosList: p.combosList || [],
       createdMonth: p.createdMonth || GameState.month,
       propertyGrid: savedGrid,
-      vacancyTurns: 0
+      vacancyTurns: 0,
+      isOriginalTenant: true,
+      clientName: p.clientName || STAGE.client.name,
+      customCombo: p.customCombo || null
     });
     
     const result = processMonthEnd();
@@ -3630,7 +3662,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function showPropertyDetail(p) {
     const stats = calcPropertyStats(p);
     
-    document.getElementById('pd-name').textContent = `物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)}`;
+    const tenantBadge = stats.isOriginal 
+      ? `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'})</span>`
+      : `<span style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:#475569; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 一般市場入居</span>`;
+    document.getElementById('pd-name').innerHTML = `物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)} ${tenantBadge}`;
     
     // 図面の描画
     const canvas = document.getElementById('pd-canvas');
@@ -3662,7 +3697,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     document.getElementById('pd-age').textContent = `築${stats.age}ヶ月`;
-    document.getElementById('pd-rent').innerHTML = `${p.rent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
+    document.getElementById('pd-rent').innerHTML = `${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
     
     document.getElementById('pd-initial-evict').parentElement.style.display = 'none'; // 初期退去率の表示削除
     document.getElementById('pd-sat-val').textContent = `${stats.satisfaction}%`;
@@ -3672,14 +3707,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     else if (stats.satisfaction >= 60) bar.style.background = 'var(--c-amber)';
     else bar.style.background = 'var(--c-rose)';
     
-    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%`;
+    const optStr = stats.optBonus > 0 ? ` / 任意 +${stats.optBonus}%` : '';
+    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}`;
     
     document.getElementById('pd-current-evict').textContent = `${stats.evictRate}%`;
     document.getElementById('pd-deg-rate').textContent = `Rank ${getPropertyRank(stats.degRate)}`;
     
     let comboHtml = '';
     if (p.combosList && p.combosList.length > 0) {
-      comboHtml = p.combosList.map(c => `<div style="margin-bottom:4px;"><span style="font-size:10px; padding:2px 4px; border-radius:4px; margin-right:4px; color:#fff; background:${c.bonus > 0 ? 'var(--c-emerald)' : 'var(--c-rose)'};">${c.bonus > 0 ? '👍' : '🚨'}</span> ${c.name} (${c.bonus > 0 ? '+' : ''}${c.bonus}万)</div>`).join('');
+      comboHtml = p.combosList.map(c => {
+        let isNegative = c.bonus < 0;
+        let bonusText = (c.bonus > 0 ? '+' : '') + c.bonus + '万';
+        if (p.customCombo && p.customCombo.name === c.name) {
+          if (stats.isOriginal) {
+            bonusText = `+${p.customCombo.customBonus.toFixed(1)}万 (特注)`;
+            isNegative = false;
+          } else {
+            bonusText = `${p.customCombo.normalBonus > 0 ? '+' : ''}${p.customCombo.normalBonus.toFixed(1)}万 (一般化)`;
+            if (p.customCombo.isNegativeInversion) isNegative = true;
+          }
+        }
+        const badgeColor = isNegative ? 'var(--c-rose)' : 'var(--c-emerald)';
+        const icon = isNegative ? '🚨' : '👍';
+        return `<div style="margin-bottom:4px;"><span style="font-size:10px; padding:2px 4px; border-radius:4px; margin-right:4px; color:#fff; background:${badgeColor};">${icon}</span> ${c.name} (${bonusText})</div>`;
+      }).join('');
     } else {
       comboHtml = '<div style="color:var(--c-text2);">発動しているコンボはありません。</div>';
     }
