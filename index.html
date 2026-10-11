@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.58 (10/10)
+        Floor Plan v0.59 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1760,11 +1760,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function drawPlan() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCells();
-    drawArchLines();
-    drawLabels();
-    drawEntrance();
-    drawPreview();
+    try { drawCells(); } catch(e) { console.error('drawCells error:', e); }
+    try { drawArchLines(); } catch(e) { console.error('drawArchLines error:', e); }
+    try { drawLabels(); } catch(e) { console.error('drawLabels error:', e); }
+    try { drawEntrance(); } catch(e) { console.error('drawEntrance error:', e); }
+    try { drawPreview(); } catch(e) { console.error('drawPreview error:', e); }
   }
 
   function drawCells() {
@@ -1997,9 +1997,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
       if (et === E.WINDOW && !isSolid) drawWindowMark(x1,y1,x2,y2,ori);
     } else if (et === E.DOOR) {
-      const isWashitsu = (c1_cell.pieceId !== null && PIECES[c1_cell.pieceId] && PIECES[c1_cell.pieceId].name.includes('和室')) ||
-                         (c2_cell.pieceId !== null && PIECES[c2_cell.pieceId] && PIECES[c2_cell.pieceId].name.includes('和室'));
-      drawDoor(x1,y1,x2,y2,ori, isWashitsu);
+      // 和室判定: セルのlabelが「和室」であるかを安全に判定 (存在しないPIECESは参照しない)
+      const isWashitsu = Boolean((c1_cell && c1_cell.label === '和室') || (c2_cell && c2_cell.label === '和室'));
+      drawDoor(x1, y1, x2, y2, ori, isWashitsu);
     }
   }
 
@@ -2026,17 +2026,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function drawDoor(x1,y1,x2,y2,ori, isWashitsu) {
     const len = ori==='h' ? Math.abs(x2-x1) : Math.abs(y2-y1);
     const post = len * 0.18;
+    ctx.save();
     ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
 
     if (ori === 'h') {
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1+post,y1); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x2-post,y2); ctx.lineTo(x2,y2); ctx.stroke();
       const dw = len - post*2;
       if (isWashitsu) {
-        ctx.strokeStyle = '#d4d4d8'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(x1+post, y1-1); ctx.lineTo(x1+post+dw, y1-1); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x1+post, y1+1.5); ctx.lineTo(x1+post+dw, y1+1.5); ctx.stroke();
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x1+post, y1-2); ctx.lineTo(x1+post+dw, y1-2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1+post, y1+2); ctx.lineTo(x1+post+dw, y1+2); ctx.stroke();
       } else {
         ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(x1+post, y1, dw, 0, Math.PI/2, false); ctx.stroke();
@@ -2048,9 +2050,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       ctx.beginPath(); ctx.moveTo(x2,y2-post); ctx.lineTo(x2,y2); ctx.stroke();
       const dw = len - post*2;
       if (isWashitsu) {
-        ctx.strokeStyle = '#d4d4d8'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(x1-1, y1+post); ctx.lineTo(x1-1, y1+post+dw); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x1+1.5, y1+post); ctx.lineTo(x1+1.5, y1+post+dw); ctx.stroke();
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x1-2, y1+post); ctx.lineTo(x1-2, y1+post+dw); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1+2, y1+post); ctx.lineTo(x1+2, y1+post+dw); ctx.stroke();
       } else {
         ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(x1, y1+post, dw, -Math.PI/2, 0, false); ctx.stroke();
@@ -2058,6 +2060,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         ctx.beginPath(); ctx.moveTo(x1,y1+post); ctx.lineTo(x1+dw*0.7, y1+post-dw*0.7); ctx.stroke();
       }
     }
+    ctx.restore();
   }
 
   function drawEntrance() {
