@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.59 (10/10)
+        Floor Plan v0.60 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -809,7 +809,7 @@
           </button>
           <button class="btn btn-slate" id="btn-mirror" style="padding:8px 12px;font-size:12px;gap:5px;">
             <i class="ph-bold ph-arrows-left-right" style="font-size:15px;color:var(--c-indigo);"></i>
-            反転 <span style="font-size:9px;color:var(--c-text2);">(+2.0万)</span>
+            反転 <span style="font-size:9px;color:var(--c-text2);">(費用1.2倍)</span>
           </button>
           <span id="piece-label" style="font-size:11px;color:var(--c-text2);"></span>
           <button class="btn btn-slate" id="btn-show-mission" style="padding:6px; font-size:11px; margin-left:auto;"><i class="ph-bold ph-list-checks"></i> 依頼</button>
@@ -1426,6 +1426,13 @@
   function mirrorMatrix(mat) {
     return mat.map(row => [...row].reverse());
   }
+  function getPieceCost(piece, mirrored = false) {
+    if (!piece) return 0;
+    const base = piece.cost || 0;
+    if (!mirrored) return base;
+    return Math.round(base * 1.2 * 10) / 10;
+  }
+
   function getShape(piece, rot, mirror=false) {
     let m = piece.shape;
     m = rotateMatrix(m, rot);
@@ -1708,7 +1715,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function updatePieceLabel() {
     const p = draftSlots[selectedSlot];
-    const cost = p ? (p.cost + (isMirrored ? 2.0 : 0)).toFixed(1) : 0;
+    const cost = p ? getPieceCost(p, isMirrored).toFixed(1) : '0.0';
     const mirText = isMirrored ? '・反転' : '';
     const name = p ? p.name : '';
     const rot = selectedRot * 90;
@@ -1799,7 +1806,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!piece) return;
     const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
-    const pieceCost = (piece.cost || 0) + (isMirrored ? 2.0 : 0);
+    const pieceCost = getPieceCost(piece, isMirrored);
     const canAfford = budget >= pieceCost;
     const valid = canPlace(hoverCell.r, hoverCell.c, shape) && canAfford;
     ctx.save();
@@ -2155,7 +2162,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!piece) return false;
     
     // Check Budget
-    const pieceCost = (piece.cost || 0) + (isMirrored ? 2.0 : 0);
+    const pieceCost = getPieceCost(piece, isMirrored);
     if (budget < pieceCost) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
