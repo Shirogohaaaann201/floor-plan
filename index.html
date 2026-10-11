@@ -630,15 +630,15 @@
         </div>
       </div>
       
-      <button id="btn-go-mission" onclick="window.onGoMissionClick()" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:12px; cursor:pointer;">
+      <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:12px; cursor:pointer;">
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
-      <button id="btn-skip-month" onclick="window.onSkipMonthClick()" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
+      <button id="btn-skip-month" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
         <i class="ph-bold ph-clock-clockwise" style="margin-right:8px;"></i>何もしない (1ヶ月進める)
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.57 (10/10)
+        Floor Plan v0.58 (10/10)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -752,6 +752,22 @@
        SCREEN 2: GAME
   ============================== -->
   <section id="screen-game" class="screen">
+    <!-- Header (compact: budget / target rent / sound only) -->
+    <header class="game-header" style="padding:6px 10px; justify-content:flex-end;">
+      <div class="game-header-right" style="margin-left:auto;">
+        <div class="target-rent-wrap" style="background:#0f172a; border-color:#334155;">
+          <div class="target-rent-label">残予算</div>
+          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">1000<span style="font-size:10px;color:var(--c-text2);">万</span></div>
+        </div>
+        <div class="target-rent-wrap">
+          <div class="target-rent-label">目標家賃</div>
+          <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:10px;color:var(--c-text2);">万</span></div>
+        </div>
+        <button id="btn-sound-game" class="btn-icon btn">
+          <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
+        </button>
+      </div>
+    </header>
 
 
     <!-- Mission banner -->
@@ -926,37 +942,6 @@
 
   <script>
 
-  window.onGoMissionClick = function() {
-    try {
-      initAudio();
-      updateStage();
-      setupMissionScreen();
-      showScreen('mission');
-    } catch(err) {
-      alert('新規案件エラー: ' + err.message + '\n' + err.stack);
-    }
-  };
-
-  window.onSkipMonthClick = function() {
-    try {
-      initAudio();
-      if (confirm('案件を受けずに1ヶ月時間を進めますか？\n(家賃収入が入り、空室や退去の判定が行われます)')) {
-        GameState.month++;
-        const { income, evicted } = processMonthEnd();
-        GameState.funds += income;
-        GameState.lastFunds = income;
-
-        let msg = `${income.toFixed(1)}万 の家賃収入がありました。`;
-        if (evicted && evicted.length > 0) msg += `\n⚠️ ${evicted.length}件の退去が発生しました。`;
-
-        alert(msg);
-        saveGame();
-        updateHomeUI();
-      }
-    } catch(err) {
-      alert('スキップエラー: ' + err.message + '\n' + err.stack);
-    }
-  };
   'use strict';
   /* ============================================================
      CONSTANTS
@@ -3346,7 +3331,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     // Update Header UI
     updateCompanyUI();
-    document.getElementById('hdr-target-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
+    const _hdrT = document.getElementById('hdr-target-rent'); if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
     updateBudgetUI();
     
     // Reset Hint UI
@@ -3382,7 +3367,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     startGame();
   });
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
-  document.getElementById('btn-sound-game').addEventListener('click', toggleSound);
+  document.getElementById('btn-sound-game')?.addEventListener('click', toggleSound);
 
   document.getElementById('btn-rotate').addEventListener('click', () => {
     initAudio();
@@ -3539,19 +3524,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-skip-month')?.addEventListener('click', () => {
     initAudio();
-    if (confirm('案件を受けずに1ヶ月時間を進めますか？\n(家賃収入が入り、空室や退去の判定が行われます)')) {
-      GameState.month++;
-      const { income, evicted } = processMonthEnd();
-      GameState.funds += income;
-      GameState.lastFunds = income;
-      
-      let msg = `${income.toFixed(1)}万 の家賃収入がありました。`;
-      if (evicted > 0) msg += `\n⚠️ ${evicted}件の退去が発生しました。`;
-      
-      alert(msg);
-      saveGame();
-      updateHomeUI();
-    }
+    if (!confirm('案件を受けずに1ヶ月時間を進めますか？\n(家賃収入が入り、空室や退去の判定が行われます)')) return;
+    // processMonthEnd() が内部で「月+1」「資金への収入加算」まで行うので、ここでは加算しない
+    const result = processMonthEnd();
+    let msg = `【第${GameState.month - 1}ヶ月目終了】\n家賃収入: +${result.income.toFixed(1)}万`;
+    if (result.evicted.length > 0) msg += `\n\n⚠️退去が発生しました（物件No.${result.evicted.join(', ')}）`;
+    alert(msg);
+    saveGame();
+    updateHomeUI();
   });
 
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
