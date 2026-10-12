@@ -674,7 +674,7 @@
             <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
           </div>
           <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);">建物品格 (ランク)</div>
+            <div style="font-size:10px; color:var(--c-text2);">物件ランク</div>
             <div style="font-weight:bold; color:var(--c-amber); font-size:14px;" id="pd-deg-rate">S</div>
           </div>
         </div>
@@ -1031,7 +1031,7 @@
         { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている', fn: (counts, bfs) => bfs.unreachable === 0 },
       ],
       optionalRequests: [
-        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'収納スペースあり (バリア+5ヶ月)', fn: counts => counts.maxClosetSize >= 1 },
+        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'収納スペースあり (満足度+5%)', fn: counts => counts.maxClosetSize >= 1 },
       ],
       customCombo: {
         name: '日当たり良好',
@@ -1066,7 +1066,7 @@
         { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
       ],
       optionalRequests: [
-        { id:'opt-bath',  icon:'ph-bathtub',      color:'#0891b2', text:'ゆったりした浴室 (2マス以上) (バリア+5ヶ月)', fn: counts => counts.maxBathSize >= 2 },
+        { id:'opt-bath',  icon:'ph-bathtub',      color:'#0891b2', text:'ゆったりした浴室 (2マス以上) (満足度+5%)', fn: counts => counts.maxBathSize >= 2 },
       ],
       customCombo: null
     },
@@ -1094,7 +1094,7 @@
         { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
       ],
       optionalRequests: [
-        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'専用収納あり (バリア+5ヶ月)', fn: counts => counts.maxClosetSize >= 1 },
+        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'専用収納あり (満足度+5%)', fn: counts => counts.maxClosetSize >= 1 },
       ],
       customCombo: {
         name: '要塞化',
@@ -3226,8 +3226,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
       hBox.style.display = 'block';
       hText.textContent = optSatisfiedCount > 0 
-        ? `✨ 任意オプション ${optSatisfiedCount}件達成！(空室バリア +${optSatisfiedCount * 5}ヶ月延長)` 
-        : '任意オプション未達成（バリア延長なし）';
+        ? `✨ 任意オプション ${optSatisfiedCount}件達成！(満足度 +${optSatisfiedCount * 5}%)` 
+        : '任意オプション未達成（満足度加算なし）';
     } else {
       hBox.style.display = 'none';
     }
@@ -3270,7 +3270,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
       const optHeader = document.createElement('div');
       optHeader.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
-      optHeader.textContent = '🌟 任意オプション (空室バリア延長)';
+      optHeader.textContent = '🌟 任意オプション (満足度UP)';
       rl.appendChild(optHeader);
       for (const opt of STAGE.optionalRequests) {
         const item = document.createElement('div');
@@ -3299,7 +3299,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
         const optHead = document.createElement('div');
         optHead.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
-        optHead.textContent = '🌟 任意オプション (空室バリア延長)';
+        optHead.textContent = '🌟 任意オプション (満足度UP)';
         mrl.appendChild(optHead);
         for (const opt of STAGE.optionalRequests) {
           const item = document.createElement('div');
