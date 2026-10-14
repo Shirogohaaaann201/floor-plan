@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.67 (10/14)
+        Floor Plan v0.68 (10/14)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -2179,39 +2179,65 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const facing = getEntranceFacing(STAGE, grid);
 
     ctx.save();
-    // 1. Threshold line (上がり框 / 外向き境界破線)
+    // 1. Threshold line (上がり框 / 土間と室内の境界破線)
     ctx.strokeStyle = '#b45309';
     ctx.lineWidth = Math.max(1.5, cellSize * 0.05);
     ctx.setLineDash([3, 2]);
     ctx.beginPath();
+    const kamachiOffset = Math.max(7, cellSize * 0.28);
     if (facing.dir === 'bottom') {
-      ctx.moveTo(x + 3, y + cellSize - 2); ctx.lineTo(x + cellSize - 3, y + cellSize - 2);
+      ctx.moveTo(x + 2, y + cellSize - kamachiOffset);
+      ctx.lineTo(x + cellSize - 2, y + cellSize - kamachiOffset);
     } else if (facing.dir === 'top') {
-      ctx.moveTo(x + 3, y + 2); ctx.lineTo(x + cellSize - 3, y + 2);
+      ctx.moveTo(x + 2, y + kamachiOffset);
+      ctx.lineTo(x + cellSize - 2, y + kamachiOffset);
     } else if (facing.dir === 'left') {
-      ctx.moveTo(x + 2, y + 3); ctx.lineTo(x + 2, y + cellSize - 3);
+      ctx.moveTo(x + kamachiOffset, y + 2);
+      ctx.lineTo(x + kamachiOffset, y + cellSize - 2);
     } else if (facing.dir === 'right') {
-      ctx.moveTo(x + cellSize - 2, y + 3); ctx.lineTo(x + cellSize - 2, y + cellSize - 3);
+      ctx.moveTo(x + cellSize - kamachiOffset, y + 2);
+      ctx.lineTo(x + cellSize - kamachiOffset, y + cellSize - 2);
     }
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 2. Entrance Label: unified to "#{arrow}玄関" with white outline
-    const cx = x + cellSize / 2;
-    const cy = y + cellSize / 2;
+    // 2. Entrance Label: 外壁（開口部・土間側）に寄せて描画
     const label = `${facing.arrow}玄関`;
-    const fontSize = Math.max(8.5, Math.min(cellSize * 0.22, 12));
+    const fontSize = Math.max(8, Math.min(cellSize * 0.2, 11));
     ctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
 
+    let tx = x + cellSize / 2;
+    let ty = y + cellSize / 2;
+    if (facing.dir === 'bottom') {
+      tx = x + cellSize / 2;
+      ty = y + cellSize - 1.5;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+    } else if (facing.dir === 'top') {
+      tx = x + cellSize / 2;
+      ty = y + 1.5;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+    } else if (facing.dir === 'left') {
+      tx = x + 1.5;
+      ty = y + cellSize / 2;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+    } else if (facing.dir === 'right') {
+      tx = x + cellSize - 1.5;
+      ty = y + cellSize / 2;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+    }
+
+    // 白フチで視認性確保
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2.5;
     ctx.lineJoin = 'round';
-    ctx.strokeText(label, cx, cy);
+    ctx.strokeText(label, tx, ty);
 
     ctx.fillStyle = '#92400e';
-    ctx.fillText(label, cx, cy);
+    ctx.fillText(label, tx, ty);
     ctx.restore();
   }
 
@@ -3149,9 +3175,32 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // Entrance
     const { entranceRow: er, entranceCol: ec } = STAGE;
     const facing = getEntranceFacing(STAGE, grid);
+    const label = `${facing.arrow}玄関`;
+    const fontSize = Math.max(7, cs * 0.2);
+    rctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
+
+    let rx = (ec + 0.5) * cs, ry = (er + 0.5) * cs;
+    if (facing.dir === 'bottom') {
+      rx = (ec + 0.5) * cs; ry = (er + 1) * cs - 1.5;
+      rctx.textAlign = 'center'; rctx.textBaseline = 'bottom';
+    } else if (facing.dir === 'top') {
+      rx = (ec + 0.5) * cs; ry = er * cs + 1.5;
+      rctx.textAlign = 'center'; rctx.textBaseline = 'top';
+    } else if (facing.dir === 'left') {
+      rx = ec * cs + 1.5; ry = (er + 0.5) * cs;
+      rctx.textAlign = 'left'; rctx.textBaseline = 'middle';
+    } else if (facing.dir === 'right') {
+      rx = (ec + 1) * cs - 1.5; ry = (er + 0.5) * cs;
+      rctx.textAlign = 'right'; rctx.textBaseline = 'middle';
+    }
+
+    rctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    rctx.lineWidth = 2;
+    rctx.lineJoin = 'round';
+    rctx.strokeText(label, rx, ry);
+
     rctx.fillStyle = '#92400e';
-    rctx.font = `bold ${Math.max(7, cs*0.22)}px "Zen Kaku Gothic New",sans-serif`;
-    rctx.fillText(`${facing.arrow}玄関`, (ec + 0.5) * cs, (er + 0.5) * cs);
+    rctx.fillText(label, rx, ry);
     rctx.restore();
   }
 
@@ -3954,13 +4003,33 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           const cell = p.propertyGrid[r][c];
           if (cell && cell.type === T.ENTRANCE) {
             const facing = getEntranceFacing(null, p.propertyGrid);
-            const cx = (c + 0.5) * cSize;
-            const cy = (r + 0.5) * cSize;
             const label = isCompact ? `${facing.arrow}玄` : `${facing.arrow}玄関`;
-            const markerSize = isCompact ? Math.max(6.5, cSize * 0.3) : Math.max(9, cSize * 0.25);
+            const markerSize = isCompact ? Math.max(6.5, cSize * 0.28) : Math.max(9, cSize * 0.22);
             ctx.font = `bold ${markerSize}px "Zen Kaku Gothic New", sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+
+            let cx = (c + 0.5) * cSize;
+            let cy = (r + 0.5) * cSize;
+            if (facing.dir === 'bottom') {
+              cx = (c + 0.5) * cSize;
+              cy = (r + 1) * cSize - 1.5;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+            } else if (facing.dir === 'top') {
+              cx = (c + 0.5) * cSize;
+              cy = r * cSize + 1.5;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'top';
+            } else if (facing.dir === 'left') {
+              cx = c * cSize + 1.5;
+              cy = (r + 0.5) * cSize;
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+            } else if (facing.dir === 'right') {
+              cx = (c + 1) * cSize - 1.5;
+              cy = (r + 0.5) * cSize;
+              ctx.textAlign = 'right';
+              ctx.textBaseline = 'middle';
+            }
 
             // 白フチで視認性確保
             ctx.strokeStyle = 'rgba(255,255,255,0.9)';
