@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.66 (10/14)
+        Floor Plan v0.67 (10/14)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1896,7 +1896,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const cell = grid[r][c];
-        if (!cell.roomId || cell.type === T.EMPTY) continue;
+        if (!cell.roomId || cell.type === T.EMPTY || cell.type === T.ENTRANCE) continue;
         if (!rooms[cell.roomId]) rooms[cell.roomId] = { cells:[], label:cell.label, type:cell.type };
         rooms[cell.roomId].cells.push({r,c});
       }
@@ -2119,19 +2119,99 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.restore();
   }
 
+  function getEntranceFacing(stage = STAGE, targetGrid = null) {
+    if (!targetGrid && typeof grid !== 'undefined') targetGrid = grid;
+    if (stage && stage.entranceFacing) {
+      const f = stage.entranceFacing;
+      const map = {
+        bottom: { dir: 'bottom', arrow: '▼' },
+        top:    { dir: 'top',    arrow: '▲' },
+        left:   { dir: 'left',   arrow: '◀' },
+        right:  { dir: 'right',  arrow: '▶' }
+      };
+      if (map[f]) return map[f];
+    }
+
+    let er = stage ? stage.entranceRow : undefined;
+    let ec = stage ? stage.entranceCol : undefined;
+
+    if ((er === undefined || ec === undefined) && targetGrid) {
+      const gSize = targetGrid.length;
+      for (let r = 0; r < gSize; r++) {
+        for (let c = 0; c < gSize; c++) {
+          if (targetGrid[r] && targetGrid[r][c] && targetGrid[r][c].type === T.ENTRANCE) {
+            er = r; ec = c; break;
+          }
+        }
+        if (er !== undefined) break;
+      }
+    }
+
+    if (er === undefined) er = 0;
+    if (ec === undefined) ec = 0;
+    const gSize = (targetGrid && targetGrid.length) ? targetGrid.length : GRID;
+
+    const isObstacleOrOutside = (r, c) => {
+      if (r < 0 || r >= gSize || c < 0 || c >= gSize) return true;
+      if (targetGrid && targetGrid[r] && targetGrid[r][c]) {
+        return targetGrid[r][c].type === T.OBSTACLE;
+      }
+      if (stage && stage.obstacles) {
+        return stage.obstacles.some(obs => 
+          r >= obs.r && r < obs.r + (obs.h || 1) &&
+          c >= obs.c && c < obs.c + (obs.w || 1)
+        );
+      }
+      return false;
+    };
+
+    if (isObstacleOrOutside(er + 1, ec)) return { dir: 'bottom', arrow: '▼' };
+    if (isObstacleOrOutside(er - 1, ec)) return { dir: 'top',    arrow: '▲' };
+    if (isObstacleOrOutside(er, ec - 1)) return { dir: 'left',   arrow: '◀' };
+    if (isObstacleOrOutside(er, ec + 1)) return { dir: 'right',  arrow: '▶' };
+
+    return { dir: 'bottom', arrow: '▼' };
+  }
+
   function drawEntrance() {
     const { entranceRow: er, entranceCol: ec } = STAGE;
     const x = ec * cellSize, y = er * cellSize;
+    const facing = getEntranceFacing(STAGE, grid);
+
     ctx.save();
-    ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.5;
-    ctx.setLineDash([3,2]);
+    // 1. Threshold line (上がり框 / 外向き境界破線)
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = Math.max(1.5, cellSize * 0.05);
+    ctx.setLineDash([3, 2]);
     ctx.beginPath();
-    ctx.moveTo(x+4, y+cellSize-8); ctx.lineTo(x+cellSize-4, y+cellSize-8);
-    ctx.stroke(); ctx.setLineDash([]);
+    if (facing.dir === 'bottom') {
+      ctx.moveTo(x + 3, y + cellSize - 2); ctx.lineTo(x + cellSize - 3, y + cellSize - 2);
+    } else if (facing.dir === 'top') {
+      ctx.moveTo(x + 3, y + 2); ctx.lineTo(x + cellSize - 3, y + 2);
+    } else if (facing.dir === 'left') {
+      ctx.moveTo(x + 2, y + 3); ctx.lineTo(x + 2, y + cellSize - 3);
+    } else if (facing.dir === 'right') {
+      ctx.moveTo(x + cellSize - 2, y + 3); ctx.lineTo(x + cellSize - 2, y + cellSize - 3);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Entrance Label: unified to "#{arrow}玄関" with white outline
+    const cx = x + cellSize / 2;
+    const cy = y + cellSize / 2;
+    const label = `${facing.arrow}玄関`;
+    const fontSize = Math.max(8.5, Math.min(cellSize * 0.22, 12));
+    ctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(label, cx, cy);
+
     ctx.fillStyle = '#92400e';
-    ctx.font = `bold ${Math.max(8, cellSize*0.18)}px "Zen Kaku Gothic New"`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText('▼玄関', x+cellSize/2, y+cellSize-1);
+    ctx.fillText(label, cx, cy);
     ctx.restore();
   }
 
@@ -3051,7 +3131,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const rooms={};
     for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
       const cell=grid[r][c];
-      if (!cell.roomId||cell.type===T.EMPTY) continue;
+      if (!cell.roomId||cell.type===T.EMPTY||cell.type===T.ENTRANCE) continue;
       if (!rooms[cell.roomId]) rooms[cell.roomId]={cells:[],label:cell.label};
       rooms[cell.roomId].cells.push({r,c});
     }
@@ -3066,6 +3146,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       rctx.font=`bold ${Math.max(7,cs*0.22)}px "Zen Kaku Gothic New",sans-serif`;
       rctx.fillText(label,ax,ay);
     }
+    // Entrance
+    const { entranceRow: er, entranceCol: ec } = STAGE;
+    const facing = getEntranceFacing(STAGE, grid);
+    rctx.fillStyle = '#92400e';
+    rctx.font = `bold ${Math.max(7, cs*0.22)}px "Zen Kaku Gothic New",sans-serif`;
+    rctx.fillText(`${facing.arrow}玄関`, (ec + 0.5) * cs, (er + 0.5) * cs);
     rctx.restore();
   }
 
@@ -3393,12 +3479,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     pc.strokeRect(1, 1, total-2, total-2);
     // Entrance marker
     const { entranceRow: er, entranceCol: ec } = STAGE;
+    const facing = getEntranceFacing(STAGE);
     pc.fillStyle = '#fef08a';
     pc.fillRect(ec*pcs+1, er*pcs+1, pcs-2, pcs-2);
     pc.fillStyle = '#92400e';
     pc.font = `bold ${pcs*0.4}px sans-serif`;
     pc.textAlign = 'center'; pc.textBaseline = 'middle';
-    pc.fillText('▼', ec*pcs+pcs/2, er*pcs+pcs/2);
+    pc.fillText(facing.arrow, ec*pcs+pcs/2, er*pcs+pcs/2);
   }
 
   /* ============================================================
@@ -3724,7 +3811,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       for (let c = 0; c < gSize; c++) {
         const cell = pGrid[r][c];
         if (!cell || visited[r][c]) continue;
-        if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) continue;
+        if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE || cell.type === T.ENTRANCE) continue;
 
         const roomType = cell.type;
         const roomLabel = cell.label || getDefaultRoomLabel(roomType);
@@ -3866,10 +3953,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         for (let c=0; c<gSize; c++) {
           const cell = p.propertyGrid[r][c];
           if (cell && cell.type === T.ENTRANCE) {
-            ctx.fillStyle = '#b45309';
-            const markerSize = Math.max(5, cSize * 0.35);
-            ctx.font = `bold ${markerSize}px sans-serif`;
-            ctx.fillText('▼', (c + 0.5) * cSize, (r + 0.25) * cSize);
+            const facing = getEntranceFacing(null, p.propertyGrid);
+            const cx = (c + 0.5) * cSize;
+            const cy = (r + 0.5) * cSize;
+            const label = isCompact ? `${facing.arrow}玄` : `${facing.arrow}玄関`;
+            const markerSize = isCompact ? Math.max(6.5, cSize * 0.3) : Math.max(9, cSize * 0.25);
+            ctx.font = `bold ${markerSize}px "Zen Kaku Gothic New", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 白フチで視認性確保
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = isCompact ? 2 : 3;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(label, cx, cy);
+
+            ctx.fillStyle = '#92400e';
+            ctx.fillText(label, cx, cy);
           }
         }
       }
