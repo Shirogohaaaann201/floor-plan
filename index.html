@@ -382,9 +382,11 @@
       background: var(--c-surface2);
       border: 2px solid var(--c-border);
       border-radius: var(--r-md);
-      padding: 8px 6px 6px;
-      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      padding: 6px 4px 6px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
       cursor: pointer;
+      min-height: 86px;
+      height: 86px;
       transition: border-color 0.15s, background 0.15s, transform 0.1s;
     }
     .draft-card:active { transform: scale(0.96); }
@@ -396,6 +398,11 @@
     .draft-card-name {
       font-size: 10px; font-weight: 700; color: var(--c-text);
       text-align: center; line-height: 1.2;
+    }
+    .draft-card-preview {
+      width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
     .mini-grid {
       display: grid; gap: 2px;
@@ -638,7 +645,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.68 (10/14)
+        Floor Plan v0.69 (10/15)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -820,29 +827,37 @@
     <!-- Footer controls -->
     <footer class="game-footer">
       <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="toolbar-left" style="flex-wrap: wrap;">          <button class="btn btn-slate" id="btn-reroll" style="padding:8px 12px;font-size:12px;gap:5px;">
-            <i class="ph-bold ph-arrows-clockwise" style="font-size:14px;color:var(--c-blue);"></i>
-            更新 <span style="font-size:9px;color:var(--c-text2);">(5.0万)</span>
+      <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+        <div class="toolbar-left" style="display:flex; align-items:center; gap:8px;">
+          <button class="btn btn-slate" id="btn-show-mission" style="padding:6px 10px; font-size:11px; gap:4px;">
+            <i class="ph-bold ph-list-checks" style="color:var(--c-blue);"></i> 依頼詳細
           </button>
-          <button class="btn btn-slate" id="btn-mirror" style="padding:8px 12px;font-size:12px;gap:5px;">
-            <i class="ph-bold ph-arrows-left-right" style="font-size:15px;color:var(--c-indigo);"></i>
-            反転 <span style="font-size:9px;color:var(--c-text2);">(費用1.2倍)</span>
-          </button>
-          <span id="piece-label" style="font-size:11px;color:var(--c-text2);"></span>
-          <button class="btn btn-slate" id="btn-show-mission" style="padding:6px; font-size:11px; margin-left:auto;"><i class="ph-bold ph-list-checks"></i> 依頼</button>
           <span class="badge" id="realtime-rent-badge" style="background:#0f172a; color:#f59e0b; font-size:11px; padding:4px 8px; transition: transform 0.2s, background 0.2s;">現在査定: 0.0万円</span>
+          <span id="piece-label" style="font-size:11px; color:var(--c-text2);"></span>
         </div>
-        <button class="btn btn-slate" id="btn-finish" style="padding:6px 10px;font-size:11px;gap:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;box-shadow:none;">
-          <i class="ph-bold ph-check-square-offset" style="font-size:14px;color:var(--c-emerald);"></i>
+        <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold;">
+          <i class="ph-bold ph-check-square-offset" style="font-size:14px; color:var(--c-emerald);"></i>
           設計完了
         </button>
       </div>
 
       <!-- Draft tray -->
       <div id="draft-area" style="display:flex; width:100%;">
-        <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%;"><div id="reroll-info" style="display:none;"></div>
-          <div id="draft-container" style="display:flex; gap:8px;"></div>          <button class="btn btn-slate" id="btn-rotate" style="padding:4px; height:auto; min-height:36px; font-size:11px; width:100%; border:1px solid var(--c-border);"><i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber);"></i> 回転</button>
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%;">
+          <div id="reroll-info" style="display:none;"></div>
+          <div id="draft-container" style="display:flex; gap:8px;"></div>
+          <div class="action-btn-row" style="display:flex; gap:6px; width:100%;">
+            <button class="btn btn-slate" id="btn-rotate" style="flex:1; padding:6px 4px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; align-items:center; justify-content:center; gap:4px;">
+              <i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber); font-size:14px;"></i> 回転
+            </button>
+            <button class="btn btn-slate" id="btn-reroll" style="flex:1.2; padding:4px 6px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+              <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue); font-size:13px;"></i> 更新</div>
+            </button>
+            <button class="btn btn-slate" id="btn-mirror" style="flex:1; padding:4px 4px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+              <div style="display:flex; align-items:center; gap:3px;"><i class="ph-bold ph-arrows-left-right" style="color:var(--c-indigo); font-size:13px;"></i> 反転</div>
+              <span style="font-size:8px; color:var(--c-text2); margin-top:1px;">(費用1.2倍)</span>
+            </button>
+          </div>
         </div>
       </div>
     </footer>
@@ -1646,7 +1661,7 @@
     const shape = isSelected ? getShape(piece, selectedRot, isMirrored) : piece.shape;
     const rows = shape.length, cols = shape[0].length;
     const style = CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
-    let miniHtml = `<div class="mini-grid" style="grid-template-columns:repeat(${cols},14px);">`;
+    let miniHtml = `<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols},14px);">`;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const filled = shape[r][c] === 1;
@@ -1668,7 +1683,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         miniHtml += `</div>`;
       }
     }
-    miniHtml += `</div>`;
+    miniHtml += `</div></div>`;
     card.innerHTML = miniHtml + `<span class="draft-card-name">${piece.name}</span>`;
     card.addEventListener('pointerdown', clickHandler);
     return card;
@@ -1688,8 +1703,26 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
       if (piece) {
         const card = createCardElement(piece, isSel, () => {
-          initAudio(); selectedSlot = idx; selectedRot = 0; isMirrored = false;
-          playSound('rotate'); renderDraftUI(); updatePieceLabel(); drawPlan();
+          initAudio();
+          cancelRerollConfirm();
+          if (selectedSlot === idx) {
+            // 選択中のピースを再タップ -> 選択解除！
+            selectedSlot = null;
+            selectedRot = 0;
+            isMirrored = false;
+            hoverCell = null;
+            previewMode = false;
+            showConfirmUI(false);
+            playSound('tap');
+          } else {
+            selectedSlot = idx;
+            selectedRot = 0;
+            isMirrored = false;
+            playSound('rotate');
+          }
+          renderDraftUI();
+          updatePieceLabel();
+          drawPlan();
         });
         wrap.appendChild(card);
         
@@ -1708,6 +1741,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         }
         keepBtn.onclick = () => {
           initAudio();
+          cancelRerollConfirm();
           keepStates[idx] = !keepStates[idx];
           renderDraftUI();
         };
@@ -1726,8 +1760,36 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       container.appendChild(wrap);
     });
 
+    const hasSel = (selectedSlot !== null && draftSlots[selectedSlot] !== null);
+    const btnRotate = document.getElementById('btn-rotate');
+    const btnMirror = document.getElementById('btn-mirror');
+    if (btnRotate) {
+      btnRotate.disabled = !hasSel;
+      btnRotate.style.opacity = hasSel ? '1' : '0.4';
+      btnRotate.style.cursor = hasSel ? 'pointer' : 'not-allowed';
+    }
+    if (btnMirror) {
+      btnMirror.disabled = !hasSel;
+      btnMirror.style.opacity = hasSel ? '1' : '0.4';
+      btnMirror.style.cursor = hasSel ? 'pointer' : 'not-allowed';
+    }
+
     updatePieceLabel();
     updateRerollButton();
+  }
+
+  let isRerollConfirming = false;
+  let rerollConfirmTimer = null;
+
+  function cancelRerollConfirm() {
+    if (isRerollConfirming) {
+      isRerollConfirming = false;
+      if (rerollConfirmTimer) {
+        clearTimeout(rerollConfirmTimer);
+        rerollConfirmTimer = null;
+      }
+      updateRerollButton();
+    }
   }
 
   function updateRerollButton() {
@@ -1745,34 +1807,56 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     if (!canReroll) {
       btn.disabled = true;
-      btn.style.opacity = '0.5';
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.boxShadow = '';
+      btn.style.color = '';
       btn.innerHTML = `<i class="ph-bold ph-arrows-clockwise" style="color:var(--c-text3);"></i> 更新不可`;
     } else {
       const costs = getRerollCost();
       btn.disabled = false;
       btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
       const costText = costs.total === 0 ? '無料' : `-${costs.total.toFixed(1)}万`;
       let nextCost = getDiscardCostForNext(discardCount);
       let subText = `破棄:${discardCount}個(次${nextCost.toFixed(1)}万)`;
       if (costs.keep > 0) subText += ` ＋ 維持:${costs.keep.toFixed(1)}万`;
-      btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
-        <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> 更新 (${costText})</div>
-        <div style="font-size:8px; color:var(--c-text3); margin-top:2px;">${subText}</div>
-      </div>`;
+
+      if (isRerollConfirming) {
+        btn.style.background = '#78350f';
+        btn.style.borderColor = '#f59e0b';
+        btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.45)';
+        btn.style.color = '#fef08a';
+        btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
+          <div style="font-weight:bold; font-size:10px;"><i class="ph-bold ph-warning-circle" style="color:#fde047;"></i> もう一度押す</div>
+          <div style="font-size:8px; color:#fde68a; margin-top:1px;">更新実行 (${costText})</div>
+        </div>`;
+      } else {
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.boxShadow = '';
+        btn.style.color = '';
+        btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
+          <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> 更新 (${costText})</div>
+          <div style="font-size:8px; color:var(--c-text3); margin-top:1px;">${subText}</div>
+        </div>`;
+      }
     }
   }
 
   function updatePieceLabel() {
-    const p = draftSlots[selectedSlot];
+    const p = (selectedSlot !== null) ? draftSlots[selectedSlot] : null;
     const cost = p ? getPieceCost(p, isMirrored).toFixed(1) : '0.0';
-    const mirText = isMirrored ? '・反転' : '';
-    const name = p ? p.name : '';
-    const rot = selectedRot * 90;
-    document.getElementById('piece-label').innerHTML = p ? `<span style="color:var(--c-emerald); font-weight:bold; font-size:14px;">[${cost}万]</span>` : '';
+    const pl = document.getElementById('piece-label');
+    if (pl) {
+      pl.innerHTML = p ? `<span style="color:var(--c-emerald); font-weight:bold; font-size:12px;">[選択中: ${cost}万]</span>` : '';
+    }
       
     const btnMirror = document.getElementById('btn-mirror');
     if (btnMirror) {
-      if (isMirrored) {
+      if (isMirrored && p) {
         btnMirror.style.background = '#e0e7ff';
         btnMirror.style.borderColor = '#6366f1';
       } else {
@@ -2419,7 +2503,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const pr = Math.floor((cy - rect.top)  / cellSize);
     
     let offR = 0, offC = 0;
-    const piece = draftSlots[selectedSlot];
+    const piece = (selectedSlot !== null) ? draftSlots[selectedSlot] : null;
     if (piece) {
       const shape = getShape(piece, selectedRot, isMirrored);
       offR = Math.floor(shape.length / 2);
@@ -2432,7 +2516,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const co = document.getElementById('confirm-overlay');
     co.style.display = show ? 'flex' : 'none';
     
-    if (show && hoverCell && draftSlots[selectedSlot]) {
+    if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
       const piece = draftSlots[selectedSlot];
       const shape = getShape(piece, selectedRot, isMirrored);
       const w = shape[0].length * cellSize;
@@ -2458,6 +2542,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   canvas.addEventListener('pointerdown', e => {
     initAudio();
+    cancelRerollConfirm();
+    if (selectedSlot === null || !draftSlots[selectedSlot]) {
+      return; // ピース未選択時はプレビューを出さない
+    }
     const pos = getCellFromPointer(e);
     if (pos) {
       hoverCell = pos;
@@ -2468,6 +2556,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
   
   canvas.addEventListener('pointermove', e => {
+    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
     if (previewMode) {
       const isDragging = (e.pointerType === 'mouse' && e.buttons > 0) || (e.pointerType !== 'mouse');
       if (!isDragging) return; 
@@ -3600,6 +3689,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-rotate').addEventListener('click', () => {
     initAudio();
+    cancelRerollConfirm();
+    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
     selectedRot = (selectedRot + 1) % 4;
     playSound('rotate');
     renderDraftUI();
@@ -3608,6 +3699,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
   document.getElementById('btn-mirror').addEventListener('click', () => {
     initAudio();
+    cancelRerollConfirm();
+    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
     isMirrored = !isMirrored;
     playSound('rotate');
     renderDraftUI();
@@ -3615,14 +3708,31 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     drawPlan();
   });
 
-  document.getElementById('btn-reroll')?.addEventListener('click', () => {
+  document.getElementById('btn-reroll')?.addEventListener('click', (e) => {
+    e.stopPropagation();
     initAudio();
     const costs = getRerollCost();
     if (budget < costs.total) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
+      cancelRerollConfirm();
       return;
     }
+
+    if (!isRerollConfirming) {
+      // 1回目のタップ: 確認状態（ハイライト）へ
+      isRerollConfirming = true;
+      playSound('tap');
+      updateRerollButton();
+      if (rerollConfirmTimer) clearTimeout(rerollConfirmTimer);
+      rerollConfirmTimer = setTimeout(() => {
+        cancelRerollConfirm();
+      }, 4000);
+      return;
+    }
+
+    // 2回目のタップ: 実行
+    cancelRerollConfirm();
     
     let discarded = 0;
     for (let i = 0; i < 3; i++) {
@@ -3650,10 +3760,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
     
-    if (draftSlots[selectedSlot] === null) {
+    if (selectedSlot !== null && draftSlots[selectedSlot] === null) {
       let next = draftSlots.findIndex(p => p !== null);
       if (next !== -1) selectedSlot = next;
-      else selectedSlot = 0;
+      else selectedSlot = null;
     }
 
     isMirrored = false;
@@ -3662,6 +3772,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updatePieceLabel();
     drawPlan();
     playSound('clear');
+  });
+
+  // 更新ハイライト中に画面のどこかをタップしたらキャンセル
+  document.addEventListener('pointerdown', (e) => {
+    if (isRerollConfirming) {
+      const btn = document.getElementById('btn-reroll');
+      if (btn && !btn.contains(e.target)) {
+        cancelRerollConfirm();
+      }
+    }
   });
 
   document.getElementById('btn-show-mission')?.addEventListener('click', () => {
