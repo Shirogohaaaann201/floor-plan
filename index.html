@@ -1288,20 +1288,20 @@
       }
     }
 
-    // 1. 家賃ボーナス
+    // 1. 家賃ボーナス（見た目・挙動一致のため整数に丸める）
     const rentRatio = currentRent / targetRent;
-    const rentBonus = 50 - (rentRatio - 1.0) * 50;
+    const rentBonus = Math.round(50 - (rentRatio - 1.0) * 50);
 
-    // 2. 依頼ボーナス
-    const reqBonus = (satisfied / totalReq) * 50;
+    // 2. 依頼ボーナス（整数に丸める）
+    const reqBonus = Math.round((satisfied / totalReq) * 50);
 
-    // 3. コンボボーナス
+    // 3. コンボボーナス（整数）
     const comboBonus = (goodC * 5) - (badC * 20);
 
     // 4. 任意オプションボーナス (バリア延長: 1つ達成につき +5%)
     const optBonus = (p.optionalSatisfied || 0) * 5;
 
-    // 満足度合計
+    // 満足度合計（各内訳の整数の和として厳密に一致させる）
     const satisfaction = rentBonus + reqBonus + comboBonus + optBonus;
 
     // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
@@ -1332,16 +1332,16 @@
     const resaleValue = ((baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02))).toFixed(1);
 
     return {
-      satisfaction: Math.round(satisfaction),
+      satisfaction: satisfaction,
       degRate: degRate.toFixed(1),
       evictRate: evictRate,
-      initialEvict: Math.max(0, Math.round(initialEvict)),
+      initialEvict: Math.max(0, initialEvict),
       resaleValue: resaleValue,
       age,
-      rentBonus: Math.round(rentBonus),
-      reqBonus: Math.round(reqBonus),
-      comboBonus: Math.round(comboBonus),
-      optBonus: Math.round(optBonus),
+      rentBonus: rentBonus,
+      reqBonus: reqBonus,
+      comboBonus: comboBonus,
+      optBonus: optBonus,
       currentRent: currentRent,
       isOriginal: isOriginal
     };
