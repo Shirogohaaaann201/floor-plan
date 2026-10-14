@@ -638,7 +638,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.65 (10/10)
+        Floor Plan v0.66 (10/14)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -648,7 +648,12 @@
         
         <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:12px;">
           <div style="text-align:center; margin-bottom:12px;">
-            <canvas id="pd-canvas" width="140" height="140" style="background:#1e293b; border-radius:6px; margin:0 auto; display:block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);"></canvas>
+            <div id="pd-canvas-wrapper" style="position:relative; display:inline-block; cursor:pointer;" title="タップで拡大表示">
+              <canvas id="pd-canvas" width="140" height="140" style="background:#1e293b; border-radius:6px; margin:0 auto; display:block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);"></canvas>
+              <div style="position:absolute; bottom:4px; right:4px; background:rgba(15,23,42,0.85); color:#cbd5e1; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px; pointer-events:none; display:flex; align-items:center; gap:3px; border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(2px);">
+                <i class="ph-bold ph-magnifying-glass-plus"></i> 拡大
+              </div>
+            </div>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <span style="font-weight:bold; color:var(--c-text);" id="pd-name">物件No.1</span>
@@ -686,6 +691,25 @@
         <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:12px; font-size:14px; border-color:var(--c-border); color:var(--c-amber-lt);">
           <i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">0.0</span>万)
         </button>
+      </div>
+    </div>
+
+    <!-- 間取り図拡大鑑賞モーダル -->
+    <div id="plan-viewer-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:200; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:center;">
+        <button id="btn-close-plan-viewer" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" id="pv-title" style="margin-bottom:12px; font-size:14px; text-align:left;">
+          <i class="ph-fill ph-blueprint"></i> 間取り図面
+        </div>
+        
+        <div style="background:#1e293b; border-radius:8px; padding:8px; display:inline-block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 4px 12px rgba(0,0,0,0.4); margin-bottom:12px;">
+          <canvas id="pv-canvas" width="280" height="280" style="display:block; margin:0 auto; border-radius:4px; max-width:100%; height:auto;"></canvas>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0 4px;">
+          <span style="font-size:11px; color:var(--c-text2);" id="pv-subinfo">完成間取り図</span>
+          <button id="btn-close-plan-viewer-bottom" class="btn btn-slate" style="padding:4px 12px; font-size:11px; cursor:pointer;">閉じる</button>
+        </div>
       </div>
     </div>
   </section>
@@ -3666,19 +3690,87 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      INIT
   ============================================================ */
   
-  function showPropertyDetail(p) {
-    const stats = calcPropertyStats(p);
-    
-    const tenantBadge = stats.isOriginal 
-      ? `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'})</span>`
-      : `<span style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:#475569; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 一般市場入居</span>`;
-    document.getElementById('pd-name').innerHTML = `物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)} ${tenantBadge}`;
-    
-    // 図面の描画
-    const canvas = document.getElementById('pd-canvas');
+  function getDefaultRoomLabel(type) {
+    if (type === T.LDK) return 'LDK';
+    if (type === T.ROOM) return '洋室';
+    if (type === T.BATH) return '浴室';
+    if (type === T.TOILET) return 'トイレ';
+    if (type === T.WASHROOM) return '洗面所';
+    if (type === T.CLOSET) return '収納';
+    if (type === T.ENTRANCE) return '玄関';
+    return '';
+  }
+
+  function getShortRoomLabel(type, label, cellCount) {
+    if (type === T.LDK) return cellCount >= 4 ? 'LDK' : 'DK';
+    if (type === T.ROOM) {
+      if (label && label.includes('和')) return cellCount >= 2 ? '和室' : '和';
+      return cellCount >= 2 ? '洋室' : '洋';
+    }
+    if (type === T.BATH) return cellCount >= 2 ? '浴室' : '浴';
+    if (type === T.TOILET) return 'WC';
+    if (type === T.WASHROOM) return cellCount >= 2 ? '洗面' : '洗';
+    if (type === T.CLOSET) return cellCount >= 2 ? '収納' : '収';
+    if (type === T.ENTRANCE) return '玄';
+    return label || '';
+  }
+
+  function extractRoomsFromProperty(pGrid) {
+    const gSize = pGrid.length || 12;
+    const visited = Array.from({length: gSize}, () => Array(gSize).fill(false));
+    const rooms = [];
+
+    for (let r = 0; r < gSize; r++) {
+      for (let c = 0; c < gSize; c++) {
+        const cell = pGrid[r][c];
+        if (!cell || visited[r][c]) continue;
+        if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) continue;
+
+        const roomType = cell.type;
+        const roomLabel = cell.label || getDefaultRoomLabel(roomType);
+        const targetRoomId = cell.roomId;
+        
+        const q = [{r, c}];
+        visited[r][c] = true;
+        const cells = [];
+
+        while (q.length > 0) {
+          const curr = q.shift();
+          cells.push(curr);
+
+          const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+          for (const {dr, dc} of dirs) {
+            const nr = curr.r + dr, nc = curr.c + dc;
+            if (nr >= 0 && nr < gSize && nc >= 0 && nc < gSize && !visited[nr][nc]) {
+              const nb = pGrid[nr][nc];
+              if (nb && nb.type === roomType) {
+                if (targetRoomId !== undefined && nb.roomId !== undefined) {
+                  if (nb.roomId === targetRoomId) {
+                    visited[nr][nc] = true;
+                    q.push({r: nr, c: nc});
+                  }
+                } else {
+                  visited[nr][nc] = true;
+                  q.push({r: nr, c: nc});
+                }
+              }
+            }
+          }
+        }
+
+        rooms.push({
+          type: roomType,
+          label: roomLabel,
+          cells: cells
+        });
+      }
+    }
+    return rooms;
+  }
+
+  function renderPropertyPlanToCanvas(canvas, p, baseSize, isCompact) {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    const baseSize = 140;
     canvas.width = baseSize * dpr;
     canvas.height = baseSize * dpr;
     canvas.style.width = `${baseSize}px`;
@@ -3687,7 +3779,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, baseSize, baseSize);
 
-    function drawGridFallback() {
+    function drawGridLayers() {
       ctx.clearRect(0, 0, baseSize, baseSize);
       if (!p.propertyGrid) {
         ctx.fillStyle = '#64748b';
@@ -3698,6 +3790,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
       const gSize = p.propertyGrid.length || 12;
       const cSize = baseSize / gSize;
+      
+      // 1. セル背景
       for (let r=0; r<gSize; r++) {
         for (let c=0; c<gSize; c++) {
           const cell = p.propertyGrid[r][c];
@@ -3708,15 +3802,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             ctx.strokeStyle = s.border || 'rgba(0,0,0,0.15)';
             ctx.lineWidth = 0.8;
             ctx.strokeRect(c * cSize, r * cSize, cSize, cSize);
-
-            // 玄関マーカー
-            if (cell.type === T.ENTRANCE) {
-              ctx.fillStyle = '#92400e';
-              ctx.font = `bold ${Math.max(6, cSize * 0.55)}px sans-serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText('▼', c * cSize + cSize / 2, r * cSize + cSize / 2);
-            }
           } else if (cell && cell.type === T.OBSTACLE) {
             ctx.fillStyle = '#334155';
             ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
@@ -3739,9 +3824,59 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         }
       }
 
-      // 外周枠線
+      // 2. 部屋ラベル（重心に白フチ付きテキストを描画）
+      const rooms = extractRoomsFromProperty(p.propertyGrid);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const room of rooms) {
+        let sumR = 0, sumC = 0;
+        for (const pt of room.cells) {
+          sumR += pt.r;
+          sumC += pt.c;
+        }
+        const ax = (sumC / room.cells.length + 0.5) * cSize;
+        const ay = (sumR / room.cells.length + 0.5) * cSize;
+        
+        let labelText = '';
+        if (isCompact) {
+          labelText = getShortRoomLabel(room.type, room.label, room.cells.length);
+        } else {
+          labelText = room.label || getDefaultRoomLabel(room.type);
+        }
+
+        const fontSize = isCompact 
+          ? (room.cells.length >= 4 ? 9.5 : (room.cells.length >= 2 ? 8.5 : 7.5))
+          : (room.cells.length >= 4 ? 13 : (room.cells.length >= 2 ? 11.5 : 10));
+
+        ctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
+
+        // 白フチで視認性確保
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = isCompact ? 2.2 : 3.5;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(labelText, ax, ay);
+
+        // 文字本体
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText(labelText, ax, ay);
+      }
+
+      // 3. 玄関マーカー
+      for (let r=0; r<gSize; r++) {
+        for (let c=0; c<gSize; c++) {
+          const cell = p.propertyGrid[r][c];
+          if (cell && cell.type === T.ENTRANCE) {
+            ctx.fillStyle = '#b45309';
+            const markerSize = Math.max(5, cSize * 0.35);
+            ctx.font = `bold ${markerSize}px sans-serif`;
+            ctx.fillText('▼', (c + 0.5) * cSize, (r + 0.25) * cSize);
+          }
+        }
+      }
+
+      // 4. 外周枠線
       ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = isCompact ? 2 : 3;
       ctx.strokeRect(1, 1, baseSize - 2, baseSize - 2);
     }
 
@@ -3751,11 +3886,52 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         ctx.clearRect(0, 0, baseSize, baseSize);
         ctx.drawImage(img, 0, 0, baseSize, baseSize);
       };
+      img.onerror = () => {
+        drawGridLayers();
+      };
       img.src = p.thumbnail;
-      drawGridFallback();
+      drawGridLayers();
     } else {
-      drawGridFallback();
+      drawGridLayers();
     }
+  }
+
+  function openPlanViewer(p) {
+    if (!p) return;
+    initAudio();
+    const pvModal = document.getElementById('plan-viewer-modal');
+    const pvCanvas = document.getElementById('pv-canvas');
+    const pvTitle = document.getElementById('pv-title');
+    const pvSubinfo = document.getElementById('pv-subinfo');
+
+    const pNum = p.propertyNo || (p.level !== undefined ? p.level + 1 : 1);
+    pvTitle.innerHTML = `<i class="ph-fill ph-blueprint"></i> 物件 No.${pNum} 間取り図面`;
+    
+    const stats = calcPropertyStats(p);
+    pvSubinfo.textContent = `築${stats.age}ヶ月 ｜ 家賃 ${stats.currentRent.toFixed(1)}万/月 ｜ Rank ${getPropertyRank(stats.degRate)}`;
+
+    renderPropertyPlanToCanvas(pvCanvas, p, 280, false);
+    pvModal.style.display = 'flex';
+  }
+
+  function closePlanViewer() {
+    initAudio();
+    const pvModal = document.getElementById('plan-viewer-modal');
+    if (pvModal) pvModal.style.display = 'none';
+  }
+
+  function showPropertyDetail(p) {
+    window.currentDetailProp = p;
+    const stats = calcPropertyStats(p);
+    
+    const tenantBadge = stats.isOriginal 
+      ? `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'})</span>`
+      : `<span style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:#475569; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 一般市場入居</span>`;
+    document.getElementById('pd-name').innerHTML = `物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)} ${tenantBadge}`;
+    
+    // 図面の描画 (140px サムネイル・略称ラベル付き)
+    const canvas = document.getElementById('pd-canvas');
+    renderPropertyPlanToCanvas(canvas, p, 140, true);
 
     document.getElementById('pd-age').textContent = `築${stats.age}ヶ月`;
     document.getElementById('pd-rent').innerHTML = `${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
@@ -3823,6 +3999,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-close-prop-detail')?.addEventListener('click', () => {
     initAudio();
     document.getElementById('prop-detail-modal').style.display = 'none';
+  });
+
+  // 間取り図タップで拡大モーダルを開く
+  document.getElementById('pd-canvas-wrapper')?.addEventListener('click', () => {
+    if (window.currentDetailProp) {
+      openPlanViewer(window.currentDetailProp);
+    }
+  });
+
+  // 間取り拡大モーダル閉じる
+  document.getElementById('btn-close-plan-viewer')?.addEventListener('click', closePlanViewer);
+  document.getElementById('btn-close-plan-viewer-bottom')?.addEventListener('click', closePlanViewer);
+  document.getElementById('plan-viewer-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target.id === 'plan-viewer-modal') closePlanViewer();
   });
 
 function updateHomeUI() {
