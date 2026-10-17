@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
   <title>間取り図パズル — Floor Plan</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -269,18 +269,36 @@
       flex-shrink: 0;
       background: var(--c-surface);
       border-bottom: 1px solid var(--c-border);
-      padding: 8px 12px;
+      padding: 8px 10px;
+      padding-top: max(8px, env(safe-area-inset-top));
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
       display: flex; align-items: center; justify-content: space-between;
+      gap: 6px;
     }
-    .game-header-left { display: flex; align-items: center; gap: 8px; }
+    .game-header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .game-title-wrap h2 { font-size: 12px; font-weight: 900; letter-spacing: 0.05em; }
     .game-title-wrap p { font-size: 10px; color: var(--c-text2); margin-top: 1px; }
-    .game-header-right { display: flex; align-items: center; gap: 8px; }
-    .target-rent-wrap { text-align: right; }
-    .target-rent-label { font-size: 9px; color: var(--c-text3); }
+    .game-header-right { display: flex; align-items: center; gap: 10px; }
+    .target-rent-wrap {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .target-rent-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+    }
     .target-rent-val {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 16px; font-weight: 700; color: var(--c-amber-lt);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--c-amber-lt);
       line-height: 1.1;
     }
 
@@ -645,7 +663,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.70 (10/17)
+        Floor Plan v0.71 (10/17)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -784,14 +802,14 @@
   ============================== -->
   <section id="screen-game" class="screen">
     <!-- Header (mission button + budget / current rent / target rent / sound) -->
-    <header class="game-header" style="padding:6px 10px; justify-content:space-between;">
+    <header class="game-header">
       <div class="game-header-left">
-        <button class="btn btn-slate" id="btn-show-mission" style="padding:6px 10px; font-size:11px; gap:4px; border:1px solid var(--c-border);">
+        <button class="btn btn-slate" id="btn-show-mission" style="padding:6px 10px; font-size:11px; gap:4px; border:1px solid var(--c-border); white-space:nowrap;">
           <i class="ph-bold ph-list-checks" style="color:var(--c-blue); font-size:14px;"></i> 依頼詳細
         </button>
       </div>
-      <div class="game-header-right" style="gap:10px;">
-        <div class="target-rent-wrap" style="background:#0f172a; border-color:#334155;">
+      <div class="game-header-right">
+        <div class="target-rent-wrap">
           <div class="target-rent-label">残予算</div>
           <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">1000<span style="font-size:10px;color:var(--c-text2);">万</span></div>
         </div>
@@ -803,7 +821,7 @@
           <div class="target-rent-label">目標家賃</div>
           <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:10px;color:var(--c-text2);">万</span></div>
         </div>
-        <button id="btn-sound-game" class="btn-icon btn">
+        <button id="btn-sound-game" class="btn-icon btn" style="width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
           <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
         </button>
       </div>
