@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
   <title>間取り図パズル — Floor Plan</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -270,11 +273,16 @@
       background: var(--c-surface);
       border-bottom: 1px solid var(--c-border);
       padding: 8px 10px;
-      padding-top: max(8px, env(safe-area-inset-top));
-      padding-left: max(10px, env(safe-area-inset-left));
-      padding-right: max(10px, env(safe-area-inset-right));
+      padding-top: max(32px, calc(env(safe-area-inset-top, 0px) + 8px));
+      padding-left: max(10px, env(safe-area-inset-left, 0px));
+      padding-right: max(10px, env(safe-area-inset-right, 0px));
       display: flex; align-items: center; justify-content: space-between;
       gap: 6px;
+    }
+    @media (min-width: 769px) {
+      .game-header {
+        padding-top: 10px;
+      }
     }
     .game-header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .game-title-wrap h2 { font-size: 12px; font-weight: 900; letter-spacing: 0.05em; }
@@ -288,9 +296,9 @@
       justify-content: center;
     }
     .target-rent-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      color: #94a3b8;
+      color: #cbd5e1;
       line-height: 1.2;
       letter-spacing: 0.02em;
     }
@@ -663,7 +671,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.71 (10/17)
+        Floor Plan v0.72 (10/18)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
