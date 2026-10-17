@@ -645,7 +645,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.69 (10/15)
+        Floor Plan v0.70 (10/17)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -783,12 +783,21 @@
        SCREEN 2: GAME
   ============================== -->
   <section id="screen-game" class="screen">
-    <!-- Header (compact: budget / target rent / sound only) -->
-    <header class="game-header" style="padding:6px 10px; justify-content:flex-end;">
-      <div class="game-header-right" style="margin-left:auto;">
+    <!-- Header (mission button + budget / current rent / target rent / sound) -->
+    <header class="game-header" style="padding:6px 10px; justify-content:space-between;">
+      <div class="game-header-left">
+        <button class="btn btn-slate" id="btn-show-mission" style="padding:6px 10px; font-size:11px; gap:4px; border:1px solid var(--c-border);">
+          <i class="ph-bold ph-list-checks" style="color:var(--c-blue); font-size:14px;"></i> 依頼詳細
+        </button>
+      </div>
+      <div class="game-header-right" style="gap:10px;">
         <div class="target-rent-wrap" style="background:#0f172a; border-color:#334155;">
           <div class="target-rent-label">残予算</div>
           <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">1000<span style="font-size:10px;color:var(--c-text2);">万</span></div>
+        </div>
+        <div class="target-rent-wrap">
+          <div class="target-rent-label">現在査定</div>
+          <div class="target-rent-val font-num" id="realtime-rent-badge" style="color:var(--c-amber-lt); display:inline-block; transition:transform 0.2s, color 0.2s;">0.0<span style="font-size:10px;color:var(--c-text2);">万</span></div>
         </div>
         <div class="target-rent-wrap">
           <div class="target-rent-label">目標家賃</div>
@@ -829,10 +838,6 @@
       <!-- Toolbar -->
       <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
         <div class="toolbar-left" style="display:flex; align-items:center; gap:8px;">
-          <button class="btn btn-slate" id="btn-show-mission" style="padding:6px 10px; font-size:11px; gap:4px;">
-            <i class="ph-bold ph-list-checks" style="color:var(--c-blue);"></i> 依頼詳細
-          </button>
-          <span class="badge" id="realtime-rent-badge" style="background:#0f172a; color:#f59e0b; font-size:11px; padding:4px 8px; transition: transform 0.2s, background 0.2s;">現在査定: 0.0万円</span>
           <span id="piece-label" style="font-size:11px; color:var(--c-text2);"></span>
         </div>
         <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold;">
@@ -1851,7 +1856,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const cost = p ? getPieceCost(p, isMirrored).toFixed(1) : '0.0';
     const pl = document.getElementById('piece-label');
     if (pl) {
-      pl.innerHTML = p ? `<span style="color:var(--c-emerald); font-weight:bold; font-size:12px;">[選択中: ${cost}万]</span>` : '';
+      pl.innerHTML = p
+        ? `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:var(--c-emerald); font-weight:bold; font-size:12px;">(${cost}万)</span>`
+        : `<span style="color:var(--c-text3); font-size:11px;">ピース未選択</span>`;
     }
       
     const btnMirror = document.getElementById('btn-mirror');
@@ -3344,12 +3351,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const rentEl = document.getElementById('realtime-rent-badge');
     if (rentEl) {
-      rentEl.textContent = `現在査定: ${rent.toFixed(1)}万円`;
-      rentEl.style.transform = 'scale(1.1)';
-      rentEl.style.backgroundColor = '#d97706';
+      const isCleared = STAGE && rent >= STAGE.targetRent;
+      rentEl.innerHTML = `${rent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
+      rentEl.style.transform = 'scale(1.18)';
+      rentEl.style.color = '#fbbf24';
       setTimeout(() => {
         rentEl.style.transform = 'scale(1)';
-        rentEl.style.backgroundColor = '#0f172a';
+        rentEl.style.color = isCleared ? 'var(--c-emerald)' : 'var(--c-amber-lt)';
       }, 200);
     }
 
