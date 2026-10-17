@@ -671,7 +671,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.73 (10/18)
+        Floor Plan v0.74 (10/18)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1192,7 +1192,7 @@
     funds: 500.0,
     month: 1,
     level: 0,
-    attempts: 3,
+    attempts: 2,
     properties: [],
     discovered: {
       combos: []
@@ -1263,7 +1263,7 @@
         const parsed = JSON.parse(data);
         Object.assign(GameState, parsed);
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
-          GameState.attempts = 3;
+          GameState.attempts = 2;
         }
       }
     } catch(e) {}
@@ -3713,7 +3713,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   document.getElementById('btn-start').addEventListener('click', () => {
     initAudio();
-    if (GameState.attempts === undefined || GameState.attempts <= 0) GameState.attempts = 3;
+    if (GameState.attempts === undefined || GameState.attempts < 0) GameState.attempts = 2;
     GameState.lastFunds = GameState.funds; // 開始時の資金を記録
     saveGame();
     startGame();
@@ -3885,7 +3885,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   // 売却ボタンのリスナーは showPropertyDetail 内で毎回付け直すので委譲しなくても良い
   document.getElementById('btn-go-mission')?.addEventListener('click', () => {
     initAudio();
-    GameState.attempts = 3; // 新規案件受注時に再設計回数を3回に初期化
+    GameState.attempts = 2; // 新規案件受注時に再設計回数を2回に初期化（初回挑戦＋再設計2回＝計3回挑戦可能）
     saveGame();
     updateStage();
     setupMissionScreen();
@@ -3915,7 +3915,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     alert(msg);
 
     GameState.level++;
-    GameState.attempts = 3;
+    GameState.attempts = 2;
     saveGame();
     updateHomeUI();
     showScreen('home');
@@ -3966,7 +3966,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     alert(msg);
     
     GameState.level++;
-    GameState.attempts = 3;
+    GameState.attempts = 2;
     saveGame();
     updateHomeUI();
     showScreen('home');
