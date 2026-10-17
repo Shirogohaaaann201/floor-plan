@@ -671,7 +671,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.72 (10/18)
+        Floor Plan v0.73 (10/18)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1192,7 +1192,7 @@
     funds: 500.0,
     month: 1,
     level: 0,
-    attempts: 0,
+    attempts: 3,
     properties: [],
     discovered: {
       combos: []
@@ -1262,6 +1262,9 @@
       if (data) {
         const parsed = JSON.parse(data);
         Object.assign(GameState, parsed);
+        if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
+          GameState.attempts = 3;
+        }
       }
     } catch(e) {}
   }
@@ -3674,8 +3677,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     initGrid();
     budget = GameState.funds;
-    // 初回のみ挑戦回数をセット
-    if (GameState.attempts === 0) GameState.attempts = 3;
     selectedSlot = 0; selectedRot = 0;
     previewMode = false; hoverCell = null;
     const co = document.getElementById('confirm-overlay');
@@ -3712,8 +3713,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   document.getElementById('btn-start').addEventListener('click', () => {
     initAudio();
-    if (GameState.attempts <= 0) GameState.attempts = 3; // failsafe
-    GameState.attempts -= 1;
+    if (GameState.attempts === undefined || GameState.attempts <= 0) GameState.attempts = 3;
     GameState.lastFunds = GameState.funds; // 開始時の資金を記録
     saveGame();
     startGame();
@@ -3860,7 +3860,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-restart').addEventListener('click', () => {
     initAudio();
     if (GameState.attempts > 0) {
-      alert(`間取りを破棄し、再挑戦します。`);
+      if (!confirm(`現在の間取りを破棄し、もう一度設計し直しますか？\n（残り再設計回数: ${GameState.attempts}回 → ${GameState.attempts - 1}回）`)) return;
       if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
       GameState.attempts -= 1;
       GameState.lastFunds = GameState.funds;
@@ -3885,6 +3885,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   // 売却ボタンのリスナーは showPropertyDetail 内で毎回付け直すので委譲しなくても良い
   document.getElementById('btn-go-mission')?.addEventListener('click', () => {
     initAudio();
+    GameState.attempts = 3; // 新規案件受注時に再設計回数を3回に初期化
+    saveGame();
     updateStage();
     setupMissionScreen();
     showScreen('mission');
