@@ -313,16 +313,51 @@
     /* Mission Banner */
     .mission-banner {
       flex-shrink: 0;
-      background: #2d1f06;
-      border-bottom: 1px solid #78350f;
-      padding: 6px 12px;
+      background: #182234;
+      border-bottom: 1px solid #334155;
+      padding: 5px 10px;
       display: flex; align-items: center; justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
     }
-    .mission-text {
-      flex: 1; overflow: hidden;
-      font-size: 11px; font-weight: 700;
-      color: #fcd34d; white-space: nowrap; text-overflow: ellipsis;
+    .mission-req-pills-wrap {
+      display: flex; align-items: center; gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      width: 100%;
+    }
+    .mission-req-pills-wrap::-webkit-scrollbar { display: none; }
+    .req-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.25s ease;
+    }
+    .req-pill.met {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+    .req-pill.unmet {
+      background: rgba(51, 65, 85, 0.45);
+      border: 1px solid #475569;
+      color: #94a3b8;
+    }
+    .req-pill.opt.met {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+    }
+    .req-pill.opt.unmet {
+      background: rgba(51, 65, 85, 0.3);
+      border: 1px dashed #64748b;
+      color: #64748b;
     }
     .constraint-info {
       flex-shrink: 0;
@@ -671,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.74 (10/18)
+        Floor Plan v0.75 (10/18)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -836,10 +871,10 @@
     </header>
 
 
-    <!-- Mission banner -->
+    <!-- Mission banner (Real-time Checklist) -->
     <div class="mission-banner">
-      <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:0;">
-        <div class="mission-text" id="mission-banner-text">「2LDK・風呂トイレ別で頼むよ！」</div>
+      <div class="mission-req-pills-wrap" id="mission-req-pills">
+        <!-- Live requirement pills inserted dynamically -->
       </div>
     </div>
 
@@ -1073,114 +1108,343 @@
   ];
 
   // ============================================================
-  // LEVELS (Stage Definitions)
+  // REQUEST REGISTRY
   // ============================================================
-  const LEVELS = [
-    {
-      id: 1,
-      name: 'Stage 1: はじめての1K',
-      initialBudget: 1000.0,
-      maxTurns: 10,
-      targetRent: 4.8,
-      entranceRow: 9,
-      entranceCol: 5,
-      obstacles: [
-        {r:0,c:0,w:12,h:2},
-        {r:10,c:0,w:12,h:2},
-        {r:2,c:0,w:2,h:8},
-        {r:2,c:10,w:2,h:8},
-      ],
-      client: {
-        name: '鈴木 太郎',
-        avatar: '👨‍🎓',
-        quote: '「予算がないのでシンプルで安上がりな1Kをお願いします。風呂とトイレは絶対別で！」',
-        typeBadge: '新社会人',
-      },
-      requests: [
-        { id:'btsep', icon:'ph-shower',        color:'#0891b2', text:'風呂・トイレ別',           fn: counts => counts.bath > 0 && counts.toilet > 0 },
-        { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている', fn: (counts, bfs) => bfs.unreachable === 0 },
-      ],
-      optionalRequests: [
-        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'収納スペースあり (満足度+5%)', fn: counts => counts.maxClosetSize >= 1 },
-      ],
-      customCombo: {
-        name: '日当たり良好',
-        isNegativeInversion: false,
-        customBonus: 2.5,
-        normalBonus: 1.5,
-        desc: '日当たり良好 (南向きLDK)'
+  const REQUEST_REGISTRY = {
+    btsep: {
+      id: 'btsep', icon: 'ph-shower', color: '#0891b2', text: '風呂・トイレ別',
+      fn: counts => counts.bath > 0 && counts.toilet > 0
+    },
+    reach: {
+      id: 'reach', icon: 'ph-path', color: '#3b82f6', text: '全部屋へ動線が通っている',
+      fn: (counts, bfs) => counts && counts.totalOcc > 0 && bfs && bfs.unreachable === 0
+    },
+    wash: {
+      id: 'wash', icon: 'ph-drop', color: '#059669', text: '洗面所あり',
+      fn: counts => counts.washroom > 0
+    },
+    ldk1_room1: {
+      id: 'ldk1_room1', icon: 'ph-couch', color: '#7c3aed', text: '1LDK以上 (LDK+居室1)',
+      fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 1
+    },
+    ldk1_room2: {
+      id: 'ldk1_room2', icon: 'ph-couch', color: '#7c3aed', text: '2LDK以上 (LDK+居室2)',
+      fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 2
+    },
+    ldk2: {
+      id: 'ldk2', icon: 'ph-couch', color: '#7c3aed', text: '3LDK以上 (LDK+居室3)',
+      fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 3
+    },
+    bath2: {
+      id: 'bath2', icon: 'ph-bathtub', color: '#0891b2', text: '浴室2つ以上',
+      fn: counts => counts.bath >= 2
+    },
+    wide_ent: {
+      id: 'wide_ent', icon: 'ph-door', color: '#b45309', text: 'ワイド玄関 (2マス玄関)',
+      fn: (counts, bfs, stage) => {
+        const s = stage || STAGE;
+        return !!(s && s.entranceCells && s.entranceCells.length >= 2);
       }
     },
-    {
-      id: 2,
-      name: 'Stage 2: ファミリー向け3LDK',
-      initialBudget: 3500.0,
-      maxTurns: 15,
-      targetRent: 9.6,
-      entranceRow: 11,
-      entranceCol: 5,
-      obstacles: [
-        {r:5,c:5,w:2,h:2},
-        {r:0,c:10,w:2,h:2},
-      ],
-      client: {
-        name: '田中 健一郎',
-        avatar: '👨‍👩‍👧‍👦',
-        quote: '「とにかく広いLDKが欲しい！子供部屋も2つ以上必要です。」',
-        typeBadge: 'ファミリー層',
-      },
-      requests: [
-        { id:'ldk2',  icon:'ph-couch',        color:'#7c3aed', text:'3LDK以上（LDK + 居室3部屋）', fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 3 },
-        { id:'btsep', icon:'ph-shower',        color:'#0891b2', text:'風呂・トイレ別',              fn: counts => counts.bath > 0 && counts.toilet > 0 },
-        { id:'wash',  icon:'ph-drop',          color:'#059669', text:'洗面所あり',                  fn: counts => counts.washroom > 0 },
-        { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
-      ],
-      optionalRequests: [
-        { id:'opt-bath',  icon:'ph-bathtub',      color:'#0891b2', text:'ゆったりした浴室 (2マス以上) (満足度+5%)', fn: counts => counts.maxBathSize >= 2 },
-      ],
-      customCombo: null
+    'opt-closet': {
+      id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり (満足度+5%)',
+      fn: counts => counts.maxClosetSize >= 1
     },
-    {
-      id: 3,
-      name: 'Stage 3: 昼夜逆転のシェルター',
-      initialBudget: 5000.0,
-      maxTurns: 20,
-      targetRent: 14.4,
-      entranceRow: 11,
-      entranceCol: 2,
+    'opt-bath': {
+      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (2マス以上) (満足度+5%)',
+      fn: counts => counts.maxBathSize >= 2
+    },
+    'opt-ldk8': {
+      id: 'opt-ldk8', icon: 'ph-arrows-out', color: '#7c3aed', text: '広々LDK (8マス以上) (満足度+5%)',
+      fn: counts => counts.ldkCells >= 8
+    }
+  };
+
+  // ============================================================
+  // LOT DEFINITIONS
+  // ============================================================
+  const LOT_DEFINITIONS = {
+    compact: {
+      name: 'コンパクト長方形',
+      minR: 2, maxR: 9, minC: 2, maxC: 9,
       obstacles: [
-        {r:0,c:6,w:6,h:6},
-      ],
-      client: {
-        name: '影山 零',
-        avatar: '🧛',
-        quote: '「光は敵だ…窓など一切不要。外界から完全に遮断された静寂の要塞を頼む。」',
-        typeBadge: '世捨て人',
-      },
-      requests: [
-        { id:'ldk2',  icon:'ph-couch',        color:'#7c3aed', text:'3LDK以上（LDK + 居室3部屋）', fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 3 },
-        { id:'bath2', icon:'ph-bathtub',      color:'#0891b2', text:'浴室2つ以上',                  fn: counts => counts.bath >= 2 },
-        { id:'wash',  icon:'ph-drop',          color:'#059669', text:'洗面所あり',                  fn: counts => counts.washroom > 0 },
-        { id:'reach', icon:'ph-path',          color:'#3b82f6', text:'全部屋へ動線が通っている',    fn: (counts, bfs) => bfs.unreachable === 0 },
-      ],
-      optionalRequests: [
-        { id:'opt-closet', icon:'ph-coat-hanger', color:'#f59e0b', text:'専用収納あり (満足度+5%)', fn: counts => counts.maxClosetSize >= 1 },
-      ],
-      customCombo: {
-        name: '要塞化',
-        isNegativeInversion: true,
-        customBonus: 2.5,
-        normalBonus: -1.0,
-        desc: '要塞化 (外部窓なし)'
+        { r: 0, c: 0, w: 12, h: 2 },
+        { r: 10, c: 0, w: 12, h: 2 },
+        { r: 2, c: 0, w: 2, h: 8 },
+        { r: 2, c: 10, w: 2, h: 8 }
+      ]
+    },
+    standard: {
+      name: '標準中型敷地',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 }
+      ]
+    },
+    l_shape: {
+      name: '変形L字敷地',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 1, c: 7, w: 4, h: 4 }
+      ]
+    },
+    mansion: {
+      name: 'ワイド大型敷地',
+      minR: 1, maxR: 11, minC: 1, maxC: 11,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 11 }
+      ]
+    }
+  };
+
+  function pickEntranceForLot(lot, allowWide = false) {
+    const isObstacle = (r, c) => {
+      for (const obs of lot.obstacles) {
+        if (r >= obs.r && r < obs.r + (obs.h || 1) && c >= obs.c && c < obs.c + (obs.w || 1)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    const sideRoll = Math.random();
+    let preferredSides = ['bottom'];
+    if (sideRoll < 0.70) preferredSides = ['bottom'];
+    else if (sideRoll < 0.80) preferredSides = ['top', 'bottom'];
+    else if (sideRoll < 0.90) preferredSides = ['left', 'bottom'];
+    else preferredSides = ['right', 'bottom'];
+
+    for (const side of preferredSides) {
+      const candidates = [];
+      if (side === 'bottom') {
+        const r = lot.maxR;
+        for (let c = lot.minC + 1; c <= lot.maxC - (allowWide ? 1 : 0); c++) {
+          if (!isObstacle(r, c) && (!allowWide || !isObstacle(r, c + 1))) {
+            candidates.push(allowWide ? [{ r, c }, { r, c: c + 1 }] : [{ r, c }]);
+          }
+        }
+      } else if (side === 'top') {
+        const r = lot.minR;
+        for (let c = lot.minC + 1; c <= lot.maxC - (allowWide ? 1 : 0); c++) {
+          if (!isObstacle(r, c) && (!allowWide || !isObstacle(r, c + 1))) {
+            candidates.push(allowWide ? [{ r, c }, { r, c: c + 1 }] : [{ r, c }]);
+          }
+        }
+      } else if (side === 'left') {
+        const c = lot.minC;
+        for (let r = lot.minR + 1; r <= lot.maxR - (allowWide ? 1 : 0); r++) {
+          if (!isObstacle(r, c) && (!allowWide || !isObstacle(r + 1, c))) {
+            candidates.push(allowWide ? [{ r, c }, { r: r + 1, c }] : [{ r, c }]);
+          }
+        }
+      } else if (side === 'right') {
+        const c = lot.maxC;
+        for (let r = lot.minR + 1; r <= lot.maxR - (allowWide ? 1 : 0); r++) {
+          if (!isObstacle(r, c) && (!allowWide || !isObstacle(r + 1, c))) {
+            candidates.push(allowWide ? [{ r, c }, { r: r + 1, c }] : [{ r, c }]);
+          }
+        }
+      }
+
+      if (candidates.length > 0) {
+        const picked = candidates[Math.floor(Math.random() * candidates.length)];
+        return { cells: picked, facing: side };
       }
     }
-  ];
+    return { cells: [{ r: lot.maxR, c: lot.minC + 2 }], facing: 'bottom' };
+  }
 
+  function generateStage(level = 0) {
+    let clientType = 'single';
+    let lotKey = 'compact';
+    let allowWide = false;
+
+    if (level === 0) {
+      clientType = 'single';
+      lotKey = 'compact';
+      allowWide = false;
+    } else if (level === 1) {
+      clientType = 'dinks';
+      lotKey = 'standard';
+      allowWide = false;
+    } else if (level === 2) {
+      clientType = 'family';
+      lotKey = 'l_shape';
+      allowWide = false;
+    } else {
+      const roll = Math.random();
+      const mansionChance = Math.min(0.35, 0.10 + (level - 3) * 0.04);
+      if (roll < 0.25) {
+        clientType = 'single';
+        lotKey = Math.random() < 0.6 ? 'compact' : 'standard';
+      } else if (roll < 0.55) {
+        clientType = 'dinks';
+        lotKey = Math.random() < 0.5 ? 'standard' : 'l_shape';
+      } else if (roll < 0.55 + (1 - 0.55 - mansionChance)) {
+        clientType = 'family';
+        lotKey = Math.random() < 0.5 ? 'l_shape' : 'mansion';
+        allowWide = (lotKey === 'mansion' && Math.random() < 0.5);
+      } else {
+        clientType = 'mansion';
+        lotKey = 'mansion';
+        allowWide = true;
+      }
+    }
+
+    const lotDef = LOT_DEFINITIONS[lotKey];
+    const entInfo = pickEntranceForLot(lotDef, allowWide);
+    const entranceCells = entInfo.cells;
+    const entranceFacing = entInfo.facing;
+
+    let clientData;
+    let reqKeys = [];
+    let optKeys = [];
+    let initialBudget = 1000;
+    let targetRent = 5.0;
+    let maxTurns = 12;
+
+    if (clientType === 'single') {
+      const names = ['佐藤 翼', '鈴木 蓮', '高橋 葵', '田中 陽菜', '伊藤 健太', '渡辺 陸'];
+      const quotes = [
+        '「予算控えめで、小さくても暮らしやすい部屋をお願いします！」',
+        '「初めての一人暮らし！風呂とトイレは絶対別で頼みます！」',
+        '「シンプルで無駄のないコンパクトな部屋が希望です。」'
+      ];
+      const avatars = ['👨‍🎓', '👩‍🎓', '🧑‍💻', '👩‍💼'];
+      clientData = {
+        name: names[Math.floor(Math.random() * names.length)],
+        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+        quote: quotes[Math.floor(Math.random() * quotes.length)],
+        typeBadge: '新社会人・単身'
+      };
+      reqKeys = ['btsep', 'reach'];
+      optKeys = ['opt-closet'];
+      initialBudget = 1000.0 + Math.floor(Math.random() * 5) * 100;
+      targetRent = 4.8 + Math.floor(Math.random() * 4) * 0.4;
+      maxTurns = 10;
+    } else if (clientType === 'dinks') {
+      const names = ['小林 結衣', '加藤 大和', '山本 美咲', '中村 拓海', '斉藤 翔太'];
+      const quotes = [
+        '「在宅ワーク部屋と、使いやすい独立洗面所が欲しいですね。」',
+        '「二人暮らしなので、ゆったりしたLDKと寝室が必要です。」',
+        '「生活動線がスムーズで、落ち着いて暮らせる間取りがいいな。」'
+      ];
+      const avatars = ['👨‍💼', '👩‍💻', '🧑‍🎨', '👨‍🔬'];
+      clientData = {
+        name: names[Math.floor(Math.random() * names.length)],
+        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+        quote: quotes[Math.floor(Math.random() * quotes.length)],
+        typeBadge: 'DINKS・在宅'
+      };
+      reqKeys = ['ldk1_room2', 'btsep', 'wash', 'reach'];
+      optKeys = ['opt-closet'];
+      initialBudget = 2500.0 + Math.floor(Math.random() * 8) * 100;
+      targetRent = 8.5 + Math.floor(Math.random() * 6) * 0.4;
+      maxTurns = 15;
+    } else if (clientType === 'family') {
+      const names = ['吉田 夫婦', '松本 浩二', '井上 恵美', '木村 達也', '清水 健一'];
+      const quotes = [
+        '「子ども部屋と大きなLDK、家族みんなでくつろげる家を！」',
+        '「収納がたっぷりあって、家族の動線がスムーズな間取りがいいな。」',
+        '「お風呂もゆったり入れて、3部屋以上はしっかり確保したいです。」'
+      ];
+      const avatars = ['👨‍👩‍👧', '👨‍👩‍👦', '👨‍👩‍👧‍👦', '🧑‍🤝‍🧑'];
+      clientData = {
+        name: names[Math.floor(Math.random() * names.length)],
+        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+        quote: quotes[Math.floor(Math.random() * quotes.length)],
+        typeBadge: 'ファミリー層'
+      };
+      reqKeys = ['ldk2', 'btsep', 'wash', 'reach'];
+      optKeys = ['opt-bath'];
+      if (allowWide) reqKeys.unshift('wide_ent');
+      initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
+      targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
+      maxTurns = 18;
+    } else { // mansion
+      const names = ['西園寺 龍之介', '一条 麗子', '神宮寺 秀明', '鷹司 雅之'];
+      const quotes = [
+        '「予算は惜しみません。広大な敷地にふさわしい、堂々たる豪邸を。」',
+        '「お客様をお迎えするワイドな玄関と、開放感あふれる間取りを所望する。」',
+        '「妥協なき設計を。最高級の設備とゆとりの空間美を期待しています。」'
+      ];
+      const avatars = ['🤵', '💎', '🥂', '👑'];
+      clientData = {
+        name: names[Math.floor(Math.random() * names.length)],
+        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+        quote: quotes[Math.floor(Math.random() * quotes.length)],
+        typeBadge: '豪邸オーナー'
+      };
+      reqKeys = ['ldk2', 'bath2', 'wash', 'wide_ent', 'reach'];
+      optKeys = ['opt-bath', 'opt-ldk8'];
+      initialBudget = 5500.0 + Math.floor(Math.random() * 15) * 100;
+      targetRent = 18.0 + Math.floor(Math.random() * 8) * 0.5;
+      maxTurns = 24;
+    }
+
+    const requests = reqKeys.map(k => ({ ...REQUEST_REGISTRY[k] }));
+    const optionalRequests = optKeys.map(k => ({ ...REQUEST_REGISTRY[k] })).filter(Boolean);
+
+    return {
+      id: level + 1,
+      name: `${clientData.name} 様の依頼`,
+      lotName: lotDef.name,
+      lotType: lotKey,
+      client: clientData,
+      initialBudget: initialBudget,
+      targetRent: targetRent,
+      maxTurns: maxTurns,
+      entranceRow: entranceCells[0].r,
+      entranceCol: entranceCells[0].c,
+      entranceCells: entranceCells,
+      entranceFacing: entranceFacing,
+      obstacles: lotDef.obstacles,
+      requests: requests,
+      optionalRequests: optionalRequests,
+      customCombo: null
+    };
+  }
+
+  function attachRequestFunctions(stage) {
+    if (!stage) return;
+    if (stage.requests) {
+      stage.requests.forEach(req => {
+        if (REQUEST_REGISTRY[req.id]) {
+          req.fn = REQUEST_REGISTRY[req.id].fn;
+          req.icon = REQUEST_REGISTRY[req.id].icon;
+          req.color = REQUEST_REGISTRY[req.id].color;
+          req.text = REQUEST_REGISTRY[req.id].text;
+        }
+      });
+    }
+    if (stage.optionalRequests) {
+      stage.optionalRequests.forEach(opt => {
+        if (REQUEST_REGISTRY[opt.id]) {
+          opt.fn = REQUEST_REGISTRY[opt.id].fn;
+          opt.icon = REQUEST_REGISTRY[opt.id].icon;
+          opt.color = REQUEST_REGISTRY[opt.id].color;
+          opt.text = REQUEST_REGISTRY[opt.id].text;
+        }
+      });
+    }
+  }
 
   function updateStage() {
     currentLevelIdx = GameState.level;
-    let safeLevelIdx = currentLevelIdx % LEVELS.length;
-    STAGE = LEVELS[safeLevelIdx];
+    if (!GameState.currentMission) {
+      GameState.currentMission = generateStage(currentLevelIdx);
+      saveGame();
+    }
+    STAGE = GameState.currentMission;
+    attachRequestFunctions(STAGE);
   }
 
   /* ============================================================
@@ -1193,6 +1457,7 @@
     month: 1,
     level: 0,
     attempts: 2,
+    currentMission: null,
     properties: [],
     discovered: {
       combos: []
@@ -1265,12 +1530,16 @@
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
           GameState.attempts = 2;
         }
+        if (GameState.currentMission) {
+          attachRequestFunctions(GameState.currentMission);
+          STAGE = GameState.currentMission;
+        }
       }
     } catch(e) {}
   }
 
   let currentLevelIdx = 0;
-  let STAGE = LEVELS[currentLevelIdx];
+  let STAGE = null;
 
   /* ============================================================
      STATE
@@ -1464,15 +1733,19 @@
   function initGrid() {
     grid = [];
     nextRoomId = 1;
+    activeMetRequestIds = new Set();
     for (let r = 0; r < GRID; r++) {
       grid.push([]);
       for (let c = 0; c < GRID; c++) {
         grid[r].push(makeCell(T.EMPTY));
       }
     }
-    // Place entrance
-    const {entranceRow: er, entranceCol: ec} = STAGE;
-    grid[er][ec] = makeCell(T.ENTRANCE, 'entrance', '玄関');
+    // Place entrance (supports 1-cell or wide 2-cell entrance)
+    const entCells = (STAGE && STAGE.entranceCells) ? STAGE.entranceCells : [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
+    const entLabel = entCells.length > 1 ? 'ワイド玄関' : '玄関';
+    for (const ec of entCells) {
+      grid[ec.r][ec.c] = makeCell(T.ENTRANCE, 'entrance', entLabel);
+    }
     
     // Place obstacles from stage definition
     if (STAGE.obstacles) {
@@ -2294,9 +2567,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function drawEntrance() {
-    const { entranceRow: er, entranceCol: ec } = STAGE;
-    const x = ec * cellSize, y = er * cellSize;
+    if (!STAGE) return;
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     const facing = getEntranceFacing(STAGE, grid);
+
+    const minC = Math.min(...entCells.map(c => c.c));
+    const maxC = Math.max(...entCells.map(c => c.c));
+    const minR = Math.min(...entCells.map(c => c.r));
+    const maxR = Math.max(...entCells.map(c => c.r));
+    const startX = minC * cellSize;
+    const endX = (maxC + 1) * cellSize;
+    const startY = minR * cellSize;
+    const endY = (maxR + 1) * cellSize;
+    const width = endX - startX;
+    const height = endY - startY;
 
     ctx.save();
     // 1. Threshold line (上がり框 / 土間と室内の境界破線)
@@ -2306,46 +2590,46 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.beginPath();
     const kamachiOffset = Math.max(7, cellSize * 0.28);
     if (facing.dir === 'bottom') {
-      ctx.moveTo(x + 2, y + cellSize - kamachiOffset);
-      ctx.lineTo(x + cellSize - 2, y + cellSize - kamachiOffset);
+      ctx.moveTo(startX + 2, endY - kamachiOffset);
+      ctx.lineTo(endX - 2, endY - kamachiOffset);
     } else if (facing.dir === 'top') {
-      ctx.moveTo(x + 2, y + kamachiOffset);
-      ctx.lineTo(x + cellSize - 2, y + kamachiOffset);
+      ctx.moveTo(startX + 2, startY + kamachiOffset);
+      ctx.lineTo(endX - 2, startY + kamachiOffset);
     } else if (facing.dir === 'left') {
-      ctx.moveTo(x + kamachiOffset, y + 2);
-      ctx.lineTo(x + kamachiOffset, y + cellSize - 2);
+      ctx.moveTo(startX + kamachiOffset, startY + 2);
+      ctx.lineTo(startX + kamachiOffset, endY - 2);
     } else if (facing.dir === 'right') {
-      ctx.moveTo(x + cellSize - kamachiOffset, y + 2);
-      ctx.lineTo(x + cellSize - kamachiOffset, y + cellSize - 2);
+      ctx.moveTo(endX - kamachiOffset, startY + 2);
+      ctx.lineTo(endX - kamachiOffset, endY - 2);
     }
     ctx.stroke();
     ctx.setLineDash([]);
 
     // 2. Entrance Label: 外壁（開口部・土間側）に寄せて描画
-    const label = `${facing.arrow}玄関`;
+    const label = `${facing.arrow}${entCells.length > 1 ? 'ワイド玄関' : '玄関'}`;
     const fontSize = Math.max(8, Math.min(cellSize * 0.2, 11));
     ctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
 
-    let tx = x + cellSize / 2;
-    let ty = y + cellSize / 2;
+    let tx = startX + width / 2;
+    let ty = startY + height / 2;
     if (facing.dir === 'bottom') {
-      tx = x + cellSize / 2;
-      ty = y + cellSize - 1.5;
+      tx = startX + width / 2;
+      ty = endY - 1.5;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
     } else if (facing.dir === 'top') {
-      tx = x + cellSize / 2;
-      ty = y + 1.5;
+      tx = startX + width / 2;
+      ty = startY + 1.5;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
     } else if (facing.dir === 'left') {
-      tx = x + 1.5;
-      ty = y + cellSize / 2;
+      tx = startX + 1.5;
+      ty = startY + height / 2;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
     } else if (facing.dir === 'right') {
-      tx = x + cellSize - 1.5;
-      ty = y + cellSize / 2;
+      tx = endX - 1.5;
+      ty = startY + height / 2;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
     }
@@ -2627,9 +2911,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      BFS EVALUATOR
   ============================================================ */
   function runBFS() {
-    const { entranceRow: er, entranceCol: ec } = STAGE;
-    const visited = new Set([`${er},${ec}`]);
-    const queue = [{r:er, c:ec}];
+    if (!STAGE) return new Set();
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
+    const visited = new Set(entCells.map(c => `${c.r},${c.c}`));
+    const queue = entCells.map(c => ({ r: c.r, c: c.c }));
     const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
 
     while (queue.length) {
@@ -2791,18 +3076,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
     // 新コンボ3: 水門（玄関の周囲が水回りのみ）
-    const er = STAGE.entranceRow, ec = STAGE.entranceCol;
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     let waterGate = true;
     let hasNext = false;
     const dirs=[{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
-    for (const {dr,dc} of dirs) {
-      const nr=er+dr, nc=ec+dc;
-      if (nr>=0&&nr<GRID&&nc>=0&&nc<GRID) {
-        const et = edgeType(er, ec, nr, nc);
-        if (et === E.DOOR || et === E.NONE) {
-           hasNext = true;
-           const type = grid[nr][nc].type;
-           if (type !== T.BATH && type !== T.TOILET && type !== T.WASHROOM) waterGate = false;
+    for (const ec of entCells) {
+      for (const {dr,dc} of dirs) {
+        const nr=ec.r+dr, nc=ec.c+dc;
+        if (nr>=0&&nr<GRID&&nc>=0&&nc<GRID) {
+          if (entCells.some(c => c.r === nr && c.c === nc)) continue;
+          const et = edgeType(ec.r, ec.c, nr, nc);
+          if (et === E.DOOR || et === E.NONE) {
+            hasNext = true;
+            const type = grid[nr][nc].type;
+            if (type !== T.BATH && type !== T.TOILET && type !== T.WASHROOM) waterGate = false;
+          }
         }
       }
     }
@@ -2994,18 +3282,27 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function skeletonBath() {
-    const { entranceRow: er, entranceCol: ec } = STAGE;
-    let r = er;
-    // 玄関から上に向かって視線（レイキャスト）を飛ばす
-    while (r > 0) {
-      const et = edgeType(r, ec, r-1, ec);
-      // 視線が壁や窓に遮られたら終了（スケルトンバス不成立）
-      if (et !== E.NONE && et !== E.DOOR) break;
+    if (!STAGE) return false;
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
+    const facing = getEntranceFacing(STAGE, grid);
+    for (const ec of entCells) {
+      let r = ec.r, c = ec.c;
+      let dr = 0, dc = 0;
+      if (facing.dir === 'bottom') dr = -1;
+      else if (facing.dir === 'top') dr = 1;
+      else if (facing.dir === 'left') dc = 1;
+      else if (facing.dir === 'right') dc = -1;
 
-      r--; // 視線が次のマスへ進む
-      const cell = grid[r][ec];
-      if (cell.type === T.BATH) return true; // 視線の先に風呂を発見！
-      if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) break;
+      while (true) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) break;
+        const et = edgeType(r, c, nr, nc);
+        if (et !== E.NONE && et !== E.DOOR) break;
+        r = nr; c = nc;
+        const cell = grid[r][c];
+        if (cell.type === T.BATH) return true;
+        if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) break;
+      }
     }
     return false;
   }
@@ -3060,9 +3357,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function matroshka(visited) {
     const adj = new Map();
     const typeMap = new Map();
-    const { entranceRow: er, entranceCol: ec } = STAGE;
-    const entCell = grid[er][ec];
-    entCell.roomId = 'entrance';
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
+    for (const ec of entCells) {
+      if (grid[ec.r] && grid[ec.r][ec.c]) grid[ec.r][ec.c].roomId = 'entrance';
+    }
     
     for (let r=0; r<GRID; r++) {
       for (let c=0; c<GRID; c++) {
@@ -3151,7 +3449,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 2. Public requests
     let satisfiedCount = 0;
     for (const req of STAGE.requests) {
-      const ok = req.fn(counts, {unreachable: counts.unreachable});
+      const ok = req.fn ? req.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
       if (ok) {
         satisfiedCount++;
         reports.push({ icon:'ph-star-fill text-amber-500', text:`【依頼達成】${req.text} (入居率UP)` });
@@ -3164,7 +3462,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     let optSatisfiedCount = 0;
     if (STAGE.optionalRequests) {
       for (const opt of STAGE.optionalRequests) {
-        const ok = opt.fn(counts, {unreachable: counts.unreachable}, grid);
+        const ok = opt.fn ? opt.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
         if (ok) {
           optSatisfiedCount++;
           reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${opt.text}` });
@@ -3298,24 +3596,31 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       rctx.fillText(label,ax,ay);
     }
     // Entrance
-    const { entranceRow: er, entranceCol: ec } = STAGE;
+    const entCells = (STAGE && STAGE.entranceCells) ? STAGE.entranceCells : [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     const facing = getEntranceFacing(STAGE, grid);
-    const label = `${facing.arrow}玄関`;
+    const label = `${facing.arrow}${entCells.length > 1 ? 'ワイド玄関' : '玄関'}`;
     const fontSize = Math.max(7, cs * 0.2);
     rctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
 
-    let rx = (ec + 0.5) * cs, ry = (er + 0.5) * cs;
+    const minC = Math.min(...entCells.map(c => c.c));
+    const maxC = Math.max(...entCells.map(c => c.c));
+    const minR = Math.min(...entCells.map(c => c.r));
+    const maxR = Math.max(...entCells.map(c => c.r));
+    const startX = minC * cs, endX = (maxC + 1) * cs;
+    const startY = minR * cs, endY = (maxR + 1) * cs;
+
+    let rx = (startX + endX) / 2, ry = (startY + endY) / 2;
     if (facing.dir === 'bottom') {
-      rx = (ec + 0.5) * cs; ry = (er + 1) * cs - 1.5;
+      rx = (startX + endX) / 2; ry = endY - 1.5;
       rctx.textAlign = 'center'; rctx.textBaseline = 'bottom';
     } else if (facing.dir === 'top') {
-      rx = (ec + 0.5) * cs; ry = er * cs + 1.5;
+      rx = (startX + endX) / 2; ry = startY + 1.5;
       rctx.textAlign = 'center'; rctx.textBaseline = 'top';
     } else if (facing.dir === 'left') {
-      rx = ec * cs + 1.5; ry = (er + 0.5) * cs;
+      rx = startX + 1.5; ry = (startY + endY) / 2;
       rctx.textAlign = 'left'; rctx.textBaseline = 'middle';
     } else if (facing.dir === 'right') {
-      rx = (ec + 1) * cs - 1.5; ry = (er + 0.5) * cs;
+      rx = endX - 1.5; ry = (startY + endY) / 2;
       rctx.textAlign = 'right'; rctx.textBaseline = 'middle';
     }
 
@@ -3371,12 +3676,129 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      EVALUATE & SHOW RESULT
   ============================================================ */
   let activeCombos = [];
+  let activeMetRequestIds = new Set();
+
+  function updateRealtimeRequests(counts, visited) {
+    if (!STAGE || !STAGE.requests) return;
+    const container = document.getElementById('mission-req-pills');
+    if (!container) return;
+
+    let html = '';
+    const newlyMet = [];
+
+    // Main requests
+    for (const req of STAGE.requests) {
+      const isMet = !!(req.fn && req.fn(counts, { unreachable: counts.unreachable }, STAGE));
+      const wasMet = activeMetRequestIds.has(req.id);
+      if (isMet && !wasMet) {
+        newlyMet.push(req);
+      }
+      const iconCls = isMet ? 'ph-check-circle' : 'ph-clock';
+      const statusCls = isMet ? 'met' : 'unmet';
+      html += `<div class="req-pill ${statusCls}">
+        <i class="ph-bold ${iconCls}"></i>
+        <span>${req.text}</span>
+      </div>`;
+    }
+
+    // Optional requests
+    if (STAGE.optionalRequests) {
+      for (const opt of STAGE.optionalRequests) {
+        const isMet = !!(opt.fn && opt.fn(counts, { unreachable: counts.unreachable }, STAGE));
+        const wasMet = activeMetRequestIds.has(opt.id);
+        if (isMet && !wasMet) {
+          newlyMet.push(opt);
+        }
+        const iconCls = isMet ? 'ph-star' : 'ph-clock';
+        const statusCls = isMet ? 'opt met' : 'opt unmet';
+        html += `<div class="req-pill ${statusCls}">
+          <i class="ph-bold ${iconCls}"></i>
+          <span>${opt.text}</span>
+        </div>`;
+      }
+    }
+
+    container.innerHTML = html;
+
+    // Toast notification for newly achieved requests
+    newlyMet.forEach((r, idx) => {
+      setTimeout(() => {
+        showFloatingText(`✨ ${r.text} 達成！`, 'var(--c-emerald)');
+        playSound('combo');
+      }, idx * 250);
+    });
+
+    // Update the set of met request IDs
+    activeMetRequestIds = new Set();
+    for (const req of STAGE.requests) {
+      if (req.fn && req.fn(counts, { unreachable: counts.unreachable }, STAGE)) activeMetRequestIds.add(req.id);
+    }
+    if (STAGE.optionalRequests) {
+      for (const opt of STAGE.optionalRequests) {
+        if (opt.fn && opt.fn(counts, { unreachable: counts.unreachable }, STAGE)) activeMetRequestIds.add(opt.id);
+      }
+    }
+  }
+
+  function updateModalMissionList(counts, visited) {
+    const mrl = document.getElementById('modal-req-list');
+    if (!mrl || !STAGE) return;
+    mrl.innerHTML = '';
+    for (const req of STAGE.requests) {
+      const isMet = !!(req.fn && req.fn(counts, { unreachable: counts.unreachable }, STAGE));
+      const item = document.createElement('div');
+      item.className = 'req-item';
+      item.style.marginBottom = '6px';
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.justifyContent = 'space-between';
+      item.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i class="ph-bold ${req.icon}" style="color:${req.color};font-size:14px;"></i>
+          <span style="font-size:12px;">${req.text}</span>
+        </div>
+        <span class="badge ${isMet ? 'badge-emerald' : 'badge-slate'}" style="font-size:10px; padding:2px 6px;">
+          ${isMet ? '✅ 達成' : '⏳ 未達'}
+        </span>
+      `;
+      mrl.appendChild(item);
+    }
+    if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
+      const optHead = document.createElement('div');
+      optHead.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
+      optHead.textContent = '🌟 任意オプション (満足度UP)';
+      mrl.appendChild(optHead);
+      for (const opt of STAGE.optionalRequests) {
+        const isMet = !!(opt.fn && opt.fn(counts, { unreachable: counts.unreachable }, STAGE));
+        const item = document.createElement('div');
+        item.className = 'req-item';
+        item.style.marginBottom = '6px';
+        item.style.background = '#fefce8';
+        item.style.borderColor = '#fef08a';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.innerHTML = `
+          <div style="display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:14px;"></i>
+            <span style="font-size:12px;color:#854d0e;">${opt.text}</span>
+          </div>
+          <span class="badge ${isMet ? 'badge-amber' : 'badge-slate'}" style="font-size:10px; padding:2px 6px;">
+            ${isMet ? '⭐ 達成' : '⏳ 未達'}
+          </span>
+        `;
+        mrl.appendChild(item);
+      }
+    }
+  }
 
   function updateRealtimeRent() {
     const visited = runBFS();
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
     let { rent }  = calcRent(counts, combos, visited);
+
+    updateRealtimeRequests(counts, visited);
 
     const rentEl = document.getElementById('realtime-rent-badge');
     if (rentEl) {
@@ -3545,9 +3967,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      MISSION SCREEN SETUP
   ============================================================ */
   function setupMissionScreen() {
+    if (!STAGE) return;
     // Client info
     document.getElementById('client-name').textContent = STAGE.client.name;
     document.getElementById('client-quote').textContent = STAGE.client.quote;
+    const cav = document.querySelector('.client-avatar');
+    if (cav && STAGE.client.avatar) cav.textContent = STAGE.client.avatar;
+    const ctb = document.getElementById('client-type-badge');
+    if (ctb && STAGE.client.typeBadge) ctb.textContent = STAGE.client.typeBadge;
 
     // Request list
     const rl = document.getElementById('req-list');
@@ -3573,36 +4000,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
-    // Modal Client Info & Request List
+    // Modal Client Info
     const mcq = document.getElementById('modal-client-quote');
     if (mcq) mcq.textContent = STAGE.client.quote;
-
-    const mrl = document.getElementById('modal-req-list');
-    if (mrl) {
-      mrl.innerHTML = '';
-      for (const req of STAGE.requests) {
-        const item = document.createElement('div');
-        item.className = 'req-item';
-        item.style.marginBottom = '6px';
-        item.innerHTML = `<i class="ph-bold ${req.icon}" style="color:${req.color};font-size:14px;margin-right:6px;"></i><span style="font-size:12px;">${req.text}</span>`;
-        mrl.appendChild(item);
-      }
-      if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
-        const optHead = document.createElement('div');
-        optHead.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
-        optHead.textContent = '🌟 任意オプション (満足度UP)';
-        mrl.appendChild(optHead);
-        for (const opt of STAGE.optionalRequests) {
-          const item = document.createElement('div');
-          item.className = 'req-item';
-          item.style.marginBottom = '6px';
-          item.style.background = '#fefce8';
-          item.style.borderColor = '#fef08a';
-          item.innerHTML = `<i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:14px;margin-right:6px;"></i><span style="font-size:12px;color:#854d0e;">${opt.text}</span>`;
-          mrl.appendChild(item);
-        }
-      }
-    }
     
     // Update Stats
     document.getElementById('stat-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span class="stat-unit">万</span>`;
@@ -3613,6 +4013,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function drawSitePreview() {
     const c = document.getElementById('site-preview-canvas');
+    if (!c || !STAGE) return;
     const pcs = 20; // preview cell size
     const total = pcs * GRID;
     c.width  = total * devicePixelRatio;
@@ -3653,14 +4054,26 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     pc.strokeStyle = '#0f172a'; pc.lineWidth = 2.5;
     pc.strokeRect(1, 1, total-2, total-2);
     // Entrance marker
-    const { entranceRow: er, entranceCol: ec } = STAGE;
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     const facing = getEntranceFacing(STAGE);
     pc.fillStyle = '#fef08a';
-    pc.fillRect(ec*pcs+1, er*pcs+1, pcs-2, pcs-2);
+    for (const ec of entCells) {
+      pc.fillRect(ec.c*pcs+1, ec.r*pcs+1, pcs-2, pcs-2);
+    }
     pc.fillStyle = '#92400e';
     pc.font = `bold ${pcs*0.4}px sans-serif`;
     pc.textAlign = 'center'; pc.textBaseline = 'middle';
-    pc.fillText(facing.arrow, ec*pcs+pcs/2, er*pcs+pcs/2);
+    if (entCells.length === 1) {
+      pc.fillText(facing.arrow, entCells[0].c*pcs+pcs/2, entCells[0].r*pcs+pcs/2);
+    } else {
+      const minC = Math.min(...entCells.map(c => c.c));
+      const maxC = Math.max(...entCells.map(c => c.c));
+      const minR = Math.min(...entCells.map(c => c.r));
+      const maxR = Math.max(...entCells.map(c => c.r));
+      const midX = (minC + (maxC - minC + 1) / 2) * pcs;
+      const midY = (minR + (maxR - minR + 1) / 2) * pcs;
+      pc.fillText(facing.arrow, midX, midY);
+    }
   }
 
   /* ============================================================
@@ -3668,10 +4081,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   function startGame() {
     loadGame();
+    updateStage();
     budget = GameState.funds;
     currentLevelIdx = GameState.level;
-    let safeLevelIdx = currentLevelIdx % LEVELS.length;
-    STAGE = LEVELS[safeLevelIdx];
     
     updateCompanyUI();
 
@@ -3692,11 +4104,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const _hdrT = document.getElementById('hdr-target-rent'); if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
     updateBudgetUI();
     
-
-
-    document.getElementById('hint-overlay').style.opacity = '1';
-    document.getElementById('mission-banner-text').textContent =
-      `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
+    const hint = document.getElementById('hint-overlay');
+    if (hint) hint.style.opacity = '1';
+    const mbt = document.getElementById('mission-banner-text');
+    if (mbt) mbt.textContent = `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
     resizeCanvas();
     showScreen('game');
   }
@@ -3821,11 +4232,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-show-mission')?.addEventListener('click', () => {
     initAudio();
     
-    // 現在のコンボ状況を計算して表示
+    // 現在のコンボ状況 & 要望達成状況を計算して表示
     const visited = runBFS();
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
     
+    updateModalMissionList(counts, visited);
+
     const cl = document.getElementById('modal-combo-list');
     if (cl) {
       if (combos.length === 0) {
@@ -3886,8 +4299,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-go-mission')?.addEventListener('click', () => {
     initAudio();
     GameState.attempts = 2; // 新規案件受注時に再設計回数を2回に初期化（初回挑戦＋再設計2回＝計3回挑戦可能）
+    GameState.currentMission = generateStage(GameState.level);
+    STAGE = GameState.currentMission;
+    attachRequestFunctions(STAGE);
     saveGame();
-    updateStage();
     setupMissionScreen();
     showScreen('mission');
   });
@@ -3916,6 +4331,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     GameState.level++;
     GameState.attempts = 2;
+    GameState.currentMission = null;
     saveGame();
     updateHomeUI();
     showScreen('home');
@@ -3967,6 +4383,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     GameState.level++;
     GameState.attempts = 2;
+    GameState.currentMission = null;
     saveGame();
     updateHomeUI();
     showScreen('home');
