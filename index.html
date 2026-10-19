@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.75 (10/18)
+        Floor Plan v0.76 (10/20)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1117,7 +1117,7 @@
     },
     reach: {
       id: 'reach', icon: 'ph-path', color: '#3b82f6', text: '全部屋へ動線が通っている',
-      fn: (counts, bfs) => counts && counts.totalOcc > 0 && bfs && bfs.unreachable === 0
+      fn: (counts, bfs) => counts && counts.totalOcc > 0 && counts.totalOcc > (counts.corridor || 0) && bfs && bfs.unreachable === 0
     },
     wash: {
       id: 'wash', icon: 'ph-drop', color: '#059669', text: '洗面所あり',
@@ -1763,8 +1763,8 @@
     turnsLeft = STAGE.maxTurns;
     activeCombos = [];
     updateTurnsDisplay();
-    // リアルタイム査定の初期化
-    if (typeof updateRealtimeRent === 'function') updateRealtimeRent();
+    // リアルタイム査定の初期化（初回はトースト通知を抑止）
+    if (typeof updateRealtimeRent === 'function') updateRealtimeRent(true);
   }
 
   function makeCell(type, roomId=null, label='', costPerCell=0.0) {
@@ -2946,7 +2946,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       for (let c = 0; c < GRID; c++) {
         const cell = grid[r][c];
         if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) { counts.garden++; continue; }
-        counts.totalOcc++;
+        if (cell.type !== T.ENTRANCE) counts.totalOcc++;
         const reach = visited.has(`${r},${c}`);
         if (!reach && cell.type !== T.ENTRANCE) { counts.unreachable++; continue; }
         counts.totalBaseRent += (cell.costPerCell || 0) * 0.05;
@@ -3678,7 +3678,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   let activeCombos = [];
   let activeMetRequestIds = new Set();
 
-  function updateRealtimeRequests(counts, visited) {
+  function updateRealtimeRequests(counts, visited, skipToast = false) {
     if (!STAGE || !STAGE.requests) return;
     const container = document.getElementById('mission-req-pills');
     if (!container) return;
@@ -3720,13 +3720,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     container.innerHTML = html;
 
-    // Toast notification for newly achieved requests
-    newlyMet.forEach((r, idx) => {
-      setTimeout(() => {
-        showFloatingText(`✨ ${r.text} 達成！`, 'var(--c-emerald)');
-        playSound('combo');
-      }, idx * 250);
-    });
+    if (!skipToast) {
+      // Toast notification for newly achieved requests
+      newlyMet.forEach((r, idx) => {
+        setTimeout(() => {
+          showFloatingText(`✨ ${r.text} 達成！`, 'var(--c-emerald)');
+          playSound('combo');
+        }, idx * 250);
+      });
+    }
 
     // Update the set of met request IDs
     activeMetRequestIds = new Set();
@@ -3792,13 +3794,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
-  function updateRealtimeRent() {
+  function updateRealtimeRent(skipToast = false) {
     const visited = runBFS();
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
     let { rent }  = calcRent(counts, combos, visited);
 
-    updateRealtimeRequests(counts, visited);
+    updateRealtimeRequests(counts, visited, skipToast);
 
     const rentEl = document.getElementById('realtime-rent-badge');
     if (rentEl) {
