@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.77 (10/21)
+        Floor Plan v0.78 (10/21)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -782,6 +782,34 @@
     </div>
   </section>
 
+    <!-- ==============================
+       SCREEN 1.5: MISSION SELECTION BOARD
+  ============================== -->
+  <section id="screen-mission-select" class="screen blueprint-bg" style="overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:40px; height:100vh;">
+    <div style="padding:16px 12px; width:100%; max-width:480px; margin:0 auto; box-sizing:border-box;">
+      
+      <!-- Top Bar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:rgba(30,41,59,0.7); padding:10px 14px; border-radius:8px; border:1px solid #334155; backdrop-filter:blur(4px);">
+        <div>
+          <h2 style="margin:0; font-size:16px; color:var(--c-amber-lt); display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ph-newspaper" style="font-size:18px;"></i> 今月の依頼案件
+          </h2>
+          <div style="font-size:11px; color:var(--c-text2); margin-top:2px;" id="mission-select-subtitle">
+            受注する案件を1つ選んでください（全3件）
+          </div>
+        </div>
+        <button id="btn-back-to-home" class="btn btn-slate" style="padding:6px 12px; font-size:12px; gap:4px;">
+          <i class="ph-bold ph-arrow-left"></i> ホーム
+        </button>
+      </div>
+
+      <!-- Container for 3 cards -->
+      <div id="mission-pool-cards" style="display:flex; flex-direction:column; gap:12px;">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+  </section>
+
   <section id="screen-mission" class="screen blueprint-bg">
 
     <!-- Client info -->
@@ -832,8 +860,12 @@
       </div>
     </div>
 
-    <div class="mission-footer">
-      <button class="btn btn-amber" id="btn-start" style="gap:8px;">
+    <div class="mission-footer" style="display:flex; gap:10px; width:100%; box-sizing:border-box;">
+      <button class="btn btn-slate" id="btn-back-to-select" style="gap:6px; flex:1; padding:12px 8px; font-size:13px;">
+        <i class="ph-bold ph-arrow-left"></i>
+        案件一覧へ
+      </button>
+      <button class="btn btn-amber" id="btn-start" style="gap:8px; flex:2; padding:12px 16px; font-size:15px; font-weight:bold;">
         <i class="ph-bold ph-play-circle" style="font-size:18px;"></i>
         設計開始
       </button>
@@ -1262,12 +1294,27 @@
     return { cells: [{ r: lot.maxR, c: lot.minC + 2 }], facing: 'bottom' };
   }
 
-  function generateStage(level = 0) {
+  function generateStage(level = 0, overrideType = null) {
     let clientType = 'single';
     let lotKey = 'compact';
     let allowWide = false;
 
-    if (level === 0) {
+    if (overrideType) {
+      clientType = overrideType;
+      if (clientType === 'single') {
+        lotKey = Math.random() < 0.6 ? 'compact' : 'standard';
+        allowWide = false;
+      } else if (clientType === 'dinks') {
+        lotKey = Math.random() < 0.5 ? 'standard' : 'l_shape';
+        allowWide = false;
+      } else if (clientType === 'family') {
+        lotKey = Math.random() < 0.5 ? 'l_shape' : 'mansion';
+        allowWide = (lotKey === 'mansion' && Math.random() < 0.5);
+      } else { // mansion
+        lotKey = 'mansion';
+        allowWide = true;
+      }
+    } else if (level === 0) {
       clientType = 'single';
       lotKey = 'compact';
       allowWide = false;
@@ -1412,6 +1459,33 @@
     };
   }
 
+  function generateMissionPool(level = 0) {
+    const pool = [];
+    if (level === 0) {
+      pool.push(generateStage(level, 'single'));
+      pool.push(generateStage(level, 'single'));
+      pool.push(generateStage(level, 'dinks'));
+    } else if (level === 1) {
+      pool.push(generateStage(level, 'single'));
+      pool.push(generateStage(level, 'dinks'));
+      pool.push(generateStage(level, 'dinks'));
+    } else if (level === 2) {
+      pool.push(generateStage(level, 'single'));
+      pool.push(generateStage(level, 'dinks'));
+      pool.push(generateStage(level, 'family'));
+    } else {
+      const types = ['single', 'dinks', 'family'];
+      if (level >= 3 && Math.random() < Math.min(0.5, 0.2 + (level - 3) * 0.05)) {
+        types.push('mansion');
+      }
+      for (let i = 0; i < 3; i++) {
+        const rollType = types[Math.floor(Math.random() * types.length)];
+        pool.push(generateStage(level, rollType));
+      }
+    }
+    return pool;
+  }
+
   function attachRequestFunctions(stage) {
     if (!stage) return;
     if (stage.requests) {
@@ -1440,7 +1514,10 @@
   function updateStage() {
     currentLevelIdx = GameState.level;
     if (!GameState.currentMission) {
-      GameState.currentMission = generateStage(currentLevelIdx);
+      if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
+        GameState.availableMissions = generateMissionPool(currentLevelIdx);
+      }
+      GameState.currentMission = GameState.availableMissions[0];
       saveGame();
     }
     STAGE = GameState.currentMission;
@@ -1458,6 +1535,7 @@
     level: 0,
     attempts: 2,
     currentMission: null,
+    availableMissions: [],
     properties: [],
     discovered: {
       combos: []
@@ -1534,8 +1612,15 @@
           attachRequestFunctions(GameState.currentMission);
           STAGE = GameState.currentMission;
         }
+        if (GameState.availableMissions && Array.isArray(GameState.availableMissions)) {
+          GameState.availableMissions.forEach(m => attachRequestFunctions(m));
+        }
       }
     } catch(e) {}
+    if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
+      GameState.availableMissions = generateMissionPool(GameState.level);
+      saveGame();
+    }
   }
 
   let currentLevelIdx = 0;
@@ -1717,13 +1802,15 @@
      SCREEN TRANSITIONS
   ============================================================ */
   const screens = {
-    mission: document.getElementById('screen-mission'),
-    game:    document.getElementById('screen-game'),
-    result:  document.getElementById('screen-result'),
+    home:          document.getElementById('screen-home'),
+    missionSelect: document.getElementById('screen-mission-select'),
+    mission:       document.getElementById('screen-mission'),
+    game:          document.getElementById('screen-game'),
+    result:        document.getElementById('screen-result'),
   };
   function showScreen(name) {
     Object.entries(screens).forEach(([k, el]) => {
-      el.classList.toggle('active', k === name);
+      if (el) el.classList.toggle('active', k === name);
     });
   }
 
@@ -4297,15 +4384,143 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
 
   // 売却ボタンのリスナーは showPropertyDetail 内で毎回付け直すので委譲しなくても良い
-  document.getElementById('btn-go-mission')?.addEventListener('click', () => {
+  function renderMissionSelectUI() {
+    const container = document.getElementById('mission-pool-cards');
+    if (!container) return;
+    const sub = document.getElementById('mission-select-subtitle');
+    if (sub) sub.textContent = `第${GameState.month}ヶ月 ｜ 受注する案件を1つ選んでください（全3件）`;
+
+    const pool = GameState.availableMissions || [];
+    if (pool.length === 0) {
+      container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:30px;">現在提示可能な案件がありません</div>';
+      return;
+    }
+
+    let html = '';
+    pool.forEach((m, idx) => {
+      const facingMap = { bottom: '南向き', top: '北向き', left: '西向き', right: '東向き' };
+      const facingText = facingMap[m.entranceFacing] || '南向き';
+      const entSizeText = (m.entranceCells && m.entranceCells.length > 1) ? '（2マス玄関）' : '';
+
+      let badgeBg = 'background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid #3b82f6;';
+      if (m.client.typeBadge.includes('DINKS')) badgeBg = 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;';
+      if (m.client.typeBadge.includes('ファミリー')) badgeBg = 'background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid #f59e0b;';
+      if (m.client.typeBadge.includes('豪邸')) badgeBg = 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid #a855f7;';
+
+      const reqPills = (m.requests || []).map(r => `
+        <span style="font-size:10px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
+          <i class="ph-bold ${r.icon}"></i>${r.text}
+        </span>
+      `).join('');
+
+      const optPills = (m.optionalRequests || []).map(o => `
+        <span style="font-size:10px; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
+          <i class="ph-bold ${o.icon}"></i>${o.text}
+        </span>
+      `).join('');
+
+      html += `
+        <div class="mission-card" style="margin:0; border:1px solid #334155; background:var(--c-surface); border-radius:8px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.25);">
+          <!-- Header -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:26px; line-height:1;">${m.client.avatar}</span>
+              <div>
+                <div style="font-size:14px; font-weight:bold; color:var(--c-text);">${m.client.name} 様</div>
+                <span style="display:inline-block; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; ${badgeBg}">
+                  ${m.client.typeBadge}
+                </span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px; color:var(--c-text2);">目標家賃</div>
+              <div class="font-num" style="font-size:16px; font-weight:900; color:var(--c-amber-lt);">${m.targetRent.toFixed(1)}<span style="font-size:10px; color:var(--c-text2); font-weight:normal;">万/月</span></div>
+            </div>
+          </div>
+
+          <!-- Quote -->
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:10px; background:rgba(15,23,42,0.45); padding:6px 8px; border-radius:4px; line-height:1.4;">
+            ${m.client.quote}
+          </div>
+
+          <!-- Lot Specs Grid -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:rgba(30,41,59,0.5); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div><span style="color:var(--c-text2);">敷地:</span> <strong style="color:var(--c-text);">${m.lotName}</strong></div>
+            <div><span style="color:var(--c-text2);">建築予算:</span> <strong style="color:var(--c-emerald);">${m.initialBudget.toFixed(0)}万</strong></div>
+            <div><span style="color:var(--c-text2);">玄関:</span> <strong style="color:#fde047;">${facingText}玄関${entSizeText}</strong></div>
+            <div><span style="color:var(--c-text2);">制限:</span> <strong style="color:var(--c-text);">${m.maxTurns}手</strong></div>
+          </div>
+
+          <!-- Requirements -->
+          <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px;">
+            ${reqPills}
+            ${optPills}
+          </div>
+
+          <!-- Action Button -->
+          <button class="btn btn-amber btn-select-mission" data-idx="${idx}" style="width:100%; padding:10px; font-size:13px; font-weight:bold; gap:6px; justify-content:center;">
+            <i class="ph-bold ph-pencil-simple-line"></i> この案件を受注する
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function openMissionSelect() {
     initAudio();
-    GameState.attempts = 2; // 新規案件受注時に再設計回数を2回に初期化（初回挑戦＋再設計2回＝計3回挑戦可能）
-    GameState.currentMission = generateStage(GameState.level);
+    if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
+      GameState.availableMissions = generateMissionPool(GameState.level);
+      saveGame();
+    }
+    GameState.availableMissions.forEach(m => attachRequestFunctions(m));
+    renderMissionSelectUI();
+    showScreen('missionSelect');
+  }
+
+  function selectMission(idx) {
+    initAudio();
+    if (!GameState.availableMissions || !GameState.availableMissions[idx]) return;
+    GameState.currentMission = GameState.availableMissions[idx];
     STAGE = GameState.currentMission;
     attachRequestFunctions(STAGE);
+    GameState.attempts = 2;
     saveGame();
     setupMissionScreen();
     showScreen('mission');
+  }
+
+  document.getElementById('mission-pool-cards')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-select-mission');
+    if (btn) {
+      const idx = parseInt(btn.dataset.idx, 10);
+      selectMission(idx);
+    }
+  });
+
+  document.getElementById('btn-back-to-home')?.addEventListener('click', () => {
+    initAudio();
+    updateHomeUI();
+    showScreen('home');
+  });
+
+  document.getElementById('btn-back-to-select')?.addEventListener('click', () => {
+    initAudio();
+    renderMissionSelectUI();
+    showScreen('missionSelect');
+  });
+
+  document.getElementById('btn-go-mission')?.addEventListener('click', () => {
+    initAudio();
+    if (GameState.currentMission) {
+      STAGE = GameState.currentMission;
+      attachRequestFunctions(STAGE);
+      setupMissionScreen();
+      showScreen('mission');
+    } else {
+      openMissionSelect();
+    }
   });
 
   document.getElementById('btn-skip-month')?.addEventListener('click', () => {
@@ -4316,6 +4531,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     let msg = `【第${GameState.month - 1}ヶ月目終了】\n家賃収入: +${result.income.toFixed(1)}万`;
     if (result.evicted.length > 0) msg += `\n\n⚠️退去が発生しました（物件No.${result.evicted.join(', ')}）`;
     alert(msg);
+    GameState.currentMission = null;
+    GameState.availableMissions = generateMissionPool(GameState.level);
     saveGame();
     updateHomeUI();
   });
@@ -4333,6 +4550,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.level++;
     GameState.attempts = 2;
     GameState.currentMission = null;
+    GameState.availableMissions = generateMissionPool(GameState.level);
     saveGame();
     updateHomeUI();
     showScreen('home');
@@ -4385,6 +4603,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.level++;
     GameState.attempts = 2;
     GameState.currentMission = null;
+    GameState.availableMissions = generateMissionPool(GameState.level);
     saveGame();
     updateHomeUI();
     showScreen('home');
@@ -4816,6 +5035,17 @@ function updateHomeUI() {
 
     }
     document.getElementById('home-co-income').innerHTML = `+${totalRent.toFixed(1)}<span class="stat-unit">万/月</span>`;
+    
+    const btnGo = document.getElementById('btn-go-mission');
+    if (btnGo) {
+      if (GameState.currentMission) {
+        btnGo.innerHTML = `<i class="ph-bold ph-pencil-simple" style="margin-right:8px;"></i>受注中の設計を再開（残${GameState.attempts}回）`;
+        btnGo.className = 'btn btn-amber';
+      } else {
+        btnGo.innerHTML = `<i class="ph-bold ph-newspaper" style="margin-right:8px;"></i>今月の案件を探す（3件）`;
+        btnGo.className = 'btn btn-primary';
+      }
+    }
   }
 
   loadGame();
