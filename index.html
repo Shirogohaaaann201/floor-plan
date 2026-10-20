@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.76 (10/20)
+        Floor Plan v0.77 (10/21)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1151,8 +1151,8 @@
       fn: counts => counts.maxClosetSize >= 1
     },
     'opt-bath': {
-      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (2マス以上) (満足度+5%)',
-      fn: counts => counts.maxBathSize >= 2
+      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (4マス以上連結) (満足度+5%)',
+      fn: counts => counts.maxBathSize >= 4
     },
     'opt-ldk8': {
       id: 'opt-ldk8', icon: 'ph-arrows-out', color: '#7c3aed', text: '広々LDK (8マス以上) (満足度+5%)',
@@ -1365,7 +1365,6 @@
       };
       reqKeys = ['ldk2', 'btsep', 'wash', 'reach'];
       optKeys = ['opt-bath'];
-      if (allowWide) reqKeys.unshift('wide_ent');
       initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
       targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
       maxTurns = 18;
@@ -1383,7 +1382,7 @@
         quote: quotes[Math.floor(Math.random() * quotes.length)],
         typeBadge: '豪邸オーナー'
       };
-      reqKeys = ['ldk2', 'bath2', 'wash', 'wide_ent', 'reach'];
+      reqKeys = ['ldk2', 'bath2', 'wash', 'reach'];
       optKeys = ['opt-bath', 'opt-ldk8'];
       initialBudget = 5500.0 + Math.floor(Math.random() * 15) * 100;
       targetRent = 18.0 + Math.floor(Math.random() * 8) * 0.5;
@@ -1416,6 +1415,7 @@
   function attachRequestFunctions(stage) {
     if (!stage) return;
     if (stage.requests) {
+      stage.requests = stage.requests.filter(req => req.id !== 'wide_ent');
       stage.requests.forEach(req => {
         if (REQUEST_REGISTRY[req.id]) {
           req.fn = REQUEST_REGISTRY[req.id].fn;
@@ -1742,9 +1742,8 @@
     }
     // Place entrance (supports 1-cell or wide 2-cell entrance)
     const entCells = (STAGE && STAGE.entranceCells) ? STAGE.entranceCells : [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
-    const entLabel = entCells.length > 1 ? 'ワイド玄関' : '玄関';
     for (const ec of entCells) {
-      grid[ec.r][ec.c] = makeCell(T.ENTRANCE, 'entrance', entLabel);
+      grid[ec.r][ec.c] = makeCell(T.ENTRANCE, 'entrance', '玄関');
     }
     
     // Place obstacles from stage definition
@@ -2606,7 +2605,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.setLineDash([]);
 
     // 2. Entrance Label: 外壁（開口部・土間側）に寄せて描画
-    const label = `${facing.arrow}${entCells.length > 1 ? 'ワイド玄関' : '玄関'}`;
+    const label = `${facing.arrow}玄関`;
     const fontSize = Math.max(8, Math.min(cellSize * 0.2, 11));
     ctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
 
@@ -3598,7 +3597,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // Entrance
     const entCells = (STAGE && STAGE.entranceCells) ? STAGE.entranceCells : [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     const facing = getEntranceFacing(STAGE, grid);
-    const label = `${facing.arrow}${entCells.length > 1 ? 'ワイド玄関' : '玄関'}`;
+    const label = `${facing.arrow}玄関`;
     const fontSize = Math.max(7, cs * 0.2);
     rctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
 
