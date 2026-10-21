@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.78 (10/21)
+        Floor Plan v0.79 (10/22)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1196,14 +1196,24 @@
   // LOT DEFINITIONS
   // ============================================================
   const LOT_DEFINITIONS = {
-    compact: {
-      name: 'コンパクト長方形',
+    compact_square: {
+      name: 'コンパクト正方形',
       minR: 2, maxR: 9, minC: 2, maxC: 9,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 2 },
         { r: 10, c: 0, w: 12, h: 2 },
         { r: 2, c: 0, w: 2, h: 8 },
         { r: 2, c: 10, w: 2, h: 8 }
+      ]
+    },
+    compact_rect: {
+      name: 'コンパクト長方形',
+      minR: 3, maxR: 8, minC: 1, maxC: 9,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 3 },
+        { r: 9, c: 0, w: 12, h: 3 },
+        { r: 3, c: 0, w: 1, h: 6 },
+        { r: 3, c: 10, w: 2, h: 6 }
       ]
     },
     standard: {
@@ -1236,6 +1246,7 @@
       ]
     }
   };
+  LOT_DEFINITIONS.compact = LOT_DEFINITIONS.compact_square;
 
   function pickEntranceForLot(lot, allowWide = false) {
     const isObstacle = (r, c) => {
@@ -1299,10 +1310,12 @@
     let lotKey = 'compact';
     let allowWide = false;
 
+    const pickCompact = () => Math.random() < 0.5 ? 'compact_square' : 'compact_rect';
+
     if (overrideType) {
       clientType = overrideType;
       if (clientType === 'single') {
-        lotKey = Math.random() < 0.6 ? 'compact' : 'standard';
+        lotKey = Math.random() < 0.6 ? pickCompact() : 'standard';
         allowWide = false;
       } else if (clientType === 'dinks') {
         lotKey = Math.random() < 0.5 ? 'standard' : 'l_shape';
@@ -1316,7 +1329,7 @@
       }
     } else if (level === 0) {
       clientType = 'single';
-      lotKey = 'compact';
+      lotKey = pickCompact();
       allowWide = false;
     } else if (level === 1) {
       clientType = 'dinks';
@@ -1331,7 +1344,7 @@
       const mansionChance = Math.min(0.35, 0.10 + (level - 3) * 0.04);
       if (roll < 0.25) {
         clientType = 'single';
-        lotKey = Math.random() < 0.6 ? 'compact' : 'standard';
+        lotKey = Math.random() < 0.6 ? pickCompact() : 'standard';
       } else if (roll < 0.55) {
         clientType = 'dinks';
         lotKey = Math.random() < 0.5 ? 'standard' : 'l_shape';
@@ -4443,12 +4456,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             ${m.client.quote}
           </div>
 
-          <!-- Lot Specs Grid -->
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:rgba(30,41,59,0.5); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-            <div><span style="color:var(--c-text2);">敷地:</span> <strong style="color:var(--c-text);">${m.lotName}</strong></div>
-            <div><span style="color:var(--c-text2);">建築予算:</span> <strong style="color:var(--c-emerald);">${m.initialBudget.toFixed(0)}万</strong></div>
+          <!-- Lot Specs Banner -->
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:11px; margin-bottom:10px; background:rgba(30,41,59,0.5); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div><span style="color:var(--c-text2);">敷地タイプ:</span> <strong style="color:var(--c-text);">${m.lotName}</strong></div>
             <div><span style="color:var(--c-text2);">玄関:</span> <strong style="color:#fde047;">${facingText}玄関${entSizeText}</strong></div>
-            <div><span style="color:var(--c-text2);">制限:</span> <strong style="color:var(--c-text);">${m.maxTurns}手</strong></div>
           </div>
 
           <!-- Requirements -->
