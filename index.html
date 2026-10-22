@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.79 (10/22)
+        Floor Plan v0.80 (10/23)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -986,9 +986,9 @@
       <div class="flyer-head">
         <div class="flyer-head-left">
           <i class="ph-fill ph-house-line" style="font-size:20px;"></i>
-          <span class="flyer-head-title">不動産査定チラシ</span>
+          <span class="flyer-head-title">物件詳細シート</span>
         </div>
-        <span id="flyer-clear-badge" class="flyer-badge">査定完了</span>
+        <span id="flyer-clear-badge" class="flyer-badge">満足度</span>
       </div>
 
       <!-- Flyer body -->
@@ -1002,7 +1002,7 @@
 
         <!-- Rent -->
         <div class="flyer-rent-box">
-          <div class="flyer-rent-label">月額査定家賃</div>
+          <div class="flyer-rent-label">月額家賃</div>
           <div class="flyer-rent-row">
             <span class="flyer-rent-val font-num" id="flyer-rent">0.0</span>
             <span class="flyer-rent-unit">万円</span>
@@ -1020,14 +1020,6 @@
           <canvas id="result-canvas"></canvas>
         </div>
 
-        <!-- Optional request card -->
-        <div class="hidden-req-reveal hit" id="hidden-req-box" style="display:none; background:#f0fdf4; border-color:#86efac;">
-          <div class="hidden-req-label" id="hidden-req-label" style="color:#166534;">
-            <i class="ph-bold ph-sparkle"></i> 任意オプション達成状況
-          </div>
-          <div class="hidden-req-text" id="hidden-req-text" style="color:#15803d; font-size:12px;">—</div>
-        </div>
-
         <!-- Report list -->
         <div class="flyer-report-section">
           <div class="flyer-report-title">
@@ -1039,9 +1031,9 @@
 
         <!-- Architect comment -->
         <div class="flyer-comment-box">
-          <div class="flyer-comment-title">
+          <div class="flyer-comment-title" id="flyer-comment-title">
             <i class="ph-bold ph-chat-centered-dots"></i>
-            鑑定士のひとこと
+            <span>ご入居者の感想</span>
           </div>
           <div class="flyer-comment-text" id="flyer-comment">—</div>
         </div>
@@ -3551,9 +3543,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const ok = req.fn ? req.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
       if (ok) {
         satisfiedCount++;
-        reports.push({ icon:'ph-star-fill text-amber-500', text:`【依頼達成】${req.text} (入居率UP)` });
+        reports.push({ icon:'ph-star-fill text-amber-500', text:`【依頼達成】${req.text} (満足度UP)` });
       } else {
-        reports.push({ icon:'ph-x text-rose-500', text:`【依頼未達】${req.text} (退去リスクUP)` });
+        reports.push({ icon:'ph-x text-rose-500', text:`【依頼未達】${req.text} (満足度低下)` });
       }
     }
 
@@ -3564,7 +3556,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const ok = opt.fn ? opt.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
         if (ok) {
           optSatisfiedCount++;
-          reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${opt.text}` });
+          reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${opt.text} (満足度+5%)` });
         }
       }
     }
@@ -3622,22 +3614,55 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return { main:'「ユニークな間取りが生み出す、他にはない暮らし方」', sub:'【特選物件】' };
   }
 
-  function genComment(counts, combos, optSatisfiedCount, isClear) {
-    if (!isClear && counts.unreachable > 0)
-      return '玄関から辿り着けない「開かずの間」が存在します。まずは動線を繋げることが優先です。';
-    if (combos.some(c=>c.name==='要塞化'))
-      return '一切の陽光を拒絶した完全遮光設計。影山様の理想郷ここに誕生。ただし一般入居者には不評かもしれません…';
-    if (combos.some(c=>c.name==='トイレビュッフェ'))
-      return 'トイレへの愛が止まらない。廊下に並んだトイレの壮観さに圧倒されます。頻尿の方には最強物件です。';
-    if (combos.some(c=>c.name==='無限回廊'))
-      return '廊下が繋がって無限ループを形成しています。迷子になること間違いなし。アドベンチャー好きにはたまりません。';
-    if (isClear) {
-      if (optSatisfiedCount > 0) {
-        return '依頼条件を完璧に満たし、任意オプションまで達成！入居者も大満足で長く住み続けてくれることでしょう。';
-      }
-      return '依頼条件をしっかり押さえた、暮らしやすい間取りです。査定家賃もノルマ達成、お見事な設計力です。';
+  function genComment(counts, combos, optSatisfiedCount, satisfaction, satisfiedReqs, unmetReqs, STAGE) {
+    // 1. 到達不能（重大欠陥）への困惑
+    if (counts.unreachable > 0) {
+      return 'えっ…？ 玄関から入れない部屋があるんですが…どうやって生活すればいいんでしょうか？（困惑）';
     }
-    return '惜しい！依頼条件の一部が未達でノルマ到達ならず。再挑戦で王道コンボや珍間取りコンボを狙ってみましょう。';
+    // 2. ユニークコンボ・特殊設計へのリアクション
+    if (combos.some(c=>c.name==='要塞化'))
+      return '窓が一つもない…！誰の視線も届かない、まさに私の求めていた完全なプライベート空間です…！';
+    if (combos.some(c=>c.name==='トイレビュッフェ'))
+      return 'こんなにたくさんのトイレに囲まれるなんて…！急な腹痛の時もこれなら安心ですね！';
+    if (combos.some(c=>c.name==='無限回廊'))
+      return '廊下がぐるぐる繋がっていて、歩いているだけで迷子になりそうです…不思議な魅力がありますね。';
+    if (combos.some(c=>c.name==='マトリョーシカ'))
+      return '部屋の中にさらに部屋が…！？秘密基地みたいでワクワクが止まりません！';
+    if (combos.some(c=>c.name==='スケルトンバス'))
+      return '玄関を開けたらすぐにお風呂が…！？ちょっと開放的すぎて来客時にドキドキしちゃいますね。';
+    if (combos.some(c=>c.name==='日当たり良好'))
+      return '南向きの窓から心地よい日差しが差し込んできて、毎朝気持ちよく起きられそうです！';
+
+    // 3. 満足度別・要望達成状況に応じた依頼人の生の声
+    if (satisfaction >= 100) {
+      if (optSatisfiedCount > 0) {
+        return '私の希望をすべて叶えてくれた上に、追加のこだわりまで完璧です！これ以上ない理想のマイホームになりました！';
+      }
+      return 'うわあ、素晴らしいです！間取りも動線も希望通りで、今日からここに住めると思うと本当にワクワクします！';
+    }
+    if (satisfaction >= 90) {
+      if (!unmetReqs || unmetReqs.length === 0) {
+        return '希望通りの暮らしやすそうなお部屋を作ってくださり感謝しています！とても快適に暮らせそうです。';
+      }
+      return '細かい点を除けば十分すぎるほど素敵なお部屋です！大切に使わせていただきますね。';
+    }
+    if (satisfaction >= 75) {
+      if (unmetReqs && unmetReqs.length > 0) {
+        return `「${unmetReqs[0].text}」が叶わなかったのは少し惜しいですが、全体としては悪くない間取りだと思います。`;
+      }
+      return '家賃や配置で少し悩ましいところもありますが、概ね希望通りですし、納得して暮らせそうです。';
+    }
+    if (satisfaction >= 50) {
+      if (unmetReqs && unmetReqs.length > 0) {
+        return `希望していた「${unmetReqs[0].text}」が入っていないのは正直残念ですが…生活はできるので今回は妥協して住んでみます。`;
+      }
+      return '少し住みづらそうな気もしますが…まあ予算や敷地のこともありますし、工夫して暮らしてみます。';
+    }
+    // 50%未満 (不満)
+    if (unmetReqs && unmetReqs.length > 0) {
+      return `私の出した「${unmetReqs[0].text}」などの希望、ちゃんと確認していただけましたか…？この間取りで暮らすのは正直厳しいです…`;
+    }
+    return 'うーん…家賃と間取りのバランスが希望とかなりかけ離れていて、正直不満が残る結果です…';
   }
 
   /* ============================================================
@@ -3944,59 +3969,25 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const { rent, normalRent, reports, optSatisfiedCount } = calcRent(counts, combos, visited);
 
     const isClear = rent >= STAGE.targetRent;
-    const catch_ = genCatchphrase(counts, combos, optSatisfiedCount);
-    const comment = genComment(counts, combos, optSatisfiedCount, isClear);
     
     // ここでは資金加算しない。結果画面のボタンで処理する。
     GameState.funds = budget; // 消費した分の同期
     saveGame();
 
-
-    // Populate result UI
-    document.getElementById('flyer-sub-catch').textContent = catch_.sub;
-    document.getElementById('flyer-main-catch').textContent = catch_.main;
-    document.getElementById('flyer-rent').textContent = rent.toFixed(1);
-
-    const badge = document.getElementById('flyer-clear-badge');
-    const diff  = document.getElementById('flyer-rent-diff');
-    const btnNext = document.getElementById('btn-next-stage');
-    const btnRestart = document.getElementById('btn-restart');
-    const btnGiveup = document.getElementById('btn-giveup');
-    
-    // 足切り撤廃：常に納品可能
-    btnNext.style.display = 'block';
-    btnNext.innerHTML = '<i class="ph-bold ph-megaphone" style="font-size:13px; margin-right:4px;"></i>募集を開始する';
-    if (btnGiveup) btnGiveup.style.display = 'block';
-    
-    if (isClear) {
-      badge.textContent = 'ノルマ達成 🎉';
-      badge.className   = 'flyer-badge clear';
-      diff.textContent  = `(目標+${(rent - STAGE.targetRent).toFixed(1)}万)`;
-      diff.className    = 'flyer-rent-diff clear';
-      playSound('clear');
-    } else {
-      badge.textContent = 'ノルマ未達';
-      badge.className   = 'flyer-badge fail';
-      diff.textContent  = `(あと${(STAGE.targetRent - rent).toFixed(1)}万)`;
-      diff.className    = 'flyer-rent-diff fail';
-      playSound('error');
-    }
-    
-    btnRestart.style.display = 'block';
-    if (GameState.attempts > 0) {
-      btnRestart.disabled = false;
-      btnRestart.style.opacity = '1';
-      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
-    } else {
-      btnRestart.disabled = true;
-      btnRestart.style.opacity = '0.5';
-      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
-    }
-    
+    // 依頼達成・未達成の集計
     let satisfiedCount = 0;
+    const satisfiedReqs = [];
+    const unmetReqs = [];
     for (const req of STAGE.requests) {
-      if (req.fn(counts, {unreachable: counts.unreachable})) satisfiedCount++;
+      const ok = req.fn ? req.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
+      if (ok) {
+        satisfiedCount++;
+        satisfiedReqs.push(req);
+      } else {
+        unmetReqs.push(req);
+      }
     }
+
     let badCombos = 0;
     let goodCombos = 0;
     combos.forEach(c => {
@@ -4028,16 +4019,79 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       customCombo: STAGE.customCombo || null
     };
 
-    // 任意オプション達成表示
-    const hBox  = document.getElementById('hidden-req-box');
-    const hText = document.getElementById('hidden-req-text');
-    if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
-      hBox.style.display = 'block';
-      hText.textContent = optSatisfiedCount > 0 
-        ? `✨ 任意オプション ${optSatisfiedCount}件達成！(満足度 +${optSatisfiedCount * 5}%)` 
-        : '任意オプション未達成（満足度加算なし）';
+    const stats = calcPropertyStats(window.currentPropertyData);
+    const sat = stats.satisfaction;
+
+    const catch_ = genCatchphrase(counts, combos, optSatisfiedCount);
+    const comment = genComment(counts, combos, optSatisfiedCount, sat, satisfiedReqs, unmetReqs, STAGE);
+
+    // Populate result UI
+    document.getElementById('flyer-sub-catch').textContent = catch_.sub;
+    document.getElementById('flyer-main-catch').textContent = catch_.main;
+    document.getElementById('flyer-rent').textContent = rent.toFixed(1);
+
+    const badge = document.getElementById('flyer-clear-badge');
+    const diff  = document.getElementById('flyer-rent-diff');
+    const btnNext = document.getElementById('btn-next-stage');
+    const btnRestart = document.getElementById('btn-restart');
+    const btnGiveup = document.getElementById('btn-giveup');
+    
+    // 足切り撤廃：常に納品（引き渡し）可能
+    btnNext.style.display = 'block';
+    btnNext.innerHTML = '<i class="ph-bold ph-key" style="font-size:13px; margin-right:4px;"></i>物件を引き渡す';
+    if (btnGiveup) btnGiveup.style.display = 'block';
+    
+    // 満足度バッジ (100%〜: 大満足, 90〜: 満足, 75〜: 納得, 50〜: 妥協, 50未満: 不満)
+    let badgeText = '';
+    let badgeColor = '#ffffff';
+    if (sat >= 100) {
+      badgeText = `大満足 ❤️ ${sat}%`;
+      badgeColor = '#fb7185';
+    } else if (sat >= 90) {
+      badgeText = `満足 😊 ${sat}%`;
+      badgeColor = '#34d399';
+    } else if (sat >= 75) {
+      badgeText = `納得 😐 ${sat}%`;
+      badgeColor = '#38bdf8';
+    } else if (sat >= 50) {
+      badgeText = `妥協 💦 ${sat}%`;
+      badgeColor = '#fbbf24';
     } else {
-      hBox.style.display = 'none';
+      badgeText = `不満 😣 ${sat}%`;
+      badgeColor = '#f87171';
+    }
+    badge.textContent = badgeText;
+    badge.className = 'flyer-badge';
+    badge.style.background = '#0f172a';
+    badge.style.color = badgeColor;
+
+    if (sat >= 75) {
+      playSound('clear');
+    } else {
+      playSound('error');
+    }
+
+    const diffVal = rent - STAGE.targetRent;
+    if (diffVal > 0) {
+      diff.textContent = `(希望額+${diffVal.toFixed(1)}万)`;
+      diff.className   = 'flyer-rent-diff clear';
+    } else if (diffVal < 0) {
+      diff.textContent = `(希望額-${Math.abs(diffVal).toFixed(1)}万)`;
+      diff.className   = 'flyer-rent-diff fail';
+    } else {
+      diff.textContent = `(希望額通り)`;
+      diff.className   = 'flyer-rent-diff clear';
+    }
+    
+    btnRestart.style.display = 'block';
+    if (GameState.attempts > 0) {
+      btnRestart.disabled = false;
+      btnRestart.style.opacity = '1';
+      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
+    } else {
+      btnRestart.disabled = true;
+      btnRestart.style.opacity = '0.5';
+      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
     }
 
     // Report list
@@ -4050,6 +4104,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       rl.appendChild(item);
     }
 
+    // 初代借主コメント
+    const commentTitleEl = document.getElementById('flyer-comment-title');
+    if (commentTitleEl) {
+      commentTitleEl.innerHTML = `<i class="ph-bold ph-chat-centered-dots"></i><span>${STAGE.client ? (STAGE.client.avatar || '👤') + ' ' + STAGE.client.name + ' 様の感想' : 'ご入居者の感想'}</span>`;
+    }
     document.getElementById('flyer-comment').textContent = comment;
 
     // Draw thumbnail
