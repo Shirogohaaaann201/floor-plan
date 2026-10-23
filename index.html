@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.80 (10/23)
+        Floor Plan v0.81 (10/23)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -777,6 +777,68 @@
         <div style="display:flex; justify-content:space-between; align-items:center; padding:0 4px;">
           <span style="font-size:11px; color:var(--c-text2);" id="pv-subinfo">完成間取り図</span>
           <button id="btn-close-plan-viewer-bottom" class="btn btn-slate" style="padding:4px 12px; font-size:11px; cursor:pointer;">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 月次決算報告モーダル (脱alert) -->
+    <div id="month-end-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:250; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:330px; text-align:left; box-shadow:0 12px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15);">
+        
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div class="mission-card-title" style="margin-bottom:0; font-size:15px;">
+            <i class="ph-fill ph-calendar-check" style="color:var(--c-amber);"></i>
+            <span id="mem-title">月次決算報告</span>
+          </div>
+          <span id="mem-badge" class="badge badge-emerald" style="font-size:10px; padding:3px 8px;">納品完了</span>
+        </div>
+
+        <div style="font-size:12px; color:var(--c-text2); margin-bottom:14px;" id="mem-subtitle">
+          第1ヶ月目の経営報告です。
+        </div>
+
+        <!-- 収支ボックス -->
+        <div style="background:var(--c-surface2); padding:12px 14px; border-radius:8px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">今月の家賃収入</div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <div>
+              <span style="font-size:24px; font-weight:900; color:var(--c-emerald);" id="mem-income">+0.0</span>
+              <span style="font-size:13px; font-weight:bold; color:var(--c-emerald); margin-left:2px;">万円</span>
+            </div>
+            <span style="font-size:11px; color:var(--c-text2);" id="mem-prop-count">稼働: 1棟</span>
+          </div>
+        </div>
+
+        <!-- トラブル・退去アラート (退去がある場合のみ表示) -->
+        <div id="mem-trouble-box" style="display:none; background:#450a0a; border:1px solid #f87171; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+          <div style="color:#fca5a5; font-size:11px; font-weight:bold; display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+            <i class="ph-bold ph-warning"></i> 空室トラブル発生！
+          </div>
+          <div style="color:#fecaca; font-size:11px; line-height:1.5;" id="mem-trouble-text">
+            退去者が出ました（物件No.1）
+          </div>
+        </div>
+
+        <!-- 次へ進むボタン -->
+        <button id="btn-mem-confirm" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px; font-weight:bold; cursor:pointer;">
+          <i class="ph-bold ph-arrow-right" style="margin-right:6px;"></i>次月へ進む
+        </button>
+
+      </div>
+    </div>
+
+    <!-- 月送り確認モーダル (脱confirm) -->
+    <div id="confirm-skip-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:240; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:300px; text-align:center;">
+        <div style="font-size:32px; margin-bottom:8px;">⏳</div>
+        <div style="font-size:15px; font-weight:bold; color:var(--c-text); margin-bottom:8px;">1ヶ月時間を進めますか？</div>
+        <div style="font-size:12px; color:var(--c-text2); line-height:1.6; margin-bottom:16px;">
+          案件を受注せずに時間を進めます。<br>
+          家賃収入を獲得し、空室や退去の判定が行われます。
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-skip-cancel" class="btn btn-slate" style="flex:1; padding:10px; font-size:13px; cursor:pointer;">キャンセル</button>
+          <button id="btn-skip-ok" class="btn btn-primary" style="flex:1; padding:10px; font-size:13px; cursor:pointer; background:var(--c-amber); color:#0f172a;">進める</button>
         </div>
       </div>
     </div>
@@ -1159,6 +1221,18 @@
       id: 'ldk2', icon: 'ph-couch', color: '#7c3aed', text: '3LDK以上 (LDK+居室3)',
       fn: counts => counts.ldkRooms >= 1 && counts.bedRooms >= 3
     },
+    closet2: {
+      id: 'closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納充実 (2マス以上)',
+      fn: counts => (counts.maxClosetSize >= 2) || ((counts.closetCells || 0) >= 2)
+    },
+    toilet2: {
+      id: 'toilet2', icon: 'ph-toilet', color: '#10b981', text: 'トイレ2箇所',
+      fn: counts => counts.toilet >= 2
+    },
+    bed_large: {
+      id: 'bed_large', icon: 'ph-bed', color: '#3b82f6', text: '広々居室 (6マス以上)',
+      fn: counts => (counts.bedCells || 0) >= 6
+    },
     bath2: {
       id: 'bath2', icon: 'ph-bathtub', color: '#0891b2', text: '浴室2つ以上',
       fn: counts => counts.bath >= 2
@@ -1172,7 +1246,15 @@
     },
     'opt-closet': {
       id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり (満足度+5%)',
-      fn: counts => counts.maxClosetSize >= 1
+      fn: counts => (counts.maxClosetSize >= 1) || ((counts.closetCells || 0) >= 1)
+    },
+    'opt-closet2': {
+      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (2マス以上) (満足度+5%)',
+      fn: counts => (counts.maxClosetSize >= 2) || ((counts.closetCells || 0) >= 2)
+    },
+    'opt-wash': {
+      id: 'opt-wash', icon: 'ph-drop', color: '#059669', text: '独立洗面所あり (満足度+5%)',
+      fn: counts => counts.washroom > 0
     },
     'opt-bath': {
       id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (4マス以上連結) (満足度+5%)',
@@ -1364,80 +1446,201 @@
     let maxTurns = 12;
 
     if (clientType === 'single') {
-      const names = ['佐藤 翼', '鈴木 蓮', '高橋 葵', '田中 陽菜', '伊藤 健太', '渡辺 陸'];
-      const quotes = [
-        '「予算控えめで、小さくても暮らしやすい部屋をお願いします！」',
-        '「初めての一人暮らし！風呂とトイレは絶対別で頼みます！」',
-        '「シンプルで無駄のないコンパクトな部屋が希望です。」'
-      ];
-      const avatars = ['👨‍🎓', '👩‍🎓', '🧑‍💻', '👩‍💼'];
-      clientData = {
-        name: names[Math.floor(Math.random() * names.length)],
-        avatar: avatars[Math.floor(Math.random() * avatars.length)],
-        quote: quotes[Math.floor(Math.random() * quotes.length)],
-        typeBadge: '新社会人・単身'
-      };
-      reqKeys = ['btsep', 'reach'];
-      optKeys = ['opt-closet'];
-      initialBudget = 1000.0 + Math.floor(Math.random() * 5) * 100;
-      targetRent = 4.8 + Math.floor(Math.random() * 4) * 0.4;
+      const subRoll = Math.random();
+      if (subRoll < 0.40) {
+        // 新社会人・学生 (基本1K)
+        const names = ['佐藤 翼', '鈴木 蓮', '高橋 葵', '田中 陽菜'];
+        const quotes = [
+          '「初めての一人暮らし！風呂とトイレは絶対別で頼みます！」',
+          '「予算控えめで、小さくても暮らしやすい部屋をお願いします！」',
+          '「シンプルで無駄のないコンパクトな部屋が希望です。」'
+        ];
+        const avatars = ['👨‍🎓', '👩‍🎓', '🧑‍💼', '👩‍💼'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '新社会人・単身'
+        };
+        reqKeys = ['btsep', 'reach'];
+        optKeys = ['opt-closet'];
+        initialBudget = 1000.0 + Math.floor(Math.random() * 5) * 100;
+        targetRent = 4.8 + Math.floor(Math.random() * 4) * 0.4;
+      } else if (subRoll < 0.70) {
+        // おしゃれ単身 (衣装・収納充実)
+        const names = ['伊藤 健太', '渡辺 陸', '早川 玲奈', '三浦 翔'];
+        const quotes = [
+          '「服や靴がとにかく多いので、収納スペース（2マス以上）は絶対欲しいです！」',
+          '「洋服の整理がしやすいように、しっかりした収納を頼みます！」'
+        ];
+        const avatars = ['👠', '🧥', '🕶️', '👗'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: 'おしゃれ単身'
+        };
+        reqKeys = ['btsep', 'closet2', 'reach'];
+        optKeys = ['opt-wash'];
+        initialBudget = 1200.0 + Math.floor(Math.random() * 5) * 100;
+        targetRent = 5.4 + Math.floor(Math.random() * 4) * 0.4;
+      } else {
+        // 在宅ワーカー (独立洗面台)
+        const names = ['森下 悠真', '藤原 さくら', '佐々木 凛', '内田 隼人'];
+        const quotes = [
+          '「家でリモートワークをするので、独立洗面台と落ち着ける居室が希望です。」',
+          '「生活リズムを整えたいので、洗面所が独立している間取りをお願いします。」'
+        ];
+        const avatars = ['🧑‍💻', '👩‍💻', '🎧', '💻'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '在宅ワーカー'
+        };
+        reqKeys = ['btsep', 'wash', 'reach'];
+        optKeys = ['opt-closet2'];
+        initialBudget = 1300.0 + Math.floor(Math.random() * 5) * 100;
+        targetRent = 5.8 + Math.floor(Math.random() * 4) * 0.4;
+      }
       maxTurns = 10;
     } else if (clientType === 'dinks') {
-      const names = ['小林 結衣', '加藤 大和', '山本 美咲', '中村 拓海', '斉藤 翔太'];
-      const quotes = [
-        '「在宅ワーク部屋と、使いやすい独立洗面所が欲しいですね。」',
-        '「二人暮らしなので、ゆったりしたLDKと寝室が必要です。」',
-        '「生活動線がスムーズで、落ち着いて暮らせる間取りがいいな。」'
-      ];
-      const avatars = ['👨‍💼', '👩‍💻', '🧑‍🎨', '👨‍🔬'];
-      clientData = {
-        name: names[Math.floor(Math.random() * names.length)],
-        avatar: avatars[Math.floor(Math.random() * avatars.length)],
-        quote: quotes[Math.floor(Math.random() * quotes.length)],
-        typeBadge: 'DINKS・在宅'
-      };
-      reqKeys = ['ldk1_room2', 'btsep', 'wash', 'reach'];
-      optKeys = ['opt-closet'];
-      initialBudget = 2500.0 + Math.floor(Math.random() * 8) * 100;
-      targetRent = 8.5 + Math.floor(Math.random() * 6) * 0.4;
+      const subRoll = Math.random();
+      if (subRoll < 0.45) {
+        // 共働きDINKS (2LDK・洗面所)
+        const names = ['小林 結衣', '加藤 大和', '山本 美咲'];
+        const quotes = [
+          '「朝の身支度が被るので、独立洗面所と2部屋以上の独立空間が欲しいですね。」',
+          '「二人暮らしなので、ゆったりしたLDKと寝室が必要です。」'
+        ];
+        const avatars = ['👨‍💼', '👩‍💻', '🧑‍💼'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '共働きDINKS'
+        };
+        reqKeys = ['ldk1_room2', 'btsep', 'wash', 'reach'];
+        optKeys = ['opt-closet'];
+        initialBudget = 2500.0 + Math.floor(Math.random() * 8) * 100;
+        targetRent = 8.5 + Math.floor(Math.random() * 6) * 0.4;
+      } else if (subRoll < 0.75) {
+        // 趣味・収納重視カップル
+        const names = ['中村 拓海', '斉藤 翔太', '大野 奈央'];
+        const quotes = [
+          '「二人の荷物が入る大きめ収納と、広々くつろげるLDKを頼みます！」',
+          '「趣味の道具が多いので収納2マス以上と、落ち着けるLDKがいいな。」'
+        ];
+        const avatars = ['🧑‍🎨', '🎨', '📸'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '趣味重視DINKS'
+        };
+        reqKeys = ['ldk1_room1', 'btsep', 'closet2', 'reach'];
+        optKeys = ['opt-closet2'];
+        initialBudget = 2400.0 + Math.floor(Math.random() * 8) * 100;
+        targetRent = 8.2 + Math.floor(Math.random() * 6) * 0.4;
+      } else {
+        // ゆったり空間重視
+        const names = ['吉岡 涼介', '竹内 杏奈', '岡田 優一'];
+        const quotes = [
+          '「お互いの時間を大切にしたいので、居室を広めに取った快適な2LDKで！」',
+          '「生活動線がスムーズで、落ち着いて暮らせる間取りがいいな。」'
+        ];
+        const avatars = ['👨‍🔬', '👩‍🔬', '🍵'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '快適重視DINKS'
+        };
+        reqKeys = ['ldk1_room2', 'btsep', 'wash', 'reach'];
+        optKeys = ['opt-ldk8'];
+        initialBudget = 2700.0 + Math.floor(Math.random() * 8) * 100;
+        targetRent = 9.0 + Math.floor(Math.random() * 6) * 0.4;
+      }
       maxTurns = 15;
     } else if (clientType === 'family') {
-      const names = ['吉田 夫婦', '松本 浩二', '井上 恵美', '木村 達也', '清水 健一'];
-      const quotes = [
-        '「子ども部屋と大きなLDK、家族みんなでくつろげる家を！」',
-        '「収納がたっぷりあって、家族の動線がスムーズな間取りがいいな。」',
-        '「お風呂もゆったり入れて、3部屋以上はしっかり確保したいです。」'
-      ];
-      const avatars = ['👨‍👩‍👧', '👨‍👩‍👦', '👨‍👩‍👧‍👦', '🧑‍🤝‍🧑'];
-      clientData = {
-        name: names[Math.floor(Math.random() * names.length)],
-        avatar: avatars[Math.floor(Math.random() * avatars.length)],
-        quote: quotes[Math.floor(Math.random() * quotes.length)],
-        typeBadge: 'ファミリー層'
-      };
-      reqKeys = ['ldk2', 'btsep', 'wash', 'reach'];
-      optKeys = ['opt-bath'];
-      initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
-      targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
+      const subRoll = Math.random();
+      if (subRoll < 0.55) {
+        // 子育てファミリー標準
+        const names = ['吉田 夫婦', '松本 浩二', '井上 恵美'];
+        const quotes = [
+          '「子ども部屋と大きなLDK、家族みんなでくつろげる家を！」',
+          '「お風呂もゆったり入れて、3部屋以上はしっかり確保したいです。」'
+        ];
+        const avatars = ['👨‍👩‍👧', '👨‍👩‍👦', '👨‍👩‍👧‍👦'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '子育てファミリー'
+        };
+        reqKeys = ['ldk2', 'btsep', 'wash', 'reach'];
+        optKeys = ['opt-bath'];
+        initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
+        targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
+      } else {
+        // 大家族・トイレ渋滞対策
+        const names = ['木村 達也', '清水 健一', '長谷川 誠'];
+        const quotes = [
+          '「朝のトイレ争奪戦が本当に大変で…トイレは2つ設置してほしいです！」',
+          '「家族が多いので、トイレ2箇所と独立洗面所が必須条件です！」'
+        ];
+        const avatars = ['👨‍👩‍👧‍👦', '🧑‍🤝‍🧑', '🏡'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '大家族ファミリー'
+        };
+        reqKeys = ['ldk1_room2', 'toilet2', 'wash', 'reach'];
+        optKeys = ['opt-closet2'];
+        initialBudget = 3900.0 + Math.floor(Math.random() * 10) * 100;
+        targetRent = 12.5 + Math.floor(Math.random() * 6) * 0.5;
+      }
       maxTurns = 18;
     } else { // mansion
-      const names = ['西園寺 龍之介', '一条 麗子', '神宮寺 秀明', '鷹司 雅之'];
-      const quotes = [
-        '「予算は惜しみません。広大な敷地にふさわしい、堂々たる豪邸を。」',
-        '「お客様をお迎えするワイドな玄関と、開放感あふれる間取りを所望する。」',
-        '「妥協なき設計を。最高級の設備とゆとりの空間美を期待しています。」'
-      ];
-      const avatars = ['🤵', '💎', '🥂', '👑'];
-      clientData = {
-        name: names[Math.floor(Math.random() * names.length)],
-        avatar: avatars[Math.floor(Math.random() * avatars.length)],
-        quote: quotes[Math.floor(Math.random() * quotes.length)],
-        typeBadge: '豪邸オーナー'
-      };
-      reqKeys = ['ldk2', 'bath2', 'wash', 'reach'];
-      optKeys = ['opt-bath', 'opt-ldk8'];
-      initialBudget = 5500.0 + Math.floor(Math.random() * 15) * 100;
-      targetRent = 18.0 + Math.floor(Math.random() * 8) * 0.5;
+      const subRoll = Math.random();
+      if (subRoll < 0.50) {
+        // 豪邸オーナー (風呂2・トイレ2)
+        const names = ['西園寺 龍之介', '神宮寺 秀明'];
+        const quotes = [
+          '「予算は惜しみません。浴室複数にトイレ2つ、最高級の設備を揃えてくれたまえ。」',
+          '「妥協なき設計を。最高級の設備とゆとりの空間美を期待しています。」'
+        ];
+        const avatars = ['🤵', '💎', '👑'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '豪邸オーナー'
+        };
+        reqKeys = ['ldk2', 'bath2', 'toilet2', 'reach'];
+        optKeys = ['opt-bath', 'opt-ldk8'];
+        initialBudget = 5800.0 + Math.floor(Math.random() * 15) * 100;
+        targetRent = 19.0 + Math.floor(Math.random() * 8) * 0.5;
+      } else {
+        // 高級レジデンス (収納・浴室複数)
+        const names = ['一条 麗子', '鷹司 雅之'];
+        const quotes = [
+          '「来客をもてなす優雅な空間美と、大容量の収納スペースを期待しています。」',
+          '「開放感あふれる広大な間取りと、細やかな収納動線を所望する。」'
+        ];
+        const avatars = ['👑', '🥂', '🎩'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '高級レジデンス'
+        };
+        reqKeys = ['ldk2', 'bath2', 'wash', 'closet2', 'reach'];
+        optKeys = ['opt-closet2', 'opt-ldk8'];
+        initialBudget = 5500.0 + Math.floor(Math.random() * 15) * 100;
+        targetRent = 18.0 + Math.floor(Math.random() * 8) * 0.5;
+      }
       maxTurns = 24;
     }
 
@@ -3026,9 +3229,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function countCells(visited) {
     const counts = {
-      ldkRooms:0, bedRooms:0, bath:0, toilet:0, washroom:0,
+      ldkRooms:0, bedRooms:0, bath:0, toilet:0, washroom:0, closetRooms:0,
       corridor:0, garden:0, unreachable:0, totalOcc:0,
-      ldkCells:0, bedCells:0, totalBaseRent:0,
+      ldkCells:0, bedCells:0, closetCells:0, totalBaseRent:0,
       maxToiletSize:0, maxBathSize:0, maxClosetSize:0,
     };
     const seenRooms = new Map(); // pieceId -> type（統合後も元ピース単位で数える）
@@ -3043,11 +3246,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         counts.totalBaseRent += (cell.costPerCell || 0) * 0.05;
         if (cell.roomId && !seenRooms.has(cell.roomId)) {
           seenRooms.set(cell.roomId, cell.type);
-          if (cell.type === T.LDK)      counts.ldkRooms++;
-          else if (cell.type === T.ROOM) counts.bedRooms++;
-          else if (cell.type === T.BATH) counts.bath++;
-          else if (cell.type === T.TOILET) counts.toilet++;
-          else if (cell.type === T.WASHROOM) counts.washroom++;
+          if (cell.type === T.LDK)           counts.ldkRooms++;
+          else if (cell.type === T.ROOM)      counts.bedRooms++;
+          else if (cell.type === T.BATH)      counts.bath++;
+          else if (cell.type === T.TOILET)    counts.toilet++;
+          else if (cell.type === T.WASHROOM)  counts.washroom++;
+          else if (cell.type === T.CLOSET)    counts.closetRooms++;
         }
         if (cell.roomId && (cell.type === T.TOILET || cell.type === T.BATH || cell.type === T.CLOSET)) {
           const n = (mergedSize.get(cell.roomId) || 0) + 1;
@@ -3059,6 +3263,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (cell.type === T.LDK) counts.ldkCells++;
         if (cell.type === T.ROOM) counts.bedCells++;
         if (cell.type === T.CORRIDOR) counts.corridor++;
+        if (cell.type === T.CLOSET) counts.closetCells++;
       }
     }
     return counts;
@@ -4593,37 +4798,120 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
+  let monthEndCallback = null;
+
+  function showMonthEndModal({ type = 'deliver', month = 1, income = 0, evicted = [], onConfirm = null }) {
+    const modal = document.getElementById('month-end-modal');
+    if (!modal) return;
+    
+    monthEndCallback = onConfirm;
+    
+    const titleEl = document.getElementById('mem-title');
+    const badgeEl = document.getElementById('mem-badge');
+    const subtitleEl = document.getElementById('mem-subtitle');
+    const incomeEl = document.getElementById('mem-income');
+    const propCountEl = document.getElementById('mem-prop-count');
+    const troubleBox = document.getElementById('mem-trouble-box');
+    const troubleText = document.getElementById('mem-trouble-text');
+
+    if (titleEl) titleEl.textContent = `第${month}ヶ月目 決算報告`;
+    
+    if (type === 'deliver') {
+      badgeEl.textContent = '物件引き渡し';
+      badgeEl.className = 'badge badge-emerald';
+      subtitleEl.textContent = '物件を納品し、鍵を引き渡しました！';
+    } else if (type === 'skip') {
+      badgeEl.textContent = '月送り';
+      badgeEl.className = 'badge badge-slate';
+      subtitleEl.textContent = '案件を受注せず、1ヶ月時間を進めました。';
+    } else if (type === 'giveup') {
+      badgeEl.textContent = '案件破棄';
+      badgeEl.className = 'badge badge-rose';
+      subtitleEl.textContent = '依頼を破棄して、今月を終了しました。';
+    }
+
+    if (incomeEl) incomeEl.textContent = `+${income.toFixed(1)}`;
+    if (propCountEl) {
+      const activeCount = (GameState.properties || []).filter(p => !p.isSold && (p.vacancyTurns || 0) <= 0).length;
+      propCountEl.textContent = `稼働: ${activeCount}棟`;
+    }
+
+    if (troubleBox && troubleText) {
+      if (evicted && evicted.length > 0) {
+        troubleBox.style.display = 'block';
+        troubleText.textContent = `退去者が出ました（物件No.${evicted.join(', ')}）。今後2ヶ月間は空室となり、家賃収入が途絶えます。`;
+        playSound('error');
+      } else {
+        troubleBox.style.display = 'none';
+        playSound('clear');
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  document.getElementById('btn-mem-confirm')?.addEventListener('click', () => {
+    initAudio();
+    const modal = document.getElementById('month-end-modal');
+    if (modal) modal.style.display = 'none';
+    if (typeof monthEndCallback === 'function') {
+      const cb = monthEndCallback;
+      monthEndCallback = null;
+      cb();
+    }
+  });
+
   document.getElementById('btn-skip-month')?.addEventListener('click', () => {
     initAudio();
-    if (!confirm('案件を受けずに1ヶ月時間を進めますか？\n(家賃収入が入り、空室や退去の判定が行われます)')) return;
-    // processMonthEnd() が内部で「月+1」「資金への収入加算」まで行うので、ここでは加算しない
+    const skipModal = document.getElementById('confirm-skip-modal');
+    if (skipModal) skipModal.style.display = 'flex';
+  });
+
+  document.getElementById('btn-skip-cancel')?.addEventListener('click', () => {
+    initAudio();
+    const skipModal = document.getElementById('confirm-skip-modal');
+    if (skipModal) skipModal.style.display = 'none';
+  });
+
+  document.getElementById('btn-skip-ok')?.addEventListener('click', () => {
+    initAudio();
+    const skipModal = document.getElementById('confirm-skip-modal');
+    if (skipModal) skipModal.style.display = 'none';
+
     const result = processMonthEnd();
-    let msg = `【第${GameState.month - 1}ヶ月目終了】\n家賃収入: +${result.income.toFixed(1)}万`;
-    if (result.evicted.length > 0) msg += `\n\n⚠️退去が発生しました（物件No.${result.evicted.join(', ')}）`;
-    alert(msg);
-    GameState.currentMission = null;
-    GameState.availableMissions = generateMissionPool(GameState.level);
-    saveGame();
-    updateHomeUI();
+    showMonthEndModal({
+      type: 'skip',
+      month: GameState.month - 1,
+      income: result.income,
+      evicted: result.evicted,
+      onConfirm: () => {
+        GameState.currentMission = null;
+        GameState.availableMissions = generateMissionPool(GameState.level);
+        saveGame();
+        updateHomeUI();
+      }
+    });
   });
 
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
     if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
     const result = processMonthEnd();
-    let msg = `【第${GameState.month - 1}ヶ月目終了】\n依頼を破棄しました。\n（今月の家賃収入: +${result.income.toFixed(1)}万）`;
-    if (result.evicted.length > 0) {
-      msg += `\n\n⚠️トラブル発生！\n退去者が出ました（物件No.${result.evicted.join(', ')}）`;
-    }
-    alert(msg);
-
-    GameState.level++;
-    GameState.attempts = 2;
-    GameState.currentMission = null;
-    GameState.availableMissions = generateMissionPool(GameState.level);
-    saveGame();
-    updateHomeUI();
-    showScreen('home');
+    showMonthEndModal({
+      type: 'giveup',
+      month: GameState.month - 1,
+      income: result.income,
+      evicted: result.evicted,
+      onConfirm: () => {
+        GameState.level++;
+        GameState.attempts = 2;
+        GameState.currentMission = null;
+        GameState.availableMissions = generateMissionPool(GameState.level);
+        saveGame();
+        updateHomeUI();
+        showScreen('home');
+      }
+    });
   });
 
   document.getElementById('btn-next-stage')?.addEventListener('click', () => {
@@ -4664,19 +4952,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     });
     
     const result = processMonthEnd();
-    let msg = `【第${GameState.month - 1}ヶ月目終了】\n物件を納品しました！\n（今月の家賃収入: +${result.income.toFixed(1)}万）`;
-    if (result.evicted.length > 0) {
-      msg += `\n\n⚠️トラブル発生！\n退去者が出ました（物件No.${result.evicted.join(', ')}）`;
-    }
-    alert(msg);
-    
-    GameState.level++;
-    GameState.attempts = 2;
-    GameState.currentMission = null;
-    GameState.availableMissions = generateMissionPool(GameState.level);
-    saveGame();
-    updateHomeUI();
-    showScreen('home');
+    showMonthEndModal({
+      type: 'deliver',
+      month: GameState.month - 1,
+      income: result.income,
+      evicted: result.evicted,
+      onConfirm: () => {
+        GameState.level++;
+        GameState.attempts = 2;
+        GameState.currentMission = null;
+        GameState.availableMissions = generateMissionPool(GameState.level);
+        saveGame();
+        updateHomeUI();
+        showScreen('home');
+      }
+    });
   });
 
 
