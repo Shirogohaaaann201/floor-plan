@@ -706,7 +706,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.81 (10/23)
+        Floor Plan v0.82 (10/23)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -1190,7 +1190,7 @@
     { id:'toilet',    name:'トイレ',    cat:T.TOILET,   label:'WC',   shape:[[1]], cost:4.0 },
     { id:'wash',      name:'洗面所',    cat:T.WASHROOM, label:'洗面', shape:[[1]], cost:6.0 },
     { id:'bath',      name:'浴室',      cat:T.BATH,     label:'浴室', shape:[[1,1]], cost:12.0 },
-    { id:'unit-bath', name:'ユニット',  cat:T.BATH,     label:'UB',   shape:[[1,1]], cost:10.0 },
+    { id:'unit-bath', name:'ユニットバス', cat:T.BATH,  label:'UB',   shape:[[1,1]], cost:10.0 },
   ];
 
   // ============================================================
@@ -1199,7 +1199,7 @@
   const REQUEST_REGISTRY = {
     btsep: {
       id: 'btsep', icon: 'ph-shower', color: '#0891b2', text: '風呂・トイレ別',
-      fn: counts => counts.bath > 0 && counts.toilet > 0
+      fn: counts => !!counts.isBtSeparated
     },
     reach: {
       id: 'reach', icon: 'ph-path', color: '#3b82f6', text: '全部屋へ動線が通っている',
@@ -1538,7 +1538,7 @@
           quote: quotes[Math.floor(Math.random() * quotes.length)],
           typeBadge: '趣味重視DINKS'
         };
-        reqKeys = ['ldk1_room1', 'btsep', 'closet2', 'reach'];
+        reqKeys = ['ldk1_room1', 'closet2', 'reach'];
         optKeys = ['opt-closet2'];
         initialBudget = 2400.0 + Math.floor(Math.random() * 8) * 100;
         targetRent = 8.2 + Math.floor(Math.random() * 6) * 0.4;
@@ -1578,7 +1578,7 @@
           quote: quotes[Math.floor(Math.random() * quotes.length)],
           typeBadge: '子育てファミリー'
         };
-        reqKeys = ['ldk2', 'btsep', 'wash', 'reach'];
+        reqKeys = ['ldk2', 'wash', 'reach'];
         optKeys = ['opt-bath'];
         initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
         targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
@@ -1907,6 +1907,7 @@
     const totalReq = p.totalRequests || 1;
     const created = p.createdMonth || 1;
     const age = Math.max(0, GameState.month - created);
+    const amenityPenalty = p.amenityPenalty || 0;
 
     // 初代か2代目以降かによるコンボ・家賃の切り替え
     const isOriginal = p.isOriginalTenant !== false; // 未定義は初代扱い
@@ -1937,7 +1938,7 @@
     const optBonus = (p.optionalSatisfied || 0) * 5;
 
     // 満足度合計（各内訳の整数の和として厳密に一致させる）
-    const satisfaction = rentBonus + reqBonus + comboBonus + optBonus;
+    const satisfaction = rentBonus + reqBonus + comboBonus + optBonus - amenityPenalty;
 
     // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
     const unreached = totalReq - satisfied;
@@ -1977,6 +1978,7 @@
       reqBonus: reqBonus,
       comboBonus: comboBonus,
       optBonus: optBonus,
+      amenityPenalty: amenityPenalty,
       currentRent: currentRent,
       isOriginal: isOriginal
     };
@@ -2973,7 +2975,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   const MERGEABLE_TYPES = new Set([T.CORRIDOR, T.ROOM, T.LDK, T.TOILET, T.WASHROOM, T.BATH, T.CLOSET]);
   function mergeKey(cell) {
     // 洋室と和室は同じ T.ROOM だが別種として扱う
-    return cell.type === T.ROOM ? `${cell.type}:${cell.label}` : cell.type;
+    if (cell.type === T.ROOM) return `${cell.type}:${cell.label}`;
+    // ユニットバスは一般浴室と別種として扱う
+    if (cell.pieceLibId === 'unit-bath' || cell.label === 'UB') return 'unit-bath';
+    return cell.type;
   }
 
   function mergeSameType() {
@@ -3046,6 +3051,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       for (let c = 0; c < shape[0].length; c++) {
         if (shape[r][c] === 1) {
           const cell = makeCell(piece.cat, rid, piece.label, costPerCell);
+          cell.pieceLibId = piece.id;
           for (const w of rw) {
             if (w.r === r && w.c === c) cell.walls[w.dir] = true;
           }
@@ -3233,6 +3239,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       corridor:0, garden:0, unreachable:0, totalOcc:0,
       ldkCells:0, bedCells:0, closetCells:0, totalBaseRent:0,
       maxToiletSize:0, maxBathSize:0, maxClosetSize:0,
+      separateBathCount:0, separateToiletCount:0, unitBathCount:0,
+      hasBath:false, hasToilet:false, isBtSeparated:false
     };
     const seenRooms = new Map(); // pieceId -> type（統合後も元ピース単位で数える）
     const mergedSize = new Map(); // roomId -> セル数（統合後の広さ）
@@ -3248,8 +3256,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           seenRooms.set(cell.roomId, cell.type);
           if (cell.type === T.LDK)           counts.ldkRooms++;
           else if (cell.type === T.ROOM)      counts.bedRooms++;
-          else if (cell.type === T.BATH)      counts.bath++;
-          else if (cell.type === T.TOILET)    counts.toilet++;
+          else if (cell.type === T.BATH) {
+            if (cell.pieceLibId === 'unit-bath' || cell.label === 'UB') {
+              counts.unitBathCount++;
+            } else {
+              counts.separateBathCount++;
+            }
+          }
+          else if (cell.type === T.TOILET)    counts.separateToiletCount++;
           else if (cell.type === T.WASHROOM)  counts.washroom++;
           else if (cell.type === T.CLOSET)    counts.closetRooms++;
         }
@@ -3266,6 +3280,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (cell.type === T.CLOSET) counts.closetCells++;
       }
     }
+    counts.bath = counts.separateBathCount + counts.unitBathCount;
+    counts.toilet = counts.separateToiletCount + counts.unitBathCount;
+    counts.hasBath = counts.bath > 0;
+    counts.hasToilet = counts.toilet > 0;
+    counts.isBtSeparated = (counts.separateBathCount > 0 && counts.separateToiletCount > 0);
     return counts;
   }
 
@@ -3525,16 +3544,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     let hasBath=false, hasToilet=false, hasWash=false;
     for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
       const cell=grid[r][c];
-      if (cell.type===T.BATH)     hasBath=true;
+      if (cell.type===T.BATH) {
+        hasBath = true;
+        if (cell.pieceLibId === 'unit-bath' || cell.label === 'UB') hasToilet = true;
+      }
       if (cell.type===T.TOILET)   hasToilet=true;
       if (cell.type===T.WASHROOM) hasWash=true;
     }
     if (!hasBath || !hasToilet || !hasWash) return false;
-    // Check if any bath-cell has toilet/wash neighbor within 2 steps
     for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
       if (grid[r][c].type !== T.BATH) continue;
+      const isUB = (grid[r][c].pieceLibId === 'unit-bath' || grid[r][c].label === 'UB');
       const ns = getNeighbors(r,c);
-      if (ns.some(n => n.type===T.TOILET||n.type===T.WASHROOM)) return true;
+      if (isUB) {
+        if (ns.some(n => n.type===T.WASHROOM)) return true;
+      } else {
+        if (ns.some(n => n.type===T.TOILET||n.type===T.WASHROOM)) return true;
+      }
     }
     return false;
   }
@@ -3766,6 +3792,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
+    // 2.8 基礎生活設備（トイレ・風呂）ペナルティ
+    let amenityPenalty = 0;
+    if (!counts.hasToilet) {
+      amenityPenalty += 25;
+      reports.push({ icon:'ph-warning-octagon text-rose-600', text:'【欠陥】トイレ未設置 — 生活不可 (満足度-25%)' });
+    }
+    if (!counts.hasBath) {
+      amenityPenalty += 15;
+      reports.push({ icon:'ph-warning text-amber-600', text:'【不便】浴室未設置 — 銭湯必須 (満足度-15%)' });
+    }
+    if (counts.unitBathCount > 0 && STAGE && STAGE.requests && STAGE.requests.some(r => r.id === 'btsep')) {
+      reports.push({ icon:'ph-info text-blue-500', text:'【設備】3点ユニットバス — 風呂トイレ同室' });
+    }
+
     // 3. Movement factor
     const moveFactor = Math.max(0.1, 1.0 - counts.unreachable * 0.3);
     if (moveFactor < 1.0) {
@@ -3792,7 +3832,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     rent += customBonusDiff;
     rent = Math.round(rent * 10) / 10;
     normalRent = Math.round(normalRent * 10) / 10;
-    return { rent, normalRent, reports, optSatisfiedCount };
+    return { rent, normalRent, reports, optSatisfiedCount, amenityPenalty };
   }
 
   /* ============================================================
@@ -3820,9 +3860,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function genComment(counts, combos, optSatisfiedCount, satisfaction, satisfiedReqs, unmetReqs, STAGE) {
+    // 0. 基礎設備欠陥（トイレ・風呂）へのリアクション
+    if (!counts.hasToilet) {
+      return 'あの…部屋を見渡したんですが、トイレが見当たりません…！トイレのない家にどうやって住めばいいんでしょうか…！？';
+    }
+    if (!counts.hasBath) {
+      return 'お風呂がついていないんですね…毎日銭湯に通うのはちょっと大変ですが、仕方ありませんね…';
+    }
     // 1. 到達不能（重大欠陥）への困惑
     if (counts.unreachable > 0) {
       return 'えっ…？ 玄関から入れない部屋があるんですが…どうやって生活すればいいんでしょうか？（困惑）';
+    }
+    // 1.5 UB妥協（BT別要望があったのにUBだった場合）
+    if (STAGE && STAGE.requests && STAGE.requests.some(r => r.id === 'btsep') && !counts.isBtSeparated && counts.unitBathCount > 0) {
+      if (satisfaction >= 75) {
+        return 'ユニットバスなのは少し妥協ですが、その他の間取りは希望通りで悪くないお部屋ですね！';
+      }
     }
     // 2. ユニークコンボ・特殊設計へのリアクション
     if (combos.some(c=>c.name==='要塞化'))
@@ -4171,7 +4224,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
 
-    const { rent, normalRent, reports, optSatisfiedCount } = calcRent(counts, combos, visited);
+    const { rent, normalRent, reports, optSatisfiedCount, amenityPenalty } = calcRent(counts, combos, visited);
 
     const isClear = rent >= STAGE.targetRent;
     
@@ -4215,6 +4268,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       satisfiedCount: satisfiedCount,
       totalRequests: STAGE.requests.length,
       optionalSatisfied: optSatisfiedCount || 0,
+      amenityPenalty: amenityPenalty || 0,
       badCombos: badCombos,
       goodCombos: goodCombos,
       combosList: combos.map(c => ({name:c.name, icon:c.icon, bonus:c.bonus})),
@@ -4920,10 +4974,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const p = window.currentPropertyData || {};
     // currentPropertyData がない場合のフォールバック（念のため）
     const rentToSave = p.rent !== undefined ? p.rent : parseFloat(document.getElementById('flyer-rent').textContent);
-    // gridの簡易コピーを保存 (type, label, roomId)
+    // gridの簡易コピーを保存 (type, label, roomId, pieceLibId)
     const savedGrid = grid.map(row => row.map(cell => {
       if (!cell || cell.type === T.EMPTY || cell.type === T.GARDEN) return null;
-      return { type: cell.type, label: cell.label, roomId: cell.roomId };
+      return { type: cell.type, label: cell.label, roomId: cell.roomId, pieceLibId: cell.pieceLibId };
     }));
     
     const propNo = (GameState.properties.length > 0) ? Math.max(...GameState.properties.map(x => x.propertyNo || 0)) + 1 : 1;
@@ -4939,6 +4993,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
       totalRequests: p.totalRequests || 1,
       optionalSatisfied: p.optionalSatisfied || 0,
+      amenityPenalty: p.amenityPenalty || 0,
       badCombos: p.badCombos || 0,
       goodCombos: p.goodCombos || 0,
       combosList: p.combosList || [],
@@ -5267,7 +5322,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     else bar.style.background = 'var(--c-rose)';
     
     const optStr = stats.optBonus > 0 ? ` / 任意 +${stats.optBonus}%` : '';
-    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}`;
+    const amenityStr = stats.amenityPenalty > 0 ? ` / 設備欠陥 -${stats.amenityPenalty}%` : '';
+    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${amenityStr}`;
     
     document.getElementById('pd-current-evict').textContent = `${stats.evictRate}%`;
     document.getElementById('pd-deg-rate').textContent = `Rank ${getPropertyRank(stats.degRate)}`;
