@@ -710,9 +710,12 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.83 (10/23)
+        Floor Plan v0.84 (10/23)
       </div>
     </div>
+  </section>
+
+    <!-- 物件詳細モーダル -->
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:320px; text-align:left;">
         <button id="btn-close-prop-detail" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
@@ -873,6 +876,10 @@
             </div>
             <span style="font-size:11px; color:var(--c-text2);" id="mem-prop-count">稼働: 1棟</span>
           </div>
+          <div id="mem-reward-breakdown" style="display:none; font-size:11px; color:#cbd5e1; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px; padding-top:6px; justify-content:space-between;">
+            <span>完工・設計報酬:</span>
+            <strong id="mem-reward" style="color:var(--c-amber-lt);">+0.0万</strong>
+          </div>
           <div id="mem-salary-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px; padding-top:6px; justify-content:space-between;">
             <span>家賃: <strong id="mem-raw-income" style="color:var(--c-emerald);">+0.0万</strong></span>
             <span>人件費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong></span>
@@ -912,7 +919,6 @@
         </div>
       </div>
     </div>
-  </section>
 
     <!-- ==============================
        SCREEN 1.5: MISSION SELECTION BOARD
@@ -980,7 +986,10 @@
         <canvas id="site-preview-canvas"></canvas>
       </div>
       <div class="stats-grid" style="margin-top:10px;">
-        <div class="stat-item" style="display:none;">
+        <div class="stat-item">
+          <div class="stat-label">建築予算</div>
+          <div class="stat-value font-num" id="stat-budget" style="color:var(--c-emerald);">1000<span class="stat-unit">万</span></div>
+        </div>
         <div class="stat-item">
           <div class="stat-label">目標家賃</div>
           <div class="stat-value font-num" id="stat-rent">12.0<span class="stat-unit">万</span></div>
@@ -4480,8 +4489,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const isClear = rent >= STAGE.targetRent;
     
-    // ここでは資金加算しない。結果画面のボタンで処理する。
-    GameState.funds = budget; // 消費した分の同期
+    // 建築予算は案件ごとの予算であり、会社資金の同期は行わない
     saveGame();
 
     // 依頼達成・未達成の集計
@@ -4676,6 +4684,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (mcq) mcq.textContent = STAGE.client.quote;
     
     // Update Stats
+    const sb = document.getElementById('stat-budget');
+    if (sb) sb.innerHTML = `${(STAGE.initialBudget || 1000).toFixed(0)}<span class="stat-unit">万</span>`;
     document.getElementById('stat-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span class="stat-unit">万</span>`;
     
     // Site preview canvas
@@ -4753,13 +4763,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function startGame() {
     loadGame();
     updateStage();
-    budget = GameState.funds;
+    budget = (STAGE && STAGE.initialBudget) ? STAGE.initialBudget : 1000;
     currentLevelIdx = GameState.level;
     
     updateCompanyUI();
 
     initGrid();
-    budget = GameState.funds;
+    budget = (STAGE && STAGE.initialBudget) ? STAGE.initialBudget : 1000;
     selectedSlot = 0; selectedRot = 0;
     previewMode = false; hoverCell = null;
     const co = document.getElementById('confirm-overlay');
@@ -4945,9 +4955,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (GameState.attempts > 0) {
       if (!confirm(`現在の間取りを破棄し、もう一度設計し直しますか？\n（残り再設計回数: ${GameState.attempts}回 → ${GameState.attempts - 1}回）`)) return;
-      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
       GameState.attempts -= 1;
-      GameState.lastFunds = GameState.funds;
       saveGame();
       startGame();
       showScreen('game');
@@ -5018,6 +5026,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             <div style="text-align:right;">
               <div style="font-size:10px; color:var(--c-text2);">目標家賃</div>
               <div class="font-num" style="font-size:16px; font-weight:900; color:var(--c-amber-lt);">${m.targetRent.toFixed(1)}<span style="font-size:10px; color:var(--c-text2); font-weight:normal;">万/月</span></div>
+              <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">建築予算 <strong style="color:var(--c-emerald);">${m.initialBudget || 1000}万</strong></div>
             </div>
           </div>
 
@@ -5106,7 +5115,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   let monthEndCallback = null;
 
-  function showMonthEndModal({ type = 'deliver', month = 1, income = 0, salaries = 0, netIncome = 0, evicted = [], onConfirm = null }) {
+  function showMonthEndModal({ type = 'deliver', month = 1, income = 0, salaries = 0, netIncome = 0, reward = 0, evicted = [], onConfirm = null }) {
     const modal = document.getElementById('month-end-modal');
     if (!modal) return;
     
@@ -5119,6 +5128,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const propCountEl = document.getElementById('mem-prop-count');
     const troubleBox = document.getElementById('mem-trouble-box');
     const troubleText = document.getElementById('mem-trouble-text');
+    const rewardBox = document.getElementById('mem-reward-breakdown');
+    const rewardEl = document.getElementById('mem-reward');
     const salaryBox = document.getElementById('mem-salary-breakdown');
     const rawIncomeEl = document.getElementById('mem-raw-income');
     const salariesEl = document.getElementById('mem-salaries');
@@ -5139,15 +5150,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       subtitleEl.textContent = '依頼を破棄して、今月を終了しました。';
     }
 
-    if (salaries > 0) {
+    if (reward > 0) {
+      if (rewardBox) rewardBox.style.display = 'flex';
+      if (rewardEl) rewardEl.textContent = `+${reward.toFixed(1)}万`;
+    } else {
+      if (rewardBox) rewardBox.style.display = 'none';
+    }
+
+    const grandTotal = netIncome + reward;
+    if (salaries > 0 || income > 0) {
       if (salaryBox) salaryBox.style.display = 'flex';
       if (rawIncomeEl) rawIncomeEl.textContent = `+${income.toFixed(1)}万`;
       if (salariesEl) salariesEl.textContent = `-${salaries.toFixed(1)}万`;
-      if (incomeEl) incomeEl.textContent = `${netIncome >= 0 ? '+' : ''}${netIncome.toFixed(1)}`;
     } else {
       if (salaryBox) salaryBox.style.display = 'none';
-      if (incomeEl) incomeEl.textContent = `+${income.toFixed(1)}`;
     }
+    if (incomeEl) incomeEl.textContent = `${grandTotal >= 0 ? '+' : ''}${grandTotal.toFixed(1)}`;
 
     if (propCountEl) {
       const activeCount = (GameState.properties || []).filter(p => !p.isSold && (p.vacancyTurns || 0) <= 0).length;
@@ -5203,6 +5221,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       income: result.income,
       salaries: result.salaries,
       netIncome: result.netIncome,
+      reward: 0,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.currentMission = null;
@@ -5215,7 +5234,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
-    if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
     const result = processMonthEnd();
     showMonthEndModal({
       type: 'giveup',
@@ -5223,6 +5241,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       income: result.income,
       salaries: result.salaries,
       netIncome: result.netIncome,
+      reward: 0,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.level++;
@@ -5255,7 +5274,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       level: GameState.level,
       rent: rentToSave,
       normalRent: p.normalRent !== undefined ? p.normalRent : rentToSave,
-      targetRent: p.targetRent || STAGE.targetRent,
+      targetRent: p.targetRent || (STAGE ? STAGE.targetRent : 5.0),
       baseRent: p.baseRent || 0,
       isClear: p.isClear || false,
       satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
@@ -5270,10 +5289,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       thumbnail: p.thumbnail || null,
       vacancyTurns: 0,
       isOriginalTenant: true,
-      clientName: p.clientName || STAGE.client.name,
+      clientName: p.clientName || (STAGE && STAGE.client ? STAGE.client.name : '入居者'),
       customCombo: p.customCombo || null
     });
     
+    // 設計施工報酬 (完工報酬) の計算：基本設計料100万 + 建築予算節約ボーナス（残予算の10%）
+    const reward = 100.0 + Math.max(0, Math.round((budget || 0) * 0.1));
+    GameState.funds += reward;
+
     const result = processMonthEnd();
     showMonthEndModal({
       type: 'deliver',
@@ -5281,6 +5304,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       income: result.income,
       salaries: result.salaries,
       netIncome: result.netIncome,
+      reward: reward,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.level++;
