@@ -5869,10 +5869,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('pd-combos').innerHTML = comboHtml;
     
     const btnSell = document.getElementById('btn-pd-sell');
-    document.getElementById('pd-sell-val').textContent = stats.resaleValue;
-    
-    // イベントリスナーの付け替え (cloneNodeで既存のリスナーを破棄・2段階インライン確認)
+    // イベントリスナーの付け替えとボタン表示の初期化 (2段階確認中に売却した後でも #pd-sell-val が消えないようにする)
     const newBtnSell = btnSell.cloneNode(true);
+    newBtnSell.innerHTML = `<i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
+    newBtnSell.style.background = '';
+    newBtnSell.style.color = 'var(--c-amber-lt)';
+    newBtnSell.style.borderColor = 'var(--c-border)';
     btnSell.parentNode.replaceChild(newBtnSell, btnSell);
     let isSellConfirming = false;
     let sellConfirmTimer = null;
