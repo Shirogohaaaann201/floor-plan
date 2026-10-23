@@ -674,10 +674,11 @@
       </button>
     </div>
     <div class="mission-container" style="width:92%; max-width:600px; box-sizing:border-box; margin:24px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
-      <div style="text-align:center; margin-bottom:24px;">
-        <i class="ph-bold ph-buildings" style="font-size:48px; color:var(--c-blue);"></i>
-        <h2 id="home-co-name" style="margin:8px 0 4px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
-        <div style="color:var(--c-text2); font-weight:bold;">第<span id="home-co-month" style="font-size:18px; color:#0f172a;">1</span>ヶ月目</div>
+      <div style="text-align:center; margin-bottom:20px;">
+        <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
+        <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
+        <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目</div>
+        <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
       </div>
       
       <div style="display:flex; gap:12px; margin-bottom:24px;">
@@ -691,14 +692,17 @@
         </div>
       </div>
       
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-bottom:24px;">
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-bottom:20px;">
         <h3 style="margin:0 0 12px; color:#0f172a; font-size:16px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">所有物件一覧</h3>
         <div id="property-list" style="max-height:350px; overflow-y:auto; font-size:13px; color:#475569;">
           <!-- 挿入される -->
         </div>
       </div>
       
-      <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:12px; cursor:pointer;">
+      <button id="btn-open-upgrade" class="btn btn-secondary" style="width:100%; padding:14px; font-size:15px; font-weight:bold; margin-bottom:10px; cursor:pointer; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+        <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>会社強化・オフィス設備
+      </button>
+      <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:10px; cursor:pointer;">
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
       <button id="btn-skip-month" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
@@ -706,7 +710,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.82 (10/23)
+        Floor Plan v0.83 (10/23)
       </div>
     </div>
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
@@ -781,6 +785,68 @@
       </div>
     </div>
 
+    <!-- 会社強化・オフィス設備モーダル -->
+    <div id="company-upgrade-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:220; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:440px; max-height:88vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); padding:16px; box-sizing:border-box;">
+        
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+              <i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> 会社強化・オフィス管理
+            </div>
+            <div style="font-size:11px; color:var(--c-text2); margin-top:2px;">
+              所持資金: <strong id="upg-current-funds" style="color:var(--c-emerald); font-size:13px;">0.0万</strong>
+            </div>
+          </div>
+          <button id="btn-close-upgrade" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <!-- Tab Header -->
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <button id="tab-upg-company" class="btn btn-primary" style="flex:1; padding:8px; font-size:12px; font-weight:bold; cursor:pointer;">
+            <i class="ph-bold ph-trend-up"></i> 事務所強化
+          </button>
+          <button id="tab-upg-staff" class="btn btn-slate" style="flex:1; padding:8px; font-size:12px; font-weight:bold; cursor:pointer;">
+            <i class="ph-bold ph-users"></i> スタッフ雇用 (<span id="upg-staff-count-tab">0/0</span>)
+          </button>
+        </div>
+
+        <div id="upg-feedback-banner" style="display:none; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:bold; margin-bottom:10px; text-align:center;"></div>
+
+        <!-- Scrollable Tab Content Container -->
+        <div id="upg-scroll-content" style="overflow-y:auto; flex:1; padding-right:4px;">
+          <!-- Section A: 事務所強化 -->
+          <div id="upg-view-company">
+            <!-- 営業力強化 -->
+            <div id="upg-card-sales" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- ブランド知名度 -->
+            <div id="upg-card-brand" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- デスク増設 -->
+            <div id="upg-card-office" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 設備投資 -->
+            <div id="upg-card-features" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+          </div>
+          <!-- Section B: スタッフ雇用 -->
+          <div id="upg-view-staff" style="display:none;">
+            <!-- 雇用ステータス -->
+            <div id="upg-staff-status-box" style="background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 12px; margin-bottom:12px;"></div>
+            <!-- 雇用中スタッフ -->
+            <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+              <i class="ph-bold ph-identification-card"></i> 雇用中のスタッフ
+            </div>
+            <div id="upg-hired-staff-list" style="margin-bottom:14px;"></div>
+            <!-- 採用候補一覧 -->
+            <div style="font-size:12px; font-weight:bold; color:var(--c-text); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+              <i class="ph-bold ph-user-plus"></i> 採用候補のスペシャリスト
+            </div>
+            <div id="upg-candidate-staff-list"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- 月次決算報告モーダル (脱alert) -->
     <div id="month-end-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:250; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:330px; text-align:left; box-shadow:0 12px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15);">
@@ -799,13 +865,17 @@
 
         <!-- 収支ボックス -->
         <div style="background:var(--c-surface2); padding:12px 14px; border-radius:8px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.06);">
-          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">今月の家賃収入</div>
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">今月の収支決算</div>
           <div style="display:flex; align-items:baseline; justify-content:space-between;">
             <div>
               <span style="font-size:24px; font-weight:900; color:var(--c-emerald);" id="mem-income">+0.0</span>
               <span style="font-size:13px; font-weight:bold; color:var(--c-emerald); margin-left:2px;">万円</span>
             </div>
             <span style="font-size:11px; color:var(--c-text2);" id="mem-prop-count">稼働: 1棟</span>
+          </div>
+          <div id="mem-salary-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px; padding-top:6px; justify-content:space-between;">
+            <span>家賃: <strong id="mem-raw-income" style="color:var(--c-emerald);">+0.0万</strong></span>
+            <span>人件費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong></span>
           </div>
         </div>
 
@@ -1376,7 +1446,122 @@
         return { cells: picked, facing: side };
       }
     }
-    return { cells: [{ r: lot.maxR, c: lot.minC + 2 }], facing: 'bottom' };
+    return { cells: allowWide ? [{ r: lot.maxR, c: lot.minC + 1 }, { r: lot.maxR, c: lot.minC + 2 }] : [{ r: lot.maxR, c: lot.minC + 1 }], facing: 'bottom' };
+  }
+
+  /* ============================================================
+     COMPANY UPGRADES & STAFF SYSTEM CONFIG
+  ============================================================ */
+  const UPGRADE_CONFIG = {
+    sales: [
+      { level: 1, name: '町の小さな設計所', mult: 1.0,  cost: 0,   desc: '基準値（補正なし ×1.0）' },
+      { level: 2, name: '地元で話題の事務所', mult: 1.15, cost: 300, desc: '建築予算＆目標家賃 +15%' },
+      { level: 3, name: 'エリア屈指の実力派', mult: 1.30, cost: 800, desc: '建築予算＆目標家賃 +30%' },
+      { level: 4, name: '有名アーキテクト',   mult: 1.45, cost: 1800,desc: '建築予算＆目標家賃 +45%' },
+      { level: 5, name: '一流デザインファーム', mult: 1.60, cost: 4000,desc: '建築予算＆目標家賃 +60% (最大)' },
+    ],
+    brand: [
+      { level: 1, name: '無名・開業直後',   cost: 0,   desc: '単身 70% / DINKS 30%' },
+      { level: 2, name: '口コミの広まり',   cost: 400, desc: '単身 45% / DINKS 40% / ファミリー 15%' },
+      { level: 3, name: 'メディア掲載',     cost: 1000,desc: '単身 25% / DINKS 40% / ファミリー 25% / 豪邸 10%' },
+      { level: 4, name: '業界の注目株',     cost: 2500,desc: '単身 15% / DINKS 30% / ファミリー 35% / 豪邸 20%' },
+      { level: 5, name: 'プレステージ',     cost: 5000,desc: '単身 10% / DINKS 20% / ファミリー 40% / 豪邸 30% (最大)' },
+    ],
+    office: [
+      { level: 0, name: '一人親方',   slots: 0, cost: 0,   desc: '雇用枠 0人 (プレイヤー単独)' },
+      { level: 1, name: 'デスク増設', slots: 1, cost: 500, desc: '雇用枠 1人 (アシスタント採用)' },
+      { level: 2, name: 'オフィス移転', slots: 2, cost: 1500,desc: '雇用枠 2人 (小規模オフィス)' },
+      { level: 3, name: '本格スタジオ', slots: 3, cost: 3500,desc: '雇用枠 3人 (本格スタジオ・最大)' },
+    ],
+    features: {
+      freeFlip:      { id: 'freeFlip',      name: '反転加工ライセンス', cost: 600, icon: 'ph-arrows-left-right', desc: 'ピース反転時の特注割増(1.2倍)を恒久無料化' },
+      extraRerolls:  { id: 'extraRerolls',  name: 'クイックリロール枠+2', cost: 400, icon: 'ph-arrows-clockwise',  desc: '無料ピース再抽選の上限が +2回 増加 (5回➔7回)' },
+      extraAttempts: { id: 'extraAttempts', name: '再設計保険',         cost: 800, icon: 'ph-shield-check',     desc: 'パズル中の再設計可能回数が 2回 ➔ 3回 に増加' },
+    }
+  };
+
+  const BRAND_DISTRIBUTIONS = {
+    1: { single: 70, dinks: 30, family: 0,  mansion: 0 },
+    2: { single: 45, dinks: 40, family: 15, mansion: 0 },
+    3: { single: 25, dinks: 40, family: 25, mansion: 10 },
+    4: { single: 15, dinks: 30, family: 35, mansion: 20 },
+    5: { single: 10, dinks: 20, family: 40, mansion: 30 },
+  };
+
+  const STAFF_CANDIDATES = [
+    {
+      id: 'plumber',
+      name: '水回りの魔術師',
+      role: '配管スペシャリスト',
+      avatar: '🔧',
+      salary: 1.0,
+      desc: '水回り(浴室・トイレ・洗面)の配置コスト10%引。「水回り集約」家賃ボーナス+0.5万。'
+    },
+    {
+      id: 'space_designer',
+      name: '空間デザイナー',
+      role: '意匠設計担当',
+      avatar: '📐',
+      salary: 1.5,
+      desc: 'LDKセルの基本家賃利回り評価が+10%向上。'
+    },
+    {
+      id: 'storage_master',
+      name: '収納マイスター',
+      role: '動線・整理の達人',
+      avatar: '📦',
+      salary: 0.8,
+      desc: '収納ピースの配置コストが半額。収納が含まれる物件の退去リスク-1%。'
+    },
+    {
+      id: 'negotiator',
+      name: '敏腕ネゴシエーター',
+      role: '営業主任',
+      avatar: '💼',
+      salary: 2.0,
+      desc: '目標額を超えた家賃設定による満足度ペナルティを半減。'
+    },
+    {
+      id: 'listener',
+      name: 'ヒアリングの達人',
+      role: '顧客リレーション',
+      avatar: '👂',
+      salary: 1.2,
+      desc: '任意オプション達成時の満足度加算が +5% ➔ +8% にアップ。'
+    },
+    {
+      id: 'concierge',
+      name: 'おもてなしコンシェルジュ',
+      role: 'アフターサポート',
+      avatar: '🛎️',
+      salary: 1.5,
+      desc: '全物件の引き渡し時満足度+5%（初期バリアが5ヶ月延長）。'
+    },
+    {
+      id: 'broker',
+      name: '資材ブローカー',
+      role: '調達コーディネーター',
+      avatar: '🧱',
+      salary: 1.0,
+      desc: '全ピースの購入コストが 3% 割引。'
+    },
+    {
+      id: 'recycle',
+      name: '中古材コーディネーター',
+      role: 'エコ調達担当',
+      avatar: '♻️',
+      salary: 0.6,
+      desc: 'ピース再抽選（リロール）にかかる費用が半額。'
+    }
+  ];
+
+  function hasStaffBuff(staffId) {
+    if (!GameState || !GameState.company || !GameState.company.hiredStaff) return false;
+    return GameState.company.hiredStaff.some(s => s.id === staffId);
+  }
+
+  function getMaxAttempts() {
+    return 2 + (GameState?.company?.features?.extraAttempts ? 1 : 0);
   }
 
   function generateStage(level = 0, overrideType = null) {
@@ -1647,6 +1832,12 @@
     const requests = reqKeys.map(k => ({ ...REQUEST_REGISTRY[k] }));
     const optionalRequests = optKeys.map(k => ({ ...REQUEST_REGISTRY[k] })).filter(Boolean);
 
+    // 営業力強化バフの適用 (Lv 1: +0%, Lv 2: +15%, Lv 3: +30%, Lv 4: +45%, Lv 5: +60%)
+    const salesLevel = (GameState && GameState.company && GameState.company.salesLevel) || 1;
+    const salesMultiplier = 1.0 + (salesLevel - 1) * 0.15;
+    initialBudget = Math.round(initialBudget * salesMultiplier);
+    targetRent = Math.round(targetRent * salesMultiplier * 10) / 10;
+
     return {
       id: level + 1,
       name: `${clientData.name} 様の依頼`,
@@ -1667,29 +1858,21 @@
     };
   }
 
+  function pickClientTypeByBrand(brandLevel = 1) {
+    const dist = BRAND_DISTRIBUTIONS[brandLevel] || BRAND_DISTRIBUTIONS[1];
+    const roll = Math.random() * 100;
+    if (roll < dist.single) return 'single';
+    if (roll < dist.single + dist.dinks) return 'dinks';
+    if (roll < dist.single + dist.dinks + dist.family) return 'family';
+    return 'mansion';
+  }
+
   function generateMissionPool(level = 0) {
     const pool = [];
-    if (level === 0) {
-      pool.push(generateStage(level, 'single'));
-      pool.push(generateStage(level, 'single'));
-      pool.push(generateStage(level, 'dinks'));
-    } else if (level === 1) {
-      pool.push(generateStage(level, 'single'));
-      pool.push(generateStage(level, 'dinks'));
-      pool.push(generateStage(level, 'dinks'));
-    } else if (level === 2) {
-      pool.push(generateStage(level, 'single'));
-      pool.push(generateStage(level, 'dinks'));
-      pool.push(generateStage(level, 'family'));
-    } else {
-      const types = ['single', 'dinks', 'family'];
-      if (level >= 3 && Math.random() < Math.min(0.5, 0.2 + (level - 3) * 0.05)) {
-        types.push('mansion');
-      }
-      for (let i = 0; i < 3; i++) {
-        const rollType = types[Math.floor(Math.random() * types.length)];
-        pool.push(generateStage(level, rollType));
-      }
+    const brandLevel = (GameState && GameState.company && GameState.company.brandLevel) || 1;
+    for (let i = 0; i < 3; i++) {
+      const rollType = pickClientTypeByBrand(brandLevel);
+      pool.push(generateStage(level, rollType));
     }
     return pool;
   }
@@ -1747,10 +1930,19 @@
     properties: [],
     discovered: {
       combos: []
+    },
+    company: {
+      salesLevel: 1,
+      brandLevel: 1,
+      officeLevel: 0,
+      features: {
+        freeFlip: false,
+        extraRerolls: 0,
+        extraAttempts: 0
+      },
+      hiredStaff: []
     }
   };
-
-
 
   function processMonthEnd() {
     GameState.month += 1;
@@ -1761,7 +1953,6 @@
         p.vacancyTurns--;
       } else {
         // 退去判定 (calcPropertyStatsへ移行)
-        
         const age = GameState.month - (p.createdMonth || GameState.month - 1);
         
         // 完成直後（1ヶ月目の月次処理）は入居したてなので退去判定をスキップ
@@ -1791,9 +1982,17 @@
         }
       }
     }
-    GameState.funds += totalIncome;
+
+    // スタッフ人件費の控除
+    let totalSalaries = 0;
+    if (GameState.company && GameState.company.hiredStaff) {
+      totalSalaries = GameState.company.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
+      totalSalaries = Math.round(totalSalaries * 10) / 10;
+    }
+    const netIncome = Math.round((totalIncome - totalSalaries) * 10) / 10;
+    GameState.funds += netIncome;
     saveGame();
-    return { income: totalIncome, evicted: evictedList };
+    return { income: totalIncome, salaries: totalSalaries, netIncome: netIncome, evicted: evictedList };
   }
   
   function updateCompanyUI() {
@@ -1813,8 +2012,23 @@
       if (data) {
         const parsed = JSON.parse(data);
         Object.assign(GameState, parsed);
+        if (!GameState.company) {
+          GameState.company = {
+            salesLevel: 1,
+            brandLevel: 1,
+            officeLevel: 0,
+            features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
+            hiredStaff: []
+          };
+        } else {
+          if (!GameState.company.salesLevel) GameState.company.salesLevel = 1;
+          if (!GameState.company.brandLevel) GameState.company.brandLevel = 1;
+          if (GameState.company.officeLevel === undefined) GameState.company.officeLevel = 0;
+          if (!GameState.company.features) GameState.company.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
+          if (!GameState.company.hiredStaff) GameState.company.hiredStaff = [];
+        }
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
-          GameState.attempts = 2;
+          GameState.attempts = getMaxAttempts();
         }
         if (GameState.currentMission) {
           attachRequestFunctions(GameState.currentMission);
@@ -1825,6 +2039,15 @@
         }
       }
     } catch(e) {}
+    if (!GameState.company) {
+      GameState.company = {
+        salesLevel: 1,
+        brandLevel: 1,
+        officeLevel: 0,
+        features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
+        hiredStaff: []
+      };
+    }
     if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
       GameState.availableMissions = generateMissionPool(GameState.level);
       saveGame();
@@ -1926,7 +2149,11 @@
 
     // 1. 家賃ボーナス（見た目・挙動一致のため整数に丸める）
     const rentRatio = currentRent / targetRent;
-    const rentBonus = Math.round(50 - (rentRatio - 1.0) * 50);
+    let rentPenalty = (rentRatio - 1.0) * 50;
+    if (rentPenalty > 0 && hasStaffBuff('negotiator')) {
+      rentPenalty *= 0.5; // 敏腕ネゴシエーター: 高家賃ペナルティ半減
+    }
+    const rentBonus = Math.round(50 - rentPenalty);
 
     // 2. 依頼ボーナス（整数に丸める）
     const reqBonus = Math.round((satisfied / totalReq) * 50);
@@ -1934,15 +2161,22 @@
     // 3. コンボボーナス（整数）
     const comboBonus = (goodC * 5) - (badC * 20);
 
-    // 4. 任意オプションボーナス (バリア延長: 1つ達成につき +5%)
-    const optBonus = (p.optionalSatisfied || 0) * 5;
+    // 4. 任意オプションボーナス (ヒアリングの達人で8%にアップ)
+    const optPerReq = hasStaffBuff('listener') ? 8 : 5;
+    const optBonus = (p.optionalSatisfied || 0) * optPerReq;
+
+    // 5. おもてなしコンシェルジュ (+5%)
+    const conciergeBonus = hasStaffBuff('concierge') ? 5 : 0;
 
     // 満足度合計（各内訳の整数の和として厳密に一致させる）
-    const satisfaction = rentBonus + reqBonus + comboBonus + optBonus - amenityPenalty;
+    const satisfaction = rentBonus + reqBonus + comboBonus + optBonus + conciergeBonus - amenityPenalty;
 
     // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
     const unreached = totalReq - satisfied;
-    const degRate = 0.5 + (unreached * 0.2) + (badC * 0.5);
+    let degRate = 0.5 + (unreached * 0.2) + (badC * 0.5);
+    if (hasStaffBuff('storage_master') && p.combosList && p.combosList.some(c => c.name && c.name.includes('収納'))) {
+      degRate = Math.max(0.2, degRate - 0.2); // 収納マイスター: 収納付き物件の劣化・退去軽減
+    }
 
     // 退去率計算
     const initialEvict = 100 - satisfaction;
@@ -1978,6 +2212,7 @@
       reqBonus: reqBonus,
       comboBonus: comboBonus,
       optBonus: optBonus,
+      conciergeBonus: conciergeBonus,
       amenityPenalty: amenityPenalty,
       currentRent: currentRent,
       isOriginal: isOriginal
@@ -2095,8 +2330,19 @@
   }
   function getPieceCost(piece, mirrored = false) {
     if (!piece) return 0;
-    const base = piece.cost || 0;
-    if (!mirrored) return base;
+    let base = piece.cost || 0;
+    if (hasStaffBuff('plumber') && (piece.cat === T.BATH || piece.cat === T.TOILET || piece.cat === T.WASHROOM)) {
+      base *= 0.9;
+    }
+    if (hasStaffBuff('storage_master') && piece.cat === T.CLOSET) {
+      base *= 0.5;
+    }
+    if (hasStaffBuff('broker')) {
+      base *= 0.97;
+    }
+    if (!mirrored || GameState?.company?.features?.freeFlip) {
+      return Math.round(base * 10) / 10;
+    }
     return Math.round(base * 1.2 * 10) / 10;
   }
 
@@ -2191,9 +2437,10 @@
      DRAFT CONTROLLER
   ============================================================ */
   function getDiscardCostForNext(count) {
-    if (count < 5) return 0;
-    if (count < 10) return 2.0;
-    if (count < 15) return 4.0;
+    const freeSlots = 5 + (GameState?.company?.features?.extraRerolls ? 2 : 0);
+    if (count < freeSlots) return 0;
+    if (count < freeSlots + 5) return 2.0;
+    if (count < freeSlots + 10) return 4.0;
     return 8.0;
   }
 
@@ -2216,7 +2463,10 @@
         }
       }
     }
-    return { total: discardCost + keepCost, discard: discardCost, keep: keepCost };
+    if (hasStaffBuff('recycle')) {
+      discardCost *= 0.5;
+    }
+    return { total: Math.round((discardCost + keepCost) * 10) / 10, discard: discardCost, keep: keepCost };
   }
 
   function generatePiece() {
@@ -3251,7 +3501,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (cell.type !== T.ENTRANCE) counts.totalOcc++;
         const reach = visited.has(`${r},${c}`);
         if (!reach && cell.type !== T.ENTRANCE) { counts.unreachable++; continue; }
-        counts.totalBaseRent += (cell.costPerCell || 0) * 0.05;
+        counts.totalBaseRent += (cell.costPerCell || 0) * 0.05 * (cell.type === T.LDK && hasStaffBuff('space_designer') ? 1.1 : 1.0);
         if (cell.roomId && !seenRooms.has(cell.roomId)) {
           seenRooms.set(cell.roomId, cell.type);
           if (cell.type === T.LDK)           counts.ldkRooms++;
@@ -3445,8 +3695,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     // 1. 水回り集約: 風呂・トイレ・洗面が相互に隣接
     if (wetAdjacencyCluster()) {
-      combos.push({ name:'水回り集約', bonus:2.0, icon:'ph-drop text-blue-600', type:'good',
-        text:'【王道コンボ】水回り集約 — 配管効率化ボーナス (+2.0万)' });
+      const b = hasStaffBuff('plumber') ? 2.5 : 2.0;
+      const bDesc = hasStaffBuff('plumber') ? ' (+2.5万 専属配管バフ)' : ' (+2.0万)';
+      combos.push({ name:'水回り集約', bonus:b, icon:'ph-drop text-blue-600', type:'good',
+        text:`【王道コンボ】水回り集約 — 配管効率化ボーナス${bDesc}` });
     }
     // 2. 家事ラク動線: LDKと洗面所が直通接続
     if (hasDirectConnection(grid, T.LDK, T.WASHROOM)) {
@@ -4543,7 +4795,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   document.getElementById('btn-start').addEventListener('click', () => {
     initAudio();
-    if (GameState.attempts === undefined || GameState.attempts < 0) GameState.attempts = 2;
+    if (GameState.attempts === undefined || GameState.attempts < 0) GameState.attempts = getMaxAttempts();
     GameState.lastFunds = GameState.funds; // 開始時の資金を記録
     saveGame();
     startGame();
@@ -4814,7 +5066,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.currentMission = GameState.availableMissions[idx];
     STAGE = GameState.currentMission;
     attachRequestFunctions(STAGE);
-    GameState.attempts = 2;
+    GameState.attempts = getMaxAttempts();
     saveGame();
     setupMissionScreen();
     showScreen('mission');
@@ -4854,7 +5106,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   let monthEndCallback = null;
 
-  function showMonthEndModal({ type = 'deliver', month = 1, income = 0, evicted = [], onConfirm = null }) {
+  function showMonthEndModal({ type = 'deliver', month = 1, income = 0, salaries = 0, netIncome = 0, evicted = [], onConfirm = null }) {
     const modal = document.getElementById('month-end-modal');
     if (!modal) return;
     
@@ -4867,6 +5119,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const propCountEl = document.getElementById('mem-prop-count');
     const troubleBox = document.getElementById('mem-trouble-box');
     const troubleText = document.getElementById('mem-trouble-text');
+    const salaryBox = document.getElementById('mem-salary-breakdown');
+    const rawIncomeEl = document.getElementById('mem-raw-income');
+    const salariesEl = document.getElementById('mem-salaries');
 
     if (titleEl) titleEl.textContent = `第${month}ヶ月目 決算報告`;
     
@@ -4884,7 +5139,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       subtitleEl.textContent = '依頼を破棄して、今月を終了しました。';
     }
 
-    if (incomeEl) incomeEl.textContent = `+${income.toFixed(1)}`;
+    if (salaries > 0) {
+      if (salaryBox) salaryBox.style.display = 'flex';
+      if (rawIncomeEl) rawIncomeEl.textContent = `+${income.toFixed(1)}万`;
+      if (salariesEl) salariesEl.textContent = `-${salaries.toFixed(1)}万`;
+      if (incomeEl) incomeEl.textContent = `${netIncome >= 0 ? '+' : ''}${netIncome.toFixed(1)}`;
+    } else {
+      if (salaryBox) salaryBox.style.display = 'none';
+      if (incomeEl) incomeEl.textContent = `+${income.toFixed(1)}`;
+    }
+
     if (propCountEl) {
       const activeCount = (GameState.properties || []).filter(p => !p.isSold && (p.vacancyTurns || 0) <= 0).length;
       propCountEl.textContent = `稼働: ${activeCount}棟`;
@@ -4937,6 +5201,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       type: 'skip',
       month: GameState.month - 1,
       income: result.income,
+      salaries: result.salaries,
+      netIncome: result.netIncome,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.currentMission = null;
@@ -4955,10 +5221,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       type: 'giveup',
       month: GameState.month - 1,
       income: result.income,
+      salaries: result.salaries,
+      netIncome: result.netIncome,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.level++;
-        GameState.attempts = 2;
+        GameState.attempts = getMaxAttempts();
         GameState.currentMission = null;
         GameState.availableMissions = generateMissionPool(GameState.level);
         saveGame();
@@ -5011,10 +5279,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       type: 'deliver',
       month: GameState.month - 1,
       income: result.income,
+      salaries: result.salaries,
+      netIncome: result.netIncome,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.level++;
-        GameState.attempts = 2;
+        GameState.attempts = getMaxAttempts();
         GameState.currentMission = null;
         GameState.availableMissions = generateMissionPool(GameState.level);
         saveGame();
@@ -5393,11 +5663,550 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (e.target.id === 'plan-viewer-modal') closePlanViewer();
   });
 
+  /* ============================================================
+     COMPANY UPGRADES & STAFF MODAL UI
+  ============================================================ */
+  let dismissConfirmTimer = null;
+  window.dismissConfirmingStaffId = null;
+  let upgradeFeedbackTimer = null;
+
+  function showUpgradeFeedback(msg, color = 'var(--c-emerald)') {
+    const fb = document.getElementById('upg-feedback-banner');
+    if (!fb) return;
+    fb.textContent = msg;
+    fb.style.color = color;
+    fb.style.background = color === 'var(--c-rose)' ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)';
+    fb.style.border = `1px solid ${color === 'var(--c-rose)' ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`;
+    fb.style.display = 'block';
+    if (upgradeFeedbackTimer) clearTimeout(upgradeFeedbackTimer);
+    upgradeFeedbackTimer = setTimeout(() => {
+      fb.style.display = 'none';
+    }, 2800);
+  }
+
+  function switchUpgradeTab(tab) {
+    const tabCo = document.getElementById('tab-upg-company');
+    const tabSt = document.getElementById('tab-upg-staff');
+    const viewCo = document.getElementById('upg-view-company');
+    const viewSt = document.getElementById('upg-view-staff');
+    if (!tabCo || !tabSt || !viewCo || !viewSt) return;
+
+    if (tab === 'company') {
+      tabCo.className = 'btn btn-primary';
+      tabSt.className = 'btn btn-slate';
+      viewCo.style.display = 'block';
+      viewSt.style.display = 'none';
+    } else {
+      tabSt.className = 'btn btn-primary';
+      tabCo.className = 'btn btn-slate';
+      viewSt.style.display = 'block';
+      viewCo.style.display = 'none';
+    }
+  }
+
+  function openCompanyUpgradeModal(initialTab = 'company') {
+    initAudio();
+    switchUpgradeTab(initialTab);
+    renderCompanyUpgradeUI();
+    const modal = document.getElementById('company-upgrade-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeCompanyUpgradeModal() {
+    initAudio();
+    const modal = document.getElementById('company-upgrade-modal');
+    if (modal) modal.style.display = 'none';
+    window.dismissConfirmingStaffId = null;
+    if (dismissConfirmTimer) clearTimeout(dismissConfirmTimer);
+    updateHomeUI();
+  }
+
+  function renderCompanyUpgradeUI() {
+    if (!GameState.company) {
+      GameState.company = {
+        salesLevel: 1,
+        brandLevel: 1,
+        officeLevel: 0,
+        features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
+        hiredStaff: []
+      };
+    }
+    const co = GameState.company;
+    if (!co.features) co.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
+    if (!co.hiredStaff) co.hiredStaff = [];
+
+    // Header values
+    const fundsEl = document.getElementById('upg-current-funds');
+    if (fundsEl) fundsEl.textContent = `${GameState.funds.toFixed(1)}万`;
+
+    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    const hiredCount = co.hiredStaff.length;
+    const tabBadge = document.getElementById('upg-staff-count-tab');
+    if (tabBadge) tabBadge.textContent = `${hiredCount}/${maxSlots}`;
+
+    /* --- 1. 営業力強化カード --- */
+    const cardSales = document.getElementById('upg-card-sales');
+    if (cardSales) {
+      const curLv = co.salesLevel || 1;
+      const curDef = UPGRADE_CONFIG.sales[curLv - 1] || UPGRADE_CONFIG.sales[0];
+      const isMax = curLv >= UPGRADE_CONFIG.sales.length;
+      const nextDef = !isMax ? UPGRADE_CONFIG.sales[curLv] : null;
+      const canAfford = nextDef && GameState.funds >= nextDef.cost;
+
+      let actionHtml = '';
+      if (isMax) {
+        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 最大レベル（+60%）到達済み</div>`;
+      } else {
+        actionHtml = `
+          <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: Lv.${nextDef.level} ${nextDef.name}</span>
+              <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDef.cost}万</span>
+            </div>
+            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextDef.desc}</div>
+          </div>
+          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('sales')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-arrow-circle-up"></i> Lv.${nextDef.level} へ強化（${nextDef.cost}万）
+          </button>
+        `;
+      }
+
+      cardSales.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:18px;">💼</span>
+            <div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">営業力強化</div>
+              <div style="font-size:10px; color:var(--c-text2);">全依頼の予算＆目標家賃底上げ</div>
+            </div>
+          </div>
+          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.35); color:#93c5fd;">
+            Lv.${curDef.level} ${curDef.name}
+          </span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
+          現在効果: <strong>建築予算＆目標家賃 +${Math.round((curDef.mult - 1) * 100)}%</strong>
+        </div>
+        ${actionHtml}
+      `;
+    }
+
+    /* --- 2. ブランド力・知名度カード --- */
+    const cardBrand = document.getElementById('upg-card-brand');
+    if (cardBrand) {
+      const curLv = co.brandLevel || 1;
+      const curDef = UPGRADE_CONFIG.brand[curLv - 1] || UPGRADE_CONFIG.brand[0];
+      const isMax = curLv >= UPGRADE_CONFIG.brand.length;
+      const nextDef = !isMax ? UPGRADE_CONFIG.brand[curLv] : null;
+      const canAfford = nextDef && GameState.funds >= nextDef.cost;
+
+      let actionHtml = '';
+      if (isMax) {
+        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 最高プレステージ到達済み</div>`;
+      } else {
+        actionHtml = `
+          <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: Lv.${nextDef.level} ${nextDef.name}</span>
+              <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDef.cost}万</span>
+            </div>
+            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextDef.desc}</div>
+          </div>
+          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('brand')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-arrow-circle-up"></i> Lv.${nextDef.level} へ強化（${nextDef.cost}万）
+          </button>
+        `;
+      }
+
+      cardBrand.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:18px;">📢</span>
+            <div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">ブランド知名度</div>
+              <div style="font-size:10px; color:var(--c-text2);">上位クライアント遭遇率UP</div>
+            </div>
+          </div>
+          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(168,85,247,0.18); border:1px solid rgba(168,85,247,0.35); color:#d8b4fe;">
+            Lv.${curDef.level} ${curDef.name}
+          </span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
+          出現傾向: <strong>${curDef.desc}</strong>
+        </div>
+        ${actionHtml}
+      `;
+    }
+
+    /* --- 3. 事務所デスク増設カード --- */
+    const cardOffice = document.getElementById('upg-card-office');
+    if (cardOffice) {
+      const curLv = co.officeLevel || 0;
+      const curDef = UPGRADE_CONFIG.office[curLv] || UPGRADE_CONFIG.office[0];
+      const isMax = curLv >= UPGRADE_CONFIG.office.length - 1;
+      const nextDef = !isMax ? UPGRADE_CONFIG.office[curLv + 1] : null;
+      const canAfford = nextDef && GameState.funds >= nextDef.cost;
+
+      let actionHtml = '';
+      if (isMax) {
+        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 本格スタジオ完成（最大3名雇用可能）</div>`;
+      } else {
+        actionHtml = `
+          <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextDef.name} (雇用枠 ${nextDef.slots}人)</span>
+              <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDef.cost}万</span>
+            </div>
+            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextDef.desc}</div>
+          </div>
+          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('office')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-plus-circle"></i> デスク増設（${nextDef.cost}万）
+          </button>
+        `;
+      }
+
+      cardOffice.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:18px;">🏢</span>
+            <div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">事務所デスク増設</div>
+              <div style="font-size:10px; color:var(--c-text2);">スタッフ雇用人数の拡張</div>
+            </div>
+          </div>
+          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.35); color:#86efac;">
+            ${curDef.name}（枠 ${curDef.slots}人）
+          </span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
+          現状: <strong>${curDef.desc}</strong>
+        </div>
+        ${actionHtml}
+      `;
+    }
+
+    /* --- 4. 設備投資カード --- */
+    const cardFeat = document.getElementById('upg-card-features');
+    if (cardFeat) {
+      let featListHtml = '';
+      const feats = [
+        { key: 'freeFlip', def: UPGRADE_CONFIG.features.freeFlip, owned: !!co.features.freeFlip },
+        { key: 'extraRerolls', def: UPGRADE_CONFIG.features.extraRerolls, owned: co.features.extraRerolls > 0 },
+        { key: 'extraAttempts', def: UPGRADE_CONFIG.features.extraAttempts, owned: co.features.extraAttempts > 0 }
+      ];
+
+      feats.forEach(f => {
+        const canAfford = GameState.funds >= f.def.cost;
+        let rightCol = '';
+        if (f.owned) {
+          rightCol = `<span style="font-size:10px; font-weight:bold; padding:4px 8px; border-radius:4px; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399; white-space:nowrap;"><i class="ph-bold ph-check"></i> 導入済み</span>`;
+        } else {
+          rightCol = `<button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('feature', '${f.key}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; white-space:nowrap;">導入 (${f.def.cost}万)</button>`;
+        }
+
+        featListHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(15,23,42,0.45); border-radius:6px; border:1px solid rgba(255,255,255,0.07); margin-bottom:6px;">
+            <div style="flex:1; padding-right:8px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <i class="ph-bold ${f.def.icon}" style="color:var(--c-amber); font-size:15px;"></i>
+                <span style="font-size:12px; font-weight:bold; color:var(--c-text);">${f.def.name}</span>
+              </div>
+              <div style="font-size:10px; color:var(--c-text2); margin-top:2px; line-height:1.3;">${f.def.desc}</div>
+            </div>
+            <div>${rightCol}</div>
+          </div>
+        `;
+      });
+
+      cardFeat.innerHTML = `
+        <div style="font-size:13px; font-weight:bold; color:var(--c-text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <i class="ph-bold ph-wrench" style="color:var(--c-amber);"></i> 設備投資（永続設計バフ）
+        </div>
+        ${featListHtml}
+      `;
+    }
+
+    /* --- 5. スタッフ雇用タブ --- */
+    const statusBox = document.getElementById('upg-staff-status-box');
+    if (statusBox) {
+      const totalSalary = co.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
+      let noteHtml = '';
+      if (maxSlots === 0) {
+        noteHtml = `<div style="margin-top:6px; font-size:11px; color:#f59e0b; background:rgba(245,158,11,0.12); padding:6px 8px; border-radius:4px; border:1px solid rgba(245,158,11,0.25);"><i class="ph-bold ph-info"></i> デスクがありません。「事務所強化」でデスクを増設するとスタッフを雇用できます。</div>`;
+      } else if (hiredCount >= maxSlots) {
+        noteHtml = `<div style="margin-top:6px; font-size:11px; color:#38bdf8; background:rgba(56,189,248,0.1); padding:6px 8px; border-radius:4px; border:1px solid rgba(56,189,248,0.25);"><i class="ph-bold ph-check-circle"></i> デスク満席（さらに雇用するにはオフィス移転が必要です）</div>`;
+      }
+
+      statusBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:11px; color:var(--c-text2);">雇用スロット</div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text);">${hiredCount} / ${maxSlots}人</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px; color:var(--c-text2);">月間総人件費</div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-rose);">-${totalSalary.toFixed(1)}<span style="font-size:10px; font-weight:normal;">万/月</span></div>
+          </div>
+        </div>
+        <div style="font-size:10px; color:var(--c-text3); margin-top:5px; line-height:1.3;">
+          ※ 人件費は毎月末の家賃精算時に差し引かれます。
+        </div>
+        ${noteHtml}
+      `;
+    }
+
+    // 雇用中リスト
+    const hiredListEl = document.getElementById('upg-hired-staff-list');
+    if (hiredListEl) {
+      if (co.hiredStaff.length === 0) {
+        hiredListEl.innerHTML = `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:12px; background:rgba(15,23,42,0.3); border-radius:6px; border:1px dashed rgba(255,255,255,0.1);">現在雇用中のスタッフはいません</div>`;
+      } else {
+        let hiredHtml = '';
+        co.hiredStaff.forEach(s => {
+          const isConfirming = window.dismissConfirmingStaffId === s.id;
+          const dismissBtn = isConfirming
+            ? `<button class="btn btn-rose" onclick="confirmDismissStaff('${s.id}')" style="padding:4px 8px; font-size:11px; font-weight:bold; background:#e11d48; color:white;">本当に解雇？</button>`
+            : `<button class="btn btn-slate" onclick="startDismissStaff('${s.id}')" style="padding:4px 8px; font-size:11px;">解雇</button>`;
+
+          hiredHtml += `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:8px 10px; background:rgba(15,23,42,0.5); border:1px solid rgba(245,158,11,0.25); border-radius:6px; margin-bottom:6px;">
+              <div style="display:flex; gap:8px; align-items:flex-start; flex:1;">
+                <span style="font-size:22px; line-height:1;">${s.avatar}</span>
+                <div>
+                  <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+                    ${s.name}
+                    <span style="font-size:9px; background:rgba(245,158,11,0.2); color:#fcd34d; border:1px solid rgba(245,158,11,0.4); padding:1px 5px; border-radius:4px;">${s.role}</span>
+                  </div>
+                  <div style="font-size:10px; color:var(--c-rose); font-weight:bold; margin:2px 0 3px;">給与: -${s.salary.toFixed(1)}万/月</div>
+                  <div style="font-size:10px; color:var(--c-text2); line-height:1.3;">${s.desc}</div>
+                </div>
+              </div>
+              <div style="margin-left:8px;">${dismissBtn}</div>
+            </div>
+          `;
+        });
+        hiredListEl.innerHTML = hiredHtml;
+      }
+    }
+
+    // 候補リスト
+    const candListEl = document.getElementById('upg-candidate-staff-list');
+    if (candListEl) {
+      const candidates = STAFF_CANDIDATES.filter(c => !co.hiredStaff.some(h => h.id === c.id));
+      if (candidates.length === 0) {
+        candListEl.innerHTML = `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:12px; background:rgba(15,23,42,0.3); border-radius:6px;">すべてのスペシャリストを採用済みです</div>`;
+      } else {
+        let candHtml = '';
+        candidates.forEach(c => {
+          const isSlotFull = hiredCount >= maxSlots;
+          const hireBtn = isSlotFull
+            ? `<button class="btn btn-slate" disabled style="padding:6px 10px; font-size:11px; opacity:0.45; cursor:not-allowed; white-space:nowrap;">デスク満席</button>`
+            : `<button class="btn btn-primary" onclick="hireStaff('${c.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:pointer; white-space:nowrap;"><i class="ph-bold ph-user-plus"></i> 採用する</button>`;
+
+          candHtml += `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:8px 10px; background:rgba(15,23,42,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:6px; margin-bottom:6px;">
+              <div style="display:flex; gap:8px; align-items:flex-start; flex:1;">
+                <span style="font-size:22px; line-height:1;">${c.avatar}</span>
+                <div>
+                  <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+                    ${c.name}
+                    <span style="font-size:9px; background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3); padding:1px 5px; border-radius:4px;">${c.role}</span>
+                  </div>
+                  <div style="font-size:10px; color:var(--c-amber-lt); font-weight:bold; margin:2px 0 3px;">給与: ${c.salary.toFixed(1)}万/月</div>
+                  <div style="font-size:10px; color:var(--c-text2); line-height:1.3;">${c.desc}</div>
+                </div>
+              </div>
+              <div style="margin-left:8px;">${hireBtn}</div>
+            </div>
+          `;
+        });
+        candListEl.innerHTML = candHtml;
+      }
+    }
+  }
+
+  function buyCompanyUpgrade(type, key) {
+    initAudio();
+    if (!GameState.company) {
+      GameState.company = { salesLevel: 1, brandLevel: 1, officeLevel: 0, features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 }, hiredStaff: [] };
+    }
+    const co = GameState.company;
+
+    if (type === 'sales') {
+      const curLevel = co.salesLevel || 1;
+      if (curLevel >= UPGRADE_CONFIG.sales.length) return;
+      const nextDef = UPGRADE_CONFIG.sales[curLevel];
+      if (GameState.funds < nextDef.cost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds -= nextDef.cost;
+      co.salesLevel++;
+      playSound('clear');
+      showUpgradeFeedback(`✨ 営業力 Lv.${co.salesLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
+    } else if (type === 'brand') {
+      const curLevel = co.brandLevel || 1;
+      if (curLevel >= UPGRADE_CONFIG.brand.length) return;
+      const nextDef = UPGRADE_CONFIG.brand[curLevel];
+      if (GameState.funds < nextDef.cost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds -= nextDef.cost;
+      co.brandLevel++;
+      playSound('clear');
+      showUpgradeFeedback(`✨ ブランド知名度 Lv.${co.brandLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
+    } else if (type === 'office') {
+      const curLevel = co.officeLevel || 0;
+      if (curLevel >= UPGRADE_CONFIG.office.length - 1) return;
+      const nextDef = UPGRADE_CONFIG.office[curLevel + 1];
+      if (GameState.funds < nextDef.cost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds -= nextDef.cost;
+      co.officeLevel++;
+      playSound('clear');
+      showUpgradeFeedback(`✨ 事務所を「${nextDef.name}（雇用枠 ${nextDef.slots}人）」へ拡張しました！`, 'var(--c-emerald)');
+    } else if (type === 'feature') {
+      const feat = UPGRADE_CONFIG.features[key];
+      if (!feat) return;
+      if (co.features[key]) return;
+      if (GameState.funds < feat.cost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds -= feat.cost;
+      if (key === 'freeFlip') co.features.freeFlip = true;
+      if (key === 'extraRerolls') co.features.extraRerolls = 2;
+      if (key === 'extraAttempts') {
+        co.features.extraAttempts = 1;
+        GameState.attempts = getMaxAttempts();
+      }
+      playSound('clear');
+      showUpgradeFeedback(`✨ 「${feat.name}」を導入しました！`, 'var(--c-emerald)');
+    }
+
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function hireStaff(staffId) {
+    initAudio();
+    if (!GameState.company) {
+      GameState.company = { salesLevel: 1, brandLevel: 1, officeLevel: 0, features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 }, hiredStaff: [] };
+    }
+    const co = GameState.company;
+    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    if (co.hiredStaff.length >= maxSlots) {
+      playSound('error');
+      showUpgradeFeedback('デスクに空きがありません！', 'var(--c-rose)');
+      return;
+    }
+    const cand = STAFF_CANDIDATES.find(c => c.id === staffId);
+    if (!cand) return;
+    if (co.hiredStaff.some(h => h.id === staffId)) return;
+
+    co.hiredStaff.push({
+      id: cand.id,
+      name: cand.name,
+      role: cand.role,
+      avatar: cand.avatar,
+      salary: cand.salary,
+      desc: cand.desc
+    });
+
+    playSound('clear');
+    showUpgradeFeedback(`🤝 ${cand.name}を採用しました！`, 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function startDismissStaff(staffId) {
+    initAudio();
+    window.dismissConfirmingStaffId = staffId;
+    if (dismissConfirmTimer) clearTimeout(dismissConfirmTimer);
+    dismissConfirmTimer = setTimeout(() => {
+      window.dismissConfirmingStaffId = null;
+      renderCompanyUpgradeUI();
+    }, 3500);
+    renderCompanyUpgradeUI();
+  }
+
+  function confirmDismissStaff(staffId) {
+    if (dismissConfirmTimer) clearTimeout(dismissConfirmTimer);
+    dismissStaff(staffId);
+  }
+
+  function dismissStaff(staffId) {
+    initAudio();
+    if (!GameState.company || !GameState.company.hiredStaff) return;
+    const staff = GameState.company.hiredStaff.find(s => s.id === staffId);
+    const staffName = staff ? staff.name : 'スタッフ';
+    GameState.company.hiredStaff = GameState.company.hiredStaff.filter(s => s.id !== staffId);
+    window.dismissConfirmingStaffId = null;
+    playSound('tap');
+    showUpgradeFeedback(`👋 ${staffName}を解雇しました`, 'var(--c-text2)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  window.buyCompanyUpgrade = buyCompanyUpgrade;
+  window.hireStaff = hireStaff;
+  window.startDismissStaff = startDismissStaff;
+  window.confirmDismissStaff = confirmDismissStaff;
+
+  // Company Upgrade Modal Events
+  document.getElementById('btn-open-upgrade')?.addEventListener('click', () => openCompanyUpgradeModal('company'));
+  document.getElementById('btn-close-upgrade')?.addEventListener('click', closeCompanyUpgradeModal);
+  document.getElementById('company-upgrade-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target.id === 'company-upgrade-modal') closeCompanyUpgradeModal();
+  });
+  document.getElementById('tab-upg-company')?.addEventListener('click', () => {
+    initAudio();
+    switchUpgradeTab('company');
+  });
+  document.getElementById('tab-upg-staff')?.addEventListener('click', () => {
+    initAudio();
+    switchUpgradeTab('staff');
+  });
+
 function updateHomeUI() {
+    if (!GameState.company) {
+      GameState.company = { salesLevel: 1, brandLevel: 1, officeLevel: 0, features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 }, hiredStaff: [] };
+    }
     document.getElementById('home-co-name').textContent = GameState.companyName;
     document.getElementById('home-co-month').textContent = GameState.month;
     document.getElementById('home-co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>`;
     
+    // Company Badges
+    const badgesEl = document.getElementById('home-co-badges');
+    if (badgesEl) {
+      const salesDef = UPGRADE_CONFIG.sales[(GameState.company.salesLevel || 1) - 1] || UPGRADE_CONFIG.sales[0];
+      const brandDef = UPGRADE_CONFIG.brand[(GameState.company.brandLevel || 1) - 1] || UPGRADE_CONFIG.brand[0];
+      const maxSlots = UPGRADE_CONFIG.office[GameState.company.officeLevel || 0]?.slots || 0;
+      const hiredCount = GameState.company.hiredStaff?.length || 0;
+
+      badgesEl.innerHTML = `
+        <span style="font-size:11px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
+          <i class="ph-bold ph-trend-up"></i>営業 Lv.${GameState.company.salesLevel || 1} ${salesDef.name}
+        </span>
+        <span style="font-size:11px; background:#fdf4ff; color:#a21caf; border:1px solid #f0abfc; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
+          <i class="ph-bold ph-megaphone"></i>知名度 Lv.${GameState.company.brandLevel || 1} ${brandDef.name}
+        </span>
+        <span style="font-size:11px; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
+          <i class="ph-bold ph-users"></i>スタッフ ${hiredCount}/${maxSlots}名
+        </span>
+      `;
+    }
+
     const listEl = document.getElementById('property-list');
     listEl.innerHTML = '';
     let totalRent = 0;
@@ -5447,10 +6256,21 @@ function updateHomeUI() {
           </div>
         `;
       });
-
-
     }
-    document.getElementById('home-co-income').innerHTML = `+${totalRent.toFixed(1)}<span class="stat-unit">万/月</span>`;
+
+    const totalSalaries = (GameState.company?.hiredStaff || []).reduce((acc, s) => acc + (s.salary || 0), 0);
+    const netIncome = Math.max(0, totalRent - totalSalaries);
+    const incomeEl = document.getElementById('home-co-income');
+    if (incomeEl) {
+      if (totalSalaries > 0) {
+        incomeEl.innerHTML = `+${netIncome.toFixed(1)}<span class="stat-unit">万/月</span>
+          <div style="font-size:10px; color:var(--c-text2); font-weight:normal; margin-top:2px;">
+            (家賃 ${totalRent.toFixed(1)} - 人件費 ${totalSalaries.toFixed(1)})
+          </div>`;
+      } else {
+        incomeEl.innerHTML = `+${totalRent.toFixed(1)}<span class="stat-unit">万/月</span>`;
+      }
+    }
     
     const btnGo = document.getElementById('btn-go-mission');
     if (btnGo) {
