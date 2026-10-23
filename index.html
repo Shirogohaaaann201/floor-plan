@@ -986,10 +986,7 @@
         <canvas id="site-preview-canvas"></canvas>
       </div>
       <div class="stats-grid" style="margin-top:10px;">
-        <div class="stat-item">
-          <div class="stat-label">建築予算</div>
-          <div class="stat-value font-num" id="stat-budget" style="color:var(--c-emerald);">1000<span class="stat-unit">万</span></div>
-        </div>
+        <div class="stat-item" style="display:none;"></div>
         <div class="stat-item">
           <div class="stat-label">目標家賃</div>
           <div class="stat-value font-num" id="stat-rent">12.0<span class="stat-unit">万</span></div>
@@ -4489,7 +4486,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const isClear = rent >= STAGE.targetRent;
     
-    // 建築予算は案件ごとの予算であり、会社資金の同期は行わない
+    // ここでは資金加算しない。結果画面のボタンで処理する。
+    GameState.funds = budget; // 消費した分の同期
     saveGame();
 
     // 依頼達成・未達成の集計
@@ -4763,13 +4761,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function startGame() {
     loadGame();
     updateStage();
-    budget = (STAGE && STAGE.initialBudget) ? STAGE.initialBudget : 1000;
+    budget = GameState.funds;
     currentLevelIdx = GameState.level;
     
     updateCompanyUI();
 
     initGrid();
-    budget = (STAGE && STAGE.initialBudget) ? STAGE.initialBudget : 1000;
+    budget = GameState.funds;
     selectedSlot = 0; selectedRot = 0;
     previewMode = false; hoverCell = null;
     const co = document.getElementById('confirm-overlay');
@@ -4955,7 +4953,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (GameState.attempts > 0) {
       if (!confirm(`現在の間取りを破棄し、もう一度設計し直しますか？\n（残り再設計回数: ${GameState.attempts}回 → ${GameState.attempts - 1}回）`)) return;
+      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
       GameState.attempts -= 1;
+      GameState.lastFunds = GameState.funds;
       saveGame();
       startGame();
       showScreen('game');
@@ -5026,7 +5026,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             <div style="text-align:right;">
               <div style="font-size:10px; color:var(--c-text2);">目標家賃</div>
               <div class="font-num" style="font-size:16px; font-weight:900; color:var(--c-amber-lt);">${m.targetRent.toFixed(1)}<span style="font-size:10px; color:var(--c-text2); font-weight:normal;">万/月</span></div>
-              <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">建築予算 <strong style="color:var(--c-emerald);">${m.initialBudget || 1000}万</strong></div>
             </div>
           </div>
 
@@ -5234,6 +5233,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
+    if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
     const result = processMonthEnd();
     showMonthEndModal({
       type: 'giveup',
@@ -5241,7 +5241,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       income: result.income,
       salaries: result.salaries,
       netIncome: result.netIncome,
-      reward: 0,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.level++;
@@ -5293,10 +5292,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       customCombo: p.customCombo || null
     });
     
-    // 設計施工報酬 (完工報酬) の計算：基本設計料100万 + 建築予算節約ボーナス（残予算の10%）
-    const reward = 100.0 + Math.max(0, Math.round((budget || 0) * 0.1));
-    GameState.funds += reward;
-
     const result = processMonthEnd();
     showMonthEndModal({
       type: 'deliver',
@@ -5304,7 +5299,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       income: result.income,
       salaries: result.salaries,
       netIncome: result.netIncome,
-      reward: reward,
       evicted: result.evicted,
       onConfirm: () => {
         GameState.level++;
