@@ -748,7 +748,7 @@
       </div>
       
       <button id="btn-open-upgrade" class="btn btn-secondary" style="width:100%; padding:14px; font-size:15px; font-weight:bold; margin-bottom:10px; cursor:pointer; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-        <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>会社強化・銀行・人事
+        <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>会社強化・デッキ・銀行・人事
       </button>
       <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:10px; cursor:pointer;">
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
@@ -758,7 +758,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.86 (10/24)
+        Floor Plan v0.87 (10/25)
       </div>
     </div>
   </section>
@@ -867,7 +867,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
           <div>
             <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-              <i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> 会社強化・銀行・人事
+              <i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> 会社強化・デッキ・銀行・人事
             </div>
             <div style="font-size:11px; color:var(--c-text2); margin-top:2px; display:flex; gap:10px; align-items:center;">
               <span>所持資金: <strong id="upg-current-funds" style="color:var(--c-emerald); font-size:13px;">0.0万</strong></span>
@@ -878,15 +878,18 @@
         </div>
 
         <!-- Tab Header -->
-        <div style="display:flex; gap:6px; margin-bottom:12px;">
-          <button id="tab-upg-company" class="btn btn-primary" style="flex:1; padding:8px 4px; font-size:11px; font-weight:bold; cursor:pointer; justify-content:center;">
-            <i class="ph-bold ph-trend-up"></i> 事務所強化
+        <div style="display:flex; gap:4px; margin-bottom:12px;">
+          <button id="tab-upg-company" class="btn btn-primary" style="flex:1; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-trend-up"></i> 強化
           </button>
-          <button id="tab-upg-staff" class="btn btn-slate" style="flex:1; padding:8px 4px; font-size:11px; font-weight:bold; cursor:pointer; justify-content:center;">
-            <i class="ph-bold ph-users"></i> 人事 (<span id="upg-staff-count-tab">0/0</span>)
+          <button id="tab-upg-deck" class="btn btn-slate" style="flex:1.15; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-cards"></i> デッキ(<span id="upg-deck-count-tab">20</span>)
           </button>
-          <button id="tab-upg-bank" class="btn btn-slate" style="flex:1; padding:8px 4px; font-size:11px; font-weight:bold; cursor:pointer; justify-content:center;">
-            <i class="ph-bold ph-bank"></i> 銀行融資
+          <button id="tab-upg-staff" class="btn btn-slate" style="flex:1; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-users"></i> 人事(<span id="upg-staff-count-tab">0/0</span>)
+          </button>
+          <button id="tab-upg-bank" class="btn btn-slate" style="flex:0.95; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-bank"></i> 銀行
           </button>
         </div>
 
@@ -904,6 +907,10 @@
             <div id="upg-card-office" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
             <!-- 設備投資 -->
             <div id="upg-card-features" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+          </div>
+          <!-- Section D: デッキ編成・技術開発 -->
+          <div id="upg-view-deck" style="display:none;">
+            <div id="upg-deck-content"></div>
           </div>
           <!-- Section B: スタッフ雇用 -->
           <div id="upg-view-staff" style="display:none;">
@@ -1048,6 +1055,24 @@
       </div>
     </div>
 
+    <!-- パズル中の山札・捨て札確認モーダル -->
+    <div id="deck-peek-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:260; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:420px; max-height:86vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:15px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+              <i class="ph-fill ph-cards" style="color:var(--c-amber);"></i> 山札・捨て札確認
+            </div>
+            <div id="deck-peek-subtitle" style="font-size:11px; color:var(--c-text2); margin-top:2px;">
+              山札残り 0枚 / 捨て札・配置済 0枚
+            </div>
+          </div>
+          <button id="btn-close-deck-peek" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <div id="deck-peek-body" style="overflow-y:auto; flex:1; padding-right:4px;"></div>
+      </div>
+    </div>
+
     <!-- ==============================
        SCREEN 1.5: MISSION SELECTION BOARD
   ============================== -->
@@ -1126,13 +1151,17 @@
       </div>
     </div>
 
-    <div class="mission-footer" style="display:flex; gap:10px; width:100%; box-sizing:border-box;">
-      <button class="btn btn-slate" id="btn-back-to-select" style="gap:6px; flex:1; padding:12px 8px; font-size:13px;">
+    <div class="mission-footer" style="display:flex; gap:8px; width:100%; box-sizing:border-box;">
+      <button class="btn btn-slate" id="btn-back-to-select" style="gap:4px; flex:1; padding:12px 6px; font-size:12px;">
         <i class="ph-bold ph-arrow-left"></i>
-        案件一覧へ
+        一覧へ
       </button>
-      <button class="btn btn-amber" id="btn-start" style="gap:8px; flex:2; padding:12px 16px; font-size:15px; font-weight:bold;">
-        <i class="ph-bold ph-play-circle" style="font-size:18px;"></i>
+      <button class="btn btn-slate" id="btn-mission-deck" style="gap:4px; flex:1.15; padding:12px 6px; font-size:12px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+        <i class="ph-bold ph-cards" style="color:#38bdf8;"></i>
+        デッキ編成
+      </button>
+      <button class="btn btn-amber" id="btn-start" style="gap:6px; flex:1.6; padding:12px 12px; font-size:14px; font-weight:bold;">
+        <i class="ph-bold ph-play-circle" style="font-size:17px;"></i>
         設計開始
       </button>
     </div>
@@ -1202,10 +1231,14 @@
     <footer class="game-footer">
       <!-- Toolbar -->
       <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-        <div class="toolbar-left" style="display:flex; align-items:center; gap:8px;">
+        <div class="toolbar-left" style="display:flex; align-items:center; gap:6px;">
+          <button class="btn btn-slate" id="btn-deck-peek" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; cursor:pointer; flex-shrink:0;" title="山札の残りピースと捨て札を確認">
+            <i class="ph-bold ph-cards" style="font-size:13px; color:#4f46e5;"></i>
+            <span id="deck-peek-count" class="font-num">山札 17/20</span>
+          </button>
           <span id="piece-label" style="font-size:11px; color:var(--c-text2);"></span>
         </div>
-        <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold;">
+        <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; flex-shrink:0;">
           <i class="ph-bold ph-check-square-offset" style="font-size:14px; color:var(--c-emerald);"></i>
           設計完了
         </button>
@@ -1400,27 +1433,64 @@
   let buildMirrorExtraCost = 0; // 反転加工による追加費用合計
   let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
 
-  // Piece library (GDD compliant)
+  // Piece library (Starter 11 types + R&D Unlockable 10 types = 21 types)
+  // Large/advanced pieces feature bulk-discount per-cell pricing (1マスあたり割安)
   const PIECE_LIB = [
-    { id:'corr-i2',   name:'廊下(直)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1]], cost:2.0 },
-    { id:'corr-i3',   name:'廊下(長)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1]], cost:3.0 },
-    { id:'corr-l',    name:'廊下(L)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,0],[1,1]], cost:3.0 },
-    { id:'corr-t',    name:'廊下(T)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1],[0,1,0]], cost:4.0 },
-    { id:'corr-s',    name:'廊下(Z)',   cat:T.CORRIDOR, label:'廊下', shape:[[0,1],[1,1],[1,0]], cost:4.0 },
-    { id:'ldk-23',    name:'LDK',       cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,1]], cost:30.0 },
-    { id:'ldk-l',     name:'LDK(L)',    cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,0]], cost:25.0 },
-    { id:'dk-22',     name:'DK',        cat:T.LDK,      label:'DK',   shape:[[1,1],[1,1]], cost:20.0 },
-    { id:'k-1',       name:'キッチン',  cat:T.LDK,      label:'K',    shape:[[1]], cost:5.0 },
-    { id:'room-22',   name:'洋室(小)',  cat:T.ROOM,     label:'洋室', shape:[[1,1],[1,1]], cost:15.0 },
-    { id:'room-23',   name:'洋室(中)',  cat:T.ROOM,     label:'洋室', shape:[[1,1,1],[1,1,1]], cost:20.0 },
-    { id:'room-wa',   name:'和室',      cat:T.ROOM,     label:'和室', shape:[[1,1],[1,1]], cost:12.0 },
-    { id:'room-wa2',  name:'和室(中)',  cat:T.ROOM,     label:'和室', shape:[[1,1,1],[1,1,1]], cost:18.0 },
-    { id:'closet', name:'収納', cat:T.CLOSET, label:'収納', shape:[[1]], cost:1.0 },
-    { id:'toilet',    name:'トイレ',    cat:T.TOILET,   label:'WC',   shape:[[1]], cost:4.0 },
-    { id:'wash',      name:'洗面所',    cat:T.WASHROOM, label:'洗面', shape:[[1]], cost:6.0 },
-    { id:'bath',      name:'浴室',      cat:T.BATH,     label:'浴室', shape:[[1,1]], cost:12.0 },
-    { id:'unit-bath', name:'ユニットバス', cat:T.BATH,  label:'UB',   shape:[[1,1]], cost:10.0 },
+    // --- 初期解放ピース (11種: unlockCost = 0) ---
+    { id:'corr-1',    name:'廊下(1)',    cat:T.CORRIDOR, label:'廊下', shape:[[1]],               cost:1.2,  unlockCost:0,   desc:'1マスの隙間を繋ぐ基本廊下 (1.2万/マス)' },
+    { id:'corr-i2',   name:'廊下(直2)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1]],             cost:2.0,  unlockCost:0,   desc:'標準的な2マス直線廊下 (1.0万/マス)' },
+    { id:'corr-l',    name:'廊下(L3)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,0],[1,1]],       cost:2.7,  unlockCost:0,   desc:'角を曲がる3マスL字廊下 (0.9万/マス)' },
+    { id:'k-1',       name:'キッチン',   cat:T.LDK,      label:'K',    shape:[[1]],               cost:5.0,  unlockCost:0,   desc:'最小1マスK。DKと連結して広々LDK化も可能 (5.0万/マス)' },
+    { id:'dk-22',     name:'DK(4)',      cat:T.LDK,      label:'DK',   shape:[[1,1],[1,1]],       cost:20.0, unlockCost:0,   desc:'標準的な2×2ダイニングキッチン (5.0万/マス)' },
+    { id:'room-22',   name:'洋室(小4)',  cat:T.ROOM,     label:'洋室', shape:[[1,1],[1,1]],       cost:15.0, unlockCost:0,   desc:'標準的な2×2洋室 (3.75万/マス)' },
+    { id:'closet',    name:'収納(1)',    cat:T.CLOSET,   label:'収納', shape:[[1]],               cost:1.5,  unlockCost:0,   desc:'隙間に置ける1マスクローゼット (1.5万/マス)' },
+    { id:'toilet',    name:'トイレ',     cat:T.TOILET,   label:'WC',   shape:[[1]],               cost:4.0,  unlockCost:0,   desc:'独立トイレ1マス (4.0万/マス)' },
+    { id:'wash',      name:'洗面所',     cat:T.WASHROOM, label:'洗面', shape:[[1]],               cost:6.0,  unlockCost:0,   desc:'独立洗面所1マス (6.0万/マス)' },
+    { id:'unit-bath', name:'UB(2)',      cat:T.BATH,     label:'UB',   shape:[[1,1]],             cost:10.0, unlockCost:0,   desc:'1枚で風呂＋トイレを兼ねる省スペースUB (5.0万/マス)' },
+    { id:'bath',      name:'浴室(2)',    cat:T.BATH,     label:'浴室', shape:[[1,1]],             cost:12.0, unlockCost:0,   desc:'「風呂・トイレ別」を達成できる独立浴室 (6.0万/マス)' },
+
+    // --- 技術開発（R&D）で解放される大型・特殊ピース (10種: unlockCost > 0) ---
+    { id:'corr-i3',   name:'廊下(長3)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1]],           cost:2.7,  unlockCost:80,  desc:'直線3マスを一気に伸ばせる割安廊下 (0.9万/マス)' },
+    { id:'closet-2',  name:'WIC収納(2)', cat:T.CLOSET,   label:'収納', shape:[[1,1]],             cost:2.4,  unlockCost:100, desc:'1枚で「収納充実(2マス)」を達成する割安WIC (1.2万/マス)' },
+    { id:'room-wa',   name:'和室(4)',    cat:T.ROOM,     label:'和室', shape:[[1,1],[1,1]],       cost:12.0, unlockCost:120, desc:'洋室より3万安く居室数を確保できる2×2和室 (3.0万/マス)' },
+    { id:'corr-t',    name:'廊下(T4)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1],[0,1,0]],   cost:3.2,  unlockCost:150, desc:'3方向へ動線を分岐できるハブ廊下 (0.8万/マス)' },
+    { id:'corr-s',    name:'廊下(Z4)',   cat:T.CORRIDOR, label:'廊下', shape:[[0,1],[1,1],[1,0]], cost:3.2,  unlockCost:150, desc:'障害物をかわして動線を通せるクランク廊下 (0.8万/マス)' },
+    { id:'ldk-l',     name:'LDK(L5)',    cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,0]],   cost:23.0, unlockCost:200, desc:'角地にフィットする割安5マスL字LDK (4.6万/マス)' },
+    { id:'room-23',   name:'洋室(中6)',  cat:T.ROOM,     label:'洋室', shape:[[1,1,1],[1,1,1]],   cost:20.0, unlockCost:220, desc:'1枚で「広々居室(6マス)」を達成する割安大部屋 (3.3万/マス)' },
+    { id:'room-wa2',  name:'和室(中6)',  cat:T.ROOM,     label:'和室', shape:[[1,1,1],[1,1,1]],   cost:16.0, unlockCost:240, desc:'6マス居室をわずか16万で建てられる高コスパ和室 (2.7万/マス)' },
+    { id:'bath-wide', name:'大型浴室(4)',cat:T.BATH,     label:'浴室', shape:[[1,1],[1,1]],       cost:20.0, unlockCost:260, desc:'1枚で「セレブ浴室(+4.0万)」＆ゆったり浴室達成 (5.0万/マス)' },
+    { id:'ldk-23',    name:'大型LDK(6)', cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,1]],   cost:26.0, unlockCost:300, desc:'ファミリー・豪邸の主役になる割安6マスLDK (4.3万/マス)' },
   ];
+
+  const PIECE_MAP = Object.fromEntries(PIECE_LIB.map(p => [p.id, p]));
+  const STARTER_UNLOCKED_IDS = PIECE_LIB.filter(p => !p.unlockCost).map(p => p.id);
+
+  // 基礎インフラ固定枠（11枚：事故防止のため変更不可）
+  const FIXED_BASE_DECK = [
+    'corr-1', 'corr-i2',
+    'k-1',
+    'room-22', 'room-22',
+    'toilet', 'toilet',
+    'wash', 'wash',
+    'bath',
+    'closet'
+  ];
+
+  // 同カテゴリ入替枠（9枠：解放済みの同カテゴリピースと自由に入れ替え可能）
+  const UPGRADE_DECK_SLOTS = [
+    { id: 'corr_slot_1',   label: '廊下枠①', cat: T.CORRIDOR, defaultPieceId: 'corr-1' },
+    { id: 'corr_slot_2',   label: '廊下枠②', cat: T.CORRIDOR, defaultPieceId: 'corr-l' },
+    { id: 'ldk_slot_1',    label: 'LDK枠①',  cat: T.LDK,      defaultPieceId: 'dk-22' },
+    { id: 'ldk_slot_2',    label: 'LDK枠②',  cat: T.LDK,      defaultPieceId: 'dk-22' },
+    { id: 'room_slot_1',   label: '居室枠①', cat: T.ROOM,     defaultPieceId: 'room-22' },
+    { id: 'room_slot_2',   label: '居室枠②', cat: T.ROOM,     defaultPieceId: 'room-22' },
+    { id: 'room_slot_3',   label: '居室枠③', cat: T.ROOM,     defaultPieceId: 'room-22' },
+    { id: 'bath_slot_1',   label: '浴室枠①', cat: T.BATH,     defaultPieceId: 'unit-bath' },
+    { id: 'closet_slot_1', label: '収納枠①', cat: T.CLOSET,   defaultPieceId: 'closet' },
+  ];
+
+  // 自由追加枠（最大 +4枚：解放済みの全カテゴリから自由に追加可能、空枠も可）
+  const CUSTOM_DECK_SLOTS_COUNT = 4;
 
   // ============================================================
   // REQUEST REGISTRY
@@ -2100,9 +2170,81 @@
         extraRerolls: 0,
         extraAttempts: 0
       },
-      hiredStaff: []
+      hiredStaff: [],
+      unlockedPieces: [...STARTER_UNLOCKED_IDS],
+      deck: {
+        slotOverrides: {},
+        customSlots: [null, null, null, null]
+      }
     }
   };
+
+  function ensureDeckState() {
+    if (!GameState.company) {
+      GameState.company = {
+        salesLevel: 1,
+        brandLevel: 1,
+        officeLevel: 0,
+        debt: 0,
+        features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
+        hiredStaff: [],
+        unlockedPieces: [...STARTER_UNLOCKED_IDS],
+        deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
+      };
+    }
+    const co = GameState.company;
+    if (!Array.isArray(co.unlockedPieces)) {
+      co.unlockedPieces = [...STARTER_UNLOCKED_IDS];
+    } else {
+      for (const sid of STARTER_UNLOCKED_IDS) {
+        if (!co.unlockedPieces.includes(sid)) co.unlockedPieces.push(sid);
+      }
+    }
+    if (!co.deck || typeof co.deck !== 'object') {
+      co.deck = { slotOverrides: {}, customSlots: [null, null, null, null] };
+    }
+    if (!co.deck.slotOverrides || typeof co.deck.slotOverrides !== 'object') {
+      co.deck.slotOverrides = {};
+    }
+    if (!Array.isArray(co.deck.customSlots)) {
+      co.deck.customSlots = [null, null, null, null];
+    }
+    while (co.deck.customSlots.length < CUSTOM_DECK_SLOTS_COUNT) {
+      co.deck.customSlots.push(null);
+    }
+    if (co.deck.customSlots.length > CUSTOM_DECK_SLOTS_COUNT) {
+      co.deck.customSlots = co.deck.customSlots.slice(0, CUSTOM_DECK_SLOTS_COUNT);
+    }
+  }
+
+  function isPieceUnlocked(pieceId) {
+    ensureDeckState();
+    const p = PIECE_MAP[pieceId];
+    if (!p) return false;
+    if (!p.unlockCost || p.unlockCost <= 0) return true;
+    return GameState.company.unlockedPieces.includes(pieceId);
+  }
+
+  function getActiveDeckPieceIds() {
+    ensureDeckState();
+    const co = GameState.company;
+    const ids = [...FIXED_BASE_DECK];
+    for (const slot of UPGRADE_DECK_SLOTS) {
+      const ov = co.deck.slotOverrides[slot.id];
+      if (ov && PIECE_MAP[ov] && PIECE_MAP[ov].cat === slot.cat && isPieceUnlocked(ov)) {
+        ids.push(ov);
+      } else {
+        ids.push(slot.defaultPieceId);
+      }
+    }
+    for (let i = 0; i < CUSTOM_DECK_SLOTS_COUNT; i++) {
+      const cid = co.deck.customSlots[i];
+      if (cid && PIECE_MAP[cid] && isPieceUnlocked(cid)) {
+        ids.push(cid);
+      }
+    }
+    return ids;
+  }
 
   const MIN_BUILD_FUNDS = 15.0; // 最小限の間取りを建築するために必要な最低運転資金(15万円)
 
@@ -2289,7 +2431,9 @@
             officeLevel: 0,
             debt: 0,
             features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
-            hiredStaff: []
+            hiredStaff: [],
+            unlockedPieces: [...STARTER_UNLOCKED_IDS],
+            deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
           };
         } else {
           if (!GameState.company.salesLevel) GameState.company.salesLevel = 1;
@@ -2299,6 +2443,7 @@
           if (!GameState.company.features) GameState.company.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
           if (!GameState.company.hiredStaff) GameState.company.hiredStaff = [];
         }
+        ensureDeckState();
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
           GameState.attempts = getMaxAttempts();
         }
@@ -2311,16 +2456,7 @@
         }
       }
     } catch(e) {}
-    if (!GameState.company) {
-      GameState.company = {
-        salesLevel: 1,
-        brandLevel: 1,
-        officeLevel: 0,
-        debt: 0,
-        features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
-        hiredStaff: []
-      };
-    }
+    ensureDeckState();
     if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
       GameState.availableMissions = generateMissionPool(GameState.level);
       saveGame();
@@ -2742,44 +2878,83 @@
     return { total: Math.round((discardCost + keepCost) * 10) / 10, discard: discardCost, keep: keepCost };
   }
 
-  function generatePiece() {
-    const weights = [
-      { cat: T.WASHROOM, w: 10 },
-      { cat: T.TOILET, w: 10 },
-      { cat: T.BATH, w: 10 },
-      { cat: T.ROOM, w: 25 },
-      { cat: T.LDK, w: 15 },
-      { cat: T.CORRIDOR, w: 20 },
-      { cat: T.CLOSET, w: 10 }
-    ];
-    let totalWeight = 0;
-    for (const item of weights) totalWeight += item.w;
-    
-    let r = Math.random() * totalWeight;
-    let selectedCat = T.CORRIDOR;
-    for (const item of weights) {
-      r -= item.w;
-      if (r <= 0) {
-        selectedCat = item.cat;
-        break;
+  let drawPile = [];
+  let discardPile = [];
+
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function initDeckPiles() {
+    const activeIds = getActiveDeckPieceIds();
+    drawPile = shuffleArray(activeIds);
+    discardPile = [];
+    updateDeckPeekButton();
+  }
+
+  function updateDeckPeekButton() {
+    const el = document.getElementById('deck-peek-count');
+    if (el) {
+      const total = getActiveDeckPieceIds().length;
+      el.textContent = `山札 ${drawPile.length}/${total}`;
+    }
+  }
+
+  function drawPieceFromDeck() {
+    if (drawPile.length === 0) {
+      if (discardPile.length > 0) {
+        drawPile = shuffleArray(discardPile);
+        discardPile = [];
+        if (typeof showFloatingText === 'function' && screens.game?.classList.contains('active')) {
+          showFloatingText('🔄 山札シャッフル！', '#38bdf8');
+        }
+      } else {
+        drawPile = shuffleArray(getActiveDeckPieceIds());
       }
     }
-    const candidates = PIECE_LIB.filter(p => p.cat === selectedCat);
-    const basePiece = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : PIECE_LIB[0];
+    const pieceId = drawPile.pop();
+    const basePiece = PIECE_MAP[pieceId] || PIECE_LIB[0];
     const piece = JSON.parse(JSON.stringify(basePiece));
     piece.walls = generateRandomWalls(piece.shape);
+    updateDeckPeekButton();
     return piece;
+  }
+
+  function generatePiece() {
+    return drawPieceFromDeck();
   }
 
   function refillDraft() {
     for (let i = 0; i < 3; i++) {
       if (!draftSlots[i]) {
-        draftSlots[i] = generatePiece();
+        draftSlots[i] = drawPieceFromDeck();
         keepStates[i] = false;
         keepCounts[i] = 0;
       }
     }
+    updateDeckPeekButton();
     renderDraftUI();
+  }
+
+  function renderMiniPieceShape(piece, cellPx = 10) {
+    if (!piece || !piece.shape) return '';
+    const shape = piece.shape;
+    const rows = shape.length, cols = shape[0].length;
+    const style = CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
+    let html = `<div style="display:inline-grid; grid-template-columns:repeat(${cols},${cellPx}px); gap:1px; vertical-align:middle;">`;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const filled = shape[r][c] === 1;
+        html += `<div style="width:${cellPx}px; height:${cellPx}px; border-radius:2px; box-sizing:border-box; background:${filled ? style.bg : 'transparent'}; ${filled ? `border:1.5px solid ${style.border};` : ''}"></div>`;
+      }
+    }
+    html += `</div>`;
+    return html;
   }
   function createCardElement(piece, isSelected, clickHandler) {
     const card = document.createElement('div');
@@ -3605,6 +3780,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('hint-overlay').style.opacity = '0';
     playSound('place');
     
+    if (piece && piece.id) {
+      discardPile.push(piece.id);
+    }
     draftSlots[selectedSlot] = null;
     keepStates[selectedSlot] = false;
     keepCounts[selectedSlot] = 0;
@@ -3615,7 +3793,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     if (allEmpty) {
       for (let i = 0; i < 3; i++) {
-        draftSlots[i] = generatePiece();
+        draftSlots[i] = drawPieceFromDeck();
         keepStates[i] = false;
         keepCounts[i] = 0;
       }
@@ -3624,6 +3802,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       let next = draftSlots.findIndex(p => p !== null);
       if (next !== -1) selectedSlot = next;
     }
+    updateDeckPeekButton();
     
     renderDraftUI();
     selectedRot = 0;
@@ -5096,6 +5275,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     keepStates = [false, false, false];
     keepCounts = [0, 0, 0];
     discardCount = 0;
+    initDeckPiles();
     refillDraft();
     
     // Update Header UI
@@ -5142,6 +5322,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     return true;
   }
+
+  document.getElementById('btn-mission-deck')?.addEventListener('click', () => {
+    openCompanyUpgradeModal('deck');
+  });
 
   document.getElementById('btn-start').addEventListener('click', () => {
     initAudio();
@@ -5218,15 +5402,25 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       showFloatingText(`-${costs.total.toFixed(1)}万`, 'var(--c-rose)');
     }
 
+    // 捨てたカードが直後のシャッフルで即座に引き直されないよう、
+    // 先に山札から新しいカードを引き、その後で今回捨てたカードを捨て札へ送る
+    const newlyDiscardedIds = [];
     for (let i = 0; i < 3; i++) {
       if (draftSlots[i] !== null && keepStates[i]) {
         keepCounts[i]++;
       } else {
-        draftSlots[i] = generatePiece();
+        if (draftSlots[i] && draftSlots[i].id) {
+          newlyDiscardedIds.push(draftSlots[i].id);
+        }
+        draftSlots[i] = drawPieceFromDeck();
         keepStates[i] = false;
         keepCounts[i] = 0;
       }
     }
+    for (const did of newlyDiscardedIds) {
+      discardPile.push(did);
+    }
+    updateDeckPeekButton();
     
     if (selectedSlot !== null && draftSlots[selectedSlot] === null) {
       let next = draftSlots.findIndex(p => p !== null);
@@ -5240,6 +5434,82 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updatePieceLabel();
     drawPlan();
     playSound('clear');
+  });
+
+  function openDeckPeekModal() {
+    initAudio();
+    cancelRerollConfirm();
+    const modal = document.getElementById('deck-peek-modal');
+    const sub = document.getElementById('deck-peek-subtitle');
+    const body = document.getElementById('deck-peek-body');
+    if (!modal || !body) return;
+
+    const totalDeck = getActiveDeckPieceIds().length;
+    const handPieces = draftSlots.filter(p => p !== null);
+    if (sub) {
+      sub.textContent = `デッキ総数 ${totalDeck}枚 ｜ 山札残り ${drawPile.length}枚 ｜ 手札 ${handPieces.length}枚 ｜ 捨て札・配置済 ${discardPile.length}枚`;
+    }
+
+    const renderGroupedList = (idList, emptyText) => {
+      if (!idList || idList.length === 0) {
+        return `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:10px; background:rgba(15,23,42,0.35); border-radius:6px; border:1px dashed rgba(255,255,255,0.08);">${emptyText}</div>`;
+      }
+      const counts = {};
+      for (const pid of idList) counts[pid] = (counts[pid] || 0) + 1;
+      let html = `<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px;">`;
+      for (const p of PIECE_LIB) {
+        const cnt = counts[p.id];
+        if (!cnt) continue;
+        const unitCost = getPieceCost(p, false);
+        html += `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(15,23,42,0.55); border:1px solid rgba(255,255,255,0.1); border-radius:6px; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+              <div style="min-width:26px; display:flex; justify-content:center;">${renderMiniPieceShape(p, 8)}</div>
+              <div style="min-width:0;">
+                <div style="font-size:11px; font-weight:bold; color:var(--c-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                <div style="font-size:9.5px; color:var(--c-emerald); font-weight:bold;">${unitCost.toFixed(1)}万</div>
+              </div>
+            </div>
+            <span style="font-size:11px; font-weight:900; padding:2px 6px; border-radius:99px; background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); flex-shrink:0;">×${cnt}</span>
+          </div>
+        `;
+      }
+      html += `</div>`;
+      return html;
+    };
+
+    body.innerHTML = `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+          <span><i class="ph-bold ph-stack"></i> 山札の残りピース（これから引ける候補）</span>
+          <span class="font-num">${drawPile.length}枚</span>
+        </div>
+        ${renderGroupedList(drawPile, '山札は空です（次のドローで捨て札がシャッフルされます）')}
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px; font-weight:bold; color:var(--c-text2); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+          <span><i class="ph-bold ph-trash"></i> 捨て札・配置済みピース</span>
+          <span class="font-num">${discardPile.length}枚</span>
+        </div>
+        ${renderGroupedList(discardPile, 'まだ捨て札・配置済みピースはありません')}
+      </div>
+      <div style="font-size:10px; color:var(--c-text3); line-height:1.45; background:rgba(15,23,42,0.4); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
+        💡 <strong>山札ルール:</strong> 山札から優先してピースが引かれます。山札が0枚になると、捨て札・配置済みのピースがシャッフルされて新しい山札になります。
+      </div>
+    `;
+    modal.style.display = 'flex';
+  }
+
+  function closeDeckPeekModal() {
+    initAudio();
+    const modal = document.getElementById('deck-peek-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  document.getElementById('btn-deck-peek')?.addEventListener('click', openDeckPeekModal);
+  document.getElementById('btn-close-deck-peek')?.addEventListener('click', closeDeckPeekModal);
+  document.getElementById('deck-peek-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target.id === 'deck-peek-modal') closeDeckPeekModal();
   });
 
   // 更新ハイライト中に画面のどこかをタップしたらキャンセル
@@ -6222,18 +6492,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function switchUpgradeTab(tab) {
     const tabCo = document.getElementById('tab-upg-company');
+    const tabDk = document.getElementById('tab-upg-deck');
     const tabSt = document.getElementById('tab-upg-staff');
     const tabBk = document.getElementById('tab-upg-bank');
     const viewCo = document.getElementById('upg-view-company');
+    const viewDk = document.getElementById('upg-view-deck');
     const viewSt = document.getElementById('upg-view-staff');
     const viewBk = document.getElementById('upg-view-bank');
     if (!tabCo || !tabSt || !viewCo || !viewSt) return;
 
     tabCo.className = tab === 'company' ? 'btn btn-primary' : 'btn btn-slate';
+    if (tabDk) tabDk.className = tab === 'deck' ? 'btn btn-primary' : 'btn btn-slate';
     tabSt.className = tab === 'staff'   ? 'btn btn-primary' : 'btn btn-slate';
     if (tabBk) tabBk.className = tab === 'bank' ? 'btn btn-primary' : 'btn btn-slate';
 
     viewCo.style.display = tab === 'company' ? 'block' : 'none';
+    if (viewDk) viewDk.style.display = tab === 'deck' ? 'block' : 'none';
     viewSt.style.display = tab === 'staff'   ? 'block' : 'none';
     if (viewBk) viewBk.style.display = tab === 'bank' ? 'block' : 'none';
   }
@@ -6256,16 +6530,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function renderCompanyUpgradeUI() {
-    if (!GameState.company) {
-      GameState.company = {
-        salesLevel: 1,
-        brandLevel: 1,
-        officeLevel: 0,
-        debt: 0,
-        features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
-        hiredStaff: []
-      };
-    }
+    ensureDeckState();
     const co = GameState.company;
     if (co.debt === undefined) co.debt = 0;
     if (!co.features) co.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
@@ -6281,6 +6546,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const hiredCount = co.hiredStaff.length;
     const tabBadge = document.getElementById('upg-staff-count-tab');
     if (tabBadge) tabBadge.textContent = `${hiredCount}/${maxSlots}`;
+    const deckTabBadge = document.getElementById('upg-deck-count-tab');
+    if (deckTabBadge) deckTabBadge.textContent = `${getActiveDeckPieceIds().length}`;
 
     /* --- 1. 営業力強化カード --- */
     const cardSales = document.getElementById('upg-card-sales');
@@ -6659,6 +6926,300 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         </div>
       `;
     }
+
+    /* --- 7. デッキ編成・新規ピース技術開発タブ --- */
+    const deckContent = document.getElementById('upg-deck-content');
+    if (deckContent) {
+      const activeIds = getActiveDeckPieceIds();
+      const totalCards = activeIds.length;
+      const customAddedCount = co.deck.customSlots.filter(x => x && PIECE_MAP[x] && isPieceUnlocked(x)).length;
+
+      // カテゴリ別枚数集計
+      const catCounts = { [T.ROOM]:0, [T.CORRIDOR]:0, [T.LDK]:0, wet:0, [T.CLOSET]:0 };
+      const pieceCounts = {};
+      for (const pid of activeIds) {
+        pieceCounts[pid] = (pieceCounts[pid] || 0) + 1;
+        const p = PIECE_MAP[pid];
+        if (!p) continue;
+        if (p.cat === T.ROOM) catCounts[T.ROOM]++;
+        else if (p.cat === T.CORRIDOR) catCounts[T.CORRIDOR]++;
+        else if (p.cat === T.LDK) catCounts[T.LDK]++;
+        else if (p.cat === T.CLOSET) catCounts[T.CLOSET]++;
+        else catCounts.wet++;
+      }
+
+      const catNameMap = {
+        [T.CORRIDOR]: '廊下',
+        [T.LDK]:      'LDK',
+        [T.ROOM]:     '居室',
+        [T.BATH]:     '浴室',
+        [T.TOILET]:   'トイレ',
+        [T.WASHROOM]: '洗面',
+        [T.CLOSET]:   '収納'
+      };
+
+      const countCellsInShape = (shape) => {
+        let n = 0;
+        for (const row of shape) for (const v of row) if (v === 1) n++;
+        return n;
+      };
+
+      // デッキ内カード一覧グリッド
+      let deckSummaryCardsHtml = `<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:5px; margin-top:8px;">`;
+      for (const p of PIECE_LIB) {
+        const cnt = pieceCounts[p.id];
+        if (!cnt) continue;
+        const cells = countCellsInShape(p.shape);
+        const perCell = (p.cost / cells).toFixed(1);
+        deckSummaryCardsHtml += `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:5px 7px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.09); border-radius:6px; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+              <div style="min-width:26px; display:flex; justify-content:center;">${renderMiniPieceShape(p, 7)}</div>
+              <div style="min-width:0;">
+                <div style="font-size:10.5px; font-weight:bold; color:var(--c-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                <div style="font-size:9px; color:var(--c-text2);">原価${p.cost.toFixed(1)}万 <span style="color:#94a3b8;">(${perCell}/ﾏｽ)</span></div>
+              </div>
+            </div>
+            <span style="font-size:10.5px; font-weight:900; padding:1px 6px; border-radius:99px; background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); flex-shrink:0;">×${cnt}</span>
+          </div>
+        `;
+      }
+      deckSummaryCardsHtml += `</div>`;
+
+      // 1. 自由追加枠 (+0〜4枚)
+      const unlockedList = PIECE_LIB.filter(p => isPieceUnlocked(p.id));
+      let customSlotsHtml = '';
+      for (let i = 0; i < CUSTOM_DECK_SLOTS_COUNT; i++) {
+        const curId = co.deck.customSlots[i] || '';
+        const curPiece = curId ? PIECE_MAP[curId] : null;
+        let optsHtml = `<option value="">-- 空枠（追加しない） --</option>`;
+        for (const p of unlockedList) {
+          const cells = countCellsInShape(p.shape);
+          const sel = (p.id === curId) ? 'selected' : '';
+          optsHtml += `<option value="${p.id}" ${sel}>[${catNameMap[p.cat] || ''}] ${p.name} (${cells}ﾏｽ / ${p.cost.toFixed(1)}万)</option>`;
+        }
+        customSlotsHtml += `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; background:rgba(15,23,42,0.45); border:1px solid ${curPiece ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.07)'}; border-radius:6px; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:74px;">
+              <span style="font-size:10.5px; font-weight:bold; color:${curPiece ? '#38bdf8' : 'var(--c-text2)'};">追加枠${i + 1}</span>
+              <div style="min-width:26px; display:flex; justify-content:center;">${curPiece ? renderMiniPieceShape(curPiece, 7) : '<span style="font-size:9px; color:#64748b;">空</span>'}</div>
+            </div>
+            <select onchange="setDeckCustomSlot(${i}, this.value)" style="flex:1; background:#0f172a; color:var(--c-text); border:1px solid #334155; border-radius:5px; padding:5px 6px; font-size:11px; font-weight:bold; cursor:pointer;">
+              ${optsHtml}
+            </select>
+          </div>
+        `;
+      }
+
+      // 2. 同カテゴリ入替枠 (9枠)
+      let upgradeSlotsHtml = '';
+      for (const slot of UPGRADE_DECK_SLOTS) {
+        const ovId = co.deck.slotOverrides[slot.id];
+        const curId = (ovId && PIECE_MAP[ovId] && PIECE_MAP[ovId].cat === slot.cat && isPieceUnlocked(ovId)) ? ovId : slot.defaultPieceId;
+        const curPiece = PIECE_MAP[curId] || PIECE_LIB[0];
+        const catUnlocked = unlockedList.filter(p => p.cat === slot.cat);
+        let optsHtml = '';
+        for (const p of catUnlocked) {
+          const cells = countCellsInShape(p.shape);
+          const perCell = (p.cost / cells).toFixed(1);
+          const sel = (p.id === curId) ? 'selected' : '';
+          optsHtml += `<option value="${p.id}" ${sel}>${p.name} (${cells}ﾏｽ / 原価${p.cost.toFixed(1)}万 [${perCell}/ﾏｽ])</option>`;
+        }
+        const isUpgraded = curId !== slot.defaultPieceId;
+        upgradeSlotsHtml += `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; background:rgba(15,23,42,0.45); border:1px solid ${isUpgraded ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.07)'}; border-radius:6px; margin-bottom:5px;">
+            <div style="display:flex; align-items:center; gap:6px; min-width:80px;">
+              <span style="font-size:10.5px; font-weight:bold; color:${isUpgraded ? 'var(--c-amber-lt)' : 'var(--c-text2)'};">${slot.label}</span>
+              <div style="min-width:26px; display:flex; justify-content:center;">${renderMiniPieceShape(curPiece, 7)}</div>
+            </div>
+            <select onchange="setDeckSlotOverride('${slot.id}', this.value)" style="flex:1; background:#0f172a; color:var(--c-text); border:1px solid #334155; border-radius:5px; padding:5px 6px; font-size:11px; font-weight:bold; cursor:pointer;">
+              ${optsHtml}
+            </select>
+          </div>
+        `;
+      }
+
+      // 3. 新規ピース技術開発リスト (10種)
+      const rdPieces = PIECE_LIB.filter(p => p.unlockCost > 0);
+      const unlockedRdCount = rdPieces.filter(p => isPieceUnlocked(p.id)).length;
+      let rdListHtml = '';
+      for (const p of rdPieces) {
+        const owned = isPieceUnlocked(p.id);
+        const canAfford = GameState.funds >= p.unlockCost;
+        const cells = countCellsInShape(p.shape);
+        const perCell = (p.cost / cells).toFixed(1);
+        const actionBtn = owned
+          ? `<span style="font-size:10px; font-weight:bold; padding:5px 8px; border-radius:5px; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399; white-space:nowrap;"><i class="ph-bold ph-check"></i> 開発済</span>`
+          : `<button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="unlockPiece('${p.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.5'}; white-space:nowrap;"><i class="ph-bold ph-flask"></i> 開発 (${p.unlockCost}万)</button>`;
+
+        rdListHtml += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(15,23,42,0.45); border:1px solid ${owned ? 'rgba(16,185,129,0.28)' : 'rgba(255,255,255,0.08)'}; border-radius:7px; margin-bottom:6px; gap:8px;">
+            <div style="display:flex; align-items:center; gap:9px; flex:1; min-width:0;">
+              <div style="min-width:38px; display:flex; justify-content:center; align-items:center; background:rgba(15,23,42,0.6); padding:5px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
+                ${renderMiniPieceShape(p, 9)}
+              </div>
+              <div style="min-width:0; flex:1;">
+                <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                  <span style="font-size:12px; font-weight:bold; color:var(--c-text);">${p.name}</span>
+                  <span style="font-size:9px; padding:1px 5px; border-radius:4px; background:rgba(59,130,246,0.18); color:#93c5fd; border:1px solid rgba(59,130,246,0.3);">${catNameMap[p.cat] || ''}・${cells}マス</span>
+                </div>
+                <div style="font-size:10px; color:var(--c-emerald); font-weight:bold; margin-top:2px;">
+                  建築原価: ${p.cost.toFixed(1)}万 <span style="color:#38bdf8;">（1マスあたり ${perCell}万）</span>
+                </div>
+                <div style="font-size:9.5px; color:var(--c-text2); margin-top:2px; line-height:1.35;">${p.desc || ''}</div>
+              </div>
+            </div>
+            <div style="flex-shrink:0;">${actionBtn}</div>
+          </div>
+        `;
+      }
+
+      deckContent.innerHTML = `
+        <!-- 現在の山札デッキ構成サマリー -->
+        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:11px 12px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div>
+              <div style="font-size:10.5px; color:var(--c-text2);">現在の山札デッキ構成（パズル開始時にシャッフル）</div>
+              <div style="font-size:17px; font-weight:900; color:var(--c-amber-lt);">
+                全 ${totalCards} 枚 <span style="font-size:10.5px; font-weight:normal; color:var(--c-text2);">（基本20枚 ＋ 追加${customAddedCount}/4枚）</span>
+              </div>
+            </div>
+            <button class="btn btn-slate" onclick="resetDeckToDefault()" style="padding:5px 8px; font-size:10px; cursor:pointer;">
+              <i class="ph-bold ph-arrow-counter-clockwise"></i> 初期編成に戻す
+            </button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:5px; font-size:10px;">
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(59,130,246,0.18); color:#93c5fd;">居室 ${catCounts[T.ROOM]}枚</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(148,163,184,0.2); color:#cbd5e1;">廊下 ${catCounts[T.CORRIDOR]}枚</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(245,158,11,0.18); color:#fcd34d;">LDK ${catCounts[T.LDK]}枚</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(16,185,129,0.18); color:#6ee7b7;">水回り ${catCounts.wet}枚</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(168,85,247,0.18); color:#d8b4fe;">収納 ${catCounts[T.CLOSET]}枚</span>
+          </div>
+          ${deckSummaryCardsHtml}
+        </div>
+
+        <!-- 自由追加枠 (+0〜4枠) -->
+        <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:11px 12px; margin-bottom:12px;">
+          <div style="font-size:12.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
+            <i class="ph-bold ph-plus-square"></i> 自由追加枠（最大 +4枚）
+          </div>
+          <div style="font-size:10px; color:var(--c-text2); margin-bottom:8px; line-height:1.4;">
+            案件の要望（トイレ2箇所・収納充実・広々居室・和室など）に合わせて、好みの解放済みピースを山札に追加できます。
+          </div>
+          ${customSlotsHtml}
+        </div>
+
+        <!-- 基本デッキ入替枠 (9枠) -->
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:11px 12px; margin-bottom:12px;">
+          <div style="font-size:12.5px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:4px; display:flex; align-items:center; gap:5px;">
+            <i class="ph-bold ph-arrows-left-right"></i> 基本デッキ入替枠（同カテゴリ強化 9枠）
+          </div>
+          <div style="font-size:10px; color:var(--c-text2); margin-bottom:8px; line-height:1.4;">
+            基本デッキ20枚のうち9枠を、技術開発した同カテゴリの割安・大型ピースと入れ替えられます。
+          </div>
+          ${upgradeSlotsHtml}
+          <div style="margin-top:8px; padding:7px 9px; background:rgba(15,23,42,0.5); border-radius:6px; border:1px dashed rgba(255,255,255,0.1); font-size:9.5px; color:var(--c-text3); line-height:1.45;">
+            🔒 <strong>基礎インフラ固定枠（残り11枚・変更不可）:</strong><br>
+            廊下(1)×1, 廊下(直2)×1, キッチン×1, 洋室(小4)×2, トイレ×2, 洗面所×2, 浴室(2)×1, 収納(1)×1（※水回りや1マス隙間埋めが枯渇する事故を防ぐため常時編成されます）
+          </div>
+        </div>
+
+        <!-- 新規ピース技術開発 (R&D 10種) -->
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:11px 12px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div style="font-size:12.5px; font-weight:bold; color:var(--c-emerald); display:flex; align-items:center; gap:5px;">
+              <i class="ph-bold ph-flask"></i> 新規ピース技術開発（R&D）
+            </div>
+            <span style="font-size:10px; font-weight:bold; color:#6ee7b7;">解放済: ${unlockedRdCount}/${rdPieces.length}種</span>
+          </div>
+          <div style="font-size:10px; color:var(--c-text2); margin-bottom:8px; line-height:1.4;">
+            大型ピースは<strong>1マスあたりの建築原価が割安</strong>になり、少ない手数と低コストで高査定の間取りを作れます。
+          </div>
+          ${rdListHtml}
+        </div>
+      `;
+    }
+  }
+
+  function unlockPiece(pieceId) {
+    initAudio();
+    ensureDeckState();
+    const p = PIECE_MAP[pieceId];
+    if (!p || !p.unlockCost) return;
+    if (isPieceUnlocked(pieceId)) return;
+    if (GameState.funds < p.unlockCost) {
+      playSound('error');
+      showUpgradeFeedback('技術開発のための所持資金が足りません！', 'var(--c-rose)');
+      return;
+    }
+    GameState.funds = Math.round((GameState.funds - p.unlockCost) * 10) / 10;
+    GameState.company.unlockedPieces.push(pieceId);
+    playSound('clear');
+    showUpgradeFeedback(`🔬 新ピース「${p.name}」を開発しました！上の入替枠・追加枠からデッキに編成できます！`, 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+
+    const deadEnd = checkDeadEndBankruptcy();
+    if (deadEnd.isBankrupt) {
+      closeCompanyUpgradeModal();
+      showGameOverModal(deadEnd.reason);
+    } else if (GameState.funds < MIN_BUILD_FUNDS) {
+      showUpgradeFeedback(`💡 建築資金が${MIN_BUILD_FUNDS}万円未満になりました。「🏦 銀行」タブから運転資金を借り入れできます！`, 'var(--c-rose)');
+    }
+  }
+
+  function setDeckSlotOverride(slotId, pieceId) {
+    initAudio();
+    ensureDeckState();
+    const slot = UPGRADE_DECK_SLOTS.find(s => s.id === slotId);
+    if (!slot) return;
+    const p = PIECE_MAP[pieceId];
+    if (!p || p.cat !== slot.cat || !isPieceUnlocked(pieceId)) return;
+    if (pieceId === slot.defaultPieceId) {
+      delete GameState.company.deck.slotOverrides[slotId];
+    } else {
+      GameState.company.deck.slotOverrides[slotId] = pieceId;
+    }
+    playSound('rotate');
+    showUpgradeFeedback(`🃏 ${slot.label} を「${p.name}」に変更しました`, 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function setDeckCustomSlot(index, pieceId) {
+    initAudio();
+    ensureDeckState();
+    if (index < 0 || index >= CUSTOM_DECK_SLOTS_COUNT) return;
+    if (!pieceId) {
+      GameState.company.deck.customSlots[index] = null;
+      playSound('rotate');
+      showUpgradeFeedback(`🃏 追加枠${index + 1} を空枠にしました（現在デッキ ${getActiveDeckPieceIds().length}枚）`, 'var(--c-text2)');
+    } else {
+      const p = PIECE_MAP[pieceId];
+      if (!p || !isPieceUnlocked(pieceId)) return;
+      GameState.company.deck.customSlots[index] = pieceId;
+      playSound('rotate');
+      showUpgradeFeedback(`🃏 追加枠${index + 1} に「${p.name}」を編成しました（現在デッキ ${getActiveDeckPieceIds().length}枚）`, 'var(--c-emerald)');
+    }
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function resetDeckToDefault() {
+    initAudio();
+    ensureDeckState();
+    GameState.company.deck = {
+      slotOverrides: {},
+      customSlots: [null, null, null, null]
+    };
+    playSound('rotate');
+    showUpgradeFeedback('🃏 デッキ編成を初期の20枚構成にリセットしました', 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
   }
 
   function borrowLoan(amount) {
@@ -6752,7 +7313,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       officeLevel: 0,
       debt: 0,
       features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
-      hiredStaff: []
+      hiredStaff: [],
+      unlockedPieces: [...STARTER_UNLOCKED_IDS],
+      deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
     };
     GameState.availableMissions = generateMissionPool(0);
     saveGame();
@@ -6765,9 +7328,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function buyCompanyUpgrade(type, key) {
     initAudio();
-    if (!GameState.company) {
-      GameState.company = { salesLevel: 1, brandLevel: 1, officeLevel: 0, debt: 0, features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 }, hiredStaff: [] };
-    }
+    ensureDeckState();
     const co = GameState.company;
 
     if (type === 'sales') {
@@ -6844,9 +7405,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function hireStaff(staffId) {
     initAudio();
-    if (!GameState.company) {
-      GameState.company = { salesLevel: 1, brandLevel: 1, officeLevel: 0, debt: 0, features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 }, hiredStaff: [] };
-    }
+    ensureDeckState();
     const co = GameState.company;
     const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
     if (co.hiredStaff.length >= maxSlots) {
@@ -6910,6 +7469,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   window.confirmDismissStaff = confirmDismissStaff;
   window.borrowLoan = borrowLoan;
   window.repayLoan = repayLoan;
+  window.unlockPiece = unlockPiece;
+  window.setDeckSlotOverride = setDeckSlotOverride;
+  window.setDeckCustomSlot = setDeckCustomSlot;
+  window.resetDeckToDefault = resetDeckToDefault;
 
   // Company Upgrade Modal Events
   document.getElementById('btn-open-upgrade')?.addEventListener('click', () => openCompanyUpgradeModal('company'));
@@ -6920,6 +7483,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('tab-upg-company')?.addEventListener('click', () => {
     initAudio();
     switchUpgradeTab('company');
+  });
+  document.getElementById('tab-upg-deck')?.addEventListener('click', () => {
+    initAudio();
+    switchUpgradeTab('deck');
   });
   document.getElementById('tab-upg-staff')?.addEventListener('click', () => {
     initAudio();
@@ -6932,9 +7499,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-gameover-reset')?.addEventListener('click', resetGameFull);
 
 function updateHomeUI() {
-    if (!GameState.company) {
-      GameState.company = { salesLevel: 1, brandLevel: 1, officeLevel: 0, debt: 0, features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 }, hiredStaff: [] };
-    }
+    ensureDeckState();
     const debt = GameState.company.debt || 0;
     document.getElementById('home-co-name').textContent = GameState.companyName;
     document.getElementById('home-co-month').textContent = GameState.month;
@@ -6948,6 +7513,7 @@ function updateHomeUI() {
       const brandDef = UPGRADE_CONFIG.brand[(GameState.company.brandLevel || 1) - 1] || UPGRADE_CONFIG.brand[0];
       const maxSlots = UPGRADE_CONFIG.office[GameState.company.officeLevel || 0]?.slots || 0;
       const hiredCount = GameState.company.hiredStaff?.length || 0;
+      const deckLen = getActiveDeckPieceIds().length;
       const debtBadge = debt > 0 ? `
         <span style="font-size:11px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
           <i class="ph-bold ph-bank"></i>借入 ${debt.toFixed(1)}万
@@ -6960,6 +7526,9 @@ function updateHomeUI() {
         </span>
         <span style="font-size:11px; background:#fdf4ff; color:#a21caf; border:1px solid #f0abfc; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
           <i class="ph-bold ph-megaphone"></i>知名度 Lv.${GameState.company.brandLevel || 1} ${brandDef.name}
+        </span>
+        <span style="font-size:11px; background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
+          <i class="ph-bold ph-cards"></i>デッキ ${deckLen}枚
         </span>
         <span style="font-size:11px; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
           <i class="ph-bold ph-users"></i>スタッフ ${hiredCount}/${maxSlots}名
