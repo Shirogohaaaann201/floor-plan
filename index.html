@@ -272,59 +272,107 @@
       flex-shrink: 0;
       background: var(--c-surface);
       border-bottom: 1px solid var(--c-border);
-      padding: 8px 10px;
-      padding-top: max(32px, calc(env(safe-area-inset-top, 0px) + 8px));
-      padding-left: max(10px, env(safe-area-inset-left, 0px));
-      padding-right: max(10px, env(safe-area-inset-right, 0px));
+      padding: 6px 8px;
+      padding-top: max(30px, calc(env(safe-area-inset-top, 0px) + 6px));
+      padding-left: max(8px, env(safe-area-inset-left, 0px));
+      padding-right: max(8px, env(safe-area-inset-right, 0px));
       display: flex; align-items: center; justify-content: space-between;
       gap: 6px;
     }
     @media (min-width: 769px) {
       .game-header {
-        padding-top: 10px;
+        padding-top: 8px;
       }
     }
-    .game-header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .game-title-wrap h2 { font-size: 12px; font-weight: 900; letter-spacing: 0.05em; }
-    .game-title-wrap p { font-size: 10px; color: var(--c-text2); margin-top: 1px; }
-    .game-header-right { display: flex; align-items: center; gap: 10px; }
+    .game-header-stats {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 4px;
+    }
     .target-rent-wrap {
-      text-align: right;
+      flex: 1;
+      min-width: 0;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 4px 6px;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       justify-content: center;
     }
+    .target-rent-wrap.cost-wrap {
+      flex: 1.35;
+      border-color: rgba(56, 189, 248, 0.25);
+      background: rgba(15, 23, 42, 0.65);
+    }
     .target-rent-label {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       color: #cbd5e1;
-      line-height: 1.2;
-      letter-spacing: 0.02em;
+      line-height: 1.15;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
     .target-rent-val {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--c-amber-lt);
-      line-height: 1.1;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+    .hdr-cost-sub {
+      font-size: 9px;
+      font-weight: 600;
+      color: #94a3b8;
+      line-height: 1.15;
+      margin-top: 1px;
+      white-space: nowrap;
+    }
+    @media (max-width: 380px) {
+      .target-rent-wrap { padding: 3px 4px; }
+      .target-rent-label { font-size: 9px; }
+      .target-rent-val { font-size: 13px; }
+      .hdr-cost-sub { font-size: 8.5px; }
     }
 
-    /* Mission Banner */
+    /* Mission Banner (Tappable for details) */
     .mission-banner {
       flex-shrink: 0;
       background: #182234;
       border-bottom: 1px solid #334155;
       padding: 5px 10px;
       display: flex; align-items: center; justify-content: space-between;
-      gap: 6px;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+    .mission-banner:hover { background: #1e293b; }
+    .mission-banner:active { background: #263349; }
+    .mission-banner-detail-btn {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding-left: 8px;
+      border-left: 1px solid #334155;
+      color: #93c5fd;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
     }
     .mission-req-pills-wrap {
       display: flex; align-items: center; gap: 6px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      width: 100%;
+      flex: 1;
+      min-width: 0;
     }
     .mission-req-pills-wrap::-webkit-scrollbar { display: none; }
     .req-pill {
@@ -710,18 +758,18 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.85 (10/23)
+        Floor Plan v0.86 (10/24)
       </div>
     </div>
   </section>
 
     <!-- 物件詳細モーダル -->
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
-      <div class="mission-card" style="position:relative; width:100%; max-width:320px; text-align:left;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; max-height:90vh; overflow-y:auto; text-align:left;">
         <button id="btn-close-prop-detail" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
         <div class="mission-card-title"><i class="ph-fill ph-house"></i> 物件詳細</div>
         
-        <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:12px;">
+        <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:10px;">
           <div style="text-align:center; margin-bottom:12px;">
             <div id="pd-canvas-wrapper" style="position:relative; display:inline-block; cursor:pointer;" title="タップで拡大表示">
               <canvas id="pd-canvas" width="140" height="140" style="background:#1e293b; border-radius:6px; margin:0 auto; display:block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);"></canvas>
@@ -748,7 +796,30 @@
           <div style="font-size:10px; color:var(--c-text2); margin-top:4px;" id="pd-sat-breakdown">家賃+40% / 依頼+50% / コンボ-10%</div>
         </div>
 
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <!-- 建築コスト・投資回収パネル (売却判断用) -->
+        <div id="pd-cost-roi-box" style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.22); padding:10px 12px; border-radius:6px; margin-bottom:10px; font-size:11px;">
+          <div style="font-weight:bold; color:#93c5fd; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+            <span>📊 建築コスト・投資回収状況</span>
+            <span id="pd-roi-badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8;">回収 0%</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;">
+            <span style="color:var(--c-text2);">建築総投資額:</span>
+            <strong id="pd-total-cost" class="font-num" style="color:var(--c-text); font-size:13px;">0.0万</strong>
+          </div>
+          <div id="pd-cost-breakdown" style="font-size:10px; color:var(--c-text3); text-align:right; margin-bottom:6px;">
+            (ピース原価 0.0万 / 反転・更新費 0.0万)
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:1px dashed rgba(255,255,255,0.1); padding-top:6px; margin-bottom:4px;">
+            <span style="color:var(--c-text2);">累計家賃収入:</span>
+            <strong id="pd-earned-rent" class="font-num" style="color:var(--c-emerald); font-size:13px;">+0.0万</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.5); padding:5px 8px; border-radius:4px; margin-top:4px;">
+            <span style="color:#cbd5e1; font-size:10px;">今売却した時の通算損益:</span>
+            <strong id="pd-net-profit" class="font-num" style="font-size:12px; color:var(--c-emerald);">+0.0万</strong>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
           <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
             <div style="font-size:10px; color:var(--c-text2);">現在の空室リスク</div>
             <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
@@ -759,7 +830,7 @@
           </div>
         </div>
 
-        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; min-height:40px; margin-bottom:16px;" id="pd-combos">
+        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; min-height:40px; margin-bottom:14px;" id="pd-combos">
           (コンボ情報)
         </div>
 
@@ -1071,37 +1142,43 @@
        SCREEN 2: GAME
   ============================== -->
   <section id="screen-game" class="screen">
-    <!-- Header (mission button + budget / current rent / target rent / sound) -->
+    <!-- Header (funds / construction cost / current rent / target rent / sound) -->
     <header class="game-header">
-      <div class="game-header-left">
-        <button class="btn btn-slate" id="btn-show-mission" style="padding:6px 10px; font-size:11px; gap:4px; border:1px solid var(--c-border); white-space:nowrap;">
-          <i class="ph-bold ph-list-checks" style="color:var(--c-blue); font-size:14px;"></i> 依頼詳細
-        </button>
-      </div>
-      <div class="game-header-right">
+      <div class="game-header-stats">
         <div class="target-rent-wrap">
-          <div class="target-rent-label">残予算</div>
-          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">1000<span style="font-size:10px;color:var(--c-text2);">万</span></div>
+          <div class="target-rent-label">残資金</div>
+          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">500.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
+        </div>
+        <div class="target-rent-wrap cost-wrap">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; width:100%; gap:4px;">
+            <span class="target-rent-label" style="color:#93c5fd;">総投資</span>
+            <span class="target-rent-val font-num" id="hdr-spent-cost" style="color:#38bdf8;">0.0<span style="font-size:9px;color:var(--c-text2);">万</span></span>
+          </div>
+          <div class="hdr-cost-sub font-num" id="hdr-cost-breakdown">原価0.0 / 諸0.0</div>
         </div>
         <div class="target-rent-wrap">
           <div class="target-rent-label">現在査定</div>
-          <div class="target-rent-val font-num" id="realtime-rent-badge" style="color:var(--c-amber-lt); display:inline-block; transition:transform 0.2s, color 0.2s;">0.0<span style="font-size:10px;color:var(--c-text2);">万</span></div>
+          <div class="target-rent-val font-num" id="realtime-rent-badge" style="color:var(--c-amber-lt); display:inline-block; transition:transform 0.2s, color 0.2s;">0.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
         </div>
         <div class="target-rent-wrap">
           <div class="target-rent-label">目標家賃</div>
-          <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:10px;color:var(--c-text2);">万</span></div>
+          <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
         </div>
-        <button id="btn-sound-game" class="btn-icon btn" style="width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-          <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
-        </button>
       </div>
+      <button id="btn-sound-game" class="btn-icon btn" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
+      </button>
     </header>
 
 
-    <!-- Mission banner (Real-time Checklist) -->
-    <div class="mission-banner">
+    <!-- Mission banner (Real-time Checklist — Tap to open detail modal) -->
+    <div class="mission-banner" id="mission-banner" role="button" tabindex="0" title="タップで依頼詳細・発生コンボを確認">
       <div class="mission-req-pills-wrap" id="mission-req-pills">
         <!-- Live requirement pills inserted dynamically -->
+      </div>
+      <div class="mission-banner-detail-btn">
+        <i class="ph-bold ph-list-checks" style="font-size:13px;"></i>
+        <span>詳細</span>
       </div>
     </div>
 
@@ -1206,6 +1283,21 @@
           <div class="flyer-rent-note">敷金0・礼金0 / 仲介手数料無料</div>
         </div>
 
+        <!-- Construction Cost & ROI -->
+        <div id="flyer-cost-box" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:var(--r-md); padding:9px 12px; font-size:11px; color:#334155;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px;">
+            <span style="font-weight:700; color:#475569;">💰 建築総投資額</span>
+            <strong id="flyer-total-cost" class="font-num" style="font-size:15px; font-weight:800; color:#0f172a;">0.0万円</strong>
+          </div>
+          <div id="flyer-cost-detail" style="font-size:10px; color:#64748b; text-align:right; margin-bottom:5px;">
+            ピース原価 0.0万 / 反転・更新費 0.0万
+          </div>
+          <div id="flyer-roi-note" style="font-size:10px; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; border-radius:4px; padding:4px 8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>初期売価: 0.0万</span>
+            <span>家賃回収目安: —</span>
+          </div>
+        </div>
+
         <!-- Floor plan thumbnail -->
         <div class="flyer-thumbnail">
           <div class="flyer-thumbnail-label">
@@ -1301,8 +1393,12 @@
     [T.CLOSET]: { bg:'#f3f4f6', border:'#d1d5db' },
   };
 
-  // Budget state
+  // Budget & build cost state
   let budget = 0;
+  let buildBaseCost = 0;        // 配置したピースの定価合計 (物件原価・売価基準)
+  let buildPiecePaidCost = 0;   // 配置したピースの実支払合計 (割引・反転割増込み)
+  let buildMirrorExtraCost = 0; // 反転加工による追加費用合計
+  let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
 
   // Piece library (GDD compliant)
   const PIECE_LIB = [
@@ -2081,6 +2177,7 @@
         // 完成直後（1ヶ月目の月次処理）は入居したてなので退去判定をスキップ
         if (age <= 1) {
           totalIncome += p.rent;
+          p.earnedRent = Math.round(((p.earnedRent || 0) + p.rent) * 10) / 10;
           continue;
         }
 
@@ -2102,6 +2199,7 @@
           }
         } else {
           totalIncome += p.rent;
+          p.earnedRent = Math.round(((p.earnedRent || 0) + p.rent) * 10) / 10;
         }
       }
     }
@@ -2899,8 +2997,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function updateBudgetUI() {
     const el = document.getElementById('hdr-budget');
     if (el) {
-      el.innerHTML = `${budget.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
+      el.innerHTML = `${budget.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
       el.style.color = budget < 0 ? 'var(--c-rose)' : 'var(--c-emerald)';
+    }
+    const spentEl = document.getElementById('hdr-spent-cost');
+    const breakEl = document.getElementById('hdr-cost-breakdown');
+    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
+    const extraSpent = Math.round((buildMirrorExtraCost + buildRerollCost) * 10) / 10;
+    if (spentEl) {
+      spentEl.innerHTML = `${totalSpent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
+    }
+    if (breakEl) {
+      breakEl.textContent = `原価${buildBaseCost.toFixed(1)} / 諸${extraSpent.toFixed(1)}`;
+      breakEl.style.color = extraSpent > 0 ? '#fcd34d' : '#94a3b8';
     }
   }
 
@@ -3456,7 +3565,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
     if (!canPlace(gr, gc, shape)) { playSound('error'); return false; }
 
-    budget -= pieceCost;
+    const basePieceCost = piece.cost || 0;
+    const unmirroredCost = getPieceCost(piece, false);
+    const mirrorExtra = Math.max(0, Math.round((pieceCost - unmirroredCost) * 10) / 10);
+    buildBaseCost = Math.round((buildBaseCost + basePieceCost) * 10) / 10;
+    buildPiecePaidCost = Math.round((buildPiecePaidCost + pieceCost) * 10) / 10;
+    buildMirrorExtraCost = Math.round((buildMirrorExtraCost + mirrorExtra) * 10) / 10;
+
+    budget = Math.round((budget - pieceCost) * 10) / 10;
     updateBudgetUI();
     showFloatingText(`-${pieceCost.toFixed(1)}万`, 'var(--c-rose)');
 
@@ -3468,7 +3584,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     // 建築予算からは特注加工費を含めた pieceCost (1.2倍) を引き落とすが、
     // 基礎家賃や物件の資産価値(リセール)には反転割増を含めないため、定価(piece.cost)で按分する
-    const basePieceCost = piece.cost || 0;
     const costPerCell = basePieceCost / cellsCount;
 
     const rid = nextRoomId++;
@@ -4614,7 +4729,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const rentEl = document.getElementById('realtime-rent-badge');
     if (rentEl) {
       const isCleared = STAGE && rent >= STAGE.targetRent;
-      rentEl.innerHTML = `${rent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
+      rentEl.innerHTML = `${rent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
       rentEl.style.transform = 'scale(1.18)';
       rentEl.style.color = '#fbbf24';
       setTimeout(() => {
@@ -4686,11 +4801,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     });
     if (counts.unreachable > 0) badCombos++; // 到達不能ペナルティ
 
+    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
+    const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost)) * 10) / 10);
+
     window.currentPropertyData = {
       rent: rent,
       normalRent: normalRent,
       targetRent: STAGE.targetRent,
       baseRent: counts.totalBaseRent,
+      baseCost: buildBaseCost,
+      piecePaidCost: buildPiecePaidCost,
+      mirrorCost: buildMirrorExtraCost,
+      rerollCost: buildRerollCost,
+      totalCost: totalSpentCost,
       isClear: isClear,
       satisfiedCount: satisfiedCount,
       totalRequests: STAGE.requests.length,
@@ -4715,6 +4838,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('flyer-sub-catch').textContent = catch_.sub;
     document.getElementById('flyer-main-catch').textContent = catch_.main;
     document.getElementById('flyer-rent').textContent = rent.toFixed(1);
+
+    // Populate flyer construction cost & ROI summary
+    const fTotalEl = document.getElementById('flyer-total-cost');
+    const fDetailEl = document.getElementById('flyer-cost-detail');
+    const fRoiEl = document.getElementById('flyer-roi-note');
+    if (fTotalEl) fTotalEl.textContent = `${totalSpentCost.toFixed(1)}万円`;
+    if (fDetailEl) {
+      let extraPart = '諸経費 0.0万';
+      if (buildMirrorExtraCost > 0 && buildRerollCost > 0) {
+        extraPart = `反転+${buildMirrorExtraCost.toFixed(1)}万・更新+${buildRerollCost.toFixed(1)}万`;
+      } else if (buildMirrorExtraCost > 0) {
+        extraPart = `反転割増 +${buildMirrorExtraCost.toFixed(1)}万`;
+      } else if (buildRerollCost > 0) {
+        extraPart = `更新・維持 +${buildRerollCost.toFixed(1)}万`;
+      }
+      const discPart = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
+      fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 / ${extraPart}${discPart}`;
+    }
+    if (fRoiEl) {
+      const paybackText = rent > 0
+        ? (totalSpentCost <= 0 ? '即時回収' : `家賃回収目安: 約${Math.ceil(totalSpentCost / rent)}ヶ月`)
+        : '家賃回収不可 (0円物件)';
+      fRoiEl.innerHTML = `<span>初期売価: <strong>${stats.resaleValue}万</strong></span><span>${paybackText}</span>`;
+    }
 
     const badge = document.getElementById('flyer-clear-badge');
     const diff  = document.getElementById('flyer-rent-diff');
@@ -4931,6 +5078,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     loadGame();
     updateStage();
     budget = GameState.funds;
+    buildBaseCost = 0;
+    buildPiecePaidCost = 0;
+    buildMirrorExtraCost = 0;
+    buildRerollCost = 0;
     currentLevelIdx = GameState.level;
     
     updateCompanyUI();
@@ -4949,7 +5100,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     // Update Header UI
     updateCompanyUI();
-    const _hdrT = document.getElementById('hdr-target-rent'); if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:10px;color:var(--c-text2);">万</span>`;
+    const _hdrT = document.getElementById('hdr-target-rent'); if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
     updateBudgetUI();
     
     const hint = document.getElementById('hint-overlay');
@@ -5059,7 +5210,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
-    budget -= costs.total;
+    budget = Math.round((budget - costs.total) * 10) / 10;
+    buildRerollCost = Math.round((buildRerollCost + costs.total) * 10) / 10;
     discardCount += discarded;
     updateBudgetUI();
     if (costs.total > 0) {
@@ -5100,8 +5252,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
-  document.getElementById('btn-show-mission')?.addEventListener('click', () => {
+  function openMissionModal() {
     initAudio();
+    cancelRerollConfirm();
     
     // 現在のコンボ状況 & 要望達成状況を計算して表示
     const visited = runBFS();
@@ -5120,7 +5273,36 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     
     document.getElementById('mission-modal').style.display = 'flex';
-  });
+  }
+
+  document.getElementById('btn-show-mission')?.addEventListener('click', openMissionModal);
+
+  // ミッションバナー（要件バー）のタップで詳細表示（横スクロール操作と誤爆しないよう移動量を判定）
+  (() => {
+    const banner = document.getElementById('mission-banner');
+    if (!banner) return;
+    let downX = 0, downY = 0, isDown = false;
+    banner.addEventListener('pointerdown', (e) => {
+      isDown = true;
+      downX = e.clientX;
+      downY = e.clientY;
+    });
+    banner.addEventListener('pointerup', (e) => {
+      if (!isDown) return;
+      isDown = false;
+      const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
+      if (dist < 8) {
+        openMissionModal();
+      }
+    });
+    banner.addEventListener('pointercancel', () => { isDown = false; });
+    banner.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openMissionModal();
+      }
+    });
+  })();
 
   function closeMissionModal() {
     initAudio();
@@ -5529,6 +5711,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       normalRent: p.normalRent !== undefined ? p.normalRent : rentToSave,
       targetRent: p.targetRent || (STAGE ? STAGE.targetRent : 5.0),
       baseRent: p.baseRent || 0,
+      baseCost: p.baseCost !== undefined ? p.baseCost : 0,
+      piecePaidCost: p.piecePaidCost !== undefined ? p.piecePaidCost : 0,
+      mirrorCost: p.mirrorCost || 0,
+      rerollCost: p.rerollCost || 0,
+      totalCost: p.totalCost !== undefined ? p.totalCost : 0,
+      earnedRent: 0,
       isClear: p.isClear || false,
       satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
       totalRequests: p.totalRequests || 1,
@@ -5863,6 +6051,64 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const optStr = stats.optBonus > 0 ? ` / 任意 +${stats.optBonus}%` : '';
     const amenityStr = stats.amenityPenalty > 0 ? ` / 設備欠陥 -${stats.amenityPenalty}%` : '';
     document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${amenityStr}`;
+
+    // 建築コスト・投資回収パネルの更新
+    const estBaseCost = Math.round(((p.baseRent || 0) * 20) * 10) / 10;
+    const isLegacyCost = (p.totalCost === undefined);
+    const totalCost = !isLegacyCost ? p.totalCost : estBaseCost;
+    const baseCost = (p.baseCost !== undefined) ? p.baseCost : estBaseCost;
+    const mirrorCost = p.mirrorCost || 0;
+    const rerollCost = p.rerollCost || 0;
+    const extraCost = Math.round((mirrorCost + rerollCost) * 10) / 10;
+    const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
+    const discountSaved = Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost)) * 10) / 10);
+    const earnedRent = Math.round((p.earnedRent || 0) * 10) / 10;
+    const resaleNum = parseFloat(stats.resaleValue) || 0;
+    const netIfSold = Math.round((earnedRent + resaleNum - totalCost) * 10) / 10;
+    const rentRecPct = totalCost > 0 ? Math.floor((earnedRent / totalCost) * 100) : 100;
+
+    const elTotalCost = document.getElementById('pd-total-cost');
+    if (elTotalCost) elTotalCost.textContent = `${totalCost.toFixed(1)}万${isLegacyCost ? ' (推定)' : ''}`;
+
+    const elCostBreak = document.getElementById('pd-cost-breakdown');
+    if (elCostBreak) {
+      if (isLegacyCost) {
+        elCostBreak.textContent = `(旧セーブ推定原価 ${baseCost.toFixed(1)}万)`;
+      } else {
+        let extraLabel = `諸経費 0.0万`;
+        if (mirrorCost > 0 && rerollCost > 0) {
+          extraLabel = `反転+${mirrorCost.toFixed(1)}万・更新+${rerollCost.toFixed(1)}万`;
+        } else if (mirrorCost > 0) {
+          extraLabel = `反転割増 +${mirrorCost.toFixed(1)}万`;
+        } else if (rerollCost > 0) {
+          extraLabel = `更新・維持 +${rerollCost.toFixed(1)}万`;
+        }
+        const discStr = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
+        elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 / ${extraLabel}${discStr})`;
+      }
+    }
+
+    const elEarned = document.getElementById('pd-earned-rent');
+    if (elEarned) elEarned.textContent = `+${earnedRent.toFixed(1)}万`;
+
+    const elRoiBadge = document.getElementById('pd-roi-badge');
+    if (elRoiBadge) {
+      if (earnedRent >= totalCost) {
+        elRoiBadge.textContent = `🎉 元本回収済 (${rentRecPct}%)`;
+        elRoiBadge.style.background = 'rgba(16,185,129,0.2)';
+        elRoiBadge.style.color = '#34d399';
+      } else {
+        elRoiBadge.textContent = `家賃回収 ${rentRecPct}%`;
+        elRoiBadge.style.background = 'rgba(56,189,248,0.15)';
+        elRoiBadge.style.color = '#38bdf8';
+      }
+    }
+
+    const elNetProfit = document.getElementById('pd-net-profit');
+    if (elNetProfit) {
+      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万 (家賃${earnedRent.toFixed(1)}+売価${resaleNum.toFixed(1)})`;
+      elNetProfit.style.color = netIfSold >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
+    }
     
     document.getElementById('pd-current-evict').textContent = `${stats.evictRate}%`;
     document.getElementById('pd-deg-rate').textContent = `Rank ${getPropertyRank(stats.degRate)}`;
@@ -6752,13 +6998,20 @@ function updateHomeUI() {
         const color = p.isClear ? 'var(--c-emerald)' : 'var(--c-amber)';
         
         // プロパティ詳細を開くための data-id
+        const resaleNum = parseFloat(stats.resaleValue) || 0;
+        const estCost = p.totalCost !== undefined ? p.totalCost : Math.round(((p.baseRent || 0) * 20) * 10) / 10;
+        const earned = p.earnedRent || 0;
+        const netNow = Math.round((earned + resaleNum - estCost) * 10) / 10;
+        const netColor = netNow >= 0 ? '#059669' : '#e11d48';
         listEl.innerHTML += `
           <div class="prop-list-item" data-id="${p.id}" style="padding:12px; border-bottom:1px dashed #cbd5e1; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition: background 0.2s;">
             <div>
               <div style="font-weight:bold; color:#1e293b; font-size:14px;"><span style="display:inline-block; padding:2px 6px; ${rankStyle} border-radius:4px; font-size:11px; font-weight:bold; margin-right:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">Rank ${rank}</span> 物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : idx + 1)}</div>
-              <div style="font-size:11px; color:var(--c-text2); margin-top:4px; display:flex; gap:8px;">
+              <div style="font-size:11px; color:var(--c-text2); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap;">
                 <span>築${stats.age}ヶ月</span>
                 <span>空室リスク: ${stats.evictRate}%</span>
+                <span>売価: ${stats.resaleValue}万</span>
+                <span style="color:${netColor}; font-weight:bold;">売却通算: ${netNow >= 0 ? '+' : ''}${netNow.toFixed(1)}万</span>
               </div>
               ${statusHtml}
             </div>
