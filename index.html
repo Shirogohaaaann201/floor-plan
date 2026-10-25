@@ -1118,14 +1118,14 @@
         </div>
       </div>
       <div class="client-req" id="client-quote">
-        「とにかく広い2LDKが欲しい！風呂とトイレは絶対に別でお願いします。予算は…まあ頑張ってよ！」
+        「とにかく広い2LDKが欲しい！風呂とトイレは絶対に別でお願いします。良い間取りを頼みますよ！」
       </div>
     </div>
 
     <!-- Requirements -->
     <div class="mission-card">
       <div class="mission-card-title">
-        <i class="ph-bold ph-list-checks"></i> 表の依頼条件
+        <i class="ph-bold ph-list-checks"></i> クライアントのご要望
       </div>
       <div class="req-list" id="req-list"></div>
     </div>
@@ -1139,14 +1139,16 @@
         <canvas id="site-preview-canvas"></canvas>
       </div>
       <div class="stats-grid" style="margin-top:10px;">
-        <div class="stat-item" style="display:none;"></div>
         <div class="stat-item">
           <div class="stat-label">目標家賃</div>
-          <div class="stat-value font-num" id="stat-rent">12.0<span class="stat-unit">万</span></div>
+          <div class="stat-value font-num" id="stat-rent">12.0<span class="stat-unit">万/月</span></div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">隠れ要望</div>
-          <div class="stat-value" style="font-size:14px;">🎲 <span style="font-size:11px;color:var(--c-text2);">謎</span></div>
+          <div class="stat-label">敷地・玄関</div>
+          <div class="stat-value" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span id="stat-lot-name" style="font-size:12px; font-weight:bold; color:var(--c-text);">標準中型敷地</span>
+            <span id="stat-entrance-facing" style="font-size:10px; color:#fde047; font-weight:normal;">南向き玄関</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1866,7 +1868,7 @@
         const names = ['佐藤 翼', '鈴木 蓮', '高橋 葵', '田中 陽菜'];
         const quotes = [
           '「初めての一人暮らし！風呂とトイレは絶対別で頼みます！」',
-          '「予算控えめで、小さくても暮らしやすい部屋をお願いします！」',
+          '「家賃控えめで、小さくても暮らしやすい部屋をお願いします！」',
           '「シンプルで無駄のないコンパクトな部屋が希望です。」'
         ];
         const avatars = ['👨‍🎓', '👩‍🎓', '🧑‍💼', '👩‍💼'];
@@ -2022,7 +2024,7 @@
         // 豪邸オーナー (風呂2・トイレ2)
         const names = ['西園寺 龍之介', '神宮寺 秀明'];
         const quotes = [
-          '「予算は惜しみません。浴室複数にトイレ2つ、最高級の設備を揃えてくれたまえ。」',
+          '「家賃は惜しみません。浴室複数にトイレ2つ、最高級の設備を揃えてくれたまえ。」',
           '「妥協なき設計を。最高級の設備とゆとりの空間美を期待しています。」'
         ];
         const avatars = ['🤵', '💎', '👑'];
@@ -4849,6 +4851,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const mrl = document.getElementById('modal-req-list');
     if (!mrl || !STAGE) return;
     mrl.innerHTML = '';
+    const reqHead = document.createElement('div');
+    reqHead.style.cssText = 'font-size:11px; font-weight:bold; color:#93c5fd; margin-bottom:4px; display:flex; align-items:center; gap:4px;';
+    reqHead.innerHTML = '<i class="ph-bold ph-clipboard-text"></i> 基本の依頼内容';
+    mrl.appendChild(reqHead);
     for (const req of STAGE.requests) {
       const isMet = !!(req.fn && req.fn(counts, { unreachable: counts.unreachable }, STAGE));
       const item = document.createElement('div');
@@ -5151,6 +5157,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // Request list
     const rl = document.getElementById('req-list');
     rl.innerHTML = '';
+
+    const reqHeader = document.createElement('div');
+    reqHeader.style.cssText = 'font-size:11px; font-weight:bold; color:#93c5fd; margin-bottom:4px; display:flex; align-items:center; gap:4px;';
+    reqHeader.innerHTML = '<i class="ph-bold ph-clipboard-text"></i> 基本の依頼内容';
+    rl.appendChild(reqHeader);
+
     for (const req of STAGE.requests) {
       const item = document.createElement('div');
       item.className = 'req-item';
@@ -5159,8 +5171,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     if (STAGE.optionalRequests && STAGE.optionalRequests.length > 0) {
       const optHeader = document.createElement('div');
-      optHeader.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:8px 0 4px;';
-      optHeader.textContent = '🌟 任意オプション (満足度UP)';
+      optHeader.style.cssText = 'font-size:11px; font-weight:bold; color:var(--c-amber); margin:10px 0 4px; display:flex; align-items:center; gap:4px;';
+      optHeader.innerHTML = '<i class="ph-fill ph-star" style="color:var(--c-amber);"></i> 任意オプション (満足度UP)';
       rl.appendChild(optHeader);
       for (const opt of STAGE.optionalRequests) {
         const item = document.createElement('div');
@@ -5177,10 +5189,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (mcq) mcq.textContent = STAGE.client.quote;
     
     // Update Stats
-    const sb = document.getElementById('stat-budget');
-    if (sb) sb.innerHTML = `${(STAGE.initialBudget || 1000).toFixed(0)}<span class="stat-unit">万</span>`;
-    document.getElementById('stat-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span class="stat-unit">万</span>`;
+    document.getElementById('stat-rent').innerHTML = `${STAGE.targetRent.toFixed(1)}<span class="stat-unit">万/月</span>`;
     
+    const facingMap = { bottom: '南向き', top: '北向き', left: '西向き', right: '東向き' };
+    const facingText = facingMap[STAGE.entranceFacing] || '南向き';
+    const entSizeText = (STAGE.entranceCells && STAGE.entranceCells.length > 1) ? '（2マス玄関）' : '玄関';
+    const lotNameEl = document.getElementById('stat-lot-name');
+    if (lotNameEl) lotNameEl.textContent = STAGE.lotName || '標準敷地';
+    const entFacingEl = document.getElementById('stat-entrance-facing');
+    if (entFacingEl) entFacingEl.textContent = `${facingText}${entSizeText}`;
+
     // Site preview canvas
     drawSitePreview();
   }
