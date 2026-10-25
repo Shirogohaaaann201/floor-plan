@@ -6927,7 +6927,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       `;
     }
 
-    /* --- 7. デッキ編成・新規ピース技術開発タブ --- */
+    /* --- 7. デッキ編成・新規ピース技術開発タブ（ビジュアルカードバインダーUI） --- */
     const deckContent = document.getElementById('upg-deck-content');
     if (deckContent) {
       const activeIds = getActiveDeckPieceIds();
@@ -6936,9 +6936,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
       // カテゴリ別枚数集計
       const catCounts = { [T.ROOM]:0, [T.CORRIDOR]:0, [T.LDK]:0, wet:0, [T.CLOSET]:0 };
-      const pieceCounts = {};
       for (const pid of activeIds) {
-        pieceCounts[pid] = (pieceCounts[pid] || 0) + 1;
         const p = PIECE_MAP[pid];
         if (!p) continue;
         if (p.cat === T.ROOM) catCounts[T.ROOM]++;
@@ -6964,80 +6962,235 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         return n;
       };
 
-      // デッキ内カード一覧グリッド
-      let deckSummaryCardsHtml = `<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:5px; margin-top:8px;">`;
-      for (const p of PIECE_LIB) {
-        const cnt = pieceCounts[p.id];
-        if (!cnt) continue;
+      const unlockedList = PIECE_LIB.filter(p => isPieceUnlocked(p.id));
+      const editingSlot = window.activeDeckEditingSlot || null; // { type: 'upgrade'|'custom', id: string|number }
+
+      // 個別カード描画ヘルパー（固定カード or 入替可能カード）
+      const renderBinderCard = (pieceId, opts = {}) => {
+        const p = PIECE_MAP[pieceId];
+        if (!p) return '';
         const cells = countCellsInShape(p.shape);
         const perCell = (p.cost / cells).toFixed(1);
-        deckSummaryCardsHtml += `
-          <div style="display:flex; align-items:center; justify-content:space-between; padding:5px 7px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.09); border-radius:6px; gap:6px;">
-            <div style="display:flex; align-items:center; gap:6px; min-width:0;">
-              <div style="min-width:26px; display:flex; justify-content:center;">${renderMiniPieceShape(p, 7)}</div>
-              <div style="min-width:0;">
-                <div style="font-size:10.5px; font-weight:bold; color:var(--c-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                <div style="font-size:9px; color:var(--c-text2);">原価${p.cost.toFixed(1)}万 <span style="color:#94a3b8;">(${perCell}/ﾏｽ)</span></div>
+        const isLocked = !!opts.locked;
+        const isEditing = !!opts.isEditing;
+        const isModified = !!opts.isModified;
+        const clickAttr = opts.onClick ? `onclick="${opts.onClick}"` : '';
+
+        if (isLocked) {
+          return `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:8px; background:rgba(15,23,42,0.45); border:1px solid rgba(148,163,184,0.18); opacity:0.78; min-height:84px; box-sizing:border-box; position:relative;">
+              <div style="width:100%; display:flex; justify-content:space-between; align-items:center; font-size:8.5px; color:#94a3b8; padding:0 2px;">
+                <span>🔒固定</span>
+                <span>${cells}ﾏｽ</span>
+              </div>
+              <div style="margin:4px 0; min-height:26px; display:flex; align-items:center; justify-content:center;">
+                ${renderMiniPieceShape(p, 7)}
+              </div>
+              <div style="text-align:center; width:100%;">
+                <div style="font-size:10px; font-weight:bold; color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                <div style="font-size:8.5px; color:#94a3b8;">${p.cost.toFixed(1)}万</div>
               </div>
             </div>
-            <span style="font-size:10.5px; font-weight:900; padding:1px 6px; border-radius:99px; background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); flex-shrink:0;">×${cnt}</span>
-          </div>
-        `;
-      }
-      deckSummaryCardsHtml += `</div>`;
-
-      // 1. 自由追加枠 (+0〜4枚)
-      const unlockedList = PIECE_LIB.filter(p => isPieceUnlocked(p.id));
-      let customSlotsHtml = '';
-      for (let i = 0; i < CUSTOM_DECK_SLOTS_COUNT; i++) {
-        const curId = co.deck.customSlots[i] || '';
-        const curPiece = curId ? PIECE_MAP[curId] : null;
-        let optsHtml = `<option value="">-- 空枠（追加しない） --</option>`;
-        for (const p of unlockedList) {
-          const cells = countCellsInShape(p.shape);
-          const sel = (p.id === curId) ? 'selected' : '';
-          optsHtml += `<option value="${p.id}" ${sel}>[${catNameMap[p.cat] || ''}] ${p.name} (${cells}ﾏｽ / ${p.cost.toFixed(1)}万)</option>`;
+          `;
         }
-        customSlotsHtml += `
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; background:rgba(15,23,42,0.45); border:1px solid ${curPiece ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.07)'}; border-radius:6px; margin-bottom:6px;">
-            <div style="display:flex; align-items:center; gap:6px; min-width:74px;">
-              <span style="font-size:10.5px; font-weight:bold; color:${curPiece ? '#38bdf8' : 'var(--c-text2)'};">追加枠${i + 1}</span>
-              <div style="min-width:26px; display:flex; justify-content:center;">${curPiece ? renderMiniPieceShape(curPiece, 7) : '<span style="font-size:9px; color:#64748b;">空</span>'}</div>
+
+        const borderColor = isEditing
+          ? '#f59e0b'
+          : (isModified ? 'rgba(56,189,248,0.75)' : 'rgba(56,189,248,0.4)');
+        const bgStyle = isEditing
+          ? 'linear-gradient(180deg, rgba(245,158,11,0.22), rgba(15,23,42,0.9))'
+          : (isModified ? 'linear-gradient(180deg, rgba(56,189,248,0.16), rgba(15,23,42,0.85))' : 'rgba(30,41,59,0.9)');
+        const badgeText = isEditing ? '🎯選択中' : (isModified ? '✨変更中' : '🔄入替可');
+        const badgeColor = isEditing ? '#fde047' : '#38bdf8';
+
+        return `
+          <div ${clickAttr} style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:8px; background:${bgStyle}; border:1.5px solid ${borderColor}; min-height:84px; box-sizing:border-box; cursor:pointer; box-shadow:${isEditing ? '0 0 0 2px rgba(245,158,11,0.35)' : '0 2px 5px rgba(0,0,0,0.25)'}; transition:transform 0.12s;">
+            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; font-size:8.5px; font-weight:bold; color:${badgeColor}; padding:0 2px;">
+              <span>${badgeText}</span>
+              <span style="color:#cbd5e1;">${cells}ﾏｽ</span>
             </div>
-            <select onchange="setDeckCustomSlot(${i}, this.value)" style="flex:1; background:#0f172a; color:var(--c-text); border:1px solid #334155; border-radius:5px; padding:5px 6px; font-size:11px; font-weight:bold; cursor:pointer;">
-              ${optsHtml}
-            </select>
+            <div style="margin:4px 0; min-height:26px; display:flex; align-items:center; justify-content:center;">
+              ${renderMiniPieceShape(p, 7)}
+            </div>
+            <div style="text-align:center; width:100%;">
+              <div style="font-size:10px; font-weight:bold; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+              <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${p.cost.toFixed(1)}万 <span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
+            </div>
           </div>
         `;
-      }
+      };
 
-      // 2. 同カテゴリ入替枠 (9枠)
-      let upgradeSlotsHtml = '';
-      for (const slot of UPGRADE_DECK_SLOTS) {
-        const ovId = co.deck.slotOverrides[slot.id];
-        const curId = (ovId && PIECE_MAP[ovId] && PIECE_MAP[ovId].cat === slot.cat && isPieceUnlocked(ovId)) ? ovId : slot.defaultPieceId;
-        const curPiece = PIECE_MAP[curId] || PIECE_LIB[0];
-        const catUnlocked = unlockedList.filter(p => p.cat === slot.cat);
-        let optsHtml = '';
-        for (const p of catUnlocked) {
+      // インライン・カード選択ピッカー（カードをタップした時にその場に展開）
+      const renderPickerTray = (slotType, slotKey, curPieceId, catFilter = null, defaultPieceId = null) => {
+        const candidates = catFilter ? unlockedList.filter(p => p.cat === catFilter) : unlockedList;
+        const lockedCandidates = catFilter
+          ? PIECE_LIB.filter(p => p.cat === catFilter && !isPieceUnlocked(p.id))
+          : PIECE_LIB.filter(p => !isPieceUnlocked(p.id));
+        const curPiece = curPieceId ? PIECE_MAP[curPieceId] : null;
+        const defPiece = defaultPieceId ? PIECE_MAP[defaultPieceId] : null;
+
+        let cardsHtml = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:6px;">`;
+        if (slotType === 'custom') {
+          const isEmptySel = !curPieceId;
+          cardsHtml += `
+            <div onclick="setDeckCustomSlot(${slotKey}, '')" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; border-radius:7px; background:${isEmptySel ? 'rgba(244,63,94,0.18)' : 'rgba(15,23,42,0.6)'}; border:1.5px dashed ${isEmptySel ? '#f43f5e' : '#475569'}; cursor:pointer; min-height:78px;">
+              <i class="ph-bold ph-prohibit" style="font-size:18px; color:#94a3b8; margin-bottom:4px;"></i>
+              <div style="font-size:10px; font-weight:bold; color:#cbd5e1;">空枠にする</div>
+              <div style="font-size:8.5px; color:#64748b;">(枚数を増やさない)</div>
+            </div>
+          `;
+        }
+        for (const p of candidates) {
+          const isSel = p.id === curPieceId;
           const cells = countCellsInShape(p.shape);
           const perCell = (p.cost / cells).toFixed(1);
-          const sel = (p.id === curId) ? 'selected' : '';
-          optsHtml += `<option value="${p.id}" ${sel}>${p.name} (${cells}ﾏｽ / 原価${p.cost.toFixed(1)}万 [${perCell}/ﾏｽ])</option>`;
-        }
-        const isUpgraded = curId !== slot.defaultPieceId;
-        upgradeSlotsHtml += `
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; background:rgba(15,23,42,0.45); border:1px solid ${isUpgraded ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.07)'}; border-radius:6px; margin-bottom:5px;">
-            <div style="display:flex; align-items:center; gap:6px; min-width:80px;">
-              <span style="font-size:10.5px; font-weight:bold; color:${isUpgraded ? 'var(--c-amber-lt)' : 'var(--c-text2)'};">${slot.label}</span>
-              <div style="min-width:26px; display:flex; justify-content:center;">${renderMiniPieceShape(curPiece, 7)}</div>
+          const actionCall = slotType === 'upgrade'
+            ? `setDeckSlotOverride('${slotKey}', '${p.id}')`
+            : `setDeckCustomSlot(${slotKey}, '${p.id}')`;
+          cardsHtml += `
+            <div onclick="${actionCall}" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:7px; background:${isSel ? 'rgba(16,185,129,0.22)' : 'rgba(15,23,42,0.75)'}; border:1.5px solid ${isSel ? '#10b981' : 'rgba(255,255,255,0.15)'}; cursor:pointer; min-height:78px;">
+              <div style="width:100%; display:flex; justify-content:space-between; font-size:8px; color:${isSel ? '#6ee7b7' : '#94a3b8'}; padding:0 2px;">
+                <span>${isSel ? '✓編成中' : (catNameMap[p.cat] || '')}</span>
+                <span>${cells}ﾏｽ</span>
+              </div>
+              <div style="margin:3px 0; min-height:24px; display:flex; align-items:center; justify-content:center;">
+                ${renderMiniPieceShape(p, 7)}
+              </div>
+              <div style="text-align:center; width:100%;">
+                <div style="font-size:10px; font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${p.cost.toFixed(1)}万 <span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
+              </div>
             </div>
-            <select onchange="setDeckSlotOverride('${slot.id}', this.value)" style="flex:1; background:#0f172a; color:var(--c-text); border:1px solid #334155; border-radius:5px; padding:5px 6px; font-size:11px; font-weight:bold; cursor:pointer;">
-              ${optsHtml}
-            </select>
+          `;
+        }
+        for (const lp of lockedCandidates) {
+          const cells = countCellsInShape(lp.shape);
+          cardsHtml += `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:7px; background:rgba(15,23,42,0.35); border:1px dashed rgba(148,163,184,0.2); opacity:0.55; min-height:78px;">
+              <div style="font-size:8px; color:#f59e0b;">🔒未開発(${lp.unlockCost}万)</div>
+              <div style="margin:3px 0; min-height:24px; display:flex; align-items:center; justify-content:center;">
+                ${renderMiniPieceShape(lp, 6)}
+              </div>
+              <div style="text-align:center; width:100%;">
+                <div style="font-size:9.5px; color:#94a3b8;">${lp.name}(${cells}ﾏｽ)</div>
+                <div style="font-size:8px; color:#64748b;">下のR&Dで解放</div>
+              </div>
+            </div>
+          `;
+        }
+        cardsHtml += `</div>`;
+
+        return `
+          <div style="margin-top:8px; padding:9px 10px; border-radius:8px; background:#0f172a; border:1.5px solid #f59e0b; box-shadow:0 6px 16px rgba(0,0,0,0.4);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-size:11px; font-weight:bold; color:#fde047;">
+                <i class="ph-bold ph-hand-pointing"></i> ${slotType === 'upgrade' ? `入れるカードを選択（初期: ${defPiece ? defPiece.name : ''}）` : `追加枠${slotKey + 1} に入れるカードを選択`}
+              </div>
+              <button class="btn btn-slate" onclick="toggleDeckSlotEditor(null, null)" style="padding:2px 7px; font-size:10px; cursor:pointer;">閉じる</button>
+            </div>
+            ${cardsHtml}
+          </div>
+        `;
+      };
+
+      // カテゴリグループ定義（固定カード＋入替枠カードを同じグループ内に並べて表示！）
+      const binderGroups = [
+        {
+          key: 'room',
+          title: '🛏️ 居室カード（基本5枚：🔒固定2枚 ＋ 🔄入替3枚）',
+          fixedIds: ['room-22', 'room-22'],
+          slotIds: ['room_slot_1', 'room_slot_2', 'room_slot_3'],
+          cat: T.ROOM
+        },
+        {
+          key: 'corr',
+          title: '🏃 廊下カード（基本4枚：🔒固定2枚 ＋ 🔄入替2枚）',
+          fixedIds: ['corr-1', 'corr-i2'],
+          slotIds: ['corr_slot_1', 'corr_slot_2'],
+          cat: T.CORRIDOR
+        },
+        {
+          key: 'ldk',
+          title: '🛋️ LDK・キッチンカード（基本3枚：🔒固定1枚 ＋ 🔄入替2枚）',
+          fixedIds: ['k-1'],
+          slotIds: ['ldk_slot_1', 'ldk_slot_2'],
+          cat: T.LDK
+        },
+        {
+          key: 'wet_closet',
+          title: '🚿 水回り＆収納カード（基本8枚：🔒固定6枚 ＋ 🔄入替2枚）',
+          fixedIds: ['toilet', 'toilet', 'wash', 'wash', 'bath', 'closet'],
+          slotIds: ['bath_slot_1', 'closet_slot_1'],
+          cat: null
+        }
+      ];
+
+      let binderGroupsHtml = '';
+      for (const grp of binderGroups) {
+        let rowCardsHtml = `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">`;
+        // 1) 固定カードを先に並べる
+        for (const fid of grp.fixedIds) {
+          rowCardsHtml += renderBinderCard(fid, { locked: true });
+        }
+        // 2) 入替可能カードを続けて並べる
+        let activeSlotInGroup = null;
+        for (const sid of grp.slotIds) {
+          const slotDef = UPGRADE_DECK_SLOTS.find(s => s.id === sid);
+          if (!slotDef) continue;
+          const ovId = co.deck.slotOverrides[sid];
+          const curId = (ovId && PIECE_MAP[ovId] && PIECE_MAP[ovId].cat === slotDef.cat && isPieceUnlocked(ovId)) ? ovId : slotDef.defaultPieceId;
+          const isEd = editingSlot && editingSlot.type === 'upgrade' && editingSlot.id === sid;
+          if (isEd) activeSlotInGroup = { slotDef, curId };
+          rowCardsHtml += renderBinderCard(curId, {
+            locked: false,
+            isEditing: isEd,
+            isModified: curId !== slotDef.defaultPieceId,
+            onClick: `toggleDeckSlotEditor('upgrade', '${sid}')`
+          });
+        }
+        rowCardsHtml += `</div>`;
+
+        const pickerHtml = activeSlotInGroup
+          ? renderPickerTray('upgrade', activeSlotInGroup.slotDef.id, activeSlotInGroup.curId, activeSlotInGroup.slotDef.cat, activeSlotInGroup.slotDef.defaultPieceId)
+          : '';
+
+        binderGroupsHtml += `
+          <div style="margin-bottom:10px; padding:8px; background:rgba(15,23,42,0.35); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:10.5px; font-weight:bold; color:#e2e8f0; margin-bottom:6px;">${grp.title}</div>
+            ${rowCardsHtml}
+            ${pickerHtml}
           </div>
         `;
       }
+
+      // 自由追加枠（最大 +4枚）も4枚のカードスロットとして横並び表示
+      let customCardsGridHtml = `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">`;
+      let activeCustomIndex = null;
+      for (let i = 0; i < CUSTOM_DECK_SLOTS_COUNT; i++) {
+        const curId = co.deck.customSlots[i] || '';
+        const isEd = editingSlot && editingSlot.type === 'custom' && editingSlot.id === i;
+        if (isEd) activeCustomIndex = i;
+        if (curId && PIECE_MAP[curId]) {
+          customCardsGridHtml += renderBinderCard(curId, {
+            locked: false,
+            isEditing: isEd,
+            isModified: true,
+            onClick: `toggleDeckSlotEditor('custom', ${i})`
+          });
+        } else {
+          customCardsGridHtml += `
+            <div onclick="toggleDeckSlotEditor('custom', ${i})" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 4px; border-radius:8px; background:${isEd ? 'rgba(245,158,11,0.18)' : 'rgba(15,23,42,0.4)'}; border:1.5px dashed ${isEd ? '#f59e0b' : 'rgba(56,189,248,0.45)'}; min-height:84px; cursor:pointer;">
+              <i class="ph-bold ph-plus-circle" style="font-size:18px; color:${isEd ? '#fde047' : '#38bdf8'}; margin-bottom:3px;"></i>
+              <div style="font-size:9.5px; font-weight:bold; color:${isEd ? '#fde047' : '#bae6fd'};">追加枠${i + 1}</div>
+              <div style="font-size:8px; color:#64748b;">タップで追加</div>
+            </div>
+          `;
+        }
+      }
+      customCardsGridHtml += `</div>`;
+      const customPickerHtml = (activeCustomIndex !== null)
+        ? renderPickerTray('custom', activeCustomIndex, co.deck.customSlots[activeCustomIndex] || '', null, null)
+        : '';
 
       // 3. 新規ピース技術開発リスト (10種)
       const rdPieces = PIECE_LIB.filter(p => p.unlockCost > 0);
@@ -7075,17 +7228,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
 
       deckContent.innerHTML = `
-        <!-- 現在の山札デッキ構成サマリー -->
-        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:11px 12px; margin-bottom:12px;">
+        <!-- 現在の山札デッキヘッダー -->
+        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div>
-              <div style="font-size:10.5px; color:var(--c-text2);">現在の山札デッキ構成（パズル開始時にシャッフル）</div>
-              <div style="font-size:17px; font-weight:900; color:var(--c-amber-lt);">
-                全 ${totalCards} 枚 <span style="font-size:10.5px; font-weight:normal; color:var(--c-text2);">（基本20枚 ＋ 追加${customAddedCount}/4枚）</span>
+              <div style="font-size:10px; color:var(--c-text2);">現在の山札デッキ（🔒固定11枚 ＋ 🔄入替9枚 ＋ ➕追加${customAddedCount}枚）</div>
+              <div style="font-size:16px; font-weight:900; color:var(--c-amber-lt);">
+                デッキ合計 ${totalCards} 枚
               </div>
             </div>
             <button class="btn btn-slate" onclick="resetDeckToDefault()" style="padding:5px 8px; font-size:10px; cursor:pointer;">
-              <i class="ph-bold ph-arrow-counter-clockwise"></i> 初期編成に戻す
+              <i class="ph-bold ph-arrow-counter-clockwise"></i> 初期に戻す
             </button>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:5px; font-size:10px;">
@@ -7095,33 +7248,29 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             <span style="padding:2px 6px; border-radius:4px; background:rgba(16,185,129,0.18); color:#6ee7b7;">水回り ${catCounts.wet}枚</span>
             <span style="padding:2px 6px; border-radius:4px; background:rgba(168,85,247,0.18); color:#d8b4fe;">収納 ${catCounts[T.CLOSET]}枚</span>
           </div>
-          ${deckSummaryCardsHtml}
         </div>
 
-        <!-- 自由追加枠 (+0〜4枠) -->
-        <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:11px 12px; margin-bottom:12px;">
-          <div style="font-size:12.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
-            <i class="ph-bold ph-plus-square"></i> 自由追加枠（最大 +4枚）
+        <!-- ビジュアル・カードバインダー（基本20枚） -->
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 10px 4px; margin-bottom:10px;">
+          <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:3px; display:flex; align-items:center; justify-content:space-between;">
+            <span><i class="ph-bold ph-cards"></i> 基本デッキ20枚（青枠のカードをタップで入替）</span>
           </div>
-          <div style="font-size:10px; color:var(--c-text2); margin-bottom:8px; line-height:1.4;">
-            案件の要望（トイレ2箇所・収納充実・広々居室・和室など）に合わせて、好みの解放済みピースを山札に追加できます。
+          <div style="font-size:9.5px; color:var(--c-text2); margin-bottom:8px;">
+            🔒<strong>固定</strong>は必須インフラのため変更不可。🔄<strong>入替可</strong>をタップすると開発済みカードと交換できます。
           </div>
-          ${customSlotsHtml}
+          ${binderGroupsHtml}
         </div>
 
-        <!-- 基本デッキ入替枠 (9枠) -->
-        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:11px 12px; margin-bottom:12px;">
-          <div style="font-size:12.5px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:4px; display:flex; align-items:center; gap:5px;">
-            <i class="ph-bold ph-arrows-left-right"></i> 基本デッキ入替枠（同カテゴリ強化 9枠）
+        <!-- 自由追加カード枠（最大 +4枚） -->
+        <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px; margin-bottom:12px;">
+          <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:3px; display:flex; align-items:center; gap:5px;">
+            <i class="ph-bold ph-plus-square"></i> 自由追加カード枠（最大 +4枚）
           </div>
-          <div style="font-size:10px; color:var(--c-text2); margin-bottom:8px; line-height:1.4;">
-            基本デッキ20枚のうち9枠を、技術開発した同カテゴリの割安・大型ピースと入れ替えられます。
+          <div style="font-size:9.5px; color:var(--c-text2); margin-bottom:8px;">
+            案件の要望に合わせて、好きなカテゴリの解放済みカードを最大4枚まで山札にプラスできます。
           </div>
-          ${upgradeSlotsHtml}
-          <div style="margin-top:8px; padding:7px 9px; background:rgba(15,23,42,0.5); border-radius:6px; border:1px dashed rgba(255,255,255,0.1); font-size:9.5px; color:var(--c-text3); line-height:1.45;">
-            🔒 <strong>基礎インフラ固定枠（残り11枚・変更不可）:</strong><br>
-            廊下(1)×1, 廊下(直2)×1, キッチン×1, 洋室(小4)×2, トイレ×2, 洗面所×2, 浴室(2)×1, 収納(1)×1（※水回りや1マス隙間埋めが枯渇する事故を防ぐため常時編成されます）
-          </div>
+          ${customCardsGridHtml}
+          ${customPickerHtml}
         </div>
 
         <!-- 新規ピース技術開発 (R&D 10種) -->
@@ -7141,6 +7290,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
+  function toggleDeckSlotEditor(type, id) {
+    initAudio();
+    playSound('rotate');
+    if (!type || (window.activeDeckEditingSlot && window.activeDeckEditingSlot.type === type && window.activeDeckEditingSlot.id === id)) {
+      window.activeDeckEditingSlot = null;
+    } else {
+      window.activeDeckEditingSlot = { type, id };
+    }
+    renderCompanyUpgradeUI();
+  }
+  window.toggleDeckSlotEditor = toggleDeckSlotEditor;
+
   function unlockPiece(pieceId) {
     initAudio();
     ensureDeckState();
@@ -7155,7 +7316,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.funds = Math.round((GameState.funds - p.unlockCost) * 10) / 10;
     GameState.company.unlockedPieces.push(pieceId);
     playSound('clear');
-    showUpgradeFeedback(`🔬 新ピース「${p.name}」を開発しました！上の入替枠・追加枠からデッキに編成できます！`, 'var(--c-emerald)');
+    showUpgradeFeedback(`🔬 新ピース「${p.name}」を開発しました！上のカードをタップしてデッキに編成できます！`, 'var(--c-emerald)');
     saveGame();
     renderCompanyUpgradeUI();
     updateHomeUI();
@@ -7181,8 +7342,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     } else {
       GameState.company.deck.slotOverrides[slotId] = pieceId;
     }
-    playSound('rotate');
-    showUpgradeFeedback(`🃏 ${slot.label} を「${p.name}」に変更しました`, 'var(--c-emerald)');
+    window.activeDeckEditingSlot = null;
+    playSound('place');
+    showUpgradeFeedback(`🃏 デッキのカードを「${p.name}」に入れ替えました！`, 'var(--c-emerald)');
     saveGame();
     renderCompanyUpgradeUI();
     updateHomeUI();
@@ -7194,13 +7356,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (index < 0 || index >= CUSTOM_DECK_SLOTS_COUNT) return;
     if (!pieceId) {
       GameState.company.deck.customSlots[index] = null;
+      window.activeDeckEditingSlot = null;
       playSound('rotate');
       showUpgradeFeedback(`🃏 追加枠${index + 1} を空枠にしました（現在デッキ ${getActiveDeckPieceIds().length}枚）`, 'var(--c-text2)');
     } else {
       const p = PIECE_MAP[pieceId];
       if (!p || !isPieceUnlocked(pieceId)) return;
       GameState.company.deck.customSlots[index] = pieceId;
-      playSound('rotate');
+      window.activeDeckEditingSlot = null;
+      playSound('place');
       showUpgradeFeedback(`🃏 追加枠${index + 1} に「${p.name}」を編成しました（現在デッキ ${getActiveDeckPieceIds().length}枚）`, 'var(--c-emerald)');
     }
     saveGame();
@@ -7215,6 +7379,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       slotOverrides: {},
       customSlots: [null, null, null, null]
     };
+    window.activeDeckEditingSlot = null;
     playSound('rotate');
     showUpgradeFeedback('🃏 デッキ編成を初期の20枚構成にリセットしました', 'var(--c-emerald)');
     saveGame();
