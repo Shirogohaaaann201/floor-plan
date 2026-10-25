@@ -1238,6 +1238,10 @@
             <i class="ph-bold ph-cards" style="font-size:13px; color:#4f46e5;"></i>
             <span id="deck-peek-count" class="font-num">山札 17/20</span>
           </button>
+          <button class="btn btn-slate" id="btn-hand-refresh" style="display:none; padding:4px 8px; font-size:11px; gap:4px; border:1px solid #bae6fd; background:#f0f9ff; color:#0369a1; font-weight:bold; cursor:pointer; flex-shrink:0;" title="手札を山札に戻して引き直す（手札リフレッシュ）">
+            <i class="ph-bold ph-arrows-counter-clockwise" style="font-size:13px; color:#0284c7;"></i>
+            <span id="hand-refresh-count">引直 1/1</span>
+          </button>
           <span id="piece-label" style="font-size:11px; color:var(--c-text2);"></span>
         </div>
         <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; flex-shrink:0;">
@@ -1719,76 +1723,249 @@
     5: { single: 10, dinks: 20, family: 40, mansion: 30 },
   };
 
-  const STAFF_CANDIDATES = [
-    {
-      id: 'plumber',
-      name: '水回りの魔術師',
-      role: '配管スペシャリスト',
-      avatar: '🔧',
-      salary: 1.0,
-      desc: '水回り(浴室・トイレ・洗面)の配置コスト10%引。「水回り集約」家賃ボーナス+0.5万。'
-    },
-    {
-      id: 'space_designer',
-      name: '空間デザイナー',
-      role: '意匠設計担当',
-      avatar: '📐',
-      salary: 1.5,
-      desc: 'LDKセルの基本家賃利回り評価が+10%向上。'
-    },
-    {
-      id: 'storage_master',
-      name: '収納マイスター',
-      role: '動線・整理の達人',
-      avatar: '📦',
-      salary: 0.8,
-      desc: '収納ピースの配置コストが半額。収納が含まれる物件の退去リスク-1%。'
-    },
-    {
-      id: 'negotiator',
-      name: '敏腕ネゴシエーター',
-      role: '営業主任',
-      avatar: '💼',
-      salary: 2.0,
-      desc: '目標額を超えた家賃設定による満足度ペナルティを半減。'
-    },
-    {
-      id: 'listener',
-      name: 'ヒアリングの達人',
-      role: '顧客リレーション',
-      avatar: '👂',
-      salary: 1.2,
-      desc: '任意オプション達成時の満足度加算が +5% ➔ +8% にアップ。'
-    },
-    {
-      id: 'concierge',
-      name: 'おもてなしコンシェルジュ',
-      role: 'アフターサポート',
-      avatar: '🛎️',
-      salary: 1.5,
-      desc: '全物件の引き渡し時満足度+5%（初期バリアが5ヶ月延長）。'
-    },
-    {
-      id: 'broker',
-      name: '資材ブローカー',
-      role: '調達コーディネーター',
-      avatar: '🧱',
-      salary: 1.0,
-      desc: '全ピースの購入コストが 3% 割引。'
-    },
-    {
-      id: 'recycle',
-      name: '中古材コーディネーター',
-      role: 'エコ調達担当',
-      avatar: '♻️',
-      salary: 0.6,
-      desc: 'ピース再抽選（リロール）にかかる費用が半額。'
-    }
-  ];
+  const RECRUIT_AD_COST = 30.0;    // 求人広告掲載費（30万円）
+  const RECRUIT_SCOUT_COST = 50.0; // 即時スカウト費（50万円）
 
-  function hasStaffBuff(staffId) {
-    if (!GameState || !GameState.company || !GameState.company.hiredStaff) return false;
-    return GameState.company.hiredStaff.some(s => s.id === staffId);
+  const STAFF_SKILL_DEFS = {
+    broker: {
+      name: '資材調達',
+      icon: 'ph-package',
+      desc: [
+        '全ピースの購入コストが 5% 割引',
+        '全ピースの購入コストが 10% 割引',
+        '全ピースの購入コストが 15% 割引'
+      ],
+      salary: [0.6, 2.0, 4.8]
+    },
+    plumber: {
+      name: '水回り設計',
+      icon: 'ph-wrench',
+      desc: [
+        '水回りコスト10%引 ＆ 集約家賃ボーナス+0.3万/月',
+        '水回りコスト20%引 ＆ 集約家賃ボーナス+0.6万/月',
+        '水回りコスト30%引 ＆ 集約家賃ボーナス+1.0万/月'
+      ],
+      salary: [0.7, 2.2, 5.0]
+    },
+    space_designer: {
+      name: '空間デザイン',
+      icon: 'ph-compass-tool',
+      desc: [
+        'LDKセルの基本家賃利回り評価が +10% 向上',
+        'LDKセルの基本家賃利回り評価が +20% 向上',
+        'LDKセルの基本家賃利回り評価が +30% 向上'
+      ],
+      salary: [0.8, 2.4, 5.2]
+    },
+    storage_master: {
+      name: '収納・管理',
+      icon: 'ph-archive-box',
+      desc: [
+        '収納コスト30%引 ＆ 収納物件の退去リスク -1.0%',
+        '収納コスト50%引 ＆ 収納物件の退去リスク -2.0%',
+        '収納コスト無料 ＆ 収納物件の退去リスク -3.5%'
+      ],
+      salary: [0.6, 2.0, 4.6]
+    },
+    negotiator: {
+      name: '営業交渉',
+      icon: 'ph-briefcase',
+      desc: [
+        '目標家賃超過による不満ペナルティを 30% 軽減',
+        '目標家賃超過による不満ペナルティを 50% 軽減',
+        '目標家賃超過による不満ペナルティを 75% 軽減'
+      ],
+      salary: [0.8, 2.5, 5.5]
+    },
+    listener: {
+      name: '顧客リレーション',
+      icon: 'ph-ear',
+      desc: [
+        '任意オプション達成の満足度加算が +7% にアップ',
+        '任意オプション達成の満足度加算が +10% にアップ',
+        '任意オプション達成の満足度加算が +14% にアップ'
+      ],
+      salary: [0.6, 2.0, 4.8]
+    },
+    concierge: {
+      name: 'ホスピタリティ',
+      icon: 'ph-bell-ringing',
+      desc: [
+        '全物件の初期満足度 +4%（退去ゼロ期間が4ヶ月延長）',
+        '全物件の初期満足度 +8%（退去ゼロ期間が8ヶ月延長）',
+        '全物件の初期満足度 +12%（退去ゼロ期間が12ヶ月延長）'
+      ],
+      salary: [0.8, 2.4, 5.2]
+    },
+    recycle: {
+      name: '中古調達',
+      icon: 'ph-arrows-clockwise',
+      desc: [
+        '無料リロール枠 +1回 ＆ リロール費用 30% 割引',
+        '無料リロール枠 +2回 ＆ リロール費用 50% 割引',
+        '無料リロール枠 +3回 ＆ リロール費用 70% 割引'
+      ],
+      salary: [0.5, 1.8, 4.2]
+    },
+    hand_refresh: {
+      name: '戦術手札',
+      icon: 'ph-cards',
+      desc: [
+        'パズル中、1回だけ手札を山札に戻して引き直せる',
+        'パズル中、2回まで手札を山札に戻して引き直せる',
+        'パズル中、3回まで手札を山札に戻して引き直せる'
+      ],
+      salary: [0.7, 2.2, 5.0]
+    },
+    loan_negotiator: {
+      name: '金利交渉',
+      icon: 'ph-bank',
+      desc: [
+        '銀行融資の月次利息支払いが 15% 割引',
+        '銀行融資の月次利息支払いが 30% 割引',
+        '銀行融資の月次利息支払いが 50% 割引'
+      ],
+      salary: [0.5, 1.8, 4.4]
+    }
+  };
+
+  const STAFF_NAMES = {
+    family: ['佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村', '小林', '加藤', '吉田', '山田', '佐々木', '山口', '松本', '井上', '木村', '林', '斎藤', '清水'],
+    given: ['大和', '蓮', '悠真', '陽翔', '湊', '陸', '颯真', '拓海', '健太', '翔太', '葵', '陽菜', '結衣', 'さくら', '凛', '結菜', '美咲', '美羽', '芽依', '愛']
+  };
+  const STAFF_AVATARS = ['👨‍💼', '👩‍💼', '🧑‍💼', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🔧', '👩‍🔬', '🤵', '📐'];
+
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function getStaffSkillLevel(skillId) {
+    if (!GameState?.company?.hiredStaff) return 0;
+    let maxLv = 0;
+    for (const staff of GameState.company.hiredStaff) {
+      if (Array.isArray(staff.skills)) {
+        for (const s of staff.skills) {
+          if (s.id === skillId) {
+            maxLv = Math.max(maxLv, s.level || 1);
+          }
+        }
+      }
+      if (staff.id === skillId) {
+        maxLv = Math.max(maxLv, 1);
+      }
+    }
+    return maxLv;
+  }
+
+  function hasStaffBuff(skillId) {
+    return getStaffSkillLevel(skillId) > 0;
+  }
+
+  function generateCandidateStaff(officeLevel = 1) {
+    const familyNames = STAFF_NAMES.family;
+    const givenNames = STAFF_NAMES.given;
+    const fullName = `${familyNames[Math.floor(Math.random() * familyNames.length)]} ${givenNames[Math.floor(Math.random() * givenNames.length)]}`;
+    const avatar = STAFF_AVATARS[Math.floor(Math.random() * STAFF_AVATARS.length)];
+    
+    const skillKeys = Object.keys(STAFF_SKILL_DEFS);
+    const roll = Math.random();
+    let rank = 'assistant';
+    
+    if (officeLevel <= 1) {
+      rank = roll < 0.85 ? 'assistant' : 'specialist';
+    } else if (officeLevel === 2) {
+      if (roll < 0.30) rank = 'assistant';
+      else if (roll < 0.80) rank = 'specialist';
+      else rank = 'expert';
+    } else {
+      if (roll < 0.10) rank = 'assistant';
+      else if (roll < 0.50) rank = 'specialist';
+      else rank = 'expert';
+    }
+    
+    const shuffledKeys = shuffleArray(skillKeys);
+    let chosenSkills = [];
+    let baseSalary = 0.3;
+    let rankLabel = 'アシスタント';
+    let roleName = '設計アシスタント';
+    let stars = '★';
+
+    if (rank === 'assistant') {
+      rankLabel = 'アシスタント';
+      stars = '★';
+      baseSalary = 0.3;
+      const k = shuffledKeys[0];
+      chosenSkills.push({ id: k, level: 1 });
+      const def = STAFF_SKILL_DEFS[k];
+      roleName = `${def ? def.name : '設計'}補佐`;
+    } else if (rank === 'specialist') {
+      rankLabel = 'スペシャリスト';
+      stars = '★★';
+      baseSalary = 0.6;
+      const subRoll = Math.random();
+      if (subRoll < 0.5) {
+        const k = shuffledKeys[0];
+        chosenSkills.push({ id: k, level: 2 });
+        roleName = `${STAFF_SKILL_DEFS[k] ? STAFF_SKILL_DEFS[k].name : '設計'}主任`;
+      } else {
+        chosenSkills.push({ id: shuffledKeys[0], level: 1 });
+        chosenSkills.push({ id: shuffledKeys[1], level: 1 });
+        roleName = '設計・営業チーフ';
+      }
+    } else {
+      rankLabel = 'エキスパート';
+      stars = '★★★';
+      baseSalary = 1.0;
+      const subRoll = Math.random();
+      if (subRoll < 0.4) {
+        const k = shuffledKeys[0];
+        chosenSkills.push({ id: k, level: 3 });
+        roleName = `${STAFF_SKILL_DEFS[k] ? STAFF_SKILL_DEFS[k].name : '総合'}統括`;
+      } else if (subRoll < 0.8) {
+        chosenSkills.push({ id: shuffledKeys[0], level: 2 });
+        chosenSkills.push({ id: shuffledKeys[1], level: 2 });
+        roleName = 'シニアパートナー';
+      } else {
+        chosenSkills.push({ id: shuffledKeys[0], level: 2 });
+        chosenSkills.push({ id: shuffledKeys[1], level: 2 });
+        chosenSkills.push({ id: shuffledKeys[2], level: 1 });
+        roleName = 'チーフエグゼクティブ';
+      }
+    }
+
+    let skillSalaryTotal = 0;
+    for (const cs of chosenSkills) {
+      const def = STAFF_SKILL_DEFS[cs.id];
+      if (def && def.salary) {
+        skillSalaryTotal += def.salary[cs.level - 1] || 0.6;
+      }
+    }
+    const totalSalary = Math.round((baseSalary + skillSalaryTotal) * 10) / 10;
+
+    return {
+      id: 'staff_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
+      name: fullName,
+      avatar: avatar,
+      rank: rank,
+      rankLabel: rankLabel,
+      stars: stars,
+      role: roleName,
+      salary: totalSalary,
+      skills: chosenSkills
+    };
+  }
+
+  function generateCandidateBatch(count = 3, officeLevel = 1) {
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      list.push(generateCandidateStaff(officeLevel));
+    }
+    return list;
   }
 
   function getMaxAttempts() {
@@ -2288,7 +2465,12 @@
     const d = debtVal !== undefined ? debtVal : ((GameState && GameState.company && GameState.company.debt) || 0);
     if (!d || d <= 0) return { principal: 0, interest: 0, total: 0 };
     // 月利 1.5% (最低0.5万) + 元本5%返済 (最低10万、残債上限)
-    const interest = Math.max(0.5, Math.round(d * 0.015 * 10) / 10);
+    let interestRate = 0.015;
+    const loanLv = getStaffSkillLevel('loan_negotiator');
+    if (loanLv === 1) interestRate *= 0.85; // 15%割引
+    else if (loanLv === 2) interestRate *= 0.70; // 30%割引
+    else if (loanLv >= 3) interestRate *= 0.50; // 50%割引
+    const interest = Math.max(0.2, Math.round(d * interestRate * 10) / 10);
     const principal = Math.min(d, Math.max(10.0, Math.round(d * 0.05 * 10) / 10));
     const total = Math.round((principal + interest) * 10) / 10;
     return { principal, interest, total };
@@ -2353,6 +2535,25 @@
     if (GameState.company && GameState.company.hiredStaff) {
       totalSalaries = GameState.company.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
       totalSalaries = Math.round(totalSalaries * 10) / 10;
+    }
+
+    // スタッフ求人の月次更新
+    const co = GameState.company;
+    if (co) {
+      if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
+      const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+      const hiredCount = co.hiredStaff?.length || 0;
+      if (hiredCount >= maxSlots) {
+        co.recruitment.status = 'none';
+        co.recruitment.candidates = [];
+      } else {
+        if (co.recruitment.status === 'posted') {
+          co.recruitment.status = 'active';
+          co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
+        } else if (co.recruitment.status === 'active') {
+          co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
+        }
+      }
     }
 
     // 銀行借入の月次返済（元本＋利息）
@@ -2434,6 +2635,7 @@
             debt: 0,
             features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
             hiredStaff: [],
+            recruitment: { status: 'none', candidates: [] },
             unlockedPieces: [...STARTER_UNLOCKED_IDS],
             deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
           };
@@ -2444,6 +2646,7 @@
           if (GameState.company.debt === undefined || typeof GameState.company.debt !== 'number') GameState.company.debt = 0;
           if (!GameState.company.features) GameState.company.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
           if (!GameState.company.hiredStaff) GameState.company.hiredStaff = [];
+          if (!GameState.company.recruitment) GameState.company.recruitment = { status: 'none', candidates: [] };
         }
         ensureDeckState();
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
@@ -2481,6 +2684,7 @@
   let selectedRot = 0;
   let isMirrored = false;
   let turnsLeft = 0;
+  let handRefreshesRemaining = 0;
   let hoverCell = null;
   let previewMode = false;
   let cellSize = 48;
@@ -2561,8 +2765,10 @@
     // 1. 家賃ボーナス（見た目・挙動一致のため整数に丸める）
     const rentRatio = currentRent / targetRent;
     let rentPenalty = (rentRatio - 1.0) * 50;
-    if (rentPenalty > 0 && hasStaffBuff('negotiator')) {
-      rentPenalty *= 0.5; // 敏腕ネゴシエーター: 高家賃ペナルティ半減
+    const negLv = getStaffSkillLevel('negotiator');
+    if (rentPenalty > 0 && negLv > 0) {
+      const red = [0, 0.30, 0.50, 0.75][negLv] || 0.50;
+      rentPenalty *= (1 - red);
     }
     const rentBonus = Math.round(50 - rentPenalty);
 
@@ -2572,12 +2778,14 @@
     // 3. コンボボーナス（整数）
     const comboBonus = (goodC * 5) - (badC * 20);
 
-    // 4. 任意オプションボーナス (ヒアリングの達人で8%にアップ)
-    const optPerReq = hasStaffBuff('listener') ? 8 : 5;
+    // 4. 任意オプションボーナス (顧客リレーションLv1:+7%, Lv2:+10%, Lv3:+14%)
+    const listLv = getStaffSkillLevel('listener');
+    const optPerReq = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
     const optBonus = (p.optionalSatisfied || 0) * optPerReq;
 
-    // 5. おもてなしコンシェルジュ (+5%)
-    const conciergeBonus = hasStaffBuff('concierge') ? 5 : 0;
+    // 5. おもてなしコンシェルジュ (Lv1:+4%, Lv2:+8%, Lv3:+12%)
+    const conLv = getStaffSkillLevel('concierge');
+    const conciergeBonus = conLv > 0 ? ([0, 4, 8, 12][conLv] || 5) : 0;
 
     // 満足度合計（各内訳の整数の和として厳密に一致させる）
     const satisfaction = rentBonus + reqBonus + comboBonus + optBonus + conciergeBonus - amenityPenalty;
@@ -2585,8 +2793,10 @@
     // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
     const unreached = totalReq - satisfied;
     let degRate = 0.5 + (unreached * 0.2) + (badC * 0.5);
-    if (hasStaffBuff('storage_master') && p.combosList && p.combosList.some(c => c.name && c.name.includes('収納'))) {
-      degRate = Math.max(0.2, degRate - 0.2); // 収納マイスター: 収納付き物件の劣化・退去軽減
+    const storeLv = getStaffSkillLevel('storage_master');
+    if (storeLv > 0 && p.combosList && p.combosList.some(c => c.name && c.name.includes('収納'))) {
+      const degRed = [0, 0.10, 0.20, 0.35][storeLv] || 0.20;
+      degRate = Math.max(0.1, degRate - degRed);
     }
 
     // 退去率計算
@@ -2742,14 +2952,20 @@
   function getPieceCost(piece, mirrored = false) {
     if (!piece) return 0;
     let base = piece.cost || 0;
-    if (hasStaffBuff('plumber') && (piece.cat === T.BATH || piece.cat === T.TOILET || piece.cat === T.WASHROOM)) {
-      base *= 0.9;
+    const plumbLv = getStaffSkillLevel('plumber');
+    if (plumbLv > 0 && (piece.cat === T.BATH || piece.cat === T.TOILET || piece.cat === T.WASHROOM)) {
+      const discount = [0, 0.90, 0.80, 0.70][plumbLv] || 0.90;
+      base *= discount;
     }
-    if (hasStaffBuff('storage_master') && piece.cat === T.CLOSET) {
-      base *= 0.5;
+    const storeLv = getStaffSkillLevel('storage_master');
+    if (storeLv > 0 && piece.cat === T.CLOSET) {
+      const discount = [0, 0.70, 0.50, 0.00][storeLv] !== undefined ? [0, 0.70, 0.50, 0.00][storeLv] : 0.50;
+      base *= discount;
     }
-    if (hasStaffBuff('broker')) {
-      base *= 0.97;
+    const brokerLv = getStaffSkillLevel('broker');
+    if (brokerLv > 0) {
+      const discount = [0, 0.95, 0.90, 0.85][brokerLv] || 0.95;
+      base *= discount;
     }
     if (!mirrored || GameState?.company?.features?.freeFlip) {
       return Math.round(base * 10) / 10;
@@ -2848,7 +3064,8 @@
      DRAFT CONTROLLER
   ============================================================ */
   function getDiscardCostForNext(count) {
-    const freeSlots = 5 + (GameState?.company?.features?.extraRerolls ? 2 : 0);
+    const recLv = getStaffSkillLevel('recycle');
+    const freeSlots = 5 + (GameState?.company?.features?.extraRerolls ? 2 : 0) + recLv;
     if (count < freeSlots) return 0;
     if (count < freeSlots + 5) return 2.0;
     if (count < freeSlots + 10) return 4.0;
@@ -2874,8 +3091,10 @@
         }
       }
     }
-    if (hasStaffBuff('recycle')) {
-      discardCost *= 0.5;
+    const recLv = getStaffSkillLevel('recycle');
+    if (recLv > 0) {
+      const disc = [0, 0.30, 0.50, 0.70][recLv] || 0.50;
+      discardCost *= (1 - disc);
     }
     return { total: Math.round((discardCost + keepCost) * 10) / 10, discard: discardCost, keep: keepCost };
   }
@@ -2883,14 +3102,6 @@
   let drawPile = [];
   let discardPile = [];
 
-  function shuffleArray(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
 
   function initDeckPiles() {
     const activeIds = getActiveDeckPieceIds();
@@ -2904,6 +3115,49 @@
     if (el) {
       const total = getActiveDeckPieceIds().length;
       el.textContent = `山札 ${drawPile.length}/${total}`;
+    }
+  }
+
+  function updateHandRefreshButton() {
+    const btn = document.getElementById('btn-hand-refresh');
+    const txt = document.getElementById('hand-refresh-count');
+    if (!btn) return;
+    const maxUses = getStaffSkillLevel('hand_refresh');
+    if (maxUses <= 0) {
+      btn.style.display = 'none';
+      return;
+    }
+    btn.style.display = 'inline-flex';
+    if (txt) txt.textContent = `引直 ${handRefreshesRemaining}/${maxUses}`;
+    btn.disabled = (handRefreshesRemaining <= 0);
+    btn.style.opacity = (handRefreshesRemaining <= 0) ? '0.45' : '1.0';
+    btn.style.cursor = (handRefreshesRemaining <= 0) ? 'not-allowed' : 'pointer';
+  }
+
+  function refreshHand() {
+    if (handRefreshesRemaining <= 0) return;
+    initAudio();
+    let returned = 0;
+    for (let i = 0; i < 3; i++) {
+      if (draftSlots[i]) {
+        drawPile.push(draftSlots[i].id);
+        draftSlots[i] = null;
+        returned++;
+      }
+      keepStates[i] = false;
+      keepCounts[i] = 0;
+    }
+    if (returned === 0) return;
+    drawPile = shuffleArray(drawPile);
+    handRefreshesRemaining--;
+    refillDraft();
+    renderDraft();
+    updateRerollButton();
+    updateDeckPeekButton();
+    updateHandRefreshButton();
+    playSound('tap');
+    if (typeof showFloatingText === 'function') {
+      showFloatingText(`🔄 手札引き直し！（残り${handRefreshesRemaining}回）`, '#0284c7');
     }
   }
 
@@ -2940,6 +3194,7 @@
       }
     }
     updateDeckPeekButton();
+    updateHandRefreshButton();
     renderDraftUI();
   }
 
@@ -3970,9 +4225,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const cell = grid[r][c];
         if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) { counts.garden++; continue; }
         if (cell.type !== T.ENTRANCE) counts.totalOcc++;
-        const reach = visited.has(`${r},${c}`);
-        if (!reach && cell.type !== T.ENTRANCE) { counts.unreachable++; continue; }
-        counts.totalBaseRent += (cell.costPerCell || 0) * 0.05 * (cell.type === T.LDK && hasStaffBuff('space_designer') ? 1.1 : 1.0);
+        const spaceLv = getStaffSkillLevel('space_designer');
+        const ldkMult = (cell.type === T.LDK && spaceLv > 0) ? (1 + [0, 0.10, 0.20, 0.30][spaceLv]) : 1.0;
+        counts.totalBaseRent += (cell.costPerCell || 0) * 0.05 * ldkMult;
         if (cell.roomId && !seenRooms.has(cell.roomId)) {
           seenRooms.set(cell.roomId, cell.type);
           if (cell.type === T.LDK)           counts.ldkRooms++;
@@ -4166,8 +4421,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     // 1. 水回り集約: 風呂・トイレ・洗面が相互に隣接
     if (wetAdjacencyCluster()) {
-      const b = hasStaffBuff('plumber') ? 2.5 : 2.0;
-      const bDesc = hasStaffBuff('plumber') ? ' (+2.5万 専属配管バフ)' : ' (+2.0万)';
+      const plumbLv = getStaffSkillLevel('plumber');
+      const extraBonus = plumbLv > 0 ? ([0, 0.3, 0.6, 1.0][plumbLv] || 0.3) : 0;
+      const b = 2.0 + extraBonus;
+      const bDesc = plumbLv > 0 ? ` (+${b.toFixed(1)}万 配管バフLv${plumbLv})` : ' (+2.0万)';
       combos.push({ name:'水回り集約', bonus:b, icon:'ph-drop text-blue-600', type:'good',
         text:`【王道コンボ】水回り集約 — 配管効率化ボーナス${bDesc}` });
     }
@@ -5293,8 +5550,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     keepStates = [false, false, false];
     keepCounts = [0, 0, 0];
     discardCount = 0;
+    handRefreshesRemaining = getStaffSkillLevel('hand_refresh');
     initDeckPiles();
     refillDraft();
+    updateHandRefreshButton();
     
     // Update Header UI
     updateCompanyUI();
@@ -5525,6 +5784,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   document.getElementById('btn-deck-peek')?.addEventListener('click', openDeckPeekModal);
+  document.getElementById('btn-hand-refresh')?.addEventListener('click', refreshHand);
   document.getElementById('btn-close-deck-peek')?.addEventListener('click', closeDeckPeekModal);
   document.getElementById('deck-peek-modal')?.addEventListener('pointerdown', (e) => {
     if (e.target.id === 'deck-peek-modal') closeDeckPeekModal();
@@ -6791,20 +7051,49 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             ? `<button class="btn btn-rose" onclick="confirmDismissStaff('${s.id}')" style="padding:4px 8px; font-size:11px; font-weight:bold; background:#e11d48; color:white;">本当に解雇？</button>`
             : `<button class="btn btn-slate" onclick="startDismissStaff('${s.id}')" style="padding:4px 8px; font-size:11px;">解雇</button>`;
 
+          let skillsHtml = '';
+          if (Array.isArray(s.skills)) {
+            skillsHtml = s.skills.map(sk => {
+              const def = STAFF_SKILL_DEFS[sk.id];
+              const desc = def ? def.desc[sk.level - 1] : '';
+              return `
+                <div style="font-size:10px; color:var(--c-text); background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px; margin-top:3px; border-left:2px solid var(--c-amber);">
+                  <strong style="color:var(--c-amber-lt);">${def ? def.name : sk.id} Lv${sk.level}</strong>: ${desc}
+                </div>
+              `;
+            }).join('');
+          } else if (s.desc) {
+            skillsHtml = `<div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${s.desc}</div>`;
+          }
+
+          let rankBadge = '';
+          if (s.rank === 'expert') {
+            rankBadge = `<span style="font-size:9px; background:rgba(244,63,94,0.2); color:#fda4af; border:1px solid rgba(244,63,94,0.4); padding:1px 5px; border-radius:4px;">★★★ エキスパート</span>`;
+          } else if (s.rank === 'specialist') {
+            rankBadge = `<span style="font-size:9px; background:rgba(245,158,11,0.2); color:#fcd34d; border:1px solid rgba(245,158,11,0.4); padding:1px 5px; border-radius:4px;">★★ スペシャリスト</span>`;
+          } else {
+            rankBadge = `<span style="font-size:9px; background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3); padding:1px 5px; border-radius:4px;">★ アシスタント</span>`;
+          }
+
           hiredHtml += `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:8px 10px; background:rgba(15,23,42,0.5); border:1px solid rgba(245,158,11,0.25); border-radius:6px; margin-bottom:6px;">
-              <div style="display:flex; gap:8px; align-items:flex-start; flex:1;">
-                <span style="font-size:22px; line-height:1;">${s.avatar}</span>
-                <div>
-                  <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-                    ${s.name}
-                    <span style="font-size:9px; background:rgba(245,158,11,0.2); color:#fcd34d; border:1px solid rgba(245,158,11,0.4); padding:1px 5px; border-radius:4px;">${s.role}</span>
+            <div style="padding:10px; background:rgba(15,23,42,0.5); border:1px solid rgba(245,158,11,0.25); border-radius:8px; margin-bottom:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <span style="font-size:24px; line-height:1;">${s.avatar}</span>
+                  <div>
+                    <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+                      ${s.name}
+                      ${rankBadge}
+                    </div>
+                    <div style="font-size:10px; color:var(--c-text2); margin-top:1px;">${s.role || ''}</div>
                   </div>
-                  <div style="font-size:10px; color:var(--c-rose); font-weight:bold; margin:2px 0 3px;">給与: -${s.salary.toFixed(1)}万/月</div>
-                  <div style="font-size:10px; color:var(--c-text2); line-height:1.3;">${s.desc}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:11px; color:var(--c-rose); font-weight:bold;">-${s.salary.toFixed(1)}万/月</div>
+                  <div style="margin-top:4px;">${dismissBtn}</div>
                 </div>
               </div>
-              <div style="margin-left:8px;">${dismissBtn}</div>
+              <div style="margin-top:6px;">${skillsHtml}</div>
             </div>
           `;
         });
@@ -6815,34 +7104,110 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 候補リスト
     const candListEl = document.getElementById('upg-candidate-staff-list');
     if (candListEl) {
-      const candidates = STAFF_CANDIDATES.filter(c => !co.hiredStaff.some(h => h.id === c.id));
-      if (candidates.length === 0) {
-        candListEl.innerHTML = `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:12px; background:rgba(15,23,42,0.3); border-radius:6px;">すべてのスペシャリストを採用済みです</div>`;
-      } else {
-        let candHtml = '';
-        candidates.forEach(c => {
-          const isSlotFull = hiredCount >= maxSlots;
-          const hireBtn = isSlotFull
-            ? `<button class="btn btn-slate" disabled style="padding:6px 10px; font-size:11px; opacity:0.45; cursor:not-allowed; white-space:nowrap;">デスク満席</button>`
-            : `<button class="btn btn-primary" onclick="hireStaff('${c.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:pointer; white-space:nowrap;"><i class="ph-bold ph-user-plus"></i> 採用する</button>`;
+      if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
+      const rec = co.recruitment;
+      const isSlotFull = hiredCount >= maxSlots;
 
-          candHtml += `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:8px 10px; background:rgba(15,23,42,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:6px; margin-bottom:6px;">
-              <div style="display:flex; gap:8px; align-items:flex-start; flex:1;">
-                <span style="font-size:22px; line-height:1;">${c.avatar}</span>
-                <div>
-                  <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-                    ${c.name}
-                    <span style="font-size:9px; background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3); padding:1px 5px; border-radius:4px;">${c.role}</span>
-                  </div>
-                  <div style="font-size:10px; color:var(--c-amber-lt); font-weight:bold; margin:2px 0 3px;">給与: ${c.salary.toFixed(1)}万/月</div>
-                  <div style="font-size:10px; color:var(--c-text2); line-height:1.3;">${c.desc}</div>
-                </div>
-              </div>
-              <div style="margin-left:8px;">${hireBtn}</div>
+      if (maxSlots === 0) {
+        candListEl.innerHTML = `<div style="font-size:11px; color:#f59e0b; text-align:center; padding:14px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25);"><i class="ph-bold ph-info"></i> デスクがありません。「事務所強化」でデスクを増設すると求人募集が可能になります。</div>`;
+      } else if (isSlotFull) {
+        candListEl.innerHTML = `<div style="font-size:11px; color:#38bdf8; text-align:center; padding:14px; background:rgba(56,189,248,0.08); border-radius:6px; border:1px solid rgba(56,189,248,0.2);"><i class="ph-bold ph-check-circle"></i> デスク満席です（空きスロットがないため求人は停止中です）。新たなスタッフを迎えるにはオフィス移転するか、既存スタッフを解雇してください。</div>`;
+      } else if (rec.status === 'none') {
+        candListEl.innerHTML = `
+          <div style="text-align:center; padding:16px 12px; background:rgba(15,23,42,0.45); border:1px dashed rgba(255,255,255,0.15); border-radius:8px;">
+            <div style="font-size:24px; margin-bottom:4px;">📢</div>
+            <div style="font-size:13px; font-weight:bold; color:var(--c-text); margin-bottom:4px;">現在、求人広告は出していません</div>
+            <div style="font-size:11px; color:var(--c-text2); margin-bottom:12px; line-height:1.4;">
+              求人広告を掲載すると、翌月に新たな応募者（3名）が届きます。<br>
+              急ぎで候補を見たい場合は、即時スカウトも利用可能です。
             </div>
-          `;
-        });
+            <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="postJobAd()" style="padding:8px 14px; font-size:12px; font-weight:bold; gap:6px;">
+                <i class="ph-bold ph-megaphone"></i> 求人広告を掲載 (30万 / 翌月到着)
+              </button>
+              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:8px 12px; font-size:12px; font-weight:bold; gap:6px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+                <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 即時スカウト (50万 / 即時到着)
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (rec.status === 'posted') {
+        candListEl.innerHTML = `
+          <div style="text-align:center; padding:16px 12px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); border-radius:8px;">
+            <div style="font-size:22px; margin-bottom:4px;">📢</div>
+            <div style="font-size:13px; font-weight:bold; color:#93c5fd; margin-bottom:4px;">求人広告を掲載中！</div>
+            <div style="font-size:11px; color:var(--c-text2); margin-bottom:10px; line-height:1.4;">
+              今月の設計を完了して翌月になると、応募者3名が到着します。<br>
+              来月まで待てない場合は、即時スカウトをご利用ください。
+            </div>
+            <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:7px 14px; font-size:11px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+              <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 今すぐ即時スカウト (50万)
+            </button>
+          </div>
+        `;
+      } else { // active
+        let candHtml = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(30,41,59,0.5); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:11px; color:var(--c-text2);">
+              応募者（全${rec.candidates ? rec.candidates.length : 0}名）<span style="font-size:10px; color:var(--c-text3); margin-left:4px;">※翌月自動更新</span>
+            </div>
+            <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:4px 8px; font-size:10px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.3); color:#bae6fd;" title="新しい候補者3名を即時再募集">
+              <i class="ph-bold ph-arrows-clockwise" style="color:#38bdf8;"></i> 即時再募集 (50万)
+            </button>
+          </div>
+        `;
+
+        if (!rec.candidates || rec.candidates.length === 0) {
+          candHtml += `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:12px; background:rgba(15,23,42,0.3); border-radius:6px;">現在応募者はいません（翌月新しい応募者が届きます）</div>`;
+        } else {
+          rec.candidates.forEach(c => {
+            let skillsHtml = '';
+            if (Array.isArray(c.skills)) {
+              skillsHtml = c.skills.map(sk => {
+                const def = STAFF_SKILL_DEFS[sk.id];
+                const desc = def ? def.desc[sk.level - 1] : '';
+                return `
+                  <div style="font-size:10px; color:var(--c-text); background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px; margin-top:3px; border-left:2px solid var(--c-blue);">
+                    <strong style="color:#93c5fd;">${def ? def.name : sk.id} Lv${sk.level}</strong>: ${desc}
+                  </div>
+                `;
+              }).join('');
+            }
+
+            let rankBadge = '';
+            if (c.rank === 'expert') {
+              rankBadge = `<span style="font-size:9px; background:rgba(244,63,94,0.2); color:#fda4af; border:1px solid rgba(244,63,94,0.4); padding:1px 5px; border-radius:4px;">★★★ エキスパート</span>`;
+            } else if (c.rank === 'specialist') {
+              rankBadge = `<span style="font-size:9px; background:rgba(245,158,11,0.2); color:#fcd34d; border:1px solid rgba(245,158,11,0.4); padding:1px 5px; border-radius:4px;">★★ スペシャリスト</span>`;
+            } else {
+              rankBadge = `<span style="font-size:9px; background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3); padding:1px 5px; border-radius:4px;">★ アシスタント</span>`;
+            }
+
+            candHtml += `
+              <div style="padding:10px; background:rgba(15,23,42,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:8px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <span style="font-size:24px; line-height:1;">${c.avatar}</span>
+                    <div>
+                      <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+                        ${c.name}
+                        ${rankBadge}
+                      </div>
+                      <div style="font-size:10px; color:var(--c-text2); margin-top:1px;">${c.role || ''}</div>
+                    </div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-size:11px; color:var(--c-amber-lt); font-weight:bold; margin-bottom:4px;">給与: ${c.salary.toFixed(1)}万/月</div>
+                    <button class="btn btn-primary" onclick="hireCandidate('${c.id}')" style="padding:6px 12px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
+                      <i class="ph-bold ph-user-plus"></i> 採用する
+                    </button>
+                  </div>
+                </div>
+                <div style="margin-top:6px;">${skillsHtml}</div>
+              </div>
+            `;
+          });
+        }
         candListEl.innerHTML = candHtml;
       }
     }
@@ -7586,28 +7951,100 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
-  function hireStaff(staffId) {
+  function postJobAd() {
     initAudio();
-    ensureDeckState();
+    if (!GameState?.company) return;
     const co = GameState.company;
     const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
-    if (co.hiredStaff.length >= maxSlots) {
+    if (maxSlots === 0) {
       playSound('error');
-      showUpgradeFeedback('デスクに空きがありません！', 'var(--c-rose)');
+      showUpgradeFeedback('デスクがありません。「事務所強化」で増設してください！', 'var(--c-rose)');
       return;
     }
-    const cand = STAFF_CANDIDATES.find(c => c.id === staffId);
-    if (!cand) return;
-    if (co.hiredStaff.some(h => h.id === staffId)) return;
+    if ((co.hiredStaff?.length || 0) >= maxSlots) {
+      playSound('error');
+      showUpgradeFeedback('デスク満席のため、求人を出す必要がありません。', 'var(--c-rose)');
+      return;
+    }
+    if (GameState.funds < RECRUIT_AD_COST) {
+      playSound('error');
+      showUpgradeFeedback(`資金不足です！（掲載費: ${RECRUIT_AD_COST}万円）`, 'var(--c-rose)');
+      return;
+    }
+    GameState.funds = Math.round((GameState.funds - RECRUIT_AD_COST) * 10) / 10;
+    if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
+    co.recruitment.status = 'posted';
+    playSound('clear');
+    showUpgradeFeedback(`📢 求人広告を掲載しました（-${RECRUIT_AD_COST}万）。来月応募者が届きます！`, 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function scoutImmediately() {
+    initAudio();
+    if (!GameState?.company) return;
+    const co = GameState.company;
+    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    if (maxSlots === 0) {
+      playSound('error');
+      showUpgradeFeedback('デスクがありません。「事務所強化」で増設してください！', 'var(--c-rose)');
+      return;
+    }
+    if ((co.hiredStaff?.length || 0) >= maxSlots) {
+      playSound('error');
+      showUpgradeFeedback('デスク満席のため、スカウトの必要がありません。', 'var(--c-rose)');
+      return;
+    }
+    if (GameState.funds < RECRUIT_SCOUT_COST) {
+      playSound('error');
+      showUpgradeFeedback(`資金不足です！（即時スカウト費: ${RECRUIT_SCOUT_COST}万円）`, 'var(--c-rose)');
+      return;
+    }
+    GameState.funds = Math.round((GameState.funds - RECRUIT_SCOUT_COST) * 10) / 10;
+    if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
+    co.recruitment.status = 'active';
+    co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
+    playSound('clear');
+    showUpgradeFeedback(`⚡ 人材紹介エージェントから応募者3名が到着しました！（-${RECRUIT_SCOUT_COST}万）`, 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function hireCandidate(candId) {
+    initAudio();
+    if (!GameState?.company) return;
+    const co = GameState.company;
+    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    if (!co.hiredStaff) co.hiredStaff = [];
+    if (co.hiredStaff.length >= maxSlots) {
+      playSound('error');
+      showUpgradeFeedback('デスクに空きがありません！オフィスを移転してください。', 'var(--c-rose)');
+      return;
+    }
+    const candIdx = co.recruitment?.candidates?.findIndex(c => c.id === candId);
+    if (candIdx === -1 || candIdx === undefined) return;
+    const cand = co.recruitment.candidates[candIdx];
 
     co.hiredStaff.push({
       id: cand.id,
       name: cand.name,
-      role: cand.role,
       avatar: cand.avatar,
+      rank: cand.rank,
+      rankLabel: cand.rankLabel,
+      stars: cand.stars,
+      role: cand.role,
       salary: cand.salary,
-      desc: cand.desc
+      skills: cand.skills
     });
+
+    co.recruitment.candidates.splice(candIdx, 1);
+
+    if (co.hiredStaff.length >= maxSlots) {
+      co.recruitment.status = 'none';
+      co.recruitment.candidates = [];
+    }
 
     playSound('clear');
     showUpgradeFeedback(`🤝 ${cand.name}を採用しました！`, 'var(--c-emerald)');
@@ -7647,9 +8084,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   window.buyCompanyUpgrade = buyCompanyUpgrade;
-  window.hireStaff = hireStaff;
+  window.postJobAd = postJobAd;
+  window.scoutImmediately = scoutImmediately;
+  window.hireCandidate = hireCandidate;
   window.startDismissStaff = startDismissStaff;
   window.confirmDismissStaff = confirmDismissStaff;
+  window.dismissStaff = dismissStaff;
   window.borrowLoan = borrowLoan;
   window.repayLoan = repayLoan;
   window.unlockPiece = unlockPiece;
