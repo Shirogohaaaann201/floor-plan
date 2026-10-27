@@ -1550,23 +1550,23 @@
       }
     },
     'opt-closet': {
-      id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり (満足度+5%)',
+      id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり',
       fn: counts => (counts.maxClosetSize >= 1) || ((counts.closetCells || 0) >= 1)
     },
     'opt-closet2': {
-      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (2マス以上) (満足度+5%)',
+      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (2マス以上)',
       fn: counts => (counts.maxClosetSize >= 2) || ((counts.closetCells || 0) >= 2)
     },
     'opt-wash': {
-      id: 'opt-wash', icon: 'ph-drop', color: '#059669', text: '独立洗面所あり (満足度+5%)',
+      id: 'opt-wash', icon: 'ph-drop', color: '#059669', text: '独立洗面所あり',
       fn: counts => counts.washroom > 0
     },
     'opt-bath': {
-      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (4マス以上連結) (満足度+5%)',
+      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (4マス以上連結)',
       fn: counts => counts.maxBathSize >= 4
     },
     'opt-ldk8': {
-      id: 'opt-ldk8', icon: 'ph-arrows-out', color: '#7c3aed', text: '広々LDK (8マス以上) (満足度+5%)',
+      id: 'opt-ldk8', icon: 'ph-arrows-out', color: '#7c3aed', text: '広々LDK (8マス以上)',
       fn: counts => counts.ldkCells >= 8
     }
   };
@@ -1864,6 +1864,14 @@
 
   function hasStaffBuff(skillId) {
     return getStaffSkillLevel(skillId) > 0;
+  }
+
+  function getOptionalReqText(opt) {
+    if (!opt) return '';
+    const cleanText = (opt.text || '').replace(/\s*\(満足度\+\d+%\)/g, '').trim();
+    const listLv = getStaffSkillLevel('listener');
+    const optBonusPct = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
+    return `${cleanText} (満足度+${optBonusPct}%)`;
   }
 
   function generateCandidateStaff(officeLevel = 1) {
@@ -2793,8 +2801,9 @@
     // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
     const unreached = totalReq - satisfied;
     let degRate = 0.5 + (unreached * 0.2) + (badC * 0.5);
+    const hasStorage = !!(p.hasStorage || (p.closetCells && p.closetCells > 0) || (p.combosList && p.combosList.some(c => c.name && c.name.includes('収納'))));
     const storeLv = getStaffSkillLevel('storage_master');
-    if (storeLv > 0 && p.combosList && p.combosList.some(c => c.name && c.name.includes('収納'))) {
+    if (storeLv > 0 && hasStorage) {
       const degRed = [0, 0.10, 0.20, 0.35][storeLv] || 0.20;
       degRate = Math.max(0.1, degRate - degRed);
     }
@@ -2819,6 +2828,11 @@
       evictRateVal = Math.max(0, (100 - satisfaction) + (age * degRate));
     }
 
+    if (storeLv > 0 && hasStorage && evictRateVal > 0) {
+      const evictDiscount = [0, 1.0, 2.0, 3.5][storeLv] || 1.0;
+      evictRateVal = Math.max(0, evictRateVal - evictDiscount);
+    }
+
     const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
     const resaleValue = ((baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02))).toFixed(1);
 
@@ -2834,6 +2848,8 @@
       comboBonus: comboBonus,
       optBonus: optBonus,
       conciergeBonus: conciergeBonus,
+      hasStorage: hasStorage,
+      storeLv: storeLv,
       amenityPenalty: amenityPenalty,
       currentRent: currentRent,
       isOriginal: isOriginal
@@ -3438,11 +3454,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const breakEl = document.getElementById('hdr-cost-breakdown');
     const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
     const extraSpent = Math.round((buildMirrorExtraCost + buildRerollCost) * 10) / 10;
+    const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost)) * 10) / 10);
     if (spentEl) {
       spentEl.innerHTML = `${totalSpent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
     }
     if (breakEl) {
-      breakEl.textContent = `原価${buildBaseCost.toFixed(1)} / 諸${extraSpent.toFixed(1)}`;
+      const discText = discountSaved > 0 ? `(引-${discountSaved.toFixed(1)})` : '';
+      breakEl.textContent = `原価${buildBaseCost.toFixed(1)}${discText} / 諸${extraSpent.toFixed(1)}`;
       breakEl.style.color = extraSpent > 0 ? '#fcd34d' : '#94a3b8';
     }
   }
@@ -4748,7 +4766,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 1. Base floor area (cost based)
     const baseRent = counts.totalBaseRent;
     rent += baseRent;
-    reports.push({ icon:'ph-check text-emerald-600', text:`資産価値ベース利回り (+${baseRent.toFixed(1)}万)` });
+    const spaceLv = getStaffSkillLevel('space_designer');
+    const spaceNote = spaceLv > 0 ? ` (空間デザインLv${spaceLv}適用)` : '';
+    reports.push({ icon:'ph-check text-emerald-600', text:`資産価値ベース利回り (+${baseRent.toFixed(1)}万)${spaceNote}` });
+
+    // 1.5 ホスピタリティバフ
+    const conLv = getStaffSkillLevel('concierge');
+    if (conLv > 0) {
+      const conBonus = [0, 4, 8, 12][conLv] || 5;
+      reports.push({ icon:'ph-bell-ringing text-indigo-500', text:`【ホスピタリティLv${conLv}】初期満足度 +${conBonus}% (${conBonus}ヶ月バリア延長)` });
+    }
+
+    // 1.6 収納・管理バフ
+    const storeLv = getStaffSkillLevel('storage_master');
+    if (storeLv > 0 && counts.closetCells > 0) {
+      const storeRiskRed = [0, 1.0, 2.0, 3.5][storeLv] || 1.0;
+      reports.push({ icon:'ph-archive-box text-sky-500', text:`【収納・管理Lv${storeLv}】退去リスク -${storeRiskRed}% (収納物件特典)` });
+    }
 
     // 2. Public requests
     let satisfiedCount = 0;
@@ -4769,7 +4803,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const ok = opt.fn ? opt.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
         if (ok) {
           optSatisfiedCount++;
-          reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${opt.text} (満足度+5%)` });
+          reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${getOptionalReqText(opt)}` });
         }
       }
     }
@@ -5077,7 +5111,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const statusCls = isMet ? 'opt met' : 'opt unmet';
         html += `<div class="req-pill ${statusCls}">
           <i class="ph-bold ${iconCls}"></i>
-          <span>${opt.text}</span>
+          <span>${getOptionalReqText(opt)}</span>
         </div>`;
       }
     }
@@ -5088,7 +5122,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       // Toast notification for newly achieved requests
       newlyMet.forEach((r, idx) => {
         setTimeout(() => {
-          showFloatingText(`✨ ${r.text} 達成！`, 'var(--c-emerald)');
+          const reqLabel = (r.id && r.id.startsWith('opt-')) ? getOptionalReqText(r) : r.text;
+          showFloatingText(`✨ ${reqLabel} 達成！`, 'var(--c-emerald)');
           playSound('combo');
         }, idx * 250);
       });
@@ -5151,7 +5186,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         item.innerHTML = `
           <div style="display:flex; align-items:center; gap:6px;">
             <i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:14px;"></i>
-            <span style="font-size:12px;color:#854d0e;">${opt.text}</span>
+            <span style="font-size:12px;color:#854d0e;">${getOptionalReqText(opt)}</span>
           </div>
           <span class="badge ${isMet ? 'badge-amber' : 'badge-slate'}" style="font-size:10px; padding:2px 6px;">
             ${isMet ? '⭐ 達成' : '⏳ 未達'}
@@ -5262,6 +5297,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       satisfiedCount: satisfiedCount,
       totalRequests: STAGE.requests.length,
       optionalSatisfied: optSatisfiedCount || 0,
+      hasStorage: (counts.closetCells > 0) || (counts.closetRooms > 0),
+      closetCells: counts.closetCells || 0,
       amenityPenalty: amenityPenalty || 0,
       badCombos: badCombos,
       goodCombos: goodCombos,
@@ -5438,7 +5475,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         item.className = 'req-item';
         item.style.background = '#fefce8';
         item.style.borderColor = '#fef08a';
-        item.innerHTML = `<i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:16px;"></i><span style="color:#854d0e;">${opt.text}</span>`;
+        item.innerHTML = `<i class="ph-bold ${opt.icon}" style="color:${opt.color};font-size:16px;"></i><span style="color:#854d0e;">${getOptionalReqText(opt)}</span>`;
         rl.appendChild(item);
       }
     }
@@ -5930,7 +5967,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
       const optPills = (m.optionalRequests || []).map(o => `
         <span style="font-size:10px; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); color:#fcd34d; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
-          <i class="ph-bold ${o.icon}"></i>${o.text}
+          <i class="ph-bold ${o.icon}"></i>${getOptionalReqText(o)}
         </span>
       `).join('');
 
@@ -6599,8 +6636,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     else bar.style.background = 'var(--c-rose)';
     
     const optStr = stats.optBonus > 0 ? ` / 任意 +${stats.optBonus}%` : '';
+    const conciergeStr = stats.conciergeBonus > 0 ? ` / 接客 +${stats.conciergeBonus}%` : '';
     const amenityStr = stats.amenityPenalty > 0 ? ` / 設備欠陥 -${stats.amenityPenalty}%` : '';
-    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${amenityStr}`;
+    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${conciergeStr}${amenityStr}`;
 
     // 建築コスト・投資回収パネルの更新
     const estBaseCost = Math.round(((p.baseRent || 0) * 20) * 10) / 10;
@@ -7221,6 +7259,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const maxLoan = getMaxLoan();
       const remCap = getRemainingLoanCapacity();
       const loanPay = calcMonthlyLoanPayment(debt);
+      const loanLv = getStaffSkillLevel('loan_negotiator');
+      const interestDesc = loanLv > 0
+        ? `月利1.5%➔Lv${loanLv}金利交渉で${[0, 15, 30, 50][loanLv]}%引`
+        : '月利1.5%';
       const brandLv = co.brandLevel || 1;
       const colStats = calcCollateralStats();
       const isOverLimit = debt > maxLoan;
@@ -7257,7 +7299,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               <strong style="color:${loanPay.total > 0 ? 'var(--c-rose)' : 'var(--c-text2)'};">-${loanPay.total.toFixed(1)}万/月</strong>
             </div>
             <div style="font-size:10px; color:var(--c-text3);">
-              内訳: 元本返済 ${loanPay.principal.toFixed(1)}万 (残債5%・最低10万) ＋ 金利 ${loanPay.interest.toFixed(1)}万 (月利1.5%)
+              内訳: 元本返済 ${loanPay.principal.toFixed(1)}万 (残債5%・最低10万) ＋ 金利 ${loanPay.interest.toFixed(1)}万 (${interestDesc})
             </div>
           </div>
         </div>
@@ -7355,7 +7397,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const p = PIECE_MAP[pieceId];
         if (!p) return '';
         const cells = countCellsInShape(p.shape);
-        const perCell = (p.cost / cells).toFixed(1);
+        const effCost = getPieceCost(p, false);
+        const perCell = (effCost / cells).toFixed(1);
+        const isDiscounted = effCost < (p.cost || 0);
         const isLocked = !!opts.locked;
         const isEditing = !!opts.isEditing;
         const isModified = !!opts.isModified;
@@ -7373,7 +7417,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               </div>
               <div style="text-align:center; width:100%;">
                 <div style="font-size:10px; font-weight:bold; color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                <div style="font-size:8.5px; color:#94a3b8;">${p.cost.toFixed(1)}万</div>
+                <div style="font-size:8.5px; color:#94a3b8;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="font-size:7.5px;">${p.cost.toFixed(1)}</s>` : ''}</div>
               </div>
             </div>
           `;
@@ -7399,7 +7443,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             </div>
             <div style="text-align:center; width:100%;">
               <div style="font-size:10px; font-weight:bold; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-              <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${p.cost.toFixed(1)}万 <span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
+              <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万 ${isDiscounted ? `<s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s> ` : ''}<span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
             </div>
           </div>
         `;
@@ -7428,7 +7472,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         for (const p of candidates) {
           const isSel = p.id === curPieceId;
           const cells = countCellsInShape(p.shape);
-          const perCell = (p.cost / cells).toFixed(1);
+          const effCost = getPieceCost(p, false);
+          const perCell = (effCost / cells).toFixed(1);
+          const isDiscounted = effCost < (p.cost || 0);
           const actionCall = slotType === 'upgrade'
             ? `setDeckSlotOverride('${slotKey}', '${p.id}')`
             : `setDeckCustomSlot(${slotKey}, '${p.id}')`;
@@ -7443,7 +7489,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               </div>
               <div style="text-align:center; width:100%;">
                 <div style="font-size:10px; font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${p.cost.toFixed(1)}万 <span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
+                <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万 ${isDiscounted ? `<s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s> ` : ''}<span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
               </div>
             </div>
           `;
