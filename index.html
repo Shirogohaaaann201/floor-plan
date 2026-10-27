@@ -3066,10 +3066,17 @@
   function getDiscardCostForNext(count) {
     const recLv = getStaffSkillLevel('recycle');
     const freeSlots = 5 + (GameState?.company?.features?.extraRerolls ? 2 : 0) + recLv;
-    if (count < freeSlots) return 0;
-    if (count < freeSlots + 5) return 2.0;
-    if (count < freeSlots + 10) return 4.0;
-    return 8.0;
+    let cost = 0;
+    if (count < freeSlots) cost = 0;
+    else if (count < freeSlots + 5) cost = 2.0;
+    else if (count < freeSlots + 10) cost = 4.0;
+    else cost = 8.0;
+
+    if (cost > 0 && recLv > 0) {
+      const disc = [0, 0.30, 0.50, 0.70][recLv] || 0.50;
+      cost *= (1 - disc);
+    }
+    return Math.round(cost * 10) / 10;
   }
 
   function getKeepCost(count) {
@@ -3091,12 +3098,7 @@
         }
       }
     }
-    const recLv = getStaffSkillLevel('recycle');
-    if (recLv > 0) {
-      const disc = [0, 0.30, 0.50, 0.70][recLv] || 0.50;
-      discardCost *= (1 - disc);
-    }
-    return { total: Math.round((discardCost + keepCost) * 10) / 10, discard: discardCost, keep: keepCost };
+    return { total: Math.round((discardCost + keepCost) * 10) / 10, discard: Math.round(discardCost * 10) / 10, keep: keepCost };
   }
 
   let drawPile = [];
