@@ -902,15 +902,19 @@
 
         <!-- Scrollable Tab Content Container -->
         <div id="upg-scroll-content" style="overflow-y:auto; flex:1; padding-right:4px;">
-          <!-- Section A: 事務所強化 -->
+          <!-- Section A: 会社規模・各種強化 -->
           <div id="upg-view-company">
-            <!-- 営業力強化 -->
-            <div id="upg-card-sales" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
-            <!-- ブランド知名度 -->
-            <div id="upg-card-brand" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
-            <!-- デスク増設 -->
+            <!-- 1. 本社オフィス・会社規模 (タウンホール) -->
             <div id="upg-card-office" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
-            <!-- 設備投資 -->
+            <!-- 2. 執務デスク増設 (スタッフ枠) -->
+            <div id="upg-card-desks" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 3. 管理システム導入 (管理枠) -->
+            <div id="upg-card-capacity" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 4. 営業力強化 -->
+            <div id="upg-card-sales" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 5. ブランド知名度 -->
+            <div id="upg-card-brand" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 6. 設備投資 -->
             <div id="upg-card-features" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
           </div>
           <!-- Section D: デッキ編成・技術開発 -->
@@ -1748,12 +1752,99 @@
       { level: 4, name: '業界の注目株',     cost: 2500,desc: '単身 15% / DINKS 30% / ファミリー 35% / 豪邸 20%' },
       { level: 5, name: 'プレステージ',     cost: 5000,desc: '単身 10% / DINKS 20% / ファミリー 40% / 豪邸 30% (最大)' },
     ],
+    // 本社オフィス（タウンホール / 会社規模）
     office: [
-      { level: 0, name: '一人親方',   slots: 0, capacity: 4,  cost: 0,    desc: '雇用枠 0人 / 管理上限 4棟 (プレイヤー単独)' },
-      { level: 1, name: 'デスク増設', slots: 1, capacity: 7,  cost: 500,  desc: '雇用枠 1人 / 管理上限 7棟 (+3棟拡大)' },
-      { level: 2, name: 'オフィス移転', slots: 2, capacity: 11, cost: 1500, desc: '雇用枠 2人 / 管理上限 11棟 (+4棟拡大)' },
-      { level: 3, name: '本格スタジオ', slots: 3, capacity: 16, cost: 3500, desc: '雇用枠 3人 / 管理上限 16棟 (+5棟拡大)' },
-      { level: 4, name: '自社ビル',     slots: 4, capacity: 22, cost: 8000, desc: '雇用枠 4人 / 管理上限 22棟 (+6棟拡大・最大)' },
+      {
+        level: 0,
+        name: '一人親方',
+        basePrice: 0,
+        minPrice: 0,
+        maxDesks: 0,
+        maxCapacityLevel: 0,
+        maxSalesLevel: 2,
+        maxBrandLevel: 2,
+        missions: null,
+        desc: '自宅兼事務所。単独で4棟まで管理可能。'
+      },
+      {
+        level: 1,
+        name: '地元事務所',
+        basePrice: 1200,
+        minPrice: 300,
+        maxDesks: 1,
+        maxCapacityLevel: 1,
+        maxSalesLevel: 3,
+        maxBrandLevel: 3,
+        missions: [
+          { type: 'cleared', label: '施工実績', target: 6, discount: 300, unit: '件' },
+          { type: 'netCombos', label: '設計品質', target: 12, discount: 300, unit: '個' },
+          { type: 'earnedRent', label: '賃貸実績', target: 500, discount: 300, unit: '万' }
+        ],
+        desc: '雑居ビルの1室。デスク1席・管理枠7棟・営業/知名度Lv3まで解放。'
+      },
+      {
+        level: 2,
+        name: '駅前オフィス',
+        basePrice: 3000,
+        minPrice: 800,
+        maxDesks: 2,
+        maxCapacityLevel: 2,
+        maxSalesLevel: 4,
+        maxBrandLevel: 4,
+        missions: [
+          { type: 'cleared', label: '施工実績', target: 14, discount: 700, unit: '件' },
+          { type: 'netCombos', label: '設計品質', target: 35, discount: 700, unit: '個' },
+          { type: 'earnedRent', label: '賃貸実績', target: 1800, discount: 800, unit: '万' }
+        ],
+        desc: '駅前の自社フロア。デスク2席・管理枠11棟・営業/知名度Lv4まで解放。'
+      },
+      {
+        level: 3,
+        name: '本格スタジオ',
+        basePrice: 7000,
+        minPrice: 2000,
+        maxDesks: 3,
+        maxCapacityLevel: 3,
+        maxSalesLevel: 5,
+        maxBrandLevel: 5,
+        missions: [
+          { type: 'cleared', label: '施工実績', target: 25, discount: 1600, unit: '件' },
+          { type: 'netCombos', label: '設計品質', target: 75, discount: 1600, unit: '個' },
+          { type: 'earnedRent', label: '賃貸実績', target: 5000, discount: 1800, unit: '万' }
+        ],
+        desc: 'デザインスタジオ。デスク3席・管理枠16棟・全営業/知名度解放。'
+      },
+      {
+        level: 4,
+        name: '本社自社ビル',
+        basePrice: 16000,
+        minPrice: 5000,
+        maxDesks: 4,
+        maxCapacityLevel: 4,
+        maxSalesLevel: 5,
+        maxBrandLevel: 5,
+        missions: [
+          { type: 'cleared', label: '施工実績', target: 40, discount: 3500, unit: '件' },
+          { type: 'netCombos', label: '設計品質', target: 130, discount: 3500, unit: '個' },
+          { type: 'earnedRent', label: '賃貸実績', target: 12000, discount: 4000, unit: '万' }
+        ],
+        desc: '大手不動産本社ビル。最大4名雇用・管理枠22棟・完全制覇。'
+      }
+    ],
+    // 執務デスク増設（スタッフ雇用枠）
+    desks: [
+      { slot: 1, cost: 150, reqOfficeLevel: 1, name: 'デスク1席目増設' },
+      { slot: 2, cost: 350, reqOfficeLevel: 2, name: 'デスク2席目増設' },
+      { slot: 3, cost: 700, reqOfficeLevel: 3, name: 'デスク3席目増設' },
+      { slot: 4, cost: 1500, reqOfficeLevel: 4, name: 'デスク4席目増設' }
+    ],
+    // 管理システム導入（管理戸数キャパシティ）
+    capacity: [
+      { level: 0, capacity: 4,  cost: 0,    name: '台帳管理（基本枠）', desc: 'プレイヤー単独での管理限界（4棟）' },
+      { level: 1, capacity: 7,  cost: 150,  name: 'PC管理システム',   desc: '管理上限 +3棟（最大7棟）' },
+      { level: 2, capacity: 11, cost: 350,  name: 'クラウド管理システム', desc: '管理上限 +4棟（最大11棟）' },
+      { level: 3, capacity: 16, cost: 800,  name: '自社管理サーバー',   desc: '管理上限 +5棟（最大16棟）' },
+      { level: 4, capacity: 22, cost: 1500, name: '自社管理センター',   desc: '管理上限 +6棟（最大22棟）' }
     ],
     features: {
       freeFlip:      { id: 'freeFlip',      name: '反転加工ライセンス', cost: 600, icon: 'ph-arrows-left-right', desc: 'ピース反転時の特注割増(1.2倍)を恒久無料化' },
@@ -2537,10 +2628,81 @@
     return Math.min(95, Math.max(10, Math.round(chance)));
   }
 
+  function getLifetimeStats() {
+    if (!GameState.stats) {
+      GameState.stats = {
+        lifetimeClearedMissions: 0,
+        lifetimeEarnedRent: 0,
+        lifetimeGoodCombos: 0,
+        lifetimeBadCombos: 0
+      };
+    }
+    
+    // 現在の所有物件から下限値を保証（セーブデータのマイグレーション対応）
+    let currentEarnedRent = 0;
+    let currentGoodCombos = 0;
+    let currentBadCombos = 0;
+    if (Array.isArray(GameState.properties)) {
+      for (const p of GameState.properties) {
+        currentEarnedRent += (p.earnedRent || 0);
+        currentGoodCombos += (p.goodCombos || 0);
+        currentBadCombos += (p.badCombos || 0);
+      }
+    }
+
+    if (GameState.stats.lifetimeEarnedRent < currentEarnedRent) {
+      GameState.stats.lifetimeEarnedRent = Math.round(currentEarnedRent * 10) / 10;
+    }
+    if (GameState.stats.lifetimeGoodCombos < currentGoodCombos) {
+      GameState.stats.lifetimeGoodCombos = currentGoodCombos;
+    }
+    if (GameState.stats.lifetimeBadCombos < currentBadCombos) {
+      GameState.stats.lifetimeBadCombos = currentBadCombos;
+    }
+    if (GameState.stats.lifetimeClearedMissions < (GameState.level || 0)) {
+      GameState.stats.lifetimeClearedMissions = GameState.level || 0;
+    }
+
+    const netCombos = GameState.stats.lifetimeGoodCombos - GameState.stats.lifetimeBadCombos;
+
+    return {
+      cleared: GameState.stats.lifetimeClearedMissions,
+      earnedRent: Math.round(GameState.stats.lifetimeEarnedRent * 10) / 10,
+      goodCombos: GameState.stats.lifetimeGoodCombos,
+      badCombos: GameState.stats.lifetimeBadCombos,
+      netCombos: netCombos
+    };
+  }
+
+  function getOfficeUpgradeCost(targetLevel) {
+    const def = UPGRADE_CONFIG.office[targetLevel];
+    if (!def) return 0;
+    let price = def.basePrice;
+    if (!def.missions) return price;
+
+    const stats = getLifetimeStats();
+    def.missions.forEach(m => {
+      let currentVal = 0;
+      if (m.type === 'cleared') currentVal = stats.cleared;
+      else if (m.type === 'netCombos') currentVal = stats.netCombos;
+      else if (m.type === 'earnedRent') currentVal = stats.earnedRent;
+
+      if (currentVal >= m.target) {
+        price -= m.discount;
+      }
+    });
+    return Math.max(def.minPrice, price);
+  }
+
+  function getMaxStaffSlots() {
+    const co = GameState && GameState.company;
+    return (co && co.deskCount !== undefined) ? co.deskCount : 0;
+  }
+
   function getMaxPropertyCapacity() {
     const co = GameState && GameState.company;
-    const officeLv = (co && co.officeLevel !== undefined) ? co.officeLevel : 0;
-    const baseCap = (UPGRADE_CONFIG.office[officeLv]?.capacity) || 4;
+    const capLv = (co && co.capacityLevel !== undefined) ? co.capacityLevel : 0;
+    const baseCap = (UPGRADE_CONFIG.capacity && UPGRADE_CONFIG.capacity[capLv]?.capacity) || 4;
     
     // 物件管理主任（property_manager）スキル加算
     const pmLv = getStaffSkillLevel('property_manager');
@@ -2701,6 +2863,11 @@
       }
     }
 
+    if (totalIncome > 0) {
+      if (!GameState.stats) getLifetimeStats();
+      GameState.stats.lifetimeEarnedRent = Math.round(((GameState.stats.lifetimeEarnedRent || 0) + totalIncome) * 10) / 10;
+    }
+
     // スタッフ人件費の控除
     let totalSalaries = 0;
     if (GameState.company && GameState.company.hiredStaff) {
@@ -2712,7 +2879,7 @@
     const co = GameState.company;
     if (co) {
       if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
-      const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+      const maxSlots = co.deskCount || 0;
       const hiredCount = co.hiredStaff?.length || 0;
       if (hiredCount >= maxSlots) {
         co.recruitment.status = 'none';
@@ -2818,11 +2985,20 @@
           if (!GameState.company.salesLevel) GameState.company.salesLevel = 1;
           if (!GameState.company.brandLevel) GameState.company.brandLevel = 1;
           if (GameState.company.officeLevel === undefined) GameState.company.officeLevel = 0;
+          if (GameState.company.deskCount === undefined) {
+            const offLv = GameState.company.officeLevel || 0;
+            GameState.company.deskCount = Math.max(offLv, GameState.company.hiredStaff?.length || 0);
+          }
+          if (GameState.company.capacityLevel === undefined) {
+            const offLv = GameState.company.officeLevel || 0;
+            GameState.company.capacityLevel = offLv;
+          }
           if (GameState.company.debt === undefined || typeof GameState.company.debt !== 'number') GameState.company.debt = 0;
           if (!GameState.company.features) GameState.company.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
           if (!GameState.company.hiredStaff) GameState.company.hiredStaff = [];
           if (!GameState.company.recruitment) GameState.company.recruitment = { status: 'none', candidates: [] };
         }
+        getLifetimeStats();
         ensureDeckState();
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
           GameState.attempts = getMaxAttempts();
@@ -6861,6 +7037,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       ...result,
       onConfirm: () => {
         GameState.level++;
+        if (!GameState.stats) getLifetimeStats();
+        GameState.stats.lifetimeClearedMissions = (GameState.stats.lifetimeClearedMissions || 0) + 1;
+        GameState.stats.lifetimeGoodCombos = (GameState.stats.lifetimeGoodCombos || 0) + (p.goodCombos || 0);
+        GameState.stats.lifetimeBadCombos = (GameState.stats.lifetimeBadCombos || 0) + (p.badCombos || 0);
         GameState.attempts = getMaxAttempts();
         GameState.currentMission = null;
         GameState.availableMissions = generateMissionPool(GameState.level);
@@ -7430,25 +7610,268 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const debtEl = document.getElementById('upg-current-debt');
     if (debtEl) debtEl.textContent = `${(co.debt || 0).toFixed(1)}万`;
 
-    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
-    const hiredCount = co.hiredStaff.length;
+    const maxSlots = getMaxStaffSlots();
+    const hiredCount = co.hiredStaff ? co.hiredStaff.length : 0;
     const tabBadge = document.getElementById('upg-staff-count-tab');
     if (tabBadge) tabBadge.textContent = `${hiredCount}/${maxSlots}`;
     const deckTabBadge = document.getElementById('upg-deck-count-tab');
     if (deckTabBadge) deckTabBadge.textContent = `${getActiveDeckPieceIds().length}`;
 
-    /* --- 1. 営業力強化カード --- */
+    const curOfficeLv = co.officeLevel || 0;
+    const curOfficeDef = UPGRADE_CONFIG.office[curOfficeLv] || UPGRADE_CONFIG.office[0];
+
+    /* --- 1. 本社オフィス・会社規模カード (タウンホール) --- */
+    const cardOffice = document.getElementById('upg-card-office');
+    if (cardOffice) {
+      const curLv = curOfficeLv;
+      const curDef = curOfficeDef;
+      const isMax = curLv >= UPGRADE_CONFIG.office.length - 1;
+      const nextDef = !isMax ? UPGRADE_CONFIG.office[curLv + 1] : null;
+      const stats = getLifetimeStats();
+
+      let nextHtml = '';
+      if (isMax) {
+        nextHtml = `
+          <div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:10px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">
+            ★ 本社自社ビル完成（最高ランク到達済み）
+          </div>
+        `;
+      } else {
+        const effCost = getOfficeUpgradeCost(curLv + 1);
+        const discountTotal = nextDef.basePrice - effCost;
+        const canAfford = GameState.funds >= effCost;
+
+        let missionsHtml = '';
+        nextDef.missions.forEach(m => {
+          let currentVal = 0;
+          if (m.type === 'cleared') currentVal = stats.cleared;
+          else if (m.type === 'netCombos') currentVal = stats.netCombos;
+          else if (m.type === 'earnedRent') currentVal = stats.earnedRent;
+
+          const isDone = currentVal >= m.target;
+          const pct = Math.min(100, Math.max(0, Math.round((Math.max(0, currentVal) / m.target) * 100)));
+          const displayVal = (m.type === 'earnedRent') ? currentVal.toFixed(1) : currentVal;
+
+          missionsHtml += `
+            <div style="margin-top:6px; padding:6px 8px; border-radius:6px; background:${isDone ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)'}; border:1px solid ${isDone ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.08)'};">
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                  <span style="font-size:12px;">${isDone ? '✅' : '⬜'}</span>
+                  <strong style="color:${isDone ? '#86efac' : 'var(--c-text)'};">${m.label}</strong>
+                  <span style="color:var(--c-text3); font-size:10px;">(${displayVal} / ${m.target}${m.unit})</span>
+                </div>
+                <span style="font-size:10px; font-weight:bold; color:${isDone ? '#34d399' : '#f59e0b'};">
+                  ${isDone ? `達成済 -${m.discount}万` : `達成で -${m.discount}万`}
+                </span>
+              </div>
+              ${!isDone ? `
+                <div style="margin-top:4px; height:4px; border-radius:2px; background:rgba(255,255,255,0.1); overflow:hidden;">
+                  <div style="height:100%; width:${pct}%; background:#f59e0b; border-radius:2px;"></div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        const nextCapNum = UPGRADE_CONFIG.capacity[nextDef.maxCapacityLevel]?.capacity || 4;
+        nextHtml = `
+          <div style="background:rgba(15,23,42,0.45); padding:10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.15); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:12px; color:#fde047; font-weight:bold;">
+                次: Rank ${nextDef.level + 1} ${nextDef.name}
+              </span>
+              <span style="font-size:11px; color:var(--c-text2);">
+                定価: <s>${nextDef.basePrice}万</s>
+              </span>
+            </div>
+            <div style="font-size:10px; color:var(--c-text2); line-height:1.4; margin-bottom:6px;">
+              ${nextDef.desc}（デスク最大${nextDef.maxDesks}席 / 管理枠最大${nextCapNum}棟）
+            </div>
+
+            <div style="font-size:10.5px; font-weight:bold; color:#cbd5e1; margin-top:6px;">
+              🎯 実績達成ディスカウント（最大 -${nextDef.basePrice - nextDef.minPrice}万円）:
+            </div>
+            ${missionsHtml}
+
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.12);">
+              <span style="font-size:11px; color:var(--c-text2);">移転費用（${discountTotal > 0 ? `値引 -${discountTotal}万` : '定価'}）:</span>
+              <span style="font-size:15px; font-weight:900; color:${canAfford ? 'var(--c-emerald)' : 'var(--c-rose)'};">
+                ${effCost} <span style="font-size:11px; font-weight:normal;">万円</span>
+                ${effCost === nextDef.minPrice ? '<span style="font-size:10px; color:#34d399; font-weight:bold;"> (底値!)</span>' : ''}
+              </span>
+            </div>
+          </div>
+
+          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('office')" style="width:100%; padding:10px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-buildings"></i> Rank ${nextDef.level + 1} ${nextDef.name} へ移転（${effCost}万）
+          </button>
+        `;
+      }
+
+      const curCapNum = UPGRADE_CONFIG.capacity[curDef.maxCapacityLevel]?.capacity || 4;
+      cardOffice.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:20px;">🏢</span>
+            <div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">本社オフィス（会社規模）</div>
+              <div style="font-size:10px; color:var(--c-text2);">タウンホール：各機能の最大拡張上限を規定</div>
+            </div>
+          </div>
+          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.35); color:#fcd34d;">
+            Rank ${curDef.level + 1} ${curDef.name}
+          </span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">
+          現在上限: デスク最大 <strong>${curDef.maxDesks}席</strong> / 管理枠最大 <strong>${curCapNum}棟</strong> / 営業・知名度最大 <strong>Lv.${curDef.maxSalesLevel}</strong>
+        </div>
+        ${nextHtml}
+      `;
+    }
+
+    /* --- 2. 執務デスク増設カード (スタッフ枠) --- */
+    const cardDesks = document.getElementById('upg-card-desks');
+    if (cardDesks) {
+      const curDesks = co.deskCount || 0;
+      const maxDesksForOffice = curOfficeDef.maxDesks;
+      const isMaxOverall = curDesks >= UPGRADE_CONFIG.desks.length;
+      const isLockedByOffice = !isMaxOverall && (curDesks >= maxDesksForOffice);
+      const nextDeskDef = !isMaxOverall ? UPGRADE_CONFIG.desks[curDesks] : null;
+      const canAfford = nextDeskDef && !isLockedByOffice && GameState.funds >= nextDeskDef.cost;
+
+      let actionHtml = '';
+      if (isMaxOverall) {
+        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ デスク最大数（4席）増設済み</div>`;
+      } else if (isLockedByOffice) {
+        actionHtml = `
+          <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
+            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
+            現在のオフィス（${curOfficeDef.name}）ではデスクは最大${maxDesksForOffice}席までです。「本社オフィス」を移転すると次のデスクを増設できます。
+          </div>
+          <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 ${maxDesksForOffice}席 到達)
+          </button>
+        `;
+      } else {
+        actionHtml = `
+          <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextDeskDef.name} (雇用枠 ${curDesks + 1}席)</span>
+              <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDeskDef.cost}万</span>
+            </div>
+            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">スタッフを雇用するための執務デスクを増設します</div>
+          </div>
+          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('desk')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-armchair"></i> デスク増設（${nextDeskDef.cost}万）
+          </button>
+        `;
+      }
+
+      cardDesks.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:18px;">🪑</span>
+            <div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">執務デスク増設</div>
+              <div style="font-size:10px; color:var(--c-text2);">専門スタッフの雇用スロットを解放</div>
+            </div>
+          </div>
+          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.35); color:#93c5fd;">
+            現在: ${curDesks}席 / 上限 ${maxDesksForOffice}席
+          </span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
+          雇用状況: <strong>${co.hiredStaff?.length || 0}名 着席</strong>（空き ${Math.max(0, curDesks - (co.hiredStaff?.length || 0))}席）
+        </div>
+        ${actionHtml}
+      `;
+    }
+
+    /* --- 3. 管理システム導入カード (管理戸数キャパシティ) --- */
+    const cardCapacity = document.getElementById('upg-card-capacity');
+    if (cardCapacity) {
+      const curCapLv = co.capacityLevel || 0;
+      const curCapDef = UPGRADE_CONFIG.capacity[curCapLv] || UPGRADE_CONFIG.capacity[0];
+      const maxCapLvForOffice = curOfficeDef.maxCapacityLevel;
+      const isMaxOverall = curCapLv >= UPGRADE_CONFIG.capacity.length - 1;
+      const isLockedByOffice = !isMaxOverall && (curCapLv >= maxCapLvForOffice);
+      const nextCapDef = !isMaxOverall ? UPGRADE_CONFIG.capacity[curCapLv + 1] : null;
+      const canAfford = nextCapDef && !isLockedByOffice && GameState.funds >= nextCapDef.cost;
+
+      let actionHtml = '';
+      if (isMaxOverall) {
+        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 最高管理システム（自社管理センター 22棟）導入済み</div>`;
+      } else if (isLockedByOffice) {
+        actionHtml = `
+          <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
+            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
+            現在のオフィス（${curOfficeDef.name}）ではこれ以上の上位システムを運用できません。「本社オフィス」を移転すると上位管理枠を解放できます。
+          </div>
+          <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 Lv.${maxCapLvForOffice} 到達)
+          </button>
+        `;
+      } else {
+        actionHtml = `
+          <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextCapDef.name} (基本管理枠 ${nextCapDef.capacity}棟 / +${nextCapDef.capacity - curCapDef.capacity}棟)</span>
+              <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextCapDef.cost}万</span>
+            </div>
+            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextCapDef.desc}</div>
+          </div>
+          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('capacity')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-hard-drives"></i> ${nextCapDef.name}導入（${nextCapDef.cost}万）
+          </button>
+        `;
+      }
+
+      const maxPropCap = getMaxPropertyCapacity();
+      const activeProps = getActivePropertyCount();
+      cardCapacity.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:18px;">📂</span>
+            <div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">管理システム導入</div>
+              <div style="font-size:10px; color:var(--c-text2);">物件の最大管理戸数キャパシティを拡張</div>
+            </div>
+          </div>
+          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.35); color:#86efac;">
+            ${curCapDef.name}
+          </span>
+        </div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
+          現在能力: 基本 <strong>${curCapDef.capacity}棟</strong>（スタッフ補正込: <strong>${activeProps} / ${maxPropCap}棟</strong>）
+        </div>
+        ${actionHtml}
+      `;
+    }
+
+    /* --- 4. 営業力強化カード --- */
     const cardSales = document.getElementById('upg-card-sales');
     if (cardSales) {
       const curLv = co.salesLevel || 1;
       const curDef = UPGRADE_CONFIG.sales[curLv - 1] || UPGRADE_CONFIG.sales[0];
       const isMax = curLv >= UPGRADE_CONFIG.sales.length;
       const nextDef = !isMax ? UPGRADE_CONFIG.sales[curLv] : null;
-      const canAfford = nextDef && GameState.funds >= nextDef.cost;
+      const maxSalesForOffice = curOfficeDef.maxSalesLevel;
+      const isLockedByOffice = !isMax && (curLv >= maxSalesForOffice);
+      const canAfford = nextDef && !isLockedByOffice && GameState.funds >= nextDef.cost;
 
       let actionHtml = '';
       if (isMax) {
         actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 最大レベル（+60%）到達済み</div>`;
+      } else if (isLockedByOffice) {
+        actionHtml = `
+          <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
+            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
+            現在のオフィス（${curOfficeDef.name}）では Lv.${maxSalesForOffice} が上限です。「本社オフィス」を移転すると上位の営業拠点を解放できます。
+          </div>
+          <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 Lv.${maxSalesForOffice} 到達)
+          </button>
+        `;
       } else {
         actionHtml = `
           <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
@@ -7484,18 +7907,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       `;
     }
 
-    /* --- 2. ブランド力・知名度カード --- */
+    /* --- 5. ブランド力・知名度カード --- */
     const cardBrand = document.getElementById('upg-card-brand');
     if (cardBrand) {
       const curLv = co.brandLevel || 1;
       const curDef = UPGRADE_CONFIG.brand[curLv - 1] || UPGRADE_CONFIG.brand[0];
       const isMax = curLv >= UPGRADE_CONFIG.brand.length;
       const nextDef = !isMax ? UPGRADE_CONFIG.brand[curLv] : null;
-      const canAfford = nextDef && GameState.funds >= nextDef.cost;
+      const maxBrandForOffice = curOfficeDef.maxBrandLevel;
+      const isLockedByOffice = !isMax && (curLv >= maxBrandForOffice);
+      const canAfford = nextDef && !isLockedByOffice && GameState.funds >= nextDef.cost;
 
       let actionHtml = '';
       if (isMax) {
         actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 最高プレステージ到達済み</div>`;
+      } else if (isLockedByOffice) {
+        actionHtml = `
+          <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
+            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
+            現在のオフィス（${curOfficeDef.name}）では Lv.${maxBrandForOffice} が上限です。「本社オフィス」を移転すると上位の広告宣伝を解放できます。
+          </div>
+          <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 Lv.${maxBrandForOffice} 到達)
+          </button>
+        `;
       } else {
         actionHtml = `
           <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
@@ -7526,53 +7961,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
           出現傾向: <strong>${curDef.desc}</strong>
-        </div>
-        ${actionHtml}
-      `;
-    }
-
-    /* --- 3. 事務所・管理規模拡張カード --- */
-    const cardOffice = document.getElementById('upg-card-office');
-    if (cardOffice) {
-      const curLv = co.officeLevel || 0;
-      const curDef = UPGRADE_CONFIG.office[curLv] || UPGRADE_CONFIG.office[0];
-      const isMax = curLv >= UPGRADE_CONFIG.office.length - 1;
-      const nextDef = !isMax ? UPGRADE_CONFIG.office[curLv + 1] : null;
-      const canAfford = nextDef && GameState.funds >= nextDef.cost;
-
-      let actionHtml = '';
-      if (isMax) {
-        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ 自社ビル完成（最大4名雇用 / 基本管理22棟）</div>`;
-      } else {
-        actionHtml = `
-          <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextDef.name} (雇用枠 ${nextDef.slots}人 / 管理上限 ${nextDef.capacity}棟)</span>
-              <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDef.cost}万</span>
-            </div>
-            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextDef.desc}</div>
-          </div>
-          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('office')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-plus-circle"></i> 事務所拡張（${nextDef.cost}万）
-          </button>
-        `;
-      }
-
-      cardOffice.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:18px;">🏢</span>
-            <div>
-              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">事務所・管理規模</div>
-              <div style="font-size:10px; color:var(--c-text2);">スタッフ雇用人数＆物件管理上限の拡張</div>
-            </div>
-          </div>
-          <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.35); color:#86efac;">
-            ${curDef.name}（枠 ${curDef.slots}人 / 上限 ${curDef.capacity}棟）
-          </span>
-        </div>
-        <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
-          現状: <strong>${curDef.desc}</strong>
         </div>
         ${actionHtml}
       `;
@@ -8477,11 +8865,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       salesLevel: 1,
       brandLevel: 1,
       officeLevel: 0,
+      deskCount: 0,
+      capacityLevel: 0,
       debt: 0,
       features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
       hiredStaff: [],
       unlockedPieces: [...STARTER_UNLOCKED_IDS],
       deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
+    };
+    GameState.stats = {
+      lifetimeClearedMissions: 0,
+      lifetimeEarnedRent: 0,
+      lifetimeGoodCombos: 0,
+      lifetimeBadCombos: 0
     };
     GameState.availableMissions = generateMissionPool(0);
     saveGame();
@@ -8496,46 +8892,94 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     ensureDeckState();
     const co = GameState.company;
+    const curOfficeDef = UPGRADE_CONFIG.office[co.officeLevel || 0] || UPGRADE_CONFIG.office[0];
 
-    if (type === 'sales') {
+    if (type === 'office') {
+      const curLevel = co.officeLevel || 0;
+      if (curLevel >= UPGRADE_CONFIG.office.length - 1) return;
+      const nextDef = UPGRADE_CONFIG.office[curLevel + 1];
+      const effCost = getOfficeUpgradeCost(curLevel + 1);
+      if (GameState.funds < effCost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds = Math.round((GameState.funds - effCost) * 10) / 10;
+      co.officeLevel++;
+      playSound('clear');
+      showUpgradeFeedback(`🏢 本社オフィスを「Rank ${co.officeLevel + 1} ${nextDef.name}」へ移転しました！各機能の上限が拡張されました！`, 'var(--c-emerald)');
+    } else if (type === 'desk') {
+      const curDesks = co.deskCount || 0;
+      if (curDesks >= UPGRADE_CONFIG.desks.length) return;
+      if (curDesks >= curOfficeDef.maxDesks) {
+        playSound('error');
+        showUpgradeFeedback('現在のオフィスではこれ以上デスクを増やせません！本社オフィスを移転してください。', 'var(--c-rose)');
+        return;
+      }
+      const deskDef = UPGRADE_CONFIG.desks[curDesks];
+      if (GameState.funds < deskDef.cost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds = Math.round((GameState.funds - deskDef.cost) * 10) / 10;
+      co.deskCount = curDesks + 1;
+      playSound('clear');
+      showUpgradeFeedback(`🪑 「${deskDef.name}」を設置しました！（雇用枠 ${co.deskCount}席）`, 'var(--c-emerald)');
+    } else if (type === 'capacity') {
+      const curCapLv = co.capacityLevel || 0;
+      if (curCapLv >= UPGRADE_CONFIG.capacity.length - 1) return;
+      if (curCapLv >= curOfficeDef.maxCapacityLevel) {
+        playSound('error');
+        showUpgradeFeedback('現在のオフィスではこれ以上の上位管理システムを運用できません！本社オフィスを移転してください。', 'var(--c-rose)');
+        return;
+      }
+      const nextCapDef = UPGRADE_CONFIG.capacity[curCapLv + 1];
+      if (GameState.funds < nextCapDef.cost) {
+        playSound('error');
+        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
+        return;
+      }
+      GameState.funds = Math.round((GameState.funds - nextCapDef.cost) * 10) / 10;
+      co.capacityLevel = curCapLv + 1;
+      playSound('clear');
+      showUpgradeFeedback(`📂 「${nextCapDef.name}」を導入しました！（基本管理枠 ${nextCapDef.capacity}棟）`, 'var(--c-emerald)');
+    } else if (type === 'sales') {
       const curLevel = co.salesLevel || 1;
       if (curLevel >= UPGRADE_CONFIG.sales.length) return;
+      if (curLevel >= curOfficeDef.maxSalesLevel) {
+        playSound('error');
+        showUpgradeFeedback('オフィスランクの上限に達しています！本社オフィスを移転してください。', 'var(--c-rose)');
+        return;
+      }
       const nextDef = UPGRADE_CONFIG.sales[curLevel];
       if (GameState.funds < nextDef.cost) {
         playSound('error');
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds -= nextDef.cost;
+      GameState.funds = Math.round((GameState.funds - nextDef.cost) * 10) / 10;
       co.salesLevel++;
       playSound('clear');
       showUpgradeFeedback(`✨ 営業力 Lv.${co.salesLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
     } else if (type === 'brand') {
       const curLevel = co.brandLevel || 1;
       if (curLevel >= UPGRADE_CONFIG.brand.length) return;
+      if (curLevel >= curOfficeDef.maxBrandLevel) {
+        playSound('error');
+        showUpgradeFeedback('オフィスランクの上限に達しています！本社オフィスを移転してください。', 'var(--c-rose)');
+        return;
+      }
       const nextDef = UPGRADE_CONFIG.brand[curLevel];
       if (GameState.funds < nextDef.cost) {
         playSound('error');
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds -= nextDef.cost;
+      GameState.funds = Math.round((GameState.funds - nextDef.cost) * 10) / 10;
       co.brandLevel++;
       playSound('clear');
       showUpgradeFeedback(`✨ ブランド知名度 Lv.${co.brandLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
-    } else if (type === 'office') {
-      const curLevel = co.officeLevel || 0;
-      if (curLevel >= UPGRADE_CONFIG.office.length - 1) return;
-      const nextDef = UPGRADE_CONFIG.office[curLevel + 1];
-      if (GameState.funds < nextDef.cost) {
-        playSound('error');
-        showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
-        return;
-      }
-      GameState.funds -= nextDef.cost;
-      co.officeLevel++;
-      playSound('clear');
-      showUpgradeFeedback(`✨ 事務所を「${nextDef.name}（雇用枠 ${nextDef.slots}人 / 管理上限 ${nextDef.capacity}棟）」へ拡張しました！`, 'var(--c-emerald)');
     } else if (type === 'feature') {
       const feat = UPGRADE_CONFIG.features[key];
       if (!feat) return;
@@ -8573,10 +9017,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (!GameState?.company) return;
     const co = GameState.company;
-    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    const maxSlots = getMaxStaffSlots();
     if (maxSlots === 0) {
       playSound('error');
-      showUpgradeFeedback('デスクがありません。「事務所強化」で増設してください！', 'var(--c-rose)');
+      showUpgradeFeedback('デスクがありません。「執務デスク増設」でスロットを増設してください！', 'var(--c-rose)');
       return;
     }
     if ((co.hiredStaff?.length || 0) >= maxSlots) {
@@ -8603,10 +9047,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (!GameState?.company) return;
     const co = GameState.company;
-    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    const maxSlots = getMaxStaffSlots();
     if (maxSlots === 0) {
       playSound('error');
-      showUpgradeFeedback('デスクがありません。「事務所強化」で増設してください！', 'var(--c-rose)');
+      showUpgradeFeedback('デスクがありません。「執務デスク増設」でスロットを増設してください！', 'var(--c-rose)');
       return;
     }
     if ((co.hiredStaff?.length || 0) >= maxSlots) {
@@ -8634,7 +9078,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     if (!GameState?.company) return;
     const co = GameState.company;
-    const maxSlots = UPGRADE_CONFIG.office[co.officeLevel || 0]?.slots || 0;
+    const maxSlots = getMaxStaffSlots();
     if (!co.hiredStaff) co.hiredStaff = [];
     if (co.hiredStaff.length >= maxSlots) {
       playSound('error');
@@ -8759,9 +9203,11 @@ function updateHomeUI() {
 
     const badgesEl = document.getElementById('home-co-badges');
     if (badgesEl) {
+      const curOfficeLv = GameState.company.officeLevel || 0;
+      const curOfficeDef = UPGRADE_CONFIG.office[curOfficeLv] || UPGRADE_CONFIG.office[0];
       const salesDef = UPGRADE_CONFIG.sales[(GameState.company.salesLevel || 1) - 1] || UPGRADE_CONFIG.sales[0];
       const brandDef = UPGRADE_CONFIG.brand[(GameState.company.brandLevel || 1) - 1] || UPGRADE_CONFIG.brand[0];
-      const maxSlots = UPGRADE_CONFIG.office[GameState.company.officeLevel || 0]?.slots || 0;
+      const maxSlots = getMaxStaffSlots();
       const hiredCount = GameState.company.hiredStaff?.length || 0;
       const deckLen = getActiveDeckPieceIds().length;
       const debtBadge = debt > 0 ? `
@@ -8771,6 +9217,9 @@ function updateHomeUI() {
       ` : '';
 
       badgesEl.innerHTML = `
+        <span style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
+          <i class="ph-bold ph-buildings"></i>Rank ${curOfficeLv + 1} ${curOfficeDef.name}
+        </span>
         <span style="font-size:11px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
           <i class="ph-bold ph-trend-up"></i>営業 Lv.${GameState.company.salesLevel || 1} ${salesDef.name}
         </span>
