@@ -1865,7 +1865,7 @@
       salary: [0.5, 1.8, 4.4]
     },
     property_manager: {
-      name: '物件管理主任',
+      name: '物件管理',
       icon: 'ph-buildings',
       desc: [
         '卓越した管理手腕で、会社の管理戸数上限が +2棟 拡大',
@@ -5802,7 +5802,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const modal = document.getElementById('capacity-alert-modal');
     if (!modal) return;
     const countEl = document.getElementById('cap-alert-count');
-    if (countEl) countEl.textContent = `${activeCount} / ${maxCap}棟 (満杯)`;
+    const statusText = activeCount > maxCap ? '上限超過' : '満杯';
+    if (countEl) countEl.textContent = `${activeCount} / ${maxCap}棟 (${statusText})`;
     modal.style.display = 'flex';
   }
 
@@ -8489,10 +8490,15 @@ function updateHomeUI() {
 
     const capEl = document.getElementById('home-property-capacity');
     if (capEl) {
-      if (isAtCap) {
-        capEl.textContent = `所有 ${activeCount} / ${maxCap}棟 (満杯)`;
+      if (activeCount > maxCap) {
+        capEl.textContent = `所有 ${activeCount} / ${maxCap}棟 (上限超過)`;
         capEl.style.background = '#ffe4e6';
         capEl.style.color = '#be123c';
+        capEl.style.border = '1px solid #fecdd3';
+      } else if (activeCount === maxCap) {
+        capEl.textContent = `所有 ${activeCount} / ${maxCap}棟 (満杯)`;
+        capEl.style.background = '#fff1f2';
+        capEl.style.color = '#e11d48';
         capEl.style.border = '1px solid #fecdd3';
       } else {
         const rem = maxCap - activeCount;
