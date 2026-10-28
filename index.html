@@ -989,9 +989,9 @@
           <div style="color:#fef3c7; font-size:11px; line-height:1.5;" id="mem-overdraft-text"></div>
         </div>
 
-        <!-- トラブル・退去アラート (退去がある場合のみ表示) -->
+        <!-- トラブル・入退去アラート -->
         <div id="mem-trouble-box" style="display:none; background:#450a0a; border:1px solid #f87171; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
-          <div style="color:#fca5a5; font-size:11px; font-weight:bold; display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+          <div id="mem-trouble-title" style="color:#fca5a5; font-size:11px; font-weight:bold; display:flex; align-items:center; gap:4px; margin-bottom:4px;">
             <i class="ph-bold ph-warning"></i> 空室トラブル発生！
           </div>
           <div style="color:#fecaca; font-size:11px; line-height:1.5;" id="mem-trouble-text">
@@ -6476,19 +6476,54 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     if (troubleBox && troubleText) {
-      let messages = [];
-      if (reEntered && reEntered.length > 0) {
-        const reTxt = reEntered.map(r => `物件No.${r.num}（家賃${r.rent.toFixed(1)}万）`).join('、');
-        messages.push(`🎉 <strong style="color:var(--c-emerald);">新入居決定！</strong> ${reTxt} に新しい入居者が決まりました！`);
-      }
-      if (evicted && evicted.length > 0) {
-        messages.push(`⚠️ <strong style="color:var(--c-rose);">退去発生</strong> 物件No.${evicted.join(', ')} の入居者が退去しました。再入居が決まるまで家賃収入が停止します。`);
-      }
-      if (messages.length > 0) {
+      const troubleTitle = document.getElementById('mem-trouble-title');
+      const hasEvicted = evicted && evicted.length > 0;
+      const hasReEntered = reEntered && reEntered.length > 0;
+
+      if (hasEvicted || hasReEntered) {
         troubleBox.style.display = 'block';
+
+        let messages = [];
+        if (hasReEntered) {
+          const reTxt = reEntered.map(r => `物件No.${r.num}（家賃${r.rent.toFixed(1)}万）`).join('、');
+          messages.push(`🎉 <strong style="color:var(--c-emerald);">新入居決定！</strong> ${reTxt} に新しい入居者が決まりました！`);
+        }
+        if (hasEvicted) {
+          messages.push(`⚠️ <strong style="color:var(--c-rose);">退去発生</strong> 物件No.${evicted.join(', ')} の入居者が退去しました。再入居が決まるまで家賃収入が停止します。`);
+        }
         troubleText.innerHTML = messages.join('<br>');
-        if (evicted && evicted.length > 0) playSound('error');
-        else playSound('combo');
+
+        if (hasEvicted && hasReEntered) {
+          // 両方発生
+          troubleBox.style.background = 'rgba(120, 53, 15, 0.45)';
+          troubleBox.style.borderColor = '#f59e0b';
+          if (troubleTitle) {
+            troubleTitle.style.color = '#fcd34d';
+            troubleTitle.innerHTML = `<i class="ph-bold ph-arrows-left-right"></i> 入居・退去の変動報告`;
+          }
+          troubleText.style.color = '#fef3c7';
+          playSound('combo');
+        } else if (hasReEntered) {
+          // 新入居決定（嬉しいニュース！）
+          troubleBox.style.background = 'rgba(6, 78, 59, 0.6)';
+          troubleBox.style.borderColor = '#10b981';
+          if (troubleTitle) {
+            troubleTitle.style.color = '#6ee7b7';
+            troubleTitle.innerHTML = `<i class="ph-bold ph-sparkle"></i> 嬉しいお知らせ（新入居決定！）`;
+          }
+          troubleText.style.color = '#d1fae5';
+          playSound('combo');
+        } else {
+          // 退去発生（トラブル・警告）
+          troubleBox.style.background = '#450a0a';
+          troubleBox.style.borderColor = '#f87171';
+          if (troubleTitle) {
+            troubleTitle.style.color = '#fca5a5';
+            troubleTitle.innerHTML = `<i class="ph-bold ph-warning"></i> 空室トラブル発生！`;
+          }
+          troubleText.style.color = '#fecaca';
+          playSound('error');
+        }
       } else {
         troubleBox.style.display = 'none';
         if (isBankrupt || overdraftAmount > 0) playSound('error');
