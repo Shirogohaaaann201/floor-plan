@@ -725,7 +725,7 @@
       <div style="text-align:center; margin-bottom:20px;">
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
-        <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目</div>
+        <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
       </div>
       
@@ -759,7 +759,7 @@
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
       <button id="btn-skip-month" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
-        <i class="ph-bold ph-clock-clockwise" style="margin-right:8px;"></i>何もしない (1ヶ月進める)
+        <i class="ph-bold ph-fast-forward" style="margin-right:8px;"></i>時間を進める (月送り)
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
@@ -1007,20 +1007,30 @@
       </div>
     </div>
 
-    <!-- 月送り確認モーダル (脱confirm) -->
+    <!-- 月送り確認モーダル -->
     <div id="confirm-skip-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:240; align-items:center; justify-content:center; padding:16px;">
-      <div class="mission-card" style="position:relative; width:100%; max-width:300px; text-align:center;">
-        <div style="font-size:32px; margin-bottom:8px;">⏳</div>
-        <div style="font-size:15px; font-weight:bold; color:var(--c-text); margin-bottom:8px;">1ヶ月時間を進めますか？</div>
-        <div style="font-size:12px; color:var(--c-text2); line-height:1.6; margin-bottom:16px;">
-          案件を受注せずに時間を進めます。<br>
-          家賃収入を獲得し、空室や退去の判定が行われます。
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:center;">
+        <button id="btn-skip-close" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div style="font-size:28px; margin-bottom:4px;">⏳</div>
+        <div style="font-size:16px; font-weight:bold; color:var(--c-text); margin-bottom:2px;">時間を進める（月送り）</div>
+        <div id="skip-modal-current-date" style="font-size:12px; color:var(--c-amber); font-weight:bold; margin-bottom:12px;">第1ヶ月目（1年目 1月）</div>
+        
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--c-text2);">現在の月間見込み収支:</span>
+          <span id="skip-modal-net-income" style="font-weight:bold; font-size:13px; color:var(--c-emerald);">+0.0万/月</span>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button id="btn-skip-cancel" class="btn btn-slate" style="flex:1; padding:10px; font-size:13px; cursor:pointer;">キャンセル</button>
-          <button id="btn-skip-ok" class="btn btn-primary" style="flex:1; padding:10px; font-size:13px; cursor:pointer; background:var(--c-amber); color:#0f172a;">進める</button>
+
+        <div id="skip-options-container" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+          <!-- 動的ボタンが生成される -->
         </div>
+
+        <div style="font-size:11px; color:var(--c-text2); margin-bottom:12px; line-height:1.5; text-align:left; background:rgba(0,0,0,0.25); border-radius:6px; padding:8px 10px;">
+          💡 <strong>自動停止:</strong> 期間中に入居者の退去・新入居・当座貸越（借入）が発生した場合は、その月で自動的に停止して報告します。
+        </div>
+
+        <button id="btn-skip-cancel" class="btn btn-slate" style="width:100%; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
       </div>
+    </div>
     <!-- 管理戸数上限アラートモーダル -->
     <div id="capacity-alert-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:250; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:left; border:1.5px solid rgba(244,63,94,0.4); box-shadow:0 12px 35px rgba(0,0,0,0.5);">
@@ -2608,6 +2618,26 @@
     return { isBankrupt: false, reason: '' };
   }
 
+  function getEstimatedMonthlyNetIncome() {
+    let income = 0;
+    if (GameState && GameState.properties) {
+      for (const p of GameState.properties) {
+        if (p.isSold) continue;
+        if ((p.vacantMonths || 0) <= 0 && (p.vacancyTurns || 0) <= 0) {
+          income += (p.rent || 0);
+        }
+      }
+    }
+    let salaries = 0;
+    if (GameState && GameState.company && GameState.company.hiredStaff) {
+      salaries = GameState.company.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
+    }
+    const currentDebt = (GameState && GameState.company && GameState.company.debt) || 0;
+    const loanPay = calcMonthlyLoanPayment(currentDebt);
+    const net = income - salaries - loanPay.total;
+    return Math.round(net * 10) / 10;
+  }
+
   function processMonthEnd() {
     GameState.month += 1;
     let totalIncome = 0;
@@ -2754,7 +2784,10 @@
   
   function updateCompanyUI() {
     const el = document.getElementById('game-subtitle');
-    if (el) el.textContent = `${GameState.companyName} 第${GameState.month}ヶ月 ｜ ステージ ${currentLevelIdx + 1}`;
+    const m = GameState.month || 1;
+    const monthInYear = ((m - 1) % 12) + 1;
+    const year = Math.floor((m - 1) / 12) + 1;
+    if (el) el.textContent = `${GameState.companyName} 第${m}ヶ月 (${year}年目${monthInYear}月) ｜ ステージ ${currentLevelIdx + 1}`;
   }
 
   function saveGame() {
@@ -6303,6 +6336,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function showMonthEndModal({
     type = 'deliver',
     month = 1,
+    startMonth = null,
+    endMonth = null,
+    monthsElapsed = 1,
+    customSubtitle = null,
     income = 0,
     salaries = 0,
     loanPayment = 0,
@@ -6345,16 +6382,28 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const overdraftText = document.getElementById('mem-overdraft-text');
     const btnConfirm = document.getElementById('btn-mem-confirm');
 
-    if (titleEl) titleEl.textContent = `第${month}ヶ月目 決算報告`;
+    if (titleEl) {
+      if (monthsElapsed > 1 && startMonth && endMonth) {
+        titleEl.textContent = `第${startMonth}〜${endMonth}ヶ月（計${monthsElapsed}ヶ月分）決算報告`;
+      } else {
+        titleEl.textContent = `第${month}ヶ月目 決算報告`;
+      }
+    }
     
     if (type === 'deliver') {
       badgeEl.textContent = '物件引き渡し';
       badgeEl.className = 'badge badge-emerald';
       subtitleEl.textContent = '物件を納品し、鍵を引き渡しました！';
     } else if (type === 'skip') {
-      badgeEl.textContent = '月送り';
-      badgeEl.className = 'badge badge-slate';
-      subtitleEl.textContent = '案件を受注せず、1ヶ月時間を進めました。';
+      if (monthsElapsed > 1) {
+        badgeEl.textContent = '一括月送り';
+        badgeEl.className = 'badge badge-slate';
+        subtitleEl.textContent = customSubtitle || `${monthsElapsed}ヶ月時間を進めました。`;
+      } else {
+        badgeEl.textContent = '月送り';
+        badgeEl.className = 'badge badge-slate';
+        subtitleEl.textContent = customSubtitle || '案件を受注せず、1ヶ月時間を進めました。';
+      }
     } else if (type === 'giveup') {
       badgeEl.textContent = '案件破棄';
       badgeEl.className = 'badge badge-rose';
@@ -6417,6 +6466,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (isBankrupt) {
         btnConfirm.innerHTML = `<i class="ph-bold ph-warning-octagon" style="margin-right:6px;"></i>倒産報告を確認する`;
         btnConfirm.style.background = '#e11d48';
+      } else if (monthsElapsed > 1) {
+        btnConfirm.innerHTML = `<i class="ph-bold ph-check" style="margin-right:6px;"></i>確認して戻る`;
+        btnConfirm.style.background = '';
       } else {
         btnConfirm.innerHTML = `<i class="ph-bold ph-arrow-right" style="margin-right:6px;"></i>次月へ進む`;
         btnConfirm.style.background = '';
@@ -6458,10 +6510,234 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
+  function openSkipModal() {
+    const modal = document.getElementById('confirm-skip-modal');
+    if (!modal) return;
+
+    const currentMonth = GameState.month || 1;
+    const monthInYear = ((currentMonth - 1) % 12) + 1;
+    const year = Math.floor((currentMonth - 1) / 12) + 1;
+    const remainingToDec = 12 - monthInYear;
+
+    const dateEl = document.getElementById('skip-modal-current-date');
+    if (dateEl) {
+      dateEl.textContent = `現在：第${currentMonth}ヶ月目（${year}年目 ${monthInYear}月）`;
+    }
+
+    const net = getEstimatedMonthlyNetIncome();
+    const netEl = document.getElementById('skip-modal-net-income');
+    if (netEl) {
+      const sign = net >= 0 ? '+' : '';
+      netEl.textContent = `${sign}${net.toFixed(1)}万/月`;
+      netEl.style.color = net >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
+    }
+
+    const container = document.getElementById('skip-options-container');
+    if (container) {
+      container.innerHTML = '';
+
+      const options = [];
+
+      if (monthInYear === 12) {
+        options.push({
+          months: 1,
+          title: '年越し（翌年1月へ進める）',
+          sub: `1年の締めくくりを終え、新年の第${year + 1}年目を迎えます。`,
+          badge: '年越し',
+          btnClass: 'btn-primary',
+          btnStyle: 'background:linear-gradient(135deg, #f59e0b, #d97706); color:#0f172a;'
+        });
+      } else if (monthInYear === 11) {
+        options.push({
+          months: 1,
+          title: '今年の年末（12月）へ進める',
+          sub: '年の締めくくりとなる12月へ進みます。',
+          badge: '1ヶ月',
+          btnClass: 'btn-primary',
+          btnStyle: 'background:var(--c-amber); color:#0f172a;'
+        });
+      } else {
+        // 1〜10月
+        // 1. 1ヶ月進める
+        options.push({
+          months: 1,
+          title: '1ヶ月進める',
+          sub: `次月（${year}年目 ${monthInYear + 1}月）へ進みます。`,
+          badge: '1ヶ月',
+          btnClass: 'btn-slate',
+          btnStyle: 'background:#334155; color:#f8fafc;'
+        });
+
+        // 2. 3ヶ月進める (3ヶ月進めて12月未満の場合のみ)
+        if (monthInYear + 3 < 12) {
+          options.push({
+            months: 3,
+            title: '3ヶ月進める',
+            sub: `${year}年目 ${monthInYear + 3}月 へ進みます。`,
+            badge: '3ヶ月',
+            btnClass: 'btn-secondary',
+            btnStyle: 'background:#1e293b; color:#e2e8f0; border:1px solid #475569;'
+          });
+        }
+
+        // 3. 6ヶ月進める (6ヶ月進めて12月未満の場合のみ)
+        if (monthInYear + 6 < 12) {
+          options.push({
+            months: 6,
+            title: '6ヶ月進める',
+            sub: `${year}年目 ${monthInYear + 6}月 へ進みます。`,
+            badge: '6ヶ月',
+            btnClass: 'btn-secondary',
+            btnStyle: 'background:#1e293b; color:#e2e8f0; border:1px solid #475569;'
+          });
+        }
+
+        // 4. 今年の年末（12月）まで進める (残り2ヶ月以上の場合)
+        if (remainingToDec >= 2) {
+          options.push({
+            months: remainingToDec,
+            title: `今年の年末（12月）まで進める`,
+            sub: `年の節目となる12月まで一括で進めます（${remainingToDec}ヶ月分）。`,
+            badge: `${remainingToDec}ヶ月`,
+            btnClass: 'btn-primary',
+            btnStyle: 'background:var(--c-amber); color:#0f172a;'
+          });
+        }
+      }
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = `btn ${opt.btnClass}`;
+        btn.style.cssText = `width:100%; padding:10px 12px; text-align:left; display:flex; justify-content:space-between; align-items:center; cursor:pointer; ${opt.btnStyle || ''}`;
+        btn.innerHTML = `
+          <div>
+            <div style="font-weight:bold; font-size:13px; display:flex; align-items:center; gap:6px;">
+              <i class="ph-bold ph-fast-forward"></i> ${opt.title}
+            </div>
+            <div style="font-size:10px; opacity:0.85; margin-top:2px;">${opt.sub}</div>
+          </div>
+          <span style="font-size:11px; font-weight:bold; padding:2px 8px; border-radius:10px; background:rgba(0,0,0,0.25); white-space:nowrap; margin-left:8px;">
+            ${opt.badge}
+          </span>
+        `;
+        btn.addEventListener('click', () => {
+          initAudio();
+          modal.style.display = 'none';
+          executeMultiMonthSkip(opt.months);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function executeMultiMonthSkip(targetMonths) {
+    if (!targetMonths || targetMonths < 1) targetMonths = 1;
+
+    const startMonth = GameState.month;
+    let monthsRun = 0;
+    let totalIncome = 0;
+    let totalSalaries = 0;
+    let totalLoanPayment = 0;
+    let totalLoanPrincipal = 0;
+    let totalLoanInterest = 0;
+    let totalNetIncome = 0;
+    let totalOverdraft = 0;
+    let lastRemainingDebt = (GameState.company && GameState.company.debt) || 0;
+    let lastEvicted = [];
+    let lastReEntered = [];
+    let isBankrupt = false;
+    let bankruptReason = '';
+    let stopReason = 'completed'; // 'completed' | 'eviction' | 'reentry' | 'overdraft' | 'bankrupt'
+
+    for (let i = 0; i < targetMonths; i++) {
+      const res = processMonthEnd();
+      monthsRun++;
+      totalIncome += res.income;
+      totalSalaries += res.salaries;
+      totalLoanPayment += res.loanPayment;
+      totalLoanPrincipal += res.loanPrincipal;
+      totalLoanInterest += res.loanInterest;
+      totalNetIncome += res.netIncome;
+      lastRemainingDebt = res.remainingDebt;
+      if (res.overdraftAmount > 0) totalOverdraft += res.overdraftAmount;
+
+      if (res.isBankrupt) {
+        isBankrupt = true;
+        bankruptReason = res.bankruptReason;
+        stopReason = 'bankrupt';
+        break;
+      }
+      if (res.evicted && res.evicted.length > 0) {
+        lastEvicted = res.evicted;
+        stopReason = 'eviction';
+        break;
+      }
+      if (res.reEntered && res.reEntered.length > 0) {
+        lastReEntered = res.reEntered;
+        stopReason = 'reentry';
+        break;
+      }
+      if (res.overdraftAmount > 0) {
+        stopReason = 'overdraft';
+        break;
+      }
+    }
+
+    totalIncome = Math.round(totalIncome * 10) / 10;
+    totalSalaries = Math.round(totalSalaries * 10) / 10;
+    totalLoanPayment = Math.round(totalLoanPayment * 10) / 10;
+    totalNetIncome = Math.round(totalNetIncome * 10) / 10;
+    totalOverdraft = Math.round(totalOverdraft * 10) / 10;
+
+    const endMonth = GameState.month - 1;
+
+    let customSubtitle = null;
+    if (monthsRun > 1) {
+      if (stopReason === 'eviction') {
+        customSubtitle = `⚠️ 入居者の退去が発生したため、第${endMonth}ヶ月で一時停止しました。`;
+      } else if (stopReason === 'reentry') {
+        customSubtitle = `🎉 空室に新しい入居者が決まったため、第${endMonth}ヶ月で一時停止しました。`;
+      } else if (stopReason === 'overdraft') {
+        customSubtitle = `🚨 運転資金不足が発生したため、第${endMonth}ヶ月で一時停止しました。`;
+      } else {
+        customSubtitle = `予定していた期間（${monthsRun}ヶ月分）時間を進めました。`;
+      }
+    }
+
+    showMonthEndModal({
+      type: 'skip',
+      month: endMonth,
+      startMonth: startMonth,
+      endMonth: endMonth,
+      monthsElapsed: monthsRun,
+      customSubtitle: customSubtitle,
+      income: totalIncome,
+      salaries: totalSalaries,
+      loanPayment: totalLoanPayment,
+      loanPrincipal: totalLoanPrincipal,
+      loanInterest: totalLoanInterest,
+      remainingDebt: lastRemainingDebt,
+      overdraftAmount: totalOverdraft,
+      isBankrupt: isBankrupt,
+      bankruptReason: bankruptReason,
+      netIncome: totalNetIncome,
+      reward: 0,
+      evicted: lastEvicted,
+      reEntered: lastReEntered,
+      onConfirm: () => {
+        GameState.currentMission = null;
+        GameState.availableMissions = generateMissionPool(GameState.level);
+        saveGame();
+        updateHomeUI();
+      }
+    });
+  }
+
   document.getElementById('btn-skip-month')?.addEventListener('click', () => {
     initAudio();
-    const skipModal = document.getElementById('confirm-skip-modal');
-    if (skipModal) skipModal.style.display = 'flex';
+    openSkipModal();
   });
 
   document.getElementById('btn-skip-cancel')?.addEventListener('click', () => {
@@ -6470,24 +6746,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (skipModal) skipModal.style.display = 'none';
   });
 
-  document.getElementById('btn-skip-ok')?.addEventListener('click', () => {
+  document.getElementById('btn-skip-close')?.addEventListener('click', () => {
     initAudio();
     const skipModal = document.getElementById('confirm-skip-modal');
     if (skipModal) skipModal.style.display = 'none';
-
-    const result = processMonthEnd();
-    showMonthEndModal({
-      type: 'skip',
-      month: GameState.month - 1,
-      ...result,
-      reward: 0,
-      onConfirm: () => {
-        GameState.currentMission = null;
-        GameState.availableMissions = generateMissionPool(GameState.level);
-        saveGame();
-        updateHomeUI();
-      }
-    });
   });
 
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
@@ -8447,6 +8709,11 @@ function updateHomeUI() {
     const debt = GameState.company.debt || 0;
     document.getElementById('home-co-name').textContent = GameState.companyName;
     document.getElementById('home-co-month').textContent = GameState.month;
+    const curM = GameState.month || 1;
+    const monthInYear = ((curM - 1) % 12) + 1;
+    const curYear = Math.floor((curM - 1) / 12) + 1;
+    const calEl = document.getElementById('home-co-calendar');
+    if (calEl) calEl.textContent = `(${curYear}年目 ${monthInYear}月)`;
     document.getElementById('home-co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>` +
       (debt > 0 ? `<div style="font-size:10px; color:var(--c-rose); font-weight:bold; margin-top:2px;">(借入: -${debt.toFixed(1)}万)</div>` : '');
     
