@@ -821,7 +821,7 @@
 
         <div style="display:flex; gap:8px; margin-bottom:10px;">
           <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);">現在の空室リスク</div>
+            <div style="font-size:10px; color:var(--c-text2);" id="pd-risk-label">現在の空室リスク</div>
             <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
           </div>
           <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
@@ -2435,6 +2435,51 @@
 
   const MIN_BUILD_FUNDS = 15.0; // 最小限の間取りを建築するために必要な最低運転資金(15万円)
 
+  function calcMarketRent(p, currentMonth = GameState.month) {
+    if (!p) return 0;
+    const created = p.createdMonth || 1;
+    const age = Math.max(0, currentMonth - created);
+    // 毎年 8% ずつ減額、最大 60ヶ月(5年)で 40% 減額（底値 60%）
+    const discountRatio = Math.min(0.40, (age / 12) * 0.08);
+    const base = (p.normalRent !== undefined) ? p.normalRent : (p.rent || 0);
+    return Math.max(0.1, Math.round(base * (1 - discountRatio) * 10) / 10);
+  }
+
+  function calcFillChance(p) {
+    if (!p) return 40;
+    let chance = 40; // 基礎入居決定率 40%
+
+    // 1. 間取り魅力度 (+3% 〜 +15%)
+    const goodCombos = (p.goodCombos !== undefined) ? p.goodCombos : (p.combosList || []).filter(c => c && c.bonus > 0).length;
+    chance += goodCombos * 3;
+
+    if (p.satisfiedCount && p.totalRequests && p.satisfiedCount >= p.totalRequests) {
+      chance += 5; // 初代依頼全達成ボーナス
+    }
+
+    // 2. 欠陥ペナルティ (-15% 〜 -30%)
+    if (p.amenityPenalty && p.amenityPenalty > 0) {
+      chance -= Math.min(30, p.amenityPenalty);
+    }
+    const badCombos = (p.badCombos !== undefined) ? p.badCombos : (p.combosList || []).filter(c => c && c.bonus < 0).length;
+    if (badCombos > 0) {
+      chance -= badCombos * 5;
+    }
+
+    // 3. 会社知名度・営業力 (+5% 〜 +25%)
+    const brandLv = (GameState && GameState.company && GameState.company.brandLevel) || 1;
+    const salesLv = (GameState && GameState.company && GameState.company.salesLevel) || 1;
+    chance += (brandLv - 1) * 3 + (salesLv - 1) * 2;
+
+    // 4. 長期空室補正（3ヶ月目以降、+10%/月）
+    const vm = p.vacantMonths || 1;
+    if (vm >= 3) {
+      chance += (vm - 2) * 10;
+    }
+
+    return Math.min(95, Math.max(10, Math.round(chance)));
+  }
+
   function calcCollateralStats() {
     const props = (GameState && GameState.properties) || [];
     let totalCollateral = 0;
@@ -2444,7 +2489,7 @@
       if (p.isSold) continue;
       const stats = calcPropertyStats(p);
       const resale = parseFloat(stats.resaleValue) || 0;
-      const isVacant = (p.vacancyTurns || 0) > 0;
+      const isVacant = (p.vacantMonths || 0) > 0 || (p.vacancyTurns || 0) > 0;
       if (isVacant) {
         vacantProps++;
         totalCollateral += resale * 0.5; // 空室時は売価の0.5倍
@@ -2501,15 +2546,43 @@
     GameState.month += 1;
     let totalIncome = 0;
     let evictedList = [];
+    let reEnteredList = [];
+
     for (const p of GameState.properties) {
-      if (p.vacancyTurns > 0) {
-        p.vacancyTurns--;
+      if (p.isSold) continue;
+
+      // 互換性確保: vacancyTurns を vacantMonths に統一
+      if (p.vacantMonths === undefined) {
+        p.vacantMonths = (p.vacancyTurns && p.vacancyTurns > 0) ? p.vacancyTurns : 0;
+      }
+
+      if (p.vacantMonths > 0) {
+        // 空室中: 毎月の再入居マッチング抽選！
+        const fillChance = calcFillChance(p);
+        if (Math.random() * 100 < fillChance) {
+          // 入居決定！
+          p.vacantMonths = 0;
+          p.vacancyTurns = 0;
+          p.moveInMonth = GameState.month;
+          p.isOriginalTenant = false;
+          p.rent = calcMarketRent(p, GameState.month);
+          const pNum = p.propertyNo || (p.level !== undefined ? p.level + 1 : 1);
+          reEnteredList.push({ num: pNum, rent: p.rent });
+
+          // 初月分の家賃収入を計上
+          totalIncome += p.rent;
+          p.earnedRent = Math.round(((p.earnedRent || 0) + p.rent) * 10) / 10;
+        } else {
+          // 入居不成立: 空室継続
+          p.vacantMonths++;
+          p.vacancyTurns = p.vacantMonths;
+        }
       } else {
-        // 退去判定 (calcPropertyStatsへ移行)
-        const age = GameState.month - (p.createdMonth || GameState.month - 1);
-        
-        // 完成直後（1ヶ月目の月次処理）は入居したてなので退去判定をスキップ
-        if (age <= 1) {
+        // 入居中: 退去判定
+        const tenantTenure = Math.max(0, GameState.month - (p.moveInMonth || p.createdMonth || GameState.month));
+
+        // 入居直後（1ヶ月目）は退去判定をスキップ
+        if (tenantTenure <= 1) {
           totalIncome += p.rent;
           p.earnedRent = Math.round(((p.earnedRent || 0) + p.rent) * 10) / 10;
           continue;
@@ -2517,20 +2590,14 @@
 
         const stats = calcPropertyStats(p);
         const evictChance = parseFloat(stats.evictRate) / 100.0;
-        
+
         // サイコロを振る
         if (Math.random() < evictChance) {
-          p.vacancyTurns = 2; // 今月分なし ＋ さらに2ヶ月空室
+          p.vacantMonths = 1; // 空室1ヶ月目へ
+          p.vacancyTurns = 1;
+          p.isOriginalTenant = false;
           const pNum = p.propertyNo || (p.level !== undefined ? p.level + 1 : 1);
           evictedList.push(pNum);
-
-          // ★初代が退去した瞬間、一般市場モードへ完全移行！★
-          if (p.isOriginalTenant !== false) {
-            p.isOriginalTenant = false;
-            if (p.normalRent !== undefined) {
-              p.rent = p.normalRent; // 家賃も一般市場家賃へ自動更新
-            }
-          }
         } else {
           totalIncome += p.rent;
           p.earnedRent = Math.round(((p.earnedRent || 0) + p.rent) * 10) / 10;
@@ -2612,6 +2679,7 @@
       remainingDebt: (GameState.company && GameState.company.debt) || 0,
       netIncome: netIncome,
       evicted: evictedList,
+      reEntered: reEnteredList,
       overdraftAmount: overdraftAmount,
       isBankrupt: isBankrupt,
       bankruptReason: bankruptReason
@@ -2752,55 +2820,81 @@
     const satisfied = p.satisfiedCount !== undefined ? p.satisfiedCount : 1;
     const totalReq = p.totalRequests || 1;
     const created = p.createdMonth || 1;
-    const age = Math.max(0, GameState.month - created);
+    const buildingAge = Math.max(0, GameState.month - created);
+    const tenantTenure = Math.max(0, GameState.month - (p.moveInMonth || created));
     const amenityPenalty = p.amenityPenalty || 0;
+    const isVacant = (p.vacantMonths || 0) > 0 || (p.vacancyTurns || 0) > 0;
+    const fillChance = isVacant ? calcFillChance(p) : 0;
 
     // 初代か2代目以降かによるコンボ・家賃の切り替え
     const isOriginal = p.isOriginalTenant !== false; // 未定義は初代扱い
     let currentRent = p.rent;
-    let goodC = p.goodCombos || 0;
-    let badC = p.badCombos || 0;
+    let goodC = (p.goodCombos !== undefined) ? p.goodCombos : (p.combosList || []).filter(c => c && c.bonus > 0).length;
+    let badC = (p.badCombos !== undefined) ? p.badCombos : (p.combosList || []).filter(c => c && c.bonus < 0).length;
 
     if (!isOriginal && p.customCombo) {
       // 2代目以降（一般市場）: 特注のメッキが剥がれる
-      if (p.normalRent !== undefined) currentRent = p.normalRent;
       if (p.customCombo.isNegativeInversion) {
         if (goodC > 0) goodC -= 1;
-        badC += 1; // 本来の大惨事ペナルティが復活 (+0.5%劣化, -20%満足度)
+        badC += 1; // 本来の大惨事ペナルティが復活
       }
     }
 
-    // 1. 家賃ボーナス（見た目・挙動一致のため整数に丸める）
-    const rentRatio = currentRent / targetRent;
-    let rentPenalty = (rentRatio - 1.0) * 50;
-    const negLv = getStaffSkillLevel('negotiator');
-    if (rentPenalty > 0 && negLv > 0) {
-      const red = [0, 0.30, 0.50, 0.75][negLv] || 0.50;
-      rentPenalty *= (1 - red);
+    let rentBonus, reqBonus, comboBonus, optBonus, conciergeBonus, satisfaction;
+    if (isOriginal) {
+      // 1. 家賃ボーナス（見た目・挙動一致のため整数に丸める）
+      const rentRatio = currentRent / targetRent;
+      let rentPenalty = (rentRatio - 1.0) * 50;
+      const negLv = getStaffSkillLevel('negotiator');
+      if (rentPenalty > 0 && negLv > 0) {
+        const red = [0, 0.30, 0.50, 0.75][negLv] || 0.50;
+        rentPenalty *= (1 - red);
+      }
+      rentBonus = Math.round(50 - rentPenalty);
+
+      // 2. 依頼ボーナス（整数に丸める）
+      reqBonus = Math.round((satisfied / totalReq) * 50);
+
+      // 3. コンボボーナス（整数）
+      comboBonus = (goodC * 5) - (badC * 20);
+
+      // 4. 任意オプションボーナス (顧客リレーションLv1:+7%, Lv2:+10%, Lv3:+14%)
+      const listLv = getStaffSkillLevel('listener');
+      const optPerReq = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
+      optBonus = (p.optionalSatisfied || 0) * optPerReq;
+
+      // 5. おもてなしコンシェルジュ (Lv1:+4%, Lv2:+8%, Lv3:+12%)
+      const conLv = getStaffSkillLevel('concierge');
+      conciergeBonus = conLv > 0 ? ([0, 4, 8, 12][conLv] || 5) : 0;
+
+      // 満足度合計
+      satisfaction = rentBonus + reqBonus + comboBonus + optBonus + conciergeBonus - amenityPenalty;
+    } else {
+      // 2代目以降（一般市場入居者）:
+      // 適正相場家賃で入居するため家賃不満なし、基本要望は満点扱い
+      rentBonus = 50;
+      reqBonus = 50;
+      comboBonus = (goodC * 5) - (badC * 20);
+      optBonus = 0;
+      const conLv = getStaffSkillLevel('concierge');
+      conciergeBonus = conLv > 0 ? ([0, 4, 8, 12][conLv] || 5) : 0;
+      satisfaction = rentBonus + reqBonus + comboBonus + conciergeBonus - amenityPenalty;
     }
-    const rentBonus = Math.round(50 - rentPenalty);
 
-    // 2. 依頼ボーナス（整数に丸める）
-    const reqBonus = Math.round((satisfied / totalReq) * 50);
+    // 劣化率:
+    // 初代: 基本0.5 + (未達*0.2) + (マイナス*0.5)
+    // 2代目以降: 基本0.5 + (マイナス*0.5) + (欠陥*0.3)
+    let baseDegRate = 0.5;
+    if (isOriginal) {
+      const unreached = totalReq - satisfied;
+      baseDegRate += (unreached * 0.2) + (badC * 0.5);
+    } else {
+      baseDegRate += (badC * 0.5) + (amenityPenalty > 0 ? 0.3 : 0);
+    }
 
-    // 3. コンボボーナス（整数）
-    const comboBonus = (goodC * 5) - (badC * 20);
+    // 築年数による劣化加速: degRate = baseDegRate * (1 + buildingAge * 0.015)
+    let degRate = baseDegRate * (1 + buildingAge * 0.015);
 
-    // 4. 任意オプションボーナス (顧客リレーションLv1:+7%, Lv2:+10%, Lv3:+14%)
-    const listLv = getStaffSkillLevel('listener');
-    const optPerReq = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
-    const optBonus = (p.optionalSatisfied || 0) * optPerReq;
-
-    // 5. おもてなしコンシェルジュ (Lv1:+4%, Lv2:+8%, Lv3:+12%)
-    const conLv = getStaffSkillLevel('concierge');
-    const conciergeBonus = conLv > 0 ? ([0, 4, 8, 12][conLv] || 5) : 0;
-
-    // 満足度合計（各内訳の整数の和として厳密に一致させる）
-    const satisfaction = rentBonus + reqBonus + comboBonus + optBonus + conciergeBonus - amenityPenalty;
-
-    // 劣化率: 基本0.5 + (未達*0.2) + (マイナス*0.5)
-    const unreached = totalReq - satisfied;
-    let degRate = 0.5 + (unreached * 0.2) + (badC * 0.5);
     const hasStorage = !!(p.hasStorage || (p.closetCells && p.closetCells > 0) || (p.combosList && p.combosList.some(c => c.name && c.name.includes('収納'))));
     const storeLv = getStaffSkillLevel('storage_master');
     if (storeLv > 0 && hasStorage) {
@@ -2809,23 +2903,28 @@
     }
 
     // 退去率計算
-    const initialEvict = 100 - satisfaction;
     let evictRateVal = 0;
-
-    if (isOriginal) {
+    if (isVacant) {
+      evictRateVal = 0; // 空室中は退去判定なし（再入居待ち）
+    } else if (isOriginal) {
       if (satisfaction > 100) {
         const barrierMonths = satisfaction - 100;
-        if (age <= barrierMonths) {
+        if (tenantTenure <= barrierMonths) {
           evictRateVal = 0;
         } else {
-          evictRateVal = (age - barrierMonths) * degRate;
+          evictRateVal = (tenantTenure - barrierMonths) * degRate;
         }
       } else {
-        evictRateVal = initialEvict + (age * degRate);
+        const initialEvict = 100 - satisfaction;
+        evictRateVal = initialEvict + (tenantTenure * degRate);
       }
     } else {
-      // 2代目以降（一般市場）: 初代バリアは消失し、一般基準で劣化
-      evictRateVal = Math.max(0, (100 - satisfaction) + (age * degRate));
+      // 2代目以降: 最初の3ヶ月は定着期間（退去率0%保護）
+      if (tenantTenure <= 3) {
+        evictRateVal = 0;
+      } else {
+        evictRateVal = Math.max(0, (100 - satisfaction) + ((tenantTenure - 3) * degRate));
+      }
     }
 
     if (storeLv > 0 && hasStorage && evictRateVal > 0) {
@@ -2834,15 +2933,31 @@
     }
 
     const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
-    const resaleValue = ((baseRent * 20) * Math.max(0.3, 1.0 - (age * 0.02))).toFixed(1);
+
+    // 売却査定額:
+    // オーナーチェンジ（入居中）: 査定額100%（満額）
+    // 空室売却（空室中）: リスク割引 80%（20%引き）
+    const standardResaleNum = (baseRent * 20) * Math.max(0.3, 1.0 - (buildingAge * 0.02));
+    const standardResaleValue = standardResaleNum.toFixed(1);
+    const resaleValue = (isVacant ? standardResaleNum * 0.8 : standardResaleNum).toFixed(1);
+
+    const nextRecruitRent = calcMarketRent(p, GameState.month);
 
     return {
       satisfaction: satisfaction,
       degRate: degRate.toFixed(1),
+      baseDegRate: baseDegRate.toFixed(1),
       evictRate: evictRate,
-      initialEvict: Math.max(0, initialEvict),
+      initialEvict: Math.max(0, 100 - satisfaction),
       resaleValue: resaleValue,
-      age,
+      standardResaleValue: standardResaleValue,
+      isVacant: isVacant,
+      vacantMonths: p.vacantMonths || 0,
+      fillChance: fillChance,
+      nextRecruitRent: nextRecruitRent,
+      age: buildingAge,
+      buildingAge: buildingAge,
+      tenantTenure: tenantTenure,
       rentBonus: rentBonus,
       reqBonus: reqBonus,
       comboBonus: comboBonus,
@@ -6090,6 +6205,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     netIncome = 0,
     reward = 0,
     evicted = [],
+    reEntered = [],
     onConfirm = null
   }) {
     const modal = document.getElementById('month-end-modal');
@@ -6169,7 +6285,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     if (propCountEl) {
-      const activeCount = (GameState.properties || []).filter(p => !p.isSold && (p.vacancyTurns || 0) <= 0).length;
+      const activeCount = (GameState.properties || []).filter(p => !p.isSold && (p.vacantMonths || 0) <= 0 && (p.vacancyTurns || 0) <= 0).length;
       propCountEl.textContent = `稼働: ${activeCount}棟`;
     }
 
@@ -6200,10 +6316,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     if (troubleBox && troubleText) {
+      let messages = [];
+      if (reEntered && reEntered.length > 0) {
+        const reTxt = reEntered.map(r => `物件No.${r.num}（家賃${r.rent.toFixed(1)}万）`).join('、');
+        messages.push(`🎉 <strong style="color:var(--c-emerald);">新入居決定！</strong> ${reTxt} に新しい入居者が決まりました！`);
+      }
       if (evicted && evicted.length > 0) {
+        messages.push(`⚠️ <strong style="color:var(--c-rose);">退去発生</strong> 物件No.${evicted.join(', ')} の入居者が退去しました。再入居が決まるまで家賃収入が停止します。`);
+      }
+      if (messages.length > 0) {
         troubleBox.style.display = 'block';
-        troubleText.textContent = `退去者が出ました（物件No.${evicted.join(', ')}）。今後2ヶ月間は空室となり、家賃収入が途絶えます。`;
-        playSound('error');
+        troubleText.innerHTML = messages.join('<br>');
+        if (evicted && evicted.length > 0) playSound('error');
+        else playSound('combo');
       } else {
         troubleBox.style.display = 'none';
         if (isBankrupt || overdraftAmount > 0) playSound('error');
@@ -6313,10 +6438,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       goodCombos: p.goodCombos || 0,
       combosList: p.combosList || [],
       createdMonth: p.createdMonth || GameState.month,
+      moveInMonth: p.moveInMonth || GameState.month,
+      vacantMonths: 0,
+      vacancyTurns: 0,
       propertyGrid: savedGrid,
       thumbnail: p.thumbnail || null,
-      vacancyTurns: 0,
       isOriginalTenant: true,
+      hasStorage: !!(p.hasStorage || (p.closetCells && p.closetCells > 0) || (p.combosList && p.combosList.some(c => c.name && c.name.includes('収納')))),
       clientName: p.clientName || (STAGE && STAGE.client ? STAGE.client.name : '入居者'),
       customCombo: p.customCombo || null
     });
@@ -6615,17 +6743,32 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     window.currentDetailProp = p;
     const stats = calcPropertyStats(p);
     
-    const tenantBadge = stats.isOriginal 
-      ? `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'})</span>`
-      : `<span style="font-size:10px; padding:2px 6px; background:#f1f5f9; color:#475569; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 一般市場入居</span>`;
+    let tenantBadge = '';
+    if (stats.isVacant) {
+      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#ffe4e6; color:#be123c; border-radius:4px; margin-left:6px; font-weight:bold;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率 ${stats.fillChance}%)</span>`;
+    } else if (stats.isOriginal) {
+      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'})</span>`;
+    } else {
+      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#eff6ff; color:#1d4ed8; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 2代目以降入居中 (居住${stats.tenantTenure}ヶ月目)</span>`;
+    }
     document.getElementById('pd-name').innerHTML = `物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)} ${tenantBadge}`;
     
     // 図面の描画 (140px サムネイル・略称ラベル付き)
     const canvas = document.getElementById('pd-canvas');
     renderPropertyPlanToCanvas(canvas, p, 140, true);
 
-    document.getElementById('pd-age').textContent = `築${stats.age}ヶ月`;
-    document.getElementById('pd-rent').innerHTML = `${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
+    document.getElementById('pd-age').textContent = `築${stats.buildingAge}ヶ月${stats.isVacant ? ' (空室中)' : ` (入居${stats.tenantTenure}ヶ月)`}`;
+    
+    const rentEl = document.getElementById('pd-rent');
+    if (stats.isVacant) {
+      const discountPct = Math.min(40, Math.round((stats.buildingAge / 12) * 8));
+      rentEl.innerHTML = `<span style="color:var(--c-rose);">0.0<span style="font-size:10px;font-weight:normal;">万/月 (空室中)</span></span>
+        <div style="font-size:11px; color:#38bdf8; font-weight:bold; margin-top:2px;">
+          次回募集家賃: ${stats.nextRecruitRent.toFixed(1)}万/月 (築${stats.buildingAge}ヶ月 相場-${discountPct}%)
+        </div>`;
+    } else {
+      rentEl.innerHTML = `${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
+    }
     
     document.getElementById('pd-initial-evict').parentElement.style.display = 'none'; // 初期退去率の表示削除
     document.getElementById('pd-sat-val').textContent = `${stats.satisfaction}%`;
@@ -6638,7 +6781,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const optStr = stats.optBonus > 0 ? ` / 任意 +${stats.optBonus}%` : '';
     const conciergeStr = stats.conciergeBonus > 0 ? ` / 接客 +${stats.conciergeBonus}%` : '';
     const amenityStr = stats.amenityPenalty > 0 ? ` / 設備欠陥 -${stats.amenityPenalty}%` : '';
-    document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${conciergeStr}${amenityStr}`;
+    if (stats.isOriginal) {
+      document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${conciergeStr}${amenityStr}`;
+    } else {
+      document.getElementById('pd-sat-breakdown').textContent = `適正家賃 ${stats.rentBonus}% / 標準仕様 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${conciergeStr}${amenityStr}`;
+    }
 
     // 建築コスト・投資回収パネルの更新
     const estBaseCost = Math.round(((p.baseRent || 0) * 20) * 10) / 10;
@@ -6694,11 +6841,26 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const elNetProfit = document.getElementById('pd-net-profit');
     if (elNetProfit) {
-      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万 (家賃${earnedRent.toFixed(1)}+売価${resaleNum.toFixed(1)})`;
+      const discountTag = stats.isVacant ? ' (空室20%引)' : '';
+      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万 (家賃${earnedRent.toFixed(1)}+売価${resaleNum.toFixed(1)}${discountTag})`;
       elNetProfit.style.color = netIfSold >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
     }
     
-    document.getElementById('pd-current-evict').textContent = `${stats.evictRate}%`;
+    const riskLabelEl = document.getElementById('pd-risk-label');
+    const evictEl = document.getElementById('pd-current-evict');
+    if (stats.isVacant) {
+      if (riskLabelEl) riskLabelEl.textContent = '来月入居決定率';
+      if (evictEl) {
+        evictEl.textContent = `${stats.fillChance}%`;
+        evictEl.style.color = 'var(--c-emerald)';
+      }
+    } else {
+      if (riskLabelEl) riskLabelEl.textContent = '現在の退去リスク';
+      if (evictEl) {
+        evictEl.textContent = `${stats.evictRate}%`;
+        evictEl.style.color = 'var(--c-rose)';
+      }
+    }
     document.getElementById('pd-deg-rate').textContent = `Rank ${getPropertyRank(stats.degRate)}`;
     
     let comboHtml = '';
@@ -6725,11 +6887,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('pd-combos').innerHTML = comboHtml;
     
     const btnSell = document.getElementById('btn-pd-sell');
-    // イベントリスナーの付け替えとボタン表示の初期化 (2段階確認中に売却した後でも #pd-sell-val が消えないようにする)
     const newBtnSell = btnSell.cloneNode(true);
-    newBtnSell.innerHTML = `<i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
+    const saleTypeLabel = stats.isVacant ? '空室売却 (20%引)' : 'オーナーチェンジ売却 (満額)';
+    const saleIcon = stats.isVacant ? 'ph-house-line' : 'ph-handshake';
+    newBtnSell.innerHTML = `<i class="ph-bold ${saleIcon}"></i> ${saleTypeLabel} (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
     newBtnSell.style.background = '';
-    newBtnSell.style.color = 'var(--c-amber-lt)';
+    newBtnSell.style.color = stats.isVacant ? '#fda4af' : 'var(--c-amber-lt)';
     newBtnSell.style.borderColor = 'var(--c-border)';
     btnSell.parentNode.replaceChild(newBtnSell, btnSell);
     let isSellConfirming = false;
@@ -6737,20 +6900,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     newBtnSell.addEventListener('click', () => {
       initAudio();
-      const pNum = p.propertyNo || (p.level !== undefined ? p.level + 1 : 1);
       if (!isSellConfirming) {
         isSellConfirming = true;
         playSound('tap');
-        newBtnSell.innerHTML = `<i class="ph-bold ph-warning"></i> 本当に売却する？ (+${stats.resaleValue}万)`;
+        const confirmText = stats.isVacant 
+          ? `<i class="ph-bold ph-warning"></i> 空室割引で売却する？ (+${stats.resaleValue}万)`
+          : `<i class="ph-bold ph-warning"></i> 満額で売却する？ (+${stats.resaleValue}万)`;
+        newBtnSell.innerHTML = confirmText;
         newBtnSell.style.background = '#e11d48';
         newBtnSell.style.color = '#ffffff';
         newBtnSell.style.borderColor = '#f43f5e';
         if (sellConfirmTimer) clearTimeout(sellConfirmTimer);
         sellConfirmTimer = setTimeout(() => {
           isSellConfirming = false;
-          newBtnSell.innerHTML = `<i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
+          newBtnSell.innerHTML = `<i class="ph-bold ${saleIcon}"></i> ${saleTypeLabel} (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
           newBtnSell.style.background = '';
-          newBtnSell.style.color = 'var(--c-amber-lt)';
+          newBtnSell.style.color = stats.isVacant ? '#fda4af' : 'var(--c-amber-lt)';
           newBtnSell.style.borderColor = 'var(--c-border)';
         }, 3500);
         return;
@@ -8220,14 +8385,16 @@ function updateHomeUI() {
         if (!p.propertyNo) p.propertyNo = (p.level !== undefined ? p.level + 1 : idx + 1);
         if (p.createdMonth === undefined) p.createdMonth = GameState.month - 1;
         if (p.baseRent === undefined) p.baseRent = (p.rent * 0.8) || 0;
-        if (p.vacancyTurns === undefined) p.vacancyTurns = 0;
+        if (p.vacantMonths === undefined) {
+          p.vacantMonths = (p.vacancyTurns && p.vacancyTurns > 0) ? p.vacancyTurns : 0;
+        }
 
         const stats = calcPropertyStats(p);
         
         let statusHtml = '';
         let rentDisplay = p.rent;
-        if (p.vacancyTurns > 0) {
-          statusHtml = `<div style="color:var(--c-rose); font-size:11px; font-weight:bold; margin-top:2px;">⚠️ 空室 (残り${p.vacancyTurns}ヶ月)</div>`;
+        if (stats.isVacant) {
+          statusHtml = `<div style="color:var(--c-rose); font-size:11px; font-weight:bold; margin-top:2px;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率: ${stats.fillChance}%)</div>`;
           rentDisplay = 0;
         } else {
           totalRent += p.rent;
@@ -8248,18 +8415,20 @@ function updateHomeUI() {
             <div>
               <div style="font-weight:bold; color:#1e293b; font-size:14px;"><span style="display:inline-block; padding:2px 6px; ${rankStyle} border-radius:4px; font-size:11px; font-weight:bold; margin-right:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">Rank ${rank}</span> 物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : idx + 1)}</div>
               <div style="font-size:11px; color:var(--c-text2); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap;">
-                <span>築${stats.age}ヶ月</span>
-                <span>空室リスク: ${stats.evictRate}%</span>
-                <span>売価: ${stats.resaleValue}万</span>
+                <span>築${stats.buildingAge}ヶ月</span>
+                ${stats.isVacant 
+                  ? `<span style="color:#2563eb; font-weight:bold;">入居率: ${stats.fillChance}%</span>` 
+                  : `<span>退去リスク: ${stats.evictRate}%</span>`}
+                <span>売価: ${stats.resaleValue}万${stats.isVacant ? '<span style="font-size:10px; color:#e11d48; font-weight:bold;">(空室20%引)</span>' : '<span style="font-size:10px; color:#059669;">(満額)</span>'}</span>
                 <span style="color:${netColor}; font-weight:bold;">売却通算: ${netNow >= 0 ? '+' : ''}${netNow.toFixed(1)}万</span>
               </div>
               ${statusHtml}
             </div>
             <div style="text-align:right;">
-              <div style="font-weight:900; color:${color}; font-size:16px;">
-                ${rentDisplay.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
+              <div style="font-weight:900; color:${stats.isVacant ? '#94a3b8' : color}; font-size:16px;">
+                ${stats.isVacant ? '0.0' : rentDisplay.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
               </div>
-              <div style="font-size:10px; color:#94a3b8; margin-top:2px;">タップで詳細</div>
+              ${stats.isVacant ? '<div style="font-size:10px; color:var(--c-rose); font-weight:bold;">空室中</div>' : '<div style="font-size:10px; color:#94a3b8; margin-top:2px;">タップで詳細</div>'}
             </div>
           </div>
         `;
