@@ -4350,6 +4350,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   // 接触辺がすべて壁 → 統合されない / 1箇所でも壁でない辺がある → 統合される
   const MERGEABLE_TYPES = new Set([T.CORRIDOR, T.ROOM, T.LDK, T.TOILET, T.WASHROOM, T.BATH, T.CLOSET]);
   function mergeKey(cell) {
+    // 和室は統合せず、独立した部屋（襖で繋がる続き間）として扱う
+    if (cell.type === T.ROOM && cell.label === '和室') return null;
     // 洋室と和室は同じ T.ROOM だが別種として扱う
     if (cell.type === T.ROOM) return `${cell.type}:${cell.label}`;
     // ユニットバスは一般浴室と別種として扱う
@@ -4365,6 +4367,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const start = grid[r][c];
         if (!MERGEABLE_TYPES.has(start.type) || visited.has(`${r},${c}`)) continue;
         const key = mergeKey(start);
+        if (!key) continue;
         const q = [{r,c}];
         const comp = [];
         visited.add(`${r},${c}`);
@@ -4707,6 +4710,114 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return false;
   }
 
+  // 田の字プラン判定: 和室4部屋が田の字（2×2）に隣接し、襖（ドア）で直結しているかを判定
+  function hasTanojiWashitsu(visited) {
+    const washitsuRooms = new Map();
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cell = grid[r][c];
+        if (!cell || cell.type !== T.ROOM || cell.label !== '和室' || !cell.roomId) continue;
+        const key = `${r},${c}`;
+        if (visited && !visited.has(key)) continue;
+        if (!washitsuRooms.has(cell.roomId)) {
+          washitsuRooms.set(cell.roomId, {
+            id: cell.roomId,
+            cells: [],
+            minR: r, maxR: r,
+            minC: c, maxC: c,
+            sumR: 0, sumC: 0
+          });
+        }
+        const rm = washitsuRooms.get(cell.roomId);
+        rm.cells.push({r, c});
+        rm.minR = Math.min(rm.minR, r);
+        rm.maxR = Math.max(rm.maxR, r);
+        rm.minC = Math.min(rm.minC, c);
+        rm.maxC = Math.max(rm.maxC, c);
+        rm.sumR += r;
+        rm.sumC += c;
+      }
+    }
+
+    if (washitsuRooms.size < 4) return false;
+
+    // ドア接続関係の集計
+    const connected = new Map();
+    for (const id of washitsuRooms.keys()) connected.set(id, new Set());
+
+    const dirs = [{dr:0, dc:1}, {dr:1, dc:0}];
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const c1 = grid[r][c];
+        if (!c1 || c1.type !== T.ROOM || c1.label !== '和室' || !c1.roomId) continue;
+        for (const {dr, dc} of dirs) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= GRID || nc >= GRID) continue;
+          const c2 = grid[nr][nc];
+          if (!c2 || c2.type !== T.ROOM || c2.label !== '和室' || !c2.roomId) continue;
+          if (c1.roomId === c2.roomId) continue;
+          if (edgeType(r, c, nr, nc) === E.DOOR) {
+            connected.get(c1.roomId)?.add(c2.roomId);
+            connected.get(c2.roomId)?.add(c1.roomId);
+          }
+        }
+      }
+    }
+
+    // パターン1: 2×2のセル交差点で4つの異なる和室が接合しているかチェック
+    for (let r = 0; r < GRID - 1; r++) {
+      for (let c = 0; c < GRID - 1; c++) {
+        const cTL = grid[r][c],   cTR = grid[r][c+1];
+        const cBL = grid[r+1][c], cBR = grid[r+1][c+1];
+        if (cTL?.label === '和室' && cTR?.label === '和室' && cBL?.label === '和室' && cBR?.label === '和室') {
+          const idTL = cTL.roomId, idTR = cTR.roomId;
+          const idBL = cBL.roomId, idBR = cBR.roomId;
+          const set = new Set([idTL, idTR, idBL, idBR]);
+          if (set.size === 4) {
+            if (connected.get(idTL)?.has(idTR) &&
+                connected.get(idBL)?.has(idBR) &&
+                connected.get(idTL)?.has(idBL) &&
+                connected.get(idTR)?.has(idBR)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    // パターン2: 各和室の重心・位置関係と接続ループによる判定（サイズ混在・境界オフセット対応）
+    const roomList = Array.from(washitsuRooms.values()).map(rm => ({
+      id: rm.id,
+      avgR: rm.sumR / rm.cells.length,
+      avgC: rm.sumC / rm.cells.length
+    }));
+
+    const n = roomList.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) continue;
+        for (let k = 0; k < n; k++) {
+          if (k === i || k === j) continue;
+          for (let l = 0; l < n; l++) {
+            if (l === i || l === j || l === k) continue;
+            const TL = roomList[i], TR = roomList[j];
+            const BL = roomList[k], BR = roomList[l];
+            if (TR.avgC > TL.avgC && BR.avgC > BL.avgC && BL.avgR > TL.avgR && BR.avgR > TR.avgR) {
+              if (connected.get(TL.id)?.has(TR.id) &&
+                  connected.get(BL.id)?.has(BR.id) &&
+                  connected.get(TL.id)?.has(BL.id) &&
+                  connected.get(TR.id)?.has(BR.id)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   /* ============================================================
      COMBO DETECTION
   ============================================================ */
@@ -4744,25 +4855,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:`【王道】収納が${counts.maxClosetSize}マス連結 — 荷物が多くても安心 (+3.0万)` });
     }
 
-        // 新コンボ1: 全室直通（廊下ゼロ） / 古き良き日本家屋
-    // 洋室、LDK、和室のみを部屋として換算 (水回りや収納はノーカウント)
-    const livingRooms = counts.ldkRooms + counts.bedRooms;
-    if (counts.corridor === 0 && livingRooms >= 4) {
-      let isAllWashitsu = true;
-      for (let r=0; r<GRID; r++) {
-        for (let c=0; c<GRID; c++) {
-          const cell = grid[r][c];
-          if (cell && (cell.type === T.LDK || cell.type === T.ROOM)) {
-            if (cell.label !== '和室') {
-              isAllWashitsu = false;
-            }
-          }
-        }
-      }
-      if (isAllWashitsu) {
-        combos.push({ name:'古き良き日本家屋', bonus:5.0, icon:'ph-house-line text-emerald-600', type:'good',
-          text:'【王道】田の字プラン — 廊下ゼロで和室のみが直結する伝統的構造 (+5.0万)' });
-      } else {
+    // 新コンボ1: 古き良き日本家屋（田の字プラン） / 究極のオープン
+    const isTanoji = hasTanojiWashitsu(visited);
+    if (isTanoji) {
+      combos.push({ name:'古き良き日本家屋', bonus:5.0, icon:'ph-house-line text-emerald-600', type:'good',
+        text:'【王道】田の字プラン — 和室4部屋が田の字に直結する伝統的構造 (+5.0万)' });
+    } else {
+      const livingRooms = counts.ldkRooms + counts.bedRooms;
+      if (counts.corridor === 0 && livingRooms >= 4) {
         combos.push({ name:'究極のオープン', bonus:3.0, icon:'ph-door text-teal-600', type:'funny',
           text:'【珍間取り】全室オープン構造 — 廊下ゼロで部屋が直結 (+3.0万)' });
       }
