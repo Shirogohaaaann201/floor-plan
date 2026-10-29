@@ -4855,17 +4855,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:`【王道】収納が${counts.maxClosetSize}マス連結 — 荷物が多くても安心 (+3.0万)` });
     }
 
-    // 新コンボ1: 古き良き日本家屋（田の字プラン） / 究極のオープン
-    const isTanoji = hasTanojiWashitsu(visited);
-    if (isTanoji) {
+    // 新コンボ1: 古き良き日本家屋（田の字プラン）
+    if (hasTanojiWashitsu(visited)) {
       combos.push({ name:'古き良き日本家屋', bonus:5.0, icon:'ph-house-line text-emerald-600', type:'good',
         text:'【王道】田の字プラン — 和室4部屋が田の字に直結する伝統的構造 (+5.0万)' });
-    } else {
-      const livingRooms = counts.ldkRooms + counts.bedRooms;
-      if (counts.corridor === 0 && livingRooms >= 4) {
-        combos.push({ name:'究極のオープン', bonus:3.0, icon:'ph-door text-teal-600', type:'funny',
-          text:'【珍間取り】全室オープン構造 — 廊下ゼロで部屋が直結 (+3.0万)' });
-      }
+    }
+
+    // 新コンボ2: 究極のオープン（全室オープン構造）
+    const livingRooms = counts.ldkRooms + counts.bedRooms;
+    if (counts.corridor === 0 && livingRooms >= 4) {
+      combos.push({ name:'究極のオープン', bonus:3.0, icon:'ph-door text-teal-600', type:'funny',
+        text:'【珍間取り】全室オープン構造 — 廊下ゼロで部屋が直結 (+3.0万)' });
     }
     // 新コンボ2: 封印されし闇（到達不能かつ窓なしの部屋）
     if (counts.unreachable > 0) {
