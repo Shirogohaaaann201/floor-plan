@@ -4050,6 +4050,53 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return (chosen.r1 === rA && chosen.c1 === cA && chosen.r2 === rB && chosen.c2 === cB);
   }
 
+  function canConnectRoomsWithDoor(c1, c2) {
+    if (!c1 || !c2) return false;
+    const t1 = c1.type, t2 = c2.type;
+
+    if (t1 === T.EMPTY || t1 === T.GARDEN || t1 === T.OBSTACLE) return false;
+    if (t2 === T.EMPTY || t2 === T.GARDEN || t2 === T.OBSTACLE) return false;
+
+    // 廊下は全設備・居室と接続可能
+    if (t1 === T.CORRIDOR || t2 === T.CORRIDOR) return true;
+
+    // 玄関は廊下、LDK、居室(1R直通)、浴室(玄関直風呂NGコンボ)と接続可能
+    if (t1 === T.ENTRANCE || t2 === T.ENTRANCE) {
+      const other = t1 === T.ENTRANCE ? t2 : t1;
+      return other === T.CORRIDOR || other === T.LDK || other === T.ROOM || other === T.BATH;
+    }
+
+    // 同種部屋同士
+    if (t1 === t2) {
+      if (t1 === T.LDK) return true; // LDK同士は接続可能
+      if (t1 === T.ROOM) {
+        // 和室同士のみ襖(続き間)として接続可能。洋室同士は間仕切り壁で遮断！
+        return Boolean(c1.label === '和室' && c2.label === '和室');
+      }
+      return false; // トイレ同士、風呂同士、収納同士はドアなし
+    }
+
+    // LDKは居室(リビングイン)、洗面所(家事動線)、収納、トイレ(食欲減退NGコンボ)と接続可能
+    if (t1 === T.LDK || t2 === T.LDK) {
+      const other = t1 === T.LDK ? t2 : t1;
+      return other === T.ROOM || other === T.WASHROOM || other === T.CLOSET || other === T.TOILET;
+    }
+
+    // 洗面所は浴室、トイレ、収納と接続可能
+    if (t1 === T.WASHROOM || t2 === T.WASHROOM) {
+      const other = t1 === T.WASHROOM ? t2 : t1;
+      return other === T.BATH || other === T.TOILET || other === T.CLOSET;
+    }
+
+    // 収納は居室と接続可能
+    if (t1 === T.CLOSET || t2 === T.CLOSET) {
+      const other = t1 === T.CLOSET ? t2 : t1;
+      return other === T.ROOM;
+    }
+
+    return false;
+  }
+
   function edgeType(r1, c1, r2, c2) {
     const c1_cell = grid[r1]?.[c1];
     const c2_cell = grid[r2]?.[c2];
@@ -4074,6 +4121,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     if (c1_cell.type === T.CORRIDOR && c2_cell.type === T.CORRIDOR) return E.NONE;
     
+    // ドア設置が許可された部屋の組み合わせかチェック（洋室同士や風呂↔居室などは壁）
+    if (!canConnectRoomsWithDoor(c1_cell, c2_cell)) {
+      return E.WALL;
+    }
+
     if (isDesignatedDoor(r1, c1, r2, c2, c1_cell.roomId, c2_cell.roomId)) {
       if ((c1_cell.type === T.CORRIDOR && c2_cell.type === T.ENTRANCE) || 
           (c2_cell.type === T.CORRIDOR && c1_cell.type === T.ENTRANCE)) {
@@ -4605,10 +4657,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     while (queue.length) {
       const cur = queue.shift();
+      const curCell = grid[cur.r][cur.c];
       for (const {dr,dc} of dirs) {
         const nr = cur.r+dr, nc = cur.c+dc;
         const key = `${nr},${nc}`;
         if (nr<0||nr>=GRID||nc<0||nc>=GRID||visited.has(key)) continue;
+        const nextCell = grid[nr][nc];
+
+        // 居室・水回り・収納からは、廊下へ逆流して新たな動線を広げることはできない（個室を通行路にした孤立廊下接続の防止）
+        if (curCell.roomId && curCell.roomId !== nextCell.roomId) {
+          if ((curCell.type === T.ROOM || curCell.type === T.TOILET || curCell.type === T.BATH || curCell.type === T.CLOSET) && nextCell.type === T.CORRIDOR) {
+            continue;
+          }
+        }
+
         const et = edgeType(cur.r, cur.c, nr, nc);
         if (et === E.NONE || et === E.DOOR) {
           visited.add(key);
@@ -4622,7 +4684,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function countCells(visited) {
     const counts = {
       ldkRooms:0, bedRooms:0, bath:0, toilet:0, washroom:0, closetRooms:0,
-      corridor:0, garden:0, unreachable:0, totalOcc:0,
+      corridor:0, garden:0, unreachable:0, unreachableCells:0, totalOcc:0,
       ldkCells:0, bedCells:0, closetCells:0, totalBaseRent:0,
       maxToiletSize:0, maxBathSize:0, maxClosetSize:0,
       separateBathCount:0, separateToiletCount:0, unitBathCount:0,
@@ -4630,11 +4692,24 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     };
     const seenRooms = new Map(); // pieceId -> type（統合後も元ピース単位で数える）
     const mergedSize = new Map(); // roomId -> セル数（統合後の広さ）
+    const unreachableRooms = new Set();
+    let unreachableCells = 0;
+
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const cell = grid[r][c];
         if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) { counts.garden++; continue; }
         if (cell.type !== T.ENTRANCE) counts.totalOcc++;
+
+        // 玄関からの到達判定（未到達のマス・部屋を集計）
+        if (cell.type !== T.ENTRANCE) {
+          const key = `${r},${c}`;
+          if (!visited || !visited.has(key)) {
+            unreachableCells++;
+            unreachableRooms.add(cell.roomId || key);
+          }
+        }
+
         const spaceLv = getStaffSkillLevel('space_designer');
         const ldkMult = (cell.type === T.LDK && spaceLv > 0) ? (1 + [0, 0.10, 0.20, 0.30][spaceLv]) : 1.0;
         counts.totalBaseRent += (cell.costPerCell || 0) * 0.05 * ldkMult;
@@ -4666,6 +4741,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (cell.type === T.CLOSET) counts.closetCells++;
       }
     }
+    counts.unreachable = unreachableRooms.size;
+    counts.unreachableCells = unreachableCells;
     counts.bath = counts.separateBathCount + counts.unitBathCount;
     counts.toilet = counts.separateToiletCount + counts.unitBathCount;
     counts.hasBath = counts.bath > 0;
