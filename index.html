@@ -3337,6 +3337,141 @@
   }
 
   /* ============================================================
+     SESSION RESUME & TRANSACTION MANAGEMENT (AUTO-SAVE)
+  ============================================================ */
+  function serializeGrid() {
+    return grid.map(row => row.map(cell => {
+      if (!cell || cell.type === T.EMPTY) return null;
+      return {
+        type: cell.type,
+        roomId: cell.roomId,
+        pieceId: cell.pieceId,
+        label: cell.label,
+        costPerCell: cell.costPerCell || 0,
+        pieceLibId: cell.pieceLibId || '',
+        walls: cell.walls ? { ...cell.walls } : {top:false, right:false, bottom:false, left:false}
+      };
+    }));
+  }
+
+  function deserializeGrid(data) {
+    if (!data) return false;
+    grid = [];
+    for (let r = 0; r < GRID; r++) {
+      const row = [];
+      for (let c = 0; c < GRID; c++) {
+        const d = data[r]?.[c];
+        if (d && d.type && d.type !== T.EMPTY) {
+          const cell = makeCell(d.type, d.roomId, d.label, d.costPerCell || 0);
+          cell.pieceId = d.pieceId;
+          cell.pieceLibId = d.pieceLibId || '';
+          cell.walls = d.walls ? { ...d.walls } : {top:false, right:false, bottom:false, left:false};
+          row.push(cell);
+        } else {
+          row.push(makeCell(T.EMPTY));
+        }
+      }
+      grid.push(row);
+    }
+    return true;
+  }
+
+  function saveActiveBuild(screenName) {
+    if (!STAGE) return;
+    try {
+      GameState.activeBuild = {
+        screen: screenName,
+        stage: STAGE,
+        grid: serializeGrid(),
+        nextRoomId: nextRoomId,
+        budget: budget,
+        buildBaseCost: buildBaseCost,
+        buildPiecePaidCost: buildPiecePaidCost,
+        buildMirrorExtraCost: buildMirrorExtraCost,
+        buildRerollCost: buildRerollCost,
+        draftSlots: draftSlots,
+        keepStates: keepStates,
+        keepCounts: keepCounts,
+        discardCount: discardCount,
+        handRefreshesRemaining: handRefreshesRemaining,
+        drawPile: drawPile,
+        discardPile: discardPile,
+        selectedSlot: selectedSlot,
+        selectedRot: selectedRot,
+        isMirrored: isMirrored
+      };
+      saveGame();
+    } catch(e) {
+      console.error('saveActiveBuild error:', e);
+    }
+  }
+
+  function clearActiveBuild() {
+    GameState.activeBuild = null;
+    saveGame();
+  }
+
+  function restoreActiveBuild() {
+    const ab = GameState.activeBuild;
+    if (!ab || !ab.stage) return false;
+
+    try {
+      STAGE = ab.stage;
+      attachRequestFunctions(STAGE);
+      GameState.currentMission = STAGE;
+
+      deserializeGrid(ab.grid);
+      nextRoomId = ab.nextRoomId || (GRID * GRID + 1);
+
+      budget = (ab.budget !== undefined) ? ab.budget : GameState.funds;
+      buildBaseCost = ab.buildBaseCost || 0;
+      buildPiecePaidCost = ab.buildPiecePaidCost || 0;
+      buildMirrorExtraCost = ab.buildMirrorExtraCost || 0;
+      buildRerollCost = ab.buildRerollCost || 0;
+
+      draftSlots = ab.draftSlots || [null, null, null];
+      keepStates = ab.keepStates || [false, false, false];
+      keepCounts = ab.keepCounts || [0, 0, 0];
+      discardCount = ab.discardCount || 0;
+      handRefreshesRemaining = (ab.handRefreshesRemaining !== undefined) ? ab.handRefreshesRemaining : 0;
+      drawPile = ab.drawPile || [];
+      discardPile = ab.discardPile || [];
+      selectedSlot = (ab.selectedSlot !== null && ab.selectedSlot !== undefined) ? ab.selectedSlot : 0;
+      selectedRot = ab.selectedRot || 0;
+      isMirrored = !!ab.isMirrored;
+
+      updateCompanyUI();
+      updateBudgetUI();
+      updateDeckPeekButton();
+      updateHandRefreshButton();
+
+      if (ab.screen === 'result') {
+        evaluate(true);
+        showScreen('result');
+        return true;
+      } else if (ab.screen === 'game') {
+        const _hdrT = document.getElementById('hdr-target-rent');
+        if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
+        const mbt = document.getElementById('mission-banner-text');
+        if (mbt) mbt.textContent = `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
+
+        showScreen('game');
+        resizeCanvas();
+        renderDraftUI();
+        updatePieceLabel();
+        drawPlan();
+        if (typeof updateRealtimeRent === 'function') updateRealtimeRent(true);
+        return true;
+      }
+    } catch(e) {
+      console.error('restoreActiveBuild error:', e);
+      clearActiveBuild();
+      return false;
+    }
+    return false;
+  }
+
+  /* ============================================================
      PIECE ROTATION
   ============================================================ */
   function rotateMatrix(mat, times=1) {
@@ -3567,6 +3702,7 @@
     if (typeof showFloatingText === 'function') {
       showFloatingText(`🔄 手札引き直し！（残り${handRefreshesRemaining}回）`, '#0284c7');
     }
+    saveActiveBuild('game');
   }
 
   function drawPieceFromDeck() {
@@ -3710,6 +3846,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           cancelRerollConfirm();
           keepStates[idx] = !keepStates[idx];
           renderDraftUI();
+          saveActiveBuild('game');
         };
         wrap.appendChild(keepBtn);
       } else {
@@ -4485,6 +4622,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     drawPlan();
 
     if (typeof updateRealtimeRent === 'function') updateRealtimeRent();
+
+    saveActiveBuild('game');
 
     if (isGridFull()) setTimeout(evaluate, 300);
     return true;
@@ -5742,7 +5881,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     activeCombos = combos;
   }
 
-  function evaluate() {
+  function evaluate(isRestoring = false) {
     gardenize();
     drawPlan();
 
@@ -5754,9 +5893,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const isClear = rent >= STAGE.targetRent;
     
-    // ここでは資金加算しない。結果画面のボタンで処理する。
-    GameState.funds = budget; // 消費した分の同期
-    saveGame();
+    // 資金の正式確定は「物件を引き渡す」で行う（トランザクション確定方式）。
+    // ここでは結果画面の中断状態をオートセーブする。
+    saveActiveBuild('result');
 
     // 依頼達成・未達成の集計
     let satisfiedCount = 0;
@@ -5884,10 +6023,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     badge.style.background = '#0f172a';
     badge.style.color = badgeColor;
 
-    if (sat >= 75) {
-      playSound('clear');
-    } else {
-      playSound('error');
+    if (!isRestoring) {
+      if (sat >= 75) {
+        playSound('clear');
+      } else {
+        playSound('error');
+      }
     }
 
     const diffVal = rent - STAGE.targetRent;
@@ -6110,6 +6251,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (mbt) mbt.textContent = `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
     resizeCanvas();
     showScreen('game');
+    saveActiveBuild('game');
   }
 
   /* ============================================================
@@ -6297,6 +6439,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updatePieceLabel();
     drawPlan();
     playSound('clear');
+    saveActiveBuild('game');
   });
 
   function openDeckPeekModal() {
@@ -6464,6 +6607,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
       GameState.attempts -= 1;
       GameState.lastFunds = GameState.funds;
+      clearActiveBuild();
       saveGame();
       startGame();
       showScreen('game');
@@ -6612,6 +6756,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-go-mission')?.addEventListener('click', () => {
     initAudio();
     if (!ensureCanStartBuild()) return;
+    if (GameState.activeBuild && GameState.activeBuild.stage) {
+      if (restoreActiveBuild()) return;
+    }
     if (GameState.currentMission) {
       STAGE = GameState.currentMission;
       attachRequestFunctions(STAGE);
@@ -7081,6 +7228,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
     if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+    clearActiveBuild();
     const result = processMonthEnd();
     showMonthEndModal({
       type: 'giveup',
@@ -7090,6 +7238,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         GameState.level++;
         GameState.attempts = getMaxAttempts();
         GameState.currentMission = null;
+        clearActiveBuild();
         GameState.availableMissions = generateMissionPool(GameState.level);
         saveGame();
         updateHomeUI();
@@ -7100,6 +7249,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   document.getElementById('btn-next-stage')?.addEventListener('click', () => {
     initAudio();
+    // トランザクション確定: ここで初めて正式に資金を更新！
+    GameState.funds = budget;
+    clearActiveBuild();
     if (!GameState.properties) GameState.properties = [];
     const p = window.currentPropertyData || {};
     // currentPropertyData がない場合のフォールバック（念のため）
@@ -7158,6 +7310,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         GameState.stats.lifetimeBadCombos = (GameState.stats.lifetimeBadCombos || 0) + (p.badCombos || 0);
         GameState.attempts = getMaxAttempts();
         GameState.currentMission = null;
+        clearActiveBuild();
         GameState.availableMissions = generateMissionPool(GameState.level);
         saveGame();
         updateHomeUI();
@@ -9459,8 +9612,14 @@ function updateHomeUI() {
     
     const btnGo = document.getElementById('btn-go-mission');
     if (btnGo) {
-      if (GameState.currentMission) {
-        btnGo.innerHTML = `<i class="ph-bold ph-pencil-simple" style="margin-right:8px;"></i>受注中の設計を再開（残${GameState.attempts}回）`;
+      if (GameState.activeBuild && GameState.activeBuild.stage) {
+        const isResult = GameState.activeBuild.screen === 'result';
+        btnGo.innerHTML = isResult
+          ? `<i class="ph-bold ph-key" style="margin-right:8px;"></i>設計完了した物件を確認・引き渡す`
+          : `<i class="ph-bold ph-pencil-simple" style="margin-right:8px;"></i>設計中の間取りを再開（残${GameState.attempts}回）`;
+        btnGo.className = 'btn btn-amber';
+      } else if (GameState.currentMission) {
+        btnGo.innerHTML = `<i class="ph-bold ph-pencil-simple" style="margin-right:8px;"></i>受注中の設計を開始（残${GameState.attempts}回）`;
         btnGo.className = 'btn btn-amber';
       } else if (isAtCap) {
         btnGo.innerHTML = `<i class="ph-bold ph-warning-octagon" style="margin-right:8px;"></i>管理上限（${activeCount}/${maxCap}棟・要整理）`;
@@ -9475,10 +9634,24 @@ function updateHomeUI() {
   loadGame();
   if(!GameState.properties) GameState.properties = [];
   updateHomeUI();
-  showScreen('home');
-  const initialDeadEnd = checkDeadEndBankruptcy();
-  if (initialDeadEnd.isBankrupt) {
-    showGameOverModal(initialDeadEnd.reason);
+
+  let resumed = false;
+  if (GameState.activeBuild && GameState.activeBuild.stage) {
+    try {
+      resumed = restoreActiveBuild();
+    } catch(e) {
+      console.error('Failed to restore active build:', e);
+      clearActiveBuild();
+      resumed = false;
+    }
+  }
+
+  if (!resumed) {
+    showScreen('home');
+    const initialDeadEnd = checkDeadEndBankruptcy();
+    if (initialDeadEnd.isBankrupt) {
+      showGameOverModal(initialDeadEnd.reason);
+    }
   }
   </script>
 </body>
