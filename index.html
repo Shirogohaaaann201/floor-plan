@@ -1349,16 +1349,17 @@
         </div>
         <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(244,63,94,0.3); border-radius:8px; padding:10px; margin-bottom:14px; font-size:10.5px; text-align:left; color:#94a3b8; line-height:1.5;">
           <div style="color:#fb7185; font-weight:bold; margin-bottom:2px;">⚠️ 街金のご利用条件:</div>
+          <div>・即時手数料: <strong style="color:#fcd34d;">10.0%</strong>（10万借入で残債11.0万）</div>
           <div>・金利: <strong style="color:#fcd34d;">月利 10.0%</strong>（超高利）</div>
           <div>・現在の街金借入: <strong id="emerg-current-debt" style="color:#fda4af;">0.0万円</strong> / 上限 50.0万円</div>
-          <div style="color:#cbd5e1; font-size:9.5px; margin-top:4px;">※物件完成後の早期売却や、手元資金での優先返済を強く推奨します！</div>
+          <div style="color:#fb7185; font-size:9.5px; margin-top:4px; font-weight:bold;">※街金の残債がある間は【銀行の新規融資が全面停止（審査落ち）】になります！</div>
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           <button id="btn-borrow-emerg-10" class="btn" style="background:#e11d48; color:#fff; font-weight:bold; padding:10px; font-size:12px; justify-content:center; gap:6px; border:none; cursor:pointer;">
-            <i class="ph-bold ph-lightning"></i> +10万円を即日借入（月利10%）
+            <i class="ph-bold ph-lightning"></i> +10万円を即日借入（手数料込残債11万）
           </button>
           <button id="btn-borrow-emerg-20" class="btn" style="background:#be123c; color:#fff; font-weight:bold; padding:10px; font-size:12px; justify-content:center; gap:6px; border:none; cursor:pointer;">
-            <i class="ph-bold ph-lightning"></i> +20万円を即日借入（月利10%）
+            <i class="ph-bold ph-lightning"></i> +20万円を即日借入（手数料込残債22万）
           </button>
           <button id="btn-close-emerg-loan" class="btn btn-slate" style="padding:8px; font-size:11px; justify-content:center; margin-top:2px; cursor:pointer;">
             あきらめる（キャンセル）
@@ -8694,19 +8695,29 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="font-size:11px; color:var(--c-text2); margin-bottom:10px; line-height:1.4;">
             物件の建築資金が足りない場合、銀行の信用枠の範囲内でいつでも融資を受けられます。
           </div>
-          <div style="display:flex; gap:8px;">
-            <button class="btn ${canBorrow50 ? 'btn-primary' : 'btn-slate'}" ${canBorrow50 ? '' : 'disabled'} onclick="borrowLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow50 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow50 ? '1' : '0.45'};">
-              +50万円 借入
-            </button>
-            <button class="btn ${canBorrow100 ? 'btn-primary' : 'btn-slate'}" ${canBorrow100 ? '' : 'disabled'} onclick="borrowLoan(100)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow100 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow100 ? '1' : '0.45'};">
-              +100万円 借入
-            </button>
-          </div>
-          ${canBorrowRem ? `
-            <button class="btn btn-primary" onclick="borrowLoan(${remCap})" style="width:100%; margin-top:8px; padding:8px; font-size:11px; font-weight:bold; justify-content:center; cursor:pointer;">
-              残り枠すべて（+${remCap.toFixed(1)}万円）を借入
-            </button>
-          ` : ''}
+          ${emergDebt > 0 ? `
+            <div style="background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.35); border-radius:6px; padding:10px 12px; color:#fecdd3; font-size:11px; line-height:1.5;">
+              <div style="color:#fb7185; font-weight:bold; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
+                <i class="ph-bold ph-prohibit"></i> 銀行融資 審査落ち（利用停止中）
+              </div>
+              街金（ノンバンク）からの借入残高（${emergDebt.toFixed(1)}万円）が存在するため、信用審査により銀行融資が全面停止されています。<br>
+              上の「街金を優先返済する」ボタンから全額完済すると、銀行との正常な融資取引が再開されます。
+            </div>
+          ` : `
+            <div style="display:flex; gap:8px;">
+              <button class="btn ${canBorrow50 ? 'btn-primary' : 'btn-slate'}" ${canBorrow50 ? '' : 'disabled'} onclick="borrowLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow50 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow50 ? '1' : '0.45'};">
+                +50万円 借入
+              </button>
+              <button class="btn ${canBorrow100 ? 'btn-primary' : 'btn-slate'}" ${canBorrow100 ? '' : 'disabled'} onclick="borrowLoan(100)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow100 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow100 ? '1' : '0.45'};">
+                +100万円 借入
+              </button>
+            </div>
+            ${canBorrowRem ? `
+              <button class="btn btn-primary" onclick="borrowLoan(${remCap})" style="width:100%; margin-top:8px; padding:8px; font-size:11px; font-weight:bold; justify-content:center; cursor:pointer;">
+                残り枠すべて（+${remCap.toFixed(1)}万円）を借入
+              </button>
+            ` : ''}
+          `}
         </div>
 
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:12px;">
@@ -9204,6 +9215,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function borrowLoan(amount) {
     initAudio();
     if (!GameState.company) return;
+    if ((GameState.company.emergencyDebt || 0) > 0) {
+      playSound('error');
+      showUpgradeFeedback('🚫 街金からの借入が残っているため、信用審査で銀行から融資を受けられません！', 'var(--c-rose)');
+      return;
+    }
     const remCap = getRemainingLoanCapacity();
     const borrowAmt = Math.min(Number(amount) || 0, remCap);
     if (borrowAmt <= 0) {
@@ -9256,19 +9272,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!GameState.company) return;
     const curDebt = GameState.company.emergencyDebt || 0;
     const maxEmerg = 50.0;
-    const borrowAmt = Math.min(Number(amount) || 0, Math.max(0, maxEmerg - curDebt));
-    if (borrowAmt <= 0) {
+    const borrowCash = Math.min(Number(amount) || 0, Math.max(0, maxEmerg - curDebt));
+    if (borrowCash <= 0) {
       playSound('error');
       showUpgradeFeedback('街金の借入限度額（50万円）に達しています！', 'var(--c-rose)');
       return;
     }
-    GameState.company.emergencyDebt = Math.round((curDebt + borrowAmt) * 10) / 10;
-    GameState.funds = Math.round((GameState.funds + borrowAmt) * 10) / 10;
-    budget = Math.round((budget + borrowAmt) * 10) / 10;
+    // 街金即時手数料 10%: 手元に入る資金は borrowCash だが、借入残債には1.1倍が加算される
+    const addedDebt = Math.round(borrowCash * 1.10 * 10) / 10;
+    GameState.company.emergencyDebt = Math.round((curDebt + addedDebt) * 10) / 10;
+    GameState.funds = Math.round((GameState.funds + borrowCash) * 10) / 10;
+    budget = Math.round((budget + borrowCash) * 10) / 10;
     updateBudgetUI();
     playSound('coin');
     closeEmergencyLoanModal();
-    showFloatingText(`+${borrowAmt.toFixed(1)}万（街金スピード融資）`, 'var(--c-amber)');
+    showFloatingText(`+${borrowCash.toFixed(1)}万（街金・手数料込残債+${addedDebt.toFixed(1)}万）`, 'var(--c-amber)');
     saveGame();
     updateHomeUI();
   }
