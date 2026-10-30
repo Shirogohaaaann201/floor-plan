@@ -732,7 +732,7 @@
       <div style="display:flex; gap:12px; margin-bottom:24px;">
         <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; text-align:center;">
           <div style="font-size:12px; color:var(--c-text2); margin-bottom:4px; font-weight:bold;">総資産</div>
-          <div id="home-co-funds" style="font-size:24px; font-weight:800; color:var(--c-blue);">500.0<span class="stat-unit">万</span></div>
+          <div id="home-co-funds" style="font-size:24px; font-weight:800; color:var(--c-blue);">100.0<span class="stat-unit">万</span></div>
         </div>
         <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; text-align:center;">
           <div style="font-size:12px; color:var(--c-text2); margin-bottom:4px; font-weight:bold;">月間収支</div>
@@ -1228,7 +1228,7 @@
       <div class="game-header-stats">
         <div class="target-rent-wrap">
           <div class="target-rent-label">残資金</div>
-          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">500.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
+          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">100.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
         </div>
         <div class="target-rent-wrap cost-wrap">
           <div style="display:flex; align-items:baseline; justify-content:space-between; width:100%; gap:4px;">
@@ -1333,6 +1333,37 @@
         <div id="modal-combo-list" style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:10px 12px; border-radius:6px; min-height:30px; line-height:1.5;"></div>
         
         <button id="btn-close-mission-bottom" class="btn btn-slate" style="width:100%; margin-top:16px; padding:12px; font-size:14px;">閉じる</button>
+      </div>
+    </div>
+
+    <!-- 緊急街金融資モーダル（パズル中資金ショート時のみ表示） -->
+    <div id="emergency-loan-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:280; align-items:center; justify-content:center; padding:16px;">
+      <div style="background:#1e1b4b; border:2px solid #f43f5e; border-radius:12px; width:100%; max-width:320px; padding:16px; box-shadow:0 10px 25px rgba(0,0,0,0.6); text-align:center;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:rgba(244,63,94,0.2); color:#fb7185; font-size:24px; margin-bottom:10px;">
+          <i class="ph-bold ph-warning-octagon"></i>
+        </div>
+        <h3 style="font-size:15px; font-weight:bold; color:#fda4af; margin-bottom:4px;">建築資金が不足しています！</h3>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.4;">
+          予算が足りません（不足: 約<span id="emerg-deficit-val" style="color:#fb7185; font-weight:bold;">0.0</span>万円）。<br>
+          背に腹は代えられない…！今すぐ<strong style="color:#fcd34d;">街金（スピード融資）</strong>から資金を調達しますか？
+        </div>
+        <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(244,63,94,0.3); border-radius:8px; padding:10px; margin-bottom:14px; font-size:10.5px; text-align:left; color:#94a3b8; line-height:1.5;">
+          <div style="color:#fb7185; font-weight:bold; margin-bottom:2px;">⚠️ 街金のご利用条件:</div>
+          <div>・金利: <strong style="color:#fcd34d;">月利 10.0%</strong>（超高利）</div>
+          <div>・現在の街金借入: <strong id="emerg-current-debt" style="color:#fda4af;">0.0万円</strong> / 上限 50.0万円</div>
+          <div style="color:#cbd5e1; font-size:9.5px; margin-top:4px;">※物件完成後の早期売却や、手元資金での優先返済を強く推奨します！</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-borrow-emerg-10" class="btn" style="background:#e11d48; color:#fff; font-weight:bold; padding:10px; font-size:12px; justify-content:center; gap:6px; border:none; cursor:pointer;">
+            <i class="ph-bold ph-lightning"></i> +10万円を即日借入（月利10%）
+          </button>
+          <button id="btn-borrow-emerg-20" class="btn" style="background:#be123c; color:#fff; font-weight:bold; padding:10px; font-size:12px; justify-content:center; gap:6px; border:none; cursor:pointer;">
+            <i class="ph-bold ph-lightning"></i> +20万円を即日借入（月利10%）
+          </button>
+          <button id="btn-close-emerg-loan" class="btn btn-slate" style="padding:8px; font-size:11px; justify-content:center; margin-top:2px; cursor:pointer;">
+            あきらめる（キャンセル）
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -2485,7 +2516,7 @@
   const SAVE_KEY = 'floorplan_save_v1';
   const GameState = {
     companyName: '和歌山不動産',
-    funds: 500.0,
+    funds: 100.0,
     month: 1,
     level: 0,
     attempts: 2,
@@ -2500,6 +2531,7 @@
       brandLevel: 1,
       officeLevel: 0,
       debt: 0,
+      emergencyDebt: 0,
       features: {
         freeFlip: false,
         extraRerolls: 0,
@@ -2521,6 +2553,7 @@
         brandLevel: 1,
         officeLevel: 0,
         debt: 0,
+        emergencyDebt: 0,
         features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
         hiredStaff: [],
         unlockedPieces: [...STARTER_UNLOCKED_IDS],
@@ -2528,6 +2561,7 @@
       };
     }
     const co = GameState.company;
+    if (co.emergencyDebt === undefined) co.emergencyDebt = 0;
     if (!Array.isArray(co.unlockedPieces)) {
       co.unlockedPieces = [...STARTER_UNLOCKED_IDS];
     } else {
@@ -2747,8 +2781,8 @@
   function getMaxLoan() {
     const brandLv = (GameState && GameState.company && GameState.company.brandLevel) || 1;
     const { totalCollateral } = calcCollateralStats();
-    // 基本枠500万 + 知名度Lvボーナス((Lv-1)*300万) + 所有物件担保評価額(入居中:売価×2.0 / 空室中:売価×0.5)
-    return Math.round((500 + (brandLv - 1) * 300 + totalCollateral) * 10) / 10;
+    // 基本枠100万 + 知名度Lvボーナス((Lv-1)*200万) + 所有物件担保評価額(入居中:売価×2.0 / 空室中:売価×0.5)
+    return Math.round((100 + (brandLv - 1) * 200 + totalCollateral) * 10) / 10;
   }
 
   function getRemainingLoanCapacity() {
@@ -2775,10 +2809,11 @@
     const funds = (GameState && GameState.funds) || 0;
     const propCount = (GameState && GameState.properties) ? GameState.properties.length : 0;
     const remCap = getRemainingLoanCapacity();
-    if (propCount === 0 && (funds + remCap) < MIN_BUILD_FUNDS) {
+    const remEmerg = Math.max(0, 50.0 - (((GameState && GameState.company && GameState.company.emergencyDebt) || 0)));
+    if (propCount === 0 && (funds + remCap + remEmerg) < MIN_BUILD_FUNDS) {
       return {
         isBankrupt: true,
-        reason: `所有物件が0棟の状態で、所持資金（${funds.toFixed(1)}万）と銀行の融資余力（${remCap.toFixed(1)}万）の合計が最低建築資金（${MIN_BUILD_FUNDS.toFixed(0)}万円）を下回り、事業継続が不可能となりました。`
+        reason: `所有物件が0棟の状態で、所持資金（${funds.toFixed(1)}万）、銀行融資余力（${remCap.toFixed(1)}万）、街金枠（${remEmerg.toFixed(1)}万）の合計が最低建築資金（${MIN_BUILD_FUNDS.toFixed(0)}万円）を下回り、事業継続が不可能となりました。`
       };
     }
     return { isBankrupt: false, reason: '' };
@@ -2800,7 +2835,9 @@
     }
     const currentDebt = (GameState && GameState.company && GameState.company.debt) || 0;
     const loanPay = calcMonthlyLoanPayment(currentDebt);
-    const net = income - salaries - loanPay.total;
+    const emergDebt = (GameState && GameState.company && GameState.company.emergencyDebt) || 0;
+    const emergPayTotal = emergDebt > 0 ? Math.round((emergDebt * 0.10 + Math.min(emergDebt, Math.max(1.0, emergDebt * 0.05))) * 10) / 10 : 0;
+    const net = income - salaries - loanPay.total - emergPayTotal;
     return Math.round(net * 10) / 10;
   }
 
@@ -2905,7 +2942,19 @@
       GameState.company.debt = Math.max(0, Math.round((currentDebt - loanPay.principal) * 10) / 10);
     }
 
-    const netIncome = Math.round((totalIncome - totalSalaries - loanPay.total) * 10) / 10;
+    // 街金（緊急融資）の月次返済（元本5%＋月利10%）
+    const curEmergDebt = (GameState.company && GameState.company.emergencyDebt) || 0;
+    let emergPay = { principal: 0, interest: 0, total: 0 };
+    if (curEmergDebt > 0) {
+      const emergInterest = Math.round(curEmergDebt * 0.10 * 10) / 10;
+      const emergPrinc = Math.min(curEmergDebt, Math.max(1.0, Math.round(curEmergDebt * 0.05 * 10) / 10));
+      emergPay = { principal: emergPrinc, interest: emergInterest, total: Math.round((emergPrinc + emergInterest) * 10) / 10 };
+      if (GameState.company) {
+        GameState.company.emergencyDebt = Math.max(0, Math.round((curEmergDebt - emergPrinc) * 10) / 10);
+      }
+    }
+
+    const netIncome = Math.round((totalIncome - totalSalaries - loanPay.total - emergPay.total) * 10) / 10;
     GameState.funds = Math.round((GameState.funds + netIncome) * 10) / 10;
 
     // 資金ショート（マイナス転落）時の処理
@@ -2914,7 +2963,7 @@
     let bankruptReason = '';
 
     if (GameState.funds < 0) {
-      const deficit = Math.round(Math.abs(GameState.funds) * 10) / 10;
+      let deficit = Math.round(Math.abs(GameState.funds) * 10) / 10;
       const remCap = getRemainingLoanCapacity();
       if (remCap >= deficit) {
         // 融資枠内で自動つなぎ融資を実行
@@ -2922,9 +2971,22 @@
         GameState.funds = 0.0;
         overdraftAmount = deficit;
       } else {
-        // 融資限度額超過による不渡り（倒産）
-        isBankrupt = true;
-        bankruptReason = `月末の支払い（人件費・銀行返済）により運転資金が ${deficit.toFixed(1)}万円 不足し、銀行の融資限度額（残り${remCap.toFixed(1)}万円）を超過して不渡りが発生しました。`;
+        // 銀行枠を使い切った後、街金枠があれば街金で緊急カバー
+        let coveredByBank = remCap;
+        if (coveredByBank > 0) {
+          GameState.company.debt = Math.round(((GameState.company.debt || 0) + coveredByBank) * 10) / 10;
+          deficit = Math.round((deficit - coveredByBank) * 10) / 10;
+        }
+        const remEmerg = Math.max(0, 50.0 - ((GameState.company && GameState.company.emergencyDebt) || 0));
+        if (remEmerg >= deficit) {
+          GameState.company.emergencyDebt = Math.round(((GameState.company.emergencyDebt || 0) + deficit) * 10) / 10;
+          GameState.funds = 0.0;
+          overdraftAmount = coveredByBank + deficit;
+        } else {
+          // 融資限度額超過による不渡り（倒産）
+          isBankrupt = true;
+          bankruptReason = `月末の支払い（人件費・借入返済）により運転資金が不足し、銀行融資および街金枠の限度額を超過して不渡りが発生しました。`;
+        }
       }
     }
 
@@ -2979,6 +3041,7 @@
             brandLevel: 1,
             officeLevel: 0,
             debt: 0,
+            emergencyDebt: 0,
             features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
             hiredStaff: [],
             recruitment: { status: 'none', candidates: [] },
@@ -2986,6 +3049,7 @@
             deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
           };
         } else {
+          if (GameState.company.emergencyDebt === undefined) GameState.company.emergencyDebt = 0;
           if (!GameState.company.salesLevel) GameState.company.salesLevel = 1;
           if (!GameState.company.brandLevel) GameState.company.brandLevel = 1;
           if (GameState.company.officeLevel === undefined) GameState.company.officeLevel = 0;
@@ -3218,9 +3282,16 @@
     const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
 
     // 売却査定額:
+    // 建築原価 + (コンボによる純増家賃 × 12ヶ月分)
+    // ※良コンボ物件を高値で売り抜ける「デベロッパー戦略」を可能にする収益還元プレミアム
     // オーナーチェンジ（入居中）: 査定額100%（満額）
     // 空室売却（空室中）: リスク割引 80%（20%引き）
-    const standardResaleNum = (baseRent * 20) * Math.max(0.3, 1.0 - (buildingAge * 0.02));
+    const baseCost = p.baseCost || (baseRent * 20) || 0;
+    const effectiveRent = (p.isOriginalTenant !== false) ? (p.rent || baseRent) : calcMarketRent(p, GameState.month);
+    const comboRentDiff = effectiveRent - baseRent;
+    const comboPremium = comboRentDiff * 12;
+    const initialValuation = Math.max(baseCost * 0.3, baseCost + comboPremium);
+    const standardResaleNum = initialValuation * Math.max(0.3, 1.0 - (buildingAge * 0.02));
     const standardResaleValue = standardResaleNum.toFixed(1);
     const resaleValue = (isVacant ? standardResaleNum * 0.8 : standardResaleNum).toFixed(1);
 
@@ -4548,6 +4619,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (budget < pieceCost) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
+      showEmergencyLoanPrompt(pieceCost - budget);
       return false;
     }
 
@@ -6429,6 +6501,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
       cancelRerollConfirm();
+      showEmergencyLoanPrompt(costs.total - budget);
       return;
     }
 
@@ -6646,6 +6719,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   document.getElementById('btn-close-mission-bottom')?.addEventListener('click', closeMissionModal);
   document.getElementById('mission-modal')?.addEventListener('pointerdown', (e) => {
     if (e.target.id === 'mission-modal') closeMissionModal();
+  });
+
+  document.getElementById('btn-borrow-emerg-10')?.addEventListener('click', () => borrowEmergencyLoan(10));
+  document.getElementById('btn-borrow-emerg-20')?.addEventListener('click', () => borrowEmergencyLoan(20));
+  document.getElementById('btn-close-emerg-loan')?.addEventListener('click', closeEmergencyLoanModal);
+  document.getElementById('emergency-loan-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target.id === 'emergency-loan-modal') closeEmergencyLoanModal();
   });
 
   document.getElementById('btn-finish').addEventListener('click', () => {
@@ -8539,6 +8619,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const bankContent = document.getElementById('upg-bank-content');
     if (bankContent) {
       const debt = co.debt || 0;
+      const emergDebt = co.emergencyDebt || 0;
       const maxLoan = getMaxLoan();
       const remCap = getRemainingLoanCapacity();
       const loanPay = calcMonthlyLoanPayment(debt);
@@ -8550,18 +8631,37 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const colStats = calcCollateralStats();
       const isOverLimit = debt > maxLoan;
       const overAmount = Math.max(0, Math.round((debt - maxLoan) * 10) / 10);
+      const canBorrow50 = remCap >= 50;
       const canBorrow100 = remCap >= 100;
-      const canBorrow300 = remCap >= 300;
-      const canBorrowRem = remCap > 0 && remCap < 100;
-      const canRepay100 = debt > 0 && GameState.funds >= Math.min(100, debt);
+      const canBorrowRem = remCap > 0 && remCap < 50;
+      const canRepay50 = debt > 0 && GameState.funds >= Math.min(50, debt);
       const maxRepayable = Math.min(GameState.funds, debt);
       const canRepayAll = debt > 0 && maxRepayable >= 1.0;
+      const canRepayEmerg = emergDebt > 0 && GameState.funds >= 0.1;
+      const maxEmergRepayable = Math.min(GameState.funds, emergDebt);
 
       bankContent.innerHTML = `
+        ${emergDebt > 0 ? `
+          <div style="background:rgba(244,63,94,0.15); border:1.5px solid #f43f5e; border-radius:8px; padding:12px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div style="color:#fb7185; font-size:12px; font-weight:bold; display:flex; align-items:center; gap:5px;">
+                <i class="ph-bold ph-lightning"></i> 街金・緊急融資残高
+              </div>
+              <div style="font-size:16px; font-weight:900; color:#fb7185;">${emergDebt.toFixed(1)}<span style="font-size:10px; font-weight:normal;"> 万円</span></div>
+            </div>
+            <div style="font-size:10.5px; color:#fecdd3; line-height:1.4; margin-bottom:10px;">
+              ⚠️ <strong>超高金利（月利 10.0%）</strong> が毎月発生しています！破産を防ぐため、手元資金ができ次第の最優先返済を強く推奨します。
+            </div>
+            <button class="btn" onclick="repayEmergencyLoan('all')" ${canRepayEmerg ? '' : 'disabled'} style="background:#e11d48; color:#ffffff; width:100%; padding:9px; font-size:12px; font-weight:bold; justify-content:center; border:none; cursor:${canRepayEmerg ? 'pointer' : 'not-allowed'}; opacity:${canRepayEmerg ? '1' : '0.45'};">
+              ${GameState.funds >= emergDebt ? `街金を一括完済 (-${emergDebt.toFixed(1)}万円)` : `街金を優先返済 (-${maxEmergRepayable.toFixed(1)}万円)`}
+            </button>
+          </div>
+        ` : ''}
+
         <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:12px; margin-bottom:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div>
-              <div style="font-size:11px; color:var(--c-text2);">現在の借入残高</div>
+              <div style="font-size:11px; color:var(--c-text2);">現在の銀行借入残高</div>
               <div style="font-size:20px; font-weight:900; color:${debt > 0 ? 'var(--c-rose)' : 'var(--c-emerald)'};">${debt.toFixed(1)}<span style="font-size:11px; font-weight:normal;"> 万円</span></div>
             </div>
             <div style="text-align:right;">
@@ -8589,17 +8689,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:12px;">
           <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-            <i class="ph-bold ph-hand-coins"></i> 事業運転資金の借入（即日融資）
+            <i class="ph-bold ph-hand-coins"></i> 銀行運転資金の借入（即日融資）
           </div>
           <div style="font-size:11px; color:var(--c-text2); margin-bottom:10px; line-height:1.4;">
-            物件の建築資金が足りない場合、信用枠の範囲内でいつでも融資を受けられます。
+            物件の建築資金が足りない場合、銀行の信用枠の範囲内でいつでも融資を受けられます。
           </div>
           <div style="display:flex; gap:8px;">
+            <button class="btn ${canBorrow50 ? 'btn-primary' : 'btn-slate'}" ${canBorrow50 ? '' : 'disabled'} onclick="borrowLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow50 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow50 ? '1' : '0.45'};">
+              +50万円 借入
+            </button>
             <button class="btn ${canBorrow100 ? 'btn-primary' : 'btn-slate'}" ${canBorrow100 ? '' : 'disabled'} onclick="borrowLoan(100)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow100 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow100 ? '1' : '0.45'};">
               +100万円 借入
-            </button>
-            <button class="btn ${canBorrow300 ? 'btn-primary' : 'btn-slate'}" ${canBorrow300 ? '' : 'disabled'} onclick="borrowLoan(300)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow300 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow300 ? '1' : '0.45'};">
-              +300万円 借入
             </button>
           </div>
           ${canBorrowRem ? `
@@ -8617,8 +8717,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             手元資金に余裕があるときに元本を直接返済し、毎月の金利負担を減らせます。
           </div>
           <div style="display:flex; gap:8px;">
-            <button class="btn ${canRepay100 ? 'btn-amber' : 'btn-slate'}" ${canRepay100 ? '' : 'disabled'} onclick="repayLoan(100)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepay100 ? 'pointer' : 'not-allowed'}; opacity:${canRepay100 ? '1' : '0.45'};">
-              -${Math.min(100, debt > 0 ? debt : 100).toFixed(0)}万円 返済
+            <button class="btn ${canRepay50 ? 'btn-amber' : 'btn-slate'}" ${canRepay50 ? '' : 'disabled'} onclick="repayLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepay50 ? 'pointer' : 'not-allowed'}; opacity:${canRepay50 ? '1' : '0.45'};">
+              -${Math.min(50, debt > 0 ? debt : 50).toFixed(0)}万円 返済
             </button>
             <button class="btn ${canRepayAll ? 'btn-amber' : 'btn-slate'}" ${canRepayAll ? '' : 'disabled'} onclick="repayLoan('all')" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepayAll ? 'pointer' : 'not-allowed'}; opacity:${canRepayAll ? '1' : '0.45'};">
               ${GameState.funds >= debt && debt > 0 ? `一括完済 (-${debt.toFixed(1)}万)` : `最大返済 (-${maxRepayable.toFixed(1)}万)`}
@@ -8628,8 +8728,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
         <div style="background:rgba(15,23,42,0.4); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px; font-size:10px; color:var(--c-text2); line-height:1.5;">
           <div style="font-weight:bold; color:var(--c-text); margin-bottom:4px;">📈 現在の銀行信用枠（限度額 ${maxLoan.toFixed(1)}万円）の内訳</div>
-          <div>・基本信用枠: <strong>500万円</strong></div>
-          <div>・知名度ボーナス (Lv.${brandLv}): <strong>+${(brandLv - 1) * 300}万円</strong> (1Lvにつき+300万)</div>
+          <div>・基本信用枠: <strong>100万円</strong></div>
+          <div>・知名度ボーナス (Lv.${brandLv}): <strong>+${(brandLv - 1) * 200}万円</strong> (1Lvにつき+200万)</div>
           <div>・所有物件担保ボーナス (稼働${colStats.activeProps}棟 / 空室${colStats.vacantProps}棟): <strong>+${colStats.totalCollateral.toFixed(1)}万円</strong><br>
             <span style="color:var(--c-text3); padding-left:10px;">※ 入居中物件は「現在売価×2.0倍」、空室中物件は「現在売価×0.5倍」で評価</span>
           </div>
@@ -9151,6 +9251,90 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
+  function borrowEmergencyLoan(amount) {
+    initAudio();
+    if (!GameState.company) return;
+    const curDebt = GameState.company.emergencyDebt || 0;
+    const maxEmerg = 50.0;
+    const borrowAmt = Math.min(Number(amount) || 0, Math.max(0, maxEmerg - curDebt));
+    if (borrowAmt <= 0) {
+      playSound('error');
+      showUpgradeFeedback('街金の借入限度額（50万円）に達しています！', 'var(--c-rose)');
+      return;
+    }
+    GameState.company.emergencyDebt = Math.round((curDebt + borrowAmt) * 10) / 10;
+    GameState.funds = Math.round((GameState.funds + borrowAmt) * 10) / 10;
+    budget = Math.round((budget + borrowAmt) * 10) / 10;
+    updateBudgetUI();
+    playSound('coin');
+    closeEmergencyLoanModal();
+    showFloatingText(`+${borrowAmt.toFixed(1)}万（街金スピード融資）`, 'var(--c-amber)');
+    saveGame();
+    updateHomeUI();
+  }
+
+  function repayEmergencyLoan(amount) {
+    initAudio();
+    if (!GameState.company) return;
+    const debt = GameState.company.emergencyDebt || 0;
+    if (debt <= 0) return;
+    let repayAmt = amount === 'all' ? Math.min(GameState.funds, debt) : Math.min(Number(amount) || 0, debt);
+    repayAmt = Math.round(repayAmt * 10) / 10;
+    if (repayAmt <= 0 || GameState.funds < repayAmt) {
+      playSound('error');
+      showUpgradeFeedback('返済するための所持資金が足りません！', 'var(--c-rose)');
+      return;
+    }
+    GameState.funds = Math.max(0, Math.round((GameState.funds - repayAmt) * 10) / 10);
+    GameState.company.emergencyDebt = Math.max(0, Math.round((debt - repayAmt) * 10) / 10);
+    playSound('clear');
+    if (GameState.company.emergencyDebt === 0) {
+      showUpgradeFeedback(`🎉 街金・緊急融資を全額完済しました！重い利息から解放されました！`, 'var(--c-emerald)');
+    } else {
+      showUpgradeFeedback(`💸 街金に ${repayAmt.toFixed(1)}万円 返済しました（残債 ${GameState.company.emergencyDebt.toFixed(1)}万）`, 'var(--c-emerald)');
+    }
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function showEmergencyLoanPrompt(deficit = 0) {
+    const modal = document.getElementById('emergency-loan-modal');
+    if (!modal) return;
+    const curDebt = (GameState.company && GameState.company.emergencyDebt) || 0;
+    const maxEmerg = 50.0;
+    const remCapacity = Math.max(0, maxEmerg - curDebt);
+
+    const deficitEl = document.getElementById('emerg-deficit-val');
+    if (deficitEl) deficitEl.textContent = Math.max(0.1, deficit).toFixed(1);
+
+    const debtEl = document.getElementById('emerg-current-debt');
+    if (debtEl) debtEl.textContent = `${curDebt.toFixed(1)}万円`;
+
+    const btn10 = document.getElementById('btn-borrow-emerg-10');
+    if (btn10) {
+      const can10 = remCapacity >= 10;
+      btn10.disabled = !can10;
+      btn10.style.opacity = can10 ? '1' : '0.4';
+      btn10.style.cursor = can10 ? 'pointer' : 'not-allowed';
+    }
+
+    const btn20 = document.getElementById('btn-borrow-emerg-20');
+    if (btn20) {
+      const can20 = remCapacity >= 20;
+      btn20.disabled = !can20;
+      btn20.style.opacity = can20 ? '1' : '0.4';
+      btn20.style.cursor = can20 ? 'pointer' : 'not-allowed';
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function closeEmergencyLoanModal() {
+    const modal = document.getElementById('emergency-loan-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
   function showGameOverModal(reason) {
     const modal = document.getElementById('gameover-modal');
     if (!modal) return;
@@ -9178,8 +9362,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       localStorage.removeItem(SAVE_KEY);
     } catch(e) {}
     GameState.companyName = '和歌山不動産';
-    GameState.funds = 500.0;
-    GameState.lastFunds = 500.0;
+    GameState.funds = 100.0;
+    GameState.lastFunds = 100.0;
     GameState.month = 1;
     GameState.level = 0;
     GameState.attempts = 2;
@@ -9193,6 +9377,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       deskCount: 0,
       capacityLevel: 0,
       debt: 0,
+      emergencyDebt: 0,
       features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
       hiredStaff: [],
       unlockedPieces: [...STARTER_UNLOCKED_IDS],
@@ -9479,6 +9664,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   window.dismissStaff = dismissStaff;
   window.borrowLoan = borrowLoan;
   window.repayLoan = repayLoan;
+  window.borrowEmergencyLoan = borrowEmergencyLoan;
+  window.repayEmergencyLoan = repayEmergencyLoan;
   window.unlockPiece = unlockPiece;
   window.setDeckSlotOverride = setDeckSlotOverride;
   window.setDeckCustomSlot = setDeckCustomSlot;
@@ -9511,6 +9698,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 function updateHomeUI() {
     ensureDeckState();
     const debt = GameState.company.debt || 0;
+    const emergDebt = GameState.company.emergencyDebt || 0;
     document.getElementById('home-co-name').textContent = GameState.companyName;
     document.getElementById('home-co-month').textContent = GameState.month;
     const curM = GameState.month || 1;
@@ -9518,8 +9706,10 @@ function updateHomeUI() {
     const curYear = Math.floor((curM - 1) / 12) + 1;
     const calEl = document.getElementById('home-co-calendar');
     if (calEl) calEl.textContent = `(${curYear}年目 ${monthInYear}月)`;
-    document.getElementById('home-co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>` +
-      (debt > 0 ? `<div style="font-size:10px; color:var(--c-rose); font-weight:bold; margin-top:2px;">(借入: -${debt.toFixed(1)}万)</div>` : '');
+    let debtHtml = '';
+    if (debt > 0) debtHtml += `<div style="font-size:10px; color:var(--c-rose); font-weight:bold; margin-top:2px;">(銀行借入: -${debt.toFixed(1)}万)</div>`;
+    if (emergDebt > 0) debtHtml += `<div style="font-size:10px; color:#fb7185; font-weight:bold; margin-top:1px;">(街金: -${emergDebt.toFixed(1)}万 / 月利10%)</div>`;
+    document.getElementById('home-co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>` + debtHtml;
     
     // Company Badges
     const activeCount = getActivePropertyCount();
