@@ -2613,6 +2613,10 @@
     if (badCombos > 0) {
       chance -= badCombos * 5;
     }
+    // 隠し部屋ペナルティ（珍間取りだが収納経由居室は一般客に敬遠されるため再入居率-10%）
+    if ((p.combosList || []).some(c => c && c.name === '隠し部屋')) {
+      chance -= 10;
+    }
 
     // 3. 会社知名度・営業力 (+5% 〜 +25%)
     const brandLv = (GameState && GameState.company && GameState.company.brandLevel) || 1;
@@ -3165,6 +3169,10 @@
       baseDegRate += (unreached * 0.2) + (badC * 0.5);
     } else {
       baseDegRate += (badC * 0.5) + (amenityPenalty > 0 ? 0.3 : 0);
+    }
+    // 隠し部屋ペナルティ（珍間取りとしての住みづらさにより劣化・退去リスク+0.4%/月）
+    if ((p.combosList || []).some(c => c && c.name === '隠し部屋')) {
+      baseDegRate += 0.4;
     }
 
     // 築年数による劣化加速: degRate = baseDegRate * (1 + buildingAge * 0.015)
@@ -4957,6 +4965,45 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return false;
   }
 
+  // 隠し部屋判定: 玄関からの動線において、「収納」を通らないと到達できない居室（洋室・和室・LDK）が存在するか
+  function hasHiddenRoom(visited) {
+    if (!STAGE) return false;
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
+    const visitedNoCloset = new Set(entCells.map(c => `${c.r},${c.c}`));
+    const queue = entCells.map(c => ({ r: c.r, c: c.c }));
+    const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+
+    while (queue.length) {
+      const cur = queue.shift();
+      for (const {dr,dc} of dirs) {
+        const nr = cur.r+dr, nc = cur.c+dc;
+        const key = `${nr},${nc}`;
+        if (nr<0||nr>=GRID||nc<0||nc>=GRID||visitedNoCloset.has(key)) continue;
+        const nextCell = grid[nr][nc];
+        if (!nextCell || nextCell.type === T.CLOSET) continue; // 収納は通り抜けない
+        const et = edgeType(cur.r, cur.c, nr, nc);
+        if (et === E.NONE || et === E.DOOR) {
+          visitedNoCloset.add(key);
+          queue.push({r:nr, c:nc});
+        }
+      }
+    }
+
+    // 通常のBFS(visited)で到達できる居室の中で、収納を迂回できない部屋が存在するかチェック
+    for (let r=0; r<GRID; r++) {
+      for (let c=0; c<GRID; c++) {
+        const cell = grid[r][c];
+        if (cell && (cell.type === T.ROOM || cell.type === T.LDK)) {
+          const key = `${r},${c}`;
+          if (visited && visited.has(key) && !visitedNoCloset.has(key)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   /* ============================================================
      COMBO DETECTION
   ============================================================ */
@@ -5081,6 +5128,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (hasAccessibleToilet && connectedToCloset && !connectedToNonCloset) {
       combos.push({ name:'秘密のトイレ', bonus:1.0, icon:'ph-lock-key text-slate-600', type:'funny',
         text:'【珍間取り】秘密のトイレ — 収納の奥に潜む便器 (+1.0万)' });
+    }
+
+    // 新コンボ5: 隠し部屋（収納を通らないと行けない居室）
+    if (hasHiddenRoom(visited)) {
+      combos.push({ name:'隠し部屋', bonus:1.5, icon:'ph-door text-purple-600', type:'funny',
+        text:'【珍間取り】隠し部屋 — 収納の奥に広がる秘密空間 (+1.5万)' });
     }
 
     // 1. 水回り集約: 風呂・トイレ・洗面が相互に隣接
@@ -5510,6 +5563,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return { main:'「帰れない…廊下が私を呼んでいる。無限回廊エンドレスハウス」', sub:'【哲学的物件】' };
     if (funnyNames.includes('マトリョーシカ'))
       return { main:'「辿り着けない最奥の部屋。謎と神秘のマトリョーシカ邸」', sub:'【謎多き物件】' };
+    if (funnyNames.includes('隠し部屋'))
+      return { main:'「扉の向こうに広がる別世界。男のロマンを叶える秘密基地邸」', sub:'【秘密物件】' };
     if (funnyNames.includes('スケルトンバス'))
       return { main:'「玄関を開けたら浴室が見える。オープンな暮らしを体現した家」', sub:'【開放的物件】' };
     if (counts.unreachable > 0)
@@ -5538,6 +5593,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
     // 2. ユニークコンボ・特殊設計へのリアクション
+    if (combos.some(c=>c.name==='隠し部屋'))
+      return 'クローゼットの扉を開けたら別の部屋に…！？まるで隠し部屋みたいでテンションが上がります！';
     if (combos.some(c=>c.name==='要塞化'))
       return '窓が一つもない…！誰の視線も届かない、まさに私の求めていた完全なプライベート空間です…！';
     if (combos.some(c=>c.name==='トイレビュッフェ'))
