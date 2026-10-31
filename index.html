@@ -763,7 +763,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.90 (10/31)
+        Floor Plan v0.91 (10/31)
       </div>
     </div>
   </section>
@@ -2628,6 +2628,21 @@
     return Math.max(0.1, Math.round(base * (1 - discountRatio) * 10) / 10);
   }
 
+  // 珍間取りごとの固有デメリット定義（劣化率加算 & 空室再入居率ペナルティ）
+  const FUNNY_LAYOUT_PROPS = {
+    '水門':             { deg: 0.5, fill: -15 },
+    '秘密のトイレ':       { deg: 0.3, fill: -10 },
+    'バカデカトイレ':     { deg: 0.3, fill: -5  },
+    '隠し部屋':           { deg: 0.4, fill: -10 },
+    '無限回廊':           { deg: 0.2, fill: -5  },
+    '収納が本体':         { deg: 0.3, fill: -10 },
+    'もはや銭湯':         { deg: 0.3, fill: -10 },
+    '究極のオープン':     { deg: 0.2, fill: -5  },
+    'ガラス張りハウス':   { deg: 0.4, fill: -10 },
+    '要塞化':             { deg: 0.5, fill: -20 },
+    '封印されし闇':       { deg: 0.5, fill: -20 }
+  };
+
   function calcFillChance(p) {
     if (!p) return 40;
     let chance = 40; // 基礎入居決定率 40%
@@ -2648,9 +2663,15 @@
     if (badCombos > 0) {
       chance -= badCombos * 5;
     }
-    // 隠し部屋ペナルティ（珍間取りだが収納経由居室は一般客に敬遠されるため再入居率-10%）
-    if ((p.combosList || []).some(c => c && c.name === '隠し部屋')) {
-      chance -= 10;
+    // 珍間取りペナルティ（珍間取りは一般市場の入居希望者に敬遠されやすいため再入居率低下）
+    if (p.combosList) {
+      for (const c of p.combosList) {
+        const cName = (typeof c === 'string') ? c : (c && c.name);
+        const prop = cName ? FUNNY_LAYOUT_PROPS[cName] : null;
+        if (prop && prop.fill) {
+          chance += prop.fill;
+        }
+      }
     }
 
     // 3. 会社知名度・営業力 (+5% 〜 +25%)
@@ -3235,9 +3256,15 @@
     } else {
       baseDegRate += (badC * 0.5) + (amenityPenalty > 0 ? 0.3 : 0);
     }
-    // 隠し部屋ペナルティ（珍間取りとしての住みづらさにより劣化・退去リスク+0.4%/月）
-    if ((p.combosList || []).some(c => c && c.name === '隠し部屋')) {
-      baseDegRate += 0.4;
+    // 珍間取りペナルティ（珍間取りとしての住みづらさにより劣化・退去リスク増加）
+    if (p.combosList) {
+      for (const c of p.combosList) {
+        const cName = (typeof c === 'string') ? c : (c && c.name);
+        const prop = cName ? FUNNY_LAYOUT_PROPS[cName] : null;
+        if (prop && prop.deg) {
+          baseDegRate += prop.deg;
+        }
+      }
     }
 
     // 築年数による劣化加速: degRate = baseDegRate * (1 + buildingAge * 0.015)
@@ -5096,19 +5123,19 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 統合サイズコンボ（同種ピース統合で生まれた大きな水回り・収納）
     // トイレ: 4マス以上でネタ / 浴室: 4マス以上で豪華、8マス以上で銭湯 / 収納: 4マス以上で豪華、8マス以上でやり過ぎ
     if (counts.maxToiletSize >= 4) {
-      combos.push({ name:'バカデカトイレ', bonus:3.0, icon:'ph-toilet text-purple-600', type:'funny',
-        text:`【珍間取り】トイレが${counts.maxToiletSize}マス連結 — 何を目指しているのか (+3.0万)` });
+      combos.push({ name:'バカデカトイレ', bonus:2.5, icon:'ph-toilet text-purple-600', type:'funny',
+        text:`【珍間取り】トイレが${counts.maxToiletSize}マス連結 — 何を目指しているのか (+2.5万)` });
     }
     if (counts.maxBathSize >= 8) {
-      combos.push({ name:'もはや銭湯', bonus:3.0, icon:'ph-shower text-cyan-600', type:'funny',
-        text:`【珍間取り】浴室が${counts.maxBathSize}マス連結 — 住居より風呂が主役 (+3.0万)` });
+      combos.push({ name:'もはや銭湯', bonus:4.0, icon:'ph-shower text-cyan-600', type:'funny',
+        text:`【珍間取り】浴室が${counts.maxBathSize}マス連結 — 住居より風呂が主役 (+4.0万)` });
     } else if (counts.maxBathSize >= 4) {
       combos.push({ name:'セレブ浴室', bonus:4.0, icon:'ph-bathtub text-cyan-600', type:'good',
         text:`【王道】浴室が${counts.maxBathSize}マス連結 — 足を伸ばして入れる贅沢 (+4.0万)` });
     }
     if (counts.maxClosetSize >= 8) {
-      combos.push({ name:'収納が本体', bonus:2.0, icon:'ph-package text-amber-600', type:'funny',
-        text:`【珍間取り】収納が${counts.maxClosetSize}マス連結 — もはや倉庫に住んでいる (+2.0万)` });
+      combos.push({ name:'収納が本体', bonus:2.5, icon:'ph-package text-amber-600', type:'funny',
+        text:`【珍間取り】収納が${counts.maxClosetSize}マス連結 — もはや倉庫に住んでいる (+2.5万)` });
     } else if (counts.maxClosetSize >= 4) {
       combos.push({ name:'倉庫付き物件', bonus:3.0, icon:'ph-package text-amber-600', type:'good',
         text:`【王道】収納が${counts.maxClosetSize}マス連結 — 荷物が多くても安心 (+3.0万)` });
@@ -5123,8 +5150,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 新コンボ2: 究極のオープン（全室オープン構造）
     const livingRooms = counts.ldkRooms + counts.bedRooms;
     if (counts.corridor === 0 && livingRooms >= 4) {
-      combos.push({ name:'究極のオープン', bonus:3.0, icon:'ph-door text-teal-600', type:'funny',
-        text:'【珍間取り】全室オープン構造 — 廊下ゼロで部屋が直結 (+3.0万)' });
+      combos.push({ name:'究極のオープン', bonus:3.5, icon:'ph-door text-teal-600', type:'funny',
+        text:'【珍間取り】全室オープン構造 — 廊下ゼロで部屋が直結 (+3.5万)' });
     }
     // 新コンボ2: 封印されし闇（到達不能かつ窓なしの部屋）
     if (counts.unreachable > 0) {
@@ -5170,8 +5197,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
     if (hasNext && waterGate) {
-      combos.push({ name:'水門', bonus:2.0, icon:'ph-waves text-blue-600', type:'funny',
-        text:'【珍間取り】水門 — 玄関から水回りしか行けない (+2.0万)' });
+      combos.push({ name:'水門', bonus:1.5, icon:'ph-waves text-blue-600', type:'funny',
+        text:'【珍間取り】水門 — 玄関から水回りしか行けない (+1.5万)' });
     }
     // 新コンボ4: 秘密のトイレ（収納からしか行けないトイレ）
     let hasAccessibleToilet = false;
@@ -5245,8 +5272,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     // 7. 無限回廊: 廊下ループ検出
     if (infiniteLoop(visited)) {
-      combos.push({ name:'無限回廊', bonus:0.5, icon:'ph-arrows-clockwise text-indigo-600', type:'funny',
-        text:'【珍間取り】無限回廊 — 謎の回遊動線を評価 (+0.5万)' });
+      combos.push({ name:'無限回廊', bonus:1.5, icon:'ph-arrows-clockwise text-indigo-600', type:'funny',
+        text:'【珍間取り】無限回廊 — 謎の回遊動線を評価 (+1.5万)' });
     }
     // 8. マトリョーシカ: 3室以上通り抜け
     if (matroshka(visited)) {
@@ -5259,10 +5286,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:'【大惨事】プライバシーゼロ — トイレ・風呂が通り抜け動線 (-1.5万)' });
     }
 
-    // 10. 要塞化 (外部窓なし)
-    if (!hasAnyWindow(grid) && (counts.bedRooms + counts.ldkRooms) > 0) {
-      combos.push({ name:'要塞化', bonus:-1.0, icon:'ph-shield-slash text-slate-600', type:'funny',
-        text:'【大惨事】要塞化 — 外界の光を拒絶した完全遮光空間 (-1.0万)' });
+    // 10. 窓関連コンボ（窓の数による王道・珍間取り判定）
+    const winCount = countWindows(grid);
+    const hasLiving = (counts.bedRooms + counts.ldkRooms) > 0;
+    if (hasLiving && winCount === 0) {
+      combos.push({ name:'要塞化', bonus:2.0, icon:'ph-shield-check text-slate-700', type:'funny',
+        text:'【珍間取り】要塞化 — 外界の視線と光を拒絶した完全遮光空間 (+2.0万)' });
+    } else if (winCount >= 8 && winCount <= 14) {
+      combos.push({ name:'陽だまりの家', bonus:2.0, icon:'ph-sun text-amber-500', type:'good',
+        text:`【王道】陽だまりの家 — 窓${winCount}箇所で光と風が通る (+2.0万)` });
+    } else if (winCount >= 15) {
+      combos.push({ name:'ガラス張りハウス', bonus:3.0, icon:'ph-sparkle text-cyan-600', type:'funny',
+        text:`【珍間取り】ガラス張りハウス — 窓${winCount}箇所の超パノラマビュー (+3.0万)` });
     }
 
     return combos;
@@ -5508,22 +5543,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   /* ============================================================
-     HIDDEN REQUEST HELPERS
+     WINDOW COUNT & HELPERS
   ============================================================ */
-  function hasAnyWindow(grid) {
-    // Check if any LDK/ROOM cell borders garden or exterior
-    for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
-      const cell = grid[r][c];
-      if (cell.type !== T.LDK && cell.type !== T.ROOM) continue;
-      const dirs=[{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
-      for (const {dr,dc} of dirs) {
-        const nr=r+dr, nc=c+dc;
-        if (nr<0||nr>=GRID||nc<0||nc>=GRID) return true; // exterior
-        const nb = grid[nr][nc];
-        if (nb.type===T.GARDEN||nb.type===T.EMPTY) return true;
+  function countWindows(grid) {
+    let count = 0;
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        if (edgeType(r, c, r, c + 1) === E.WINDOW && !hasSolidWall(r, c, r, c + 1)) count++;
+        if (edgeType(r, c, r + 1, c) === E.WINDOW && !hasSolidWall(r, c, r + 1, c)) count++;
+        if (r === 0 && edgeType(-1, c, r, c) === E.WINDOW && !hasSolidWall(-1, c, r, c)) count++;
+        if (c === 0 && edgeType(r, -1, r, c) === E.WINDOW && !hasSolidWall(r, -1, r, c)) count++;
       }
     }
-    return false;
+    return count;
+  }
+
+  function hasAnyWindow(grid) {
+    return countWindows(grid) > 0;
   }
 
   /* ============================================================
@@ -5626,6 +5662,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   function genCatchphrase(counts, combos, optSatisfiedCount) {
     const funnyNames = combos.filter(c=>c.type==='funny').map(c=>c.name);
+    if (combos.some(c=>c.name==='ガラス張りハウス'))
+      return { main:'「空と光に溶け込むパノラマビュー。全面ガラス張りの圧倒的開放感」', sub:'【ガラス張り物件】' };
+    if (combos.some(c=>c.name==='陽だまりの家'))
+      return { main:'「光と風が家中を駆け巡る。窓辺にぬくもり溢れる陽だまり邸」', sub:'【採光特選物件】' };
     if (combos.some(c=>c.name==='要塞化'))
       return { main:'「光なき城。外界を完全に遮断した静寂の要塞邸宅」', sub:'【要塞物件】' };
     if (combos.some(c=>c.name==='日当たり良好'))
@@ -5666,6 +5706,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
     // 2. ユニークコンボ・特殊設計へのリアクション
+    if (combos.some(c=>c.name==='ガラス張りハウス'))
+      return '部屋中が窓だらけでまるで温室かパノラマラウンジですね…！外からの視線と日差しがちょっと気になりますがすごい迫力です！';
+    if (combos.some(c=>c.name==='陽だまりの家'))
+      return '窓がたくさんあって光と風が部屋中に満ちています！朝起きた時の気持ちよさが段違いですね！';
     if (combos.some(c=>c.name==='隠し部屋'))
       return 'クローゼットの扉を開けたら別の部屋に…！？まるで隠し部屋みたいでテンションが上がります！';
     if (combos.some(c=>c.name==='要塞化'))
