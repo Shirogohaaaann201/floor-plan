@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.93</title>
+  <title>間取り図パズル — Floor Plan v0.94</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -726,7 +726,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.93 (10/31)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.94 (10/31)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -766,7 +766,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.93 (10/31)
+        Floor Plan v0.94 (10/31)
       </div>
     </div>
   </section>
@@ -3316,18 +3316,42 @@
     const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
 
     // 売却査定額:
-    // 建築原価 + (コンボによる純増家賃 × 12ヶ月分)
-    // ※良コンボ物件を高値で売り抜ける「デベロッパー戦略」を可能にする収益還元プレミアム
+    // 建築原価 + (コンボによる純増家賃 × 12ヶ月分 × 満足度連動係数)
+    // ・満足度100%以上: プラスコンボのプレミアム100%評価
+    // ・満足度80%〜99%: プラスコンボのプレミアムが0%〜100%で線形スケール
+    // ・満足度80%未満: プラスコンボのプレミアム0 + 建築原価自体も最大20%減額 (不良設計ペナルティ)
+    // ・マイナスコンボ(純減家賃 < 0): 物件の構造的欠陥のため満足度に関わらず100%減額反映
     // オーナーチェンジ（入居中）: 査定額100%（満額）
     // 空室売却（空室中）: リスク割引 80%（20%引き）
+    // 最低保有期間: 築6ヶ月目以降で売却解禁（短期転売規制）
     const baseCost = p.baseCost || (baseRent * 20) || 0;
     const effectiveRent = (p.isOriginalTenant !== false) ? (p.rent || baseRent) : calcMarketRent(p, GameState.month);
     const comboRentDiff = effectiveRent - baseRent;
-    const comboPremium = comboRentDiff * 12;
-    const initialValuation = Math.max(baseCost * 0.3, baseCost + comboPremium);
+    const rawComboPremium = comboRentDiff * 12;
+    let comboPremium = 0;
+    let satPremiumRate = 1.0;
+    if (rawComboPremium > 0) {
+      if (satisfaction >= 100) {
+        satPremiumRate = 1.0;
+      } else if (satisfaction >= 80) {
+        satPremiumRate = (satisfaction - 80) / 20;
+      } else {
+        satPremiumRate = 0;
+      }
+      comboPremium = rawComboPremium * satPremiumRate;
+    } else {
+      // マイナスコンボ（構造的欠陥）は常に100%減額
+      comboPremium = rawComboPremium;
+    }
+    const satBaseFactor = satisfaction >= 80 ? 1.0 : Math.max(0.8, 0.8 + (Math.max(0, satisfaction) / 80) * 0.2);
+    const initialValuation = Math.max(baseCost * 0.3, (baseCost * satBaseFactor) + comboPremium);
     const standardResaleNum = initialValuation * Math.max(0.3, 1.0 - (buildingAge * 0.02));
     const standardResaleValue = standardResaleNum.toFixed(1);
     const resaleValue = (isVacant ? standardResaleNum * 0.8 : standardResaleNum).toFixed(1);
+
+    const minHoldMonths = 6;
+    const canSell = buildingAge >= minHoldMonths;
+    const sellLockRemain = Math.max(0, minHoldMonths - buildingAge);
 
     const nextRecruitRent = calcMarketRent(p, GameState.month);
 
@@ -3339,6 +3363,9 @@
       initialEvict: Math.max(0, 100 - satisfaction),
       resaleValue: resaleValue,
       standardResaleValue: standardResaleValue,
+      canSell: canSell,
+      sellLockRemain: sellLockRemain,
+      satPremiumRate: Math.round(satPremiumRate * 100),
       isVacant: isVacant,
       vacantMonths: p.vacantMonths || 0,
       fillChance: fillChance,
@@ -6179,7 +6206,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const paybackText = rent > 0
         ? (totalSpentCost <= 0 ? '即時回収' : `家賃回収目安: 約${Math.ceil(totalSpentCost / rent)}ヶ月`)
         : '家賃回収不可 (0円物件)';
-      fRoiEl.innerHTML = `<span>初期売価: <strong>${stats.resaleValue}万</strong></span><span>${paybackText}</span>`;
+      fRoiEl.innerHTML = `<span>査定額: <strong>${stats.resaleValue}万</strong> (築6ヶ月〜売却可)</span><span>${paybackText}</span>`;
     }
 
     const badge = document.getElementById('flyer-clear-badge');
@@ -7896,8 +7923,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const elNetProfit = document.getElementById('pd-net-profit');
     if (elNetProfit) {
-      const discountTag = stats.isVacant ? ' (空室20%引)' : '';
-      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万 (家賃${earnedRent.toFixed(1)}+売価${resaleNum.toFixed(1)}${discountTag})`;
+      const discountTag = stats.isVacant ? ' (空室20%引)' : (stats.satisfaction < 100 ? ` (満足度${stats.satisfaction}%査定)` : '');
+      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万 (家賃${earnedRent.toFixed(1)}+査定${resaleNum.toFixed(1)}${discountTag})`;
       elNetProfit.style.color = netIfSold >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
     }
     
@@ -7945,44 +7972,58 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const newBtnSell = btnSell.cloneNode(true);
     const saleTypeLabel = stats.isVacant ? '空室売却 (20%引)' : 'オーナーチェンジ売却 (満額)';
     const saleIcon = stats.isVacant ? 'ph-house-line' : 'ph-handshake';
-    newBtnSell.innerHTML = `<i class="ph-bold ${saleIcon}"></i> ${saleTypeLabel} (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
-    newBtnSell.style.background = '';
-    newBtnSell.style.color = stats.isVacant ? '#fda4af' : 'var(--c-amber-lt)';
-    newBtnSell.style.borderColor = 'var(--c-border)';
-    btnSell.parentNode.replaceChild(newBtnSell, btnSell);
-    let isSellConfirming = false;
-    let sellConfirmTimer = null;
+    if (!stats.canSell) {
+      newBtnSell.disabled = true;
+      newBtnSell.innerHTML = `<i class="ph-bold ph-lock-key"></i> 売却解禁まであと${stats.sellLockRemain}ヶ月 (査定 <span id="pd-sell-val">${stats.resaleValue}</span>万)`;
+      newBtnSell.style.background = '#1e293b';
+      newBtnSell.style.color = '#94a3b8';
+      newBtnSell.style.borderColor = 'var(--c-border)';
+      newBtnSell.style.opacity = '0.7';
+      newBtnSell.style.cursor = 'not-allowed';
+      btnSell.parentNode.replaceChild(newBtnSell, btnSell);
+    } else {
+      newBtnSell.disabled = false;
+      newBtnSell.style.opacity = '1';
+      newBtnSell.style.cursor = 'pointer';
+      newBtnSell.innerHTML = `<i class="ph-bold ${saleIcon}"></i> ${saleTypeLabel} (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
+      newBtnSell.style.background = '';
+      newBtnSell.style.color = stats.isVacant ? '#fda4af' : 'var(--c-amber-lt)';
+      newBtnSell.style.borderColor = 'var(--c-border)';
+      btnSell.parentNode.replaceChild(newBtnSell, btnSell);
+      let isSellConfirming = false;
+      let sellConfirmTimer = null;
 
-    newBtnSell.addEventListener('click', () => {
-      initAudio();
-      if (!isSellConfirming) {
-        isSellConfirming = true;
-        playSound('tap');
-        const confirmText = stats.isVacant 
-          ? `<i class="ph-bold ph-warning"></i> 空室割引で売却する？ (+${stats.resaleValue}万)`
-          : `<i class="ph-bold ph-warning"></i> 満額で売却する？ (+${stats.resaleValue}万)`;
-        newBtnSell.innerHTML = confirmText;
-        newBtnSell.style.background = '#e11d48';
-        newBtnSell.style.color = '#ffffff';
-        newBtnSell.style.borderColor = '#f43f5e';
+      newBtnSell.addEventListener('click', () => {
+        initAudio();
+        if (!isSellConfirming) {
+          isSellConfirming = true;
+          playSound('tap');
+          const confirmText = stats.isVacant 
+            ? `<i class="ph-bold ph-warning"></i> 空室割引で売却する？ (+${stats.resaleValue}万)`
+            : `<i class="ph-bold ph-warning"></i> 満額で売却する？ (+${stats.resaleValue}万)`;
+          newBtnSell.innerHTML = confirmText;
+          newBtnSell.style.background = '#e11d48';
+          newBtnSell.style.color = '#ffffff';
+          newBtnSell.style.borderColor = '#f43f5e';
+          if (sellConfirmTimer) clearTimeout(sellConfirmTimer);
+          sellConfirmTimer = setTimeout(() => {
+            isSellConfirming = false;
+            newBtnSell.innerHTML = `<i class="ph-bold ${saleIcon}"></i> ${saleTypeLabel} (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
+            newBtnSell.style.background = '';
+            newBtnSell.style.color = stats.isVacant ? '#fda4af' : 'var(--c-amber-lt)';
+            newBtnSell.style.borderColor = 'var(--c-border)';
+          }, 3500);
+          return;
+        }
         if (sellConfirmTimer) clearTimeout(sellConfirmTimer);
-        sellConfirmTimer = setTimeout(() => {
-          isSellConfirming = false;
-          newBtnSell.innerHTML = `<i class="ph-bold ${saleIcon}"></i> ${saleTypeLabel} (<span id="pd-sell-val">${stats.resaleValue}</span>万)`;
-          newBtnSell.style.background = '';
-          newBtnSell.style.color = stats.isVacant ? '#fda4af' : 'var(--c-amber-lt)';
-          newBtnSell.style.borderColor = 'var(--c-border)';
-        }, 3500);
-        return;
-      }
-      if (sellConfirmTimer) clearTimeout(sellConfirmTimer);
-      playSound('clear');
-      GameState.funds = Math.round((GameState.funds + parseFloat(stats.resaleValue)) * 10) / 10;
-      GameState.properties = GameState.properties.filter(x => x.id !== p.id);
-      saveGame();
-      document.getElementById('prop-detail-modal').style.display = 'none';
-      updateHomeUI();
-    });
+        playSound('clear');
+        GameState.funds = Math.round((GameState.funds + parseFloat(stats.resaleValue)) * 10) / 10;
+        GameState.properties = GameState.properties.filter(x => x.id !== p.id);
+        saveGame();
+        document.getElementById('prop-detail-modal').style.display = 'none';
+        updateHomeUI();
+      });
+    }
     
     document.getElementById('prop-detail-modal').style.display = 'flex';
   }
@@ -9903,7 +9944,7 @@ function updateHomeUI() {
                 ${stats.isVacant 
                   ? `<span style="color:#2563eb; font-weight:bold;">入居率: ${stats.fillChance}%</span>` 
                   : `<span>退去リスク: ${stats.evictRate}%</span>`}
-                <span>売価: ${stats.resaleValue}万${stats.isVacant ? '<span style="font-size:10px; color:#e11d48; font-weight:bold;">(空室20%引)</span>' : '<span style="font-size:10px; color:#059669;">(満額)</span>'}</span>
+                <span>売価: ${stats.resaleValue}万${!stats.canSell ? `<span style="font-size:10px; color:#64748b; font-weight:bold;">(🔒あと${stats.sellLockRemain}ヶ月)</span>` : (stats.isVacant ? '<span style="font-size:10px; color:#e11d48; font-weight:bold;">(空室20%引)</span>' : '<span style="font-size:10px; color:#059669;">(満額)</span>')}</span>
                 <span style="color:${netColor}; font-weight:bold;">売却通算: ${netNow >= 0 ? '+' : ''}${netNow.toFixed(1)}万</span>
               </div>
               ${statusHtml}
