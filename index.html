@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.94</title>
+  <title>間取り図パズル — Floor Plan v0.95</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -726,7 +726,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.94 (10/31)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.95 (10/31)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -766,7 +766,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.94 (10/31)
+        Floor Plan v0.95 (10/31)
       </div>
     </div>
   </section>
@@ -1642,8 +1642,12 @@
       fn: counts => (counts.maxClosetSize >= 1) || ((counts.closetCells || 0) >= 1)
     },
     'opt-closet2': {
-      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (2マス以上)',
-      fn: counts => (counts.maxClosetSize >= 2) || ((counts.closetCells || 0) >= 2)
+      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (3マス以上)',
+      fn: counts => (counts.maxClosetSize >= 3) || ((counts.closetCells || 0) >= 3)
+    },
+    'opt-kitchen': {
+      id: 'opt-kitchen', icon: 'ph-cooking-pot', color: '#ec4899', text: '自炊キッチンあり (K/DK/LDK)',
+      fn: counts => (counts.ldkCells || 0) >= 1
     },
     'opt-wash': {
       id: 'opt-wash', icon: 'ph-drop', color: '#059669', text: '独立洗面所あり',
@@ -2431,6 +2435,11 @@
       maxTurns = 24;
     }
 
+    const hasBaseKitchenReq = reqKeys.some(k => k === 'ldk1_room1' || k === 'ldk1_room2' || k === 'ldk2');
+    if (!hasBaseKitchenReq && !optKeys.includes('opt-kitchen')) {
+      optKeys.unshift('opt-kitchen');
+    }
+
     const requests = reqKeys.map(k => ({ ...REQUEST_REGISTRY[k] }));
     const optionalRequests = optKeys.map(k => ({ ...REQUEST_REGISTRY[k] })).filter(Boolean);
 
@@ -2491,6 +2500,11 @@
           req.text = REQUEST_REGISTRY[req.id].text;
         }
       });
+    }
+    if (!stage.optionalRequests) stage.optionalRequests = [];
+    const hasBaseKitchenReq = (stage.requests || []).some(r => r.id === 'ldk1_room1' || r.id === 'ldk1_room2' || r.id === 'ldk2');
+    if (!hasBaseKitchenReq && !stage.optionalRequests.some(o => o.id === 'opt-kitchen') && REQUEST_REGISTRY['opt-kitchen']) {
+      stage.optionalRequests.unshift({ ...REQUEST_REGISTRY['opt-kitchen'] });
     }
     if (stage.optionalRequests) {
       stage.optionalRequests.forEach(opt => {
