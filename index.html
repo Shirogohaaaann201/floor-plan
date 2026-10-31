@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.91</title>
+  <title>間取り図パズル — Floor Plan v0.92</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -726,7 +726,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.91 (10/31)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.92 (10/31)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -766,7 +766,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.91 (10/31)
+        Floor Plan v0.92 (10/31)
       </div>
     </div>
   </section>
@@ -4314,8 +4314,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!isPiece1 && !isPiece2) return E.NONE;
     if (!isPiece1 || !isPiece2) {
       const occ = isPiece1 ? c1_cell : c2_cell;
-      const nonOcc = isPiece1 ? c2_cell : c1_cell;
-      if (nonOcc && nonOcc.type === T.OBSTACLE) return E.WALL;
       if (occ && (occ.type === T.LDK || occ.type === T.ROOM)) return E.WINDOW;
       return E.WALL;
     }
@@ -5158,22 +5156,27 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     // 新コンボ2: 封印されし闇（到達不能かつ窓なしの部屋）
     if (counts.unreachable > 0) {
-      let sealed = false;
+      const unreachRooms = new Map();
       for (let r=0; r<GRID; r++) {
         for (let c=0; c<GRID; c++) {
-          if (grid[r][c].type === T.EMPTY || grid[r][c].type === T.GARDEN || grid[r][c].type === T.OBSTACLE) continue;
-          if (!visited.has(`${r},${c}`) && grid[r][c].type !== T.ENTRANCE) {
-            let hasWin = false;
+          const cell = grid[r][c];
+          if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE || cell.type === T.ENTRANCE) continue;
+          if (!visited.has(`${r},${c}`)) {
+            const rid = cell.roomId || `${r},${c}`;
+            if (!unreachRooms.has(rid)) unreachRooms.set(rid, false);
             const dirs=[{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
             for (const {dr,dc} of dirs) {
               const nr=r+dr, nc=c+dc;
-              if (nr<0||nr>=GRID||nc<0||nc>=GRID) { hasWin = true; break; }
+              if (nr<0||nr>=GRID||nc<0||nc>=GRID) { unreachRooms.set(rid, true); break; }
               const nb = grid[nr][nc];
-              if (nb.type===T.GARDEN||nb.type===T.EMPTY) { hasWin = true; break; }
+              if (nb.type===T.GARDEN||nb.type===T.EMPTY||nb.type===T.OBSTACLE) { unreachRooms.set(rid, true); break; }
             }
-            if (!hasWin) { sealed = true; break; }
           }
         }
+      }
+      let sealed = false;
+      for (const hasWin of unreachRooms.values()) {
+        if (!hasWin) { sealed = true; break; }
       }
       if (sealed) {
         combos.push({ name:'封印されし闇', bonus:5.0, icon:'ph-ghost text-purple-600', type:'funny',
@@ -5383,12 +5386,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function ldkFacesSouth() {
-    const lastRow = GRID - 1;
-    for (let c=0;c<GRID;c++)
-      if (grid[lastRow][c].type === T.LDK) return true;
-    // Also check second to last row facing south exterior
-    for (let c=0;c<GRID;c++)
-      if (grid[lastRow-1]?.[c]?.type === T.LDK && grid[lastRow][c].type !== T.EMPTY) {}
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        if (grid[r][c]?.type !== T.LDK) continue;
+        // LDKの南辺が窓であり、かつ南方向（下側）に遮蔽する他の部屋ピースが存在しない（敷地最南端または南庭に面している）
+        if (edgeType(r, c, r + 1, c) === E.WINDOW && !hasSolidWall(r, c, r + 1, c)) {
+          let blockedSouth = false;
+          for (let nr = r + 1; nr < GRID; nr++) {
+            const t = grid[nr][c]?.type;
+            if (t && t !== T.EMPTY && t !== T.GARDEN && t !== T.OBSTACLE) {
+              blockedSouth = true;
+              break;
+            }
+          }
+          if (!blockedSouth) return true;
+        }
+      }
+    }
     return false;
   }
 
