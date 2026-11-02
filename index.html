@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.95</title>
+  <title>間取り図パズル — Floor Plan v0.96</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -726,7 +726,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.95 (10/31)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.96 (11/02)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -766,7 +766,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.95 (10/31)
+        Floor Plan v0.96 (11/02)
       </div>
     </div>
   </section>
@@ -1803,10 +1803,10 @@
         minPrice: 0,
         maxDesks: 0,
         maxCapacityLevel: 0,
-        maxSalesLevel: 2,
-        maxBrandLevel: 2,
+        maxSalesLevel: 1,
+        maxBrandLevel: 1,
         missions: null,
-        desc: '自宅兼事務所。単独で4棟まで管理可能。'
+        desc: '自宅兼事務所。単独で4棟まで管理可能（上位強化には地元事務所への移転が必要）。'
       },
       {
         level: 1,
@@ -1815,14 +1815,14 @@
         minPrice: 300,
         maxDesks: 1,
         maxCapacityLevel: 1,
-        maxSalesLevel: 3,
-        maxBrandLevel: 3,
+        maxSalesLevel: 2,
+        maxBrandLevel: 2,
         missions: [
           { type: 'cleared', label: '施工実績', target: 6, discount: 300, unit: '件' },
           { type: 'netCombos', label: '設計品質', target: 12, discount: 300, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 500, discount: 300, unit: '万' }
         ],
-        desc: '雑居ビルの1室。デスク1席・管理枠7棟・営業/知名度Lv3まで解放。'
+        desc: '雑居ビルの1室。デスク1席・管理枠7棟・営業/知名度Lv2・設備投資Lv1まで解放。'
       },
       {
         level: 2,
@@ -1831,14 +1831,14 @@
         minPrice: 800,
         maxDesks: 2,
         maxCapacityLevel: 2,
-        maxSalesLevel: 4,
-        maxBrandLevel: 4,
+        maxSalesLevel: 3,
+        maxBrandLevel: 3,
         missions: [
           { type: 'cleared', label: '施工実績', target: 14, discount: 700, unit: '件' },
           { type: 'netCombos', label: '設計品質', target: 35, discount: 700, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 1800, discount: 800, unit: '万' }
         ],
-        desc: '駅前の自社フロア。デスク2席・管理枠11棟・営業/知名度Lv4まで解放。'
+        desc: '駅前の自社フロア。デスク2席・管理枠11棟・営業/知名度Lv3・設備投資Lv2まで解放。'
       },
       {
         level: 3,
@@ -1847,14 +1847,14 @@
         minPrice: 2000,
         maxDesks: 3,
         maxCapacityLevel: 3,
-        maxSalesLevel: 5,
-        maxBrandLevel: 5,
+        maxSalesLevel: 4,
+        maxBrandLevel: 4,
         missions: [
           { type: 'cleared', label: '施工実績', target: 25, discount: 1600, unit: '件' },
           { type: 'netCombos', label: '設計品質', target: 75, discount: 1600, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 5000, discount: 1800, unit: '万' }
         ],
-        desc: 'デザインスタジオ。デスク3席・管理枠16棟・全営業/知名度解放。'
+        desc: 'デザインスタジオ。デスク3席・管理枠16棟・営業/知名度Lv4・全設備投資解放。'
       },
       {
         level: 4,
@@ -1870,7 +1870,7 @@
           { type: 'netCombos', label: '設計品質', target: 130, discount: 3500, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 12000, discount: 4000, unit: '万' }
         ],
-        desc: '大手不動産本社ビル。最大4名雇用・管理枠22棟・完全制覇。'
+        desc: '大手不動産本社ビル。最大4名雇用・管理枠22棟・営業/知名度Lv5完全制覇。'
       }
     ],
     // 執務デスク増設（スタッフ雇用枠）
@@ -1889,9 +1889,37 @@
       { level: 4, capacity: 22, cost: 1500, name: '自社管理センター',   desc: '管理上限 +6棟（最大22棟）' }
     ],
     features: {
-      freeFlip:      { id: 'freeFlip',      name: '反転加工ライセンス', cost: 600, icon: 'ph-arrows-left-right', desc: 'ピース反転時の特注割増(1.2倍)を恒久無料化' },
-      extraRerolls:  { id: 'extraRerolls',  name: 'クイックリロール枠+2', cost: 400, icon: 'ph-arrows-clockwise',  desc: '無料ピース再抽選の上限が +2回 増加 (5回➔7回)' },
-      extraAttempts: { id: 'extraAttempts', name: '再設計保険',         cost: 800, icon: 'ph-shield-check',     desc: 'パズル中の再設計可能回数が 2回 ➔ 3回 に増加' },
+      freeFlip: {
+        id: 'freeFlip',
+        name: '反転加工設備',
+        icon: 'ph-arrows-left-right',
+        levels: [
+          { level: 0, name: '外注特注加工', cost: 0,   reqOfficeLevel: 0, mult: 1.2, desc: '反転時の加工割増 +20%（×1.2倍）' },
+          { level: 1, name: '簡易反転治具', cost: 250, reqOfficeLevel: 1, mult: 1.1, desc: 'ピース反転時の特注割増を半減（+20% ➔ +10%）' },
+          { level: 2, name: '自社反転ライン', cost: 500, reqOfficeLevel: 2, mult: 1.0, desc: 'ピース反転時の特注割増を恒久無料化（+10% ➔ 0%）' }
+        ]
+      },
+      extraRerolls: {
+        id: 'extraRerolls',
+        name: 'クイックリロール設備',
+        icon: 'ph-arrows-clockwise',
+        levels: [
+          { level: 0, name: '標準資材手配', cost: 0,   reqOfficeLevel: 0, bonus: 0, desc: '無料ピース再抽選の基本枠 5回' },
+          { level: 1, name: '迅速手配網 Lv.1', cost: 200, reqOfficeLevel: 1, bonus: 1, desc: '無料ピース再抽選の上限 +1回（5回 ➔ 6回）' },
+          { level: 2, name: '迅速手配網 Lv.2', cost: 350, reqOfficeLevel: 2, bonus: 2, desc: '無料ピース再抽選の上限 +2回（6回 ➔ 7回）' },
+          { level: 3, name: '直通物流網 Lv.3', cost: 600, reqOfficeLevel: 3, bonus: 3, desc: '無料ピース再抽選の上限 +3回（7回 ➔ 8回）' }
+        ]
+      },
+      extraAttempts: {
+        id: 'extraAttempts',
+        name: '再設計保険',
+        icon: 'ph-shield-check',
+        levels: [
+          { level: 0, name: '基本保証のみ', cost: 0,   reqOfficeLevel: 0, bonus: 0, desc: 'パズル中の再設計可能回数 2回' },
+          { level: 1, name: '設計やり直し保険 Lv.1', cost: 400, reqOfficeLevel: 1, bonus: 1, desc: 'パズル中の再設計可能回数 +1回（2回 ➔ 3回）' },
+          { level: 2, name: '総合設計補償 Lv.2',     cost: 800, reqOfficeLevel: 3, bonus: 2, desc: 'パズル中の再設計可能回数 +2回（3回 ➔ 4回）' }
+        ]
+      }
     }
   };
 
@@ -2166,8 +2194,24 @@
     return list;
   }
 
+  function getFeatureLevel(key) {
+    const val = GameState?.company?.features?.[key];
+    if (key === 'freeFlip') {
+      if (val === true) return 2;
+      if (val === false || !val) return 0;
+      return Math.min(2, Math.max(0, Number(val) || 0));
+    }
+    if (key === 'extraRerolls') {
+      return Math.min(3, Math.max(0, Number(val) || 0));
+    }
+    if (key === 'extraAttempts') {
+      return Math.min(2, Math.max(0, Number(val) || 0));
+    }
+    return Number(val) || 0;
+  }
+
   function getMaxAttempts() {
-    return 2 + (GameState?.company?.features?.extraAttempts ? 1 : 0);
+    return 2 + getFeatureLevel('extraAttempts');
   }
 
   function generateStage(level = 0, overrideType = null) {
@@ -2554,7 +2598,7 @@
       debt: 0,
       emergencyDebt: 0,
       features: {
-        freeFlip: false,
+        freeFlip: 0,
         extraRerolls: 0,
         extraAttempts: 0
       },
@@ -2575,13 +2619,20 @@
         officeLevel: 0,
         debt: 0,
         emergencyDebt: 0,
-        features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
+        features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 },
         hiredStaff: [],
         unlockedPieces: [...STARTER_UNLOCKED_IDS],
         deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
       };
     }
     const co = GameState.company;
+    if (!co.features) {
+      co.features = { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 };
+    } else {
+      co.features.freeFlip = getFeatureLevel('freeFlip');
+      co.features.extraRerolls = getFeatureLevel('extraRerolls');
+      co.features.extraAttempts = getFeatureLevel('extraAttempts');
+    }
     if (co.emergencyDebt === undefined) co.emergencyDebt = 0;
     if (!Array.isArray(co.unlockedPieces)) {
       co.unlockedPieces = [...STARTER_UNLOCKED_IDS];
@@ -3662,10 +3713,12 @@
       const discount = [0, 0.95, 0.90, 0.85][brokerLv] || 0.95;
       base *= discount;
     }
-    if (!mirrored || GameState?.company?.features?.freeFlip) {
+    if (!mirrored) {
       return Math.round(base * 10) / 10;
     }
-    return Math.round(base * 1.2 * 10) / 10;
+    const flipLv = getFeatureLevel('freeFlip');
+    const flipMult = flipLv >= 2 ? 1.0 : (flipLv === 1 ? 1.1 : 1.2);
+    return Math.round(base * flipMult * 10) / 10;
   }
 
   function getShape(piece, rot, mirror=false) {
@@ -3760,7 +3813,7 @@
   ============================================================ */
   function getDiscardCostForNext(count) {
     const recLv = getStaffSkillLevel('recycle');
-    const freeSlots = 5 + (GameState?.company?.features?.extraRerolls ? 2 : 0) + recLv;
+    const freeSlots = 5 + getFeatureLevel('extraRerolls') + recLv;
     let cost = 0;
     if (count < freeSlots) cost = 0;
     else if (count < freeSlots + 5) cost = 2.0;
@@ -8491,42 +8544,84 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       `;
     }
 
-    /* --- 4. 設備投資カード --- */
+    /* --- 6. 設備投資カード（段階強化・オフィス連動） --- */
     const cardFeat = document.getElementById('upg-card-features');
     if (cardFeat) {
       let featListHtml = '';
-      const feats = [
-        { key: 'freeFlip', def: UPGRADE_CONFIG.features.freeFlip, owned: !!co.features.freeFlip },
-        { key: 'extraRerolls', def: UPGRADE_CONFIG.features.extraRerolls, owned: co.features.extraRerolls > 0 },
-        { key: 'extraAttempts', def: UPGRADE_CONFIG.features.extraAttempts, owned: co.features.extraAttempts > 0 }
-      ];
+      const featKeys = ['freeFlip', 'extraRerolls', 'extraAttempts'];
 
-      feats.forEach(f => {
-        const canAfford = GameState.funds >= f.def.cost;
-        let rightCol = '';
-        if (f.owned) {
-          rightCol = `<span style="font-size:10px; font-weight:bold; padding:4px 8px; border-radius:4px; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399; white-space:nowrap;"><i class="ph-bold ph-check"></i> 導入済み</span>`;
+      featKeys.forEach(key => {
+        const featGroup = UPGRADE_CONFIG.features[key];
+        if (!featGroup || !featGroup.levels) return;
+        const curLv = getFeatureLevel(key);
+        const maxLv = featGroup.levels.length - 1;
+        const isMax = curLv >= maxLv;
+        const curLvDef = featGroup.levels[curLv] || featGroup.levels[0];
+        const nextLvDef = !isMax ? featGroup.levels[curLv + 1] : null;
+        const reqOfficeLv = nextLvDef ? (nextLvDef.reqOfficeLevel || 0) : 0;
+        const reqOfficeDef = UPGRADE_CONFIG.office[reqOfficeLv] || UPGRADE_CONFIG.office[0];
+        const isLockedByOffice = !isMax && (curOfficeLv < reqOfficeLv);
+        const canAfford = nextLvDef && !isLockedByOffice && GameState.funds >= nextLvDef.cost;
+
+        let statusBadge = '';
+        if (isMax) {
+          statusBadge = `<span style="font-size:9.5px; font-weight:bold; padding:2px 7px; border-radius:4px; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399;">Lv.${curLv} MAX</span>`;
+        } else if (curLv > 0) {
+          statusBadge = `<span style="font-size:9.5px; font-weight:bold; padding:2px 7px; border-radius:4px; background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.35); color:#fcd34d;">Lv.${curLv}/${maxLv} (${curLvDef.name})</span>`;
         } else {
-          rightCol = `<button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('feature', '${f.key}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; white-space:nowrap;">導入 (${f.def.cost}万)</button>`;
+          statusBadge = `<span style="font-size:9.5px; font-weight:bold; padding:2px 7px; border-radius:4px; background:rgba(148,163,184,0.15); border:1px solid rgba(148,163,184,0.3); color:#94a3b8;">未導入 (Lv.0/${maxLv})</span>`;
+        }
+
+        let bottomAction = '';
+        if (isMax) {
+          bottomAction = `<div style="font-size:10.5px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:6px; background:rgba(16,185,129,0.1); border-radius:5px; border:1px solid rgba(16,185,129,0.25); margin-top:6px;">★ 最大レベル（${curLvDef.name}）導入済み</div>`;
+        } else if (isLockedByOffice) {
+          bottomAction = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:6px 8px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:5px; gap:8px;">
+              <div style="font-size:10px; color:#fcd34d; line-height:1.35;">
+                <div><strong>次: Lv.${nextLvDef.level} ${nextLvDef.name}</strong>（${nextLvDef.cost}万）</div>
+                <div style="color:var(--c-text2); font-size:9.5px;">${nextLvDef.desc}</div>
+                <div style="color:#f59e0b; margin-top:2px;"><i class="ph-bold ph-lock"></i> 要: Rank ${reqOfficeLv + 1} ${reqOfficeDef.name}</div>
+              </div>
+              <button class="btn btn-slate" disabled style="padding:6px 10px; font-size:10.5px; font-weight:bold; opacity:0.5; cursor:not-allowed; white-space:nowrap;">
+                <i class="ph-bold ph-lock-key"></i> 移転で解放
+              </button>
+            </div>
+          `;
+        } else {
+          bottomAction = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:6px 8px; background:rgba(15,23,42,0.55); border:1px dashed rgba(255,255,255,0.14); border-radius:5px; gap:8px;">
+              <div style="font-size:10px; line-height:1.35;">
+                <div style="color:#fde047; font-weight:bold;">次: Lv.${nextLvDef.level} ${nextLvDef.name}</div>
+                <div style="color:var(--c-text2); font-size:9.5px;">${nextLvDef.desc}</div>
+              </div>
+              <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('feature', '${key}')" style="padding:7px 11px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; white-space:nowrap;">
+                Lv.${nextLvDef.level} 導入 (${nextLvDef.cost}万)
+              </button>
+            </div>
+          `;
         }
 
         featListHtml += `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(15,23,42,0.45); border-radius:6px; border:1px solid rgba(255,255,255,0.07); margin-bottom:6px;">
-            <div style="flex:1; padding-right:8px;">
+          <div style="padding:9px 10px; background:rgba(15,23,42,0.45); border-radius:6px; border:1px solid rgba(255,255,255,0.08); margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="display:flex; align-items:center; gap:6px;">
-                <i class="ph-bold ${f.def.icon}" style="color:var(--c-amber); font-size:15px;"></i>
-                <span style="font-size:12px; font-weight:bold; color:var(--c-text);">${f.def.name}</span>
+                <i class="ph-bold ${featGroup.icon}" style="color:var(--c-amber); font-size:15px;"></i>
+                <span style="font-size:12.5px; font-weight:bold; color:var(--c-text);">${featGroup.name}</span>
               </div>
-              <div style="font-size:10px; color:var(--c-text2); margin-top:2px; line-height:1.3;">${f.def.desc}</div>
+              ${statusBadge}
             </div>
-            <div>${rightCol}</div>
+            <div style="font-size:10.5px; color:#cbd5e1; margin-top:4px;">
+              現在: <strong>${curLvDef.desc}</strong>
+            </div>
+            ${bottomAction}
           </div>
         `;
       });
 
       cardFeat.innerHTML = `
         <div style="font-size:13px; font-weight:bold; color:var(--c-text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-          <i class="ph-bold ph-wrench" style="color:var(--c-amber);"></i> 設備投資（永続設計バフ）
+          <i class="ph-bold ph-wrench" style="color:var(--c-amber);"></i> 設備投資（段階強化・永続設計バフ）
         </div>
         ${featListHtml}
       `;
@@ -9515,7 +9610,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       capacityLevel: 0,
       debt: 0,
       emergencyDebt: 0,
-      features: { freeFlip: false, extraRerolls: 0, extraAttempts: 0 },
+      features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 },
       hiredStaff: [],
       unlockedPieces: [...STARTER_UNLOCKED_IDS],
       deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
@@ -9628,23 +9723,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       playSound('clear');
       showUpgradeFeedback(`✨ ブランド知名度 Lv.${co.brandLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
     } else if (type === 'feature') {
-      const feat = UPGRADE_CONFIG.features[key];
-      if (!feat) return;
-      if (co.features[key]) return;
-      if (GameState.funds < feat.cost) {
+      const featGroup = UPGRADE_CONFIG.features[key];
+      if (!featGroup || !featGroup.levels) return;
+      const curLv = getFeatureLevel(key);
+      const maxLv = featGroup.levels.length - 1;
+      if (curLv >= maxLv) return;
+      const nextLvDef = featGroup.levels[curLv + 1];
+      const curOfficeLv = co.officeLevel || 0;
+      if (curOfficeLv < (nextLvDef.reqOfficeLevel || 0)) {
+        playSound('error');
+        showUpgradeFeedback('オフィスランクが不足しています！本社オフィスを移転してください。', 'var(--c-rose)');
+        return;
+      }
+      if (GameState.funds < nextLvDef.cost) {
         playSound('error');
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds -= feat.cost;
-      if (key === 'freeFlip') co.features.freeFlip = true;
-      if (key === 'extraRerolls') co.features.extraRerolls = 2;
+      GameState.funds = Math.round((GameState.funds - nextLvDef.cost) * 10) / 10;
+      co.features[key] = curLv + 1;
       if (key === 'extraAttempts') {
-        co.features.extraAttempts = 1;
         GameState.attempts = getMaxAttempts();
       }
       playSound('clear');
-      showUpgradeFeedback(`✨ 「${feat.name}」を導入しました！`, 'var(--c-emerald)');
+      showUpgradeFeedback(`✨ 設備投資「${featGroup.name} Lv.${co.features[key]}（${nextLvDef.name}）」を導入しました！`, 'var(--c-emerald)');
     }
 
     saveGame();
