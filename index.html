@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.97</title>
+  <title>間取り図パズル — Floor Plan v0.98</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -742,7 +742,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.97 (11/03)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.98 (11/03)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -782,7 +782,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.97 (11/03)
+        Floor Plan v0.98 (11/03)
       </div>
     </div>
   </section>
@@ -1539,9 +1539,11 @@
   // Budget & build cost state
   let budget = 0;
   let buildBaseCost = 0;        // 配置したピースの定価合計 (物件原価・売価基準)
-  let buildPiecePaidCost = 0;   // 配置したピースの実支払合計 (割引・反転割増込み)
+  let buildPiecePaidCost = 0;   // 配置したピースの実支払合計 (割引・反転割増・2周目以降割増込み)
   let buildMirrorExtraCost = 0; // 反転加工による追加費用合計
+  let buildCycleExtraCost = 0;  // 山札2周目以降の追加発注割増による費用合計
   let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
+  let deckCycle = 1;            // 現在の山札周回数 (1周目: 1, 2周目: 2, 3周目以降: 3...)
 
   // Piece library (Starter 11 types + R&D Unlockable 10 types = 21 types)
   // Large/advanced pieces feature bulk-discount per-cell pricing (1マスあたり割安)
@@ -3628,7 +3630,9 @@
         buildBaseCost: buildBaseCost,
         buildPiecePaidCost: buildPiecePaidCost,
         buildMirrorExtraCost: buildMirrorExtraCost,
+        buildCycleExtraCost: buildCycleExtraCost,
         buildRerollCost: buildRerollCost,
+        deckCycle: deckCycle,
         draftSlots: draftSlots,
         keepStates: keepStates,
         keepCounts: keepCounts,
@@ -3667,7 +3671,9 @@
       buildBaseCost = ab.buildBaseCost || 0;
       buildPiecePaidCost = ab.buildPiecePaidCost || 0;
       buildMirrorExtraCost = ab.buildMirrorExtraCost || 0;
+      buildCycleExtraCost = ab.buildCycleExtraCost || 0;
       buildRerollCost = ab.buildRerollCost || 0;
+      deckCycle = ab.deckCycle || 1;
 
       const maxSlots = getMaxHandSlots();
       draftSlots = ab.draftSlots || Array(maxSlots).fill(null);
@@ -3736,7 +3742,19 @@
   function mirrorMatrix(mat) {
     return mat.map(row => [...row].reverse());
   }
-  function getPieceCost(piece, mirrored = false) {
+  function getCycleMultiplier(cycle = 1) {
+    const c = Number(cycle) || 1;
+    if (c <= 1) return 1.0;
+    if (c === 2) return 1.25; // 2周目: +25%
+    return 1.50;              // 3周目以降: +50%
+  }
+  function getCycleSurchargePct(cycle = 1) {
+    const c = Number(cycle) || 1;
+    if (c <= 1) return 0;
+    if (c === 2) return 25;
+    return 50;
+  }
+  function getPieceCost(piece, mirrored = false, overrideCycle = null) {
     if (!piece) return 0;
     let base = piece.cost || 0;
     const plumbLv = getStaffSkillLevel('plumber');
@@ -3754,6 +3772,8 @@
       const discount = [0, 0.95, 0.90, 0.85][brokerLv] || 0.95;
       base *= discount;
     }
+    const pCycle = overrideCycle !== null ? overrideCycle : (piece.deckCycle || 1);
+    base *= getCycleMultiplier(pCycle);
     if (!mirrored) {
       return Math.round(base * 10) / 10;
     }
@@ -3898,6 +3918,7 @@
     const activeIds = getActiveDeckPieceIds();
     drawPile = shuffleArray(activeIds);
     discardPile = [];
+    deckCycle = 1;
     updateDeckPeekButton();
   }
 
@@ -3905,7 +3926,12 @@
     const el = document.getElementById('deck-peek-count');
     if (el) {
       const total = getActiveDeckPieceIds().length;
-      el.textContent = `山札 ${drawPile.length}/${total}`;
+      if (deckCycle >= 2) {
+        const pct = getCycleSurchargePct(deckCycle);
+        el.innerHTML = `山札 ${drawPile.length}/${total} <span style="font-size:9px; color:#d97706;">(${deckCycle}周+${pct}%)</span>`;
+      } else {
+        el.textContent = `山札 ${drawPile.length}/${total}`;
+      }
     }
   }
 
@@ -3957,8 +3983,10 @@
       if (discardPile.length > 0) {
         drawPile = shuffleArray(discardPile);
         discardPile = [];
+        deckCycle = (deckCycle || 1) + 1;
         if (typeof showFloatingText === 'function' && screens.game?.classList.contains('active')) {
-          showFloatingText('🔄 山札シャッフル！', '#38bdf8');
+          const pct = getCycleSurchargePct(deckCycle);
+          showFloatingText(`🔄 山札${deckCycle}周目！（追加発注 +${pct}%）`, '#f59e0b');
         }
       } else {
         drawPile = shuffleArray(getActiveDeckPieceIds());
@@ -3968,6 +3996,7 @@
     const basePiece = PIECE_MAP[pieceId] || PIECE_LIB[0];
     const piece = JSON.parse(JSON.stringify(basePiece));
     piece.walls = generateRandomWalls(piece.shape);
+    piece.deckCycle = deckCycle || 1;
     updateDeckPeekButton();
     return piece;
   }
@@ -4016,7 +4045,14 @@
     const shape = isSelected ? getShape(piece, selectedRot, isMirrored) : piece.shape;
     const rows = shape.length, cols = shape[0].length;
     const style = CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
-    let miniHtml = `<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols},14px);">`;
+    const pCycle = piece.deckCycle || 1;
+    let cycleBadgeHtml = '';
+    if (pCycle >= 2) {
+      const pct = getCycleSurchargePct(pCycle);
+      const bgCol = pCycle >= 3 ? '#e11d48' : '#d97706';
+      cycleBadgeHtml = `<span style="position:absolute; top:2px; right:3px; font-size:8px; font-weight:800; color:#fff; background:${bgCol}; padding:0px 3.5px; border-radius:4px; line-height:1.25; z-index:2; pointer-events:none;">${pCycle}周+${pct}%</span>`;
+    }
+    let miniHtml = `${cycleBadgeHtml}<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols},14px);">`;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const filled = shape[r][c] === 1;
@@ -4214,10 +4250,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function updatePieceLabel() {
     const p = (selectedSlot !== null) ? draftSlots[selectedSlot] : null;
     const cost = p ? getPieceCost(p, isMirrored).toFixed(1) : '0.0';
+    const pCycle = p ? (p.deckCycle || 1) : 1;
+    const cycleTag = pCycle >= 2 ? ` <span style="font-size:10px; color:#fbbf24;">[${pCycle}周目+${getCycleSurchargePct(pCycle)}%]</span>` : '';
     const pl = document.getElementById('piece-label');
     if (pl) {
       pl.innerHTML = p
-        ? `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:var(--c-emerald); font-weight:bold; font-size:12px;">(${cost}万)</span>`
+        ? `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:${pCycle >= 2 ? '#fbbf24' : 'var(--c-emerald)'}; font-weight:bold; font-size:12px;">(${cost}万)</span>${cycleTag}`
         : `<span style="color:var(--c-text3); font-size:11px;">ピース未選択</span>`;
     }
       
@@ -4242,8 +4280,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const spentEl = document.getElementById('hdr-spent-cost');
     const breakEl = document.getElementById('hdr-cost-breakdown');
     const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
-    const extraSpent = Math.round((buildMirrorExtraCost + buildRerollCost) * 10) / 10;
-    const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost)) * 10) / 10);
+    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost) * 10) / 10;
+    const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
     if (spentEl) {
       spentEl.innerHTML = `${totalSpent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
     }
@@ -4809,10 +4847,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!canPlace(gr, gc, shape)) { playSound('error'); return false; }
 
     const basePieceCost = piece.cost || 0;
+    const cycle1UnmirroredCost = getPieceCost(piece, false, 1);
     const unmirroredCost = getPieceCost(piece, false);
+    const cycleExtra = Math.max(0, Math.round((unmirroredCost - cycle1UnmirroredCost) * 10) / 10);
     const mirrorExtra = Math.max(0, Math.round((pieceCost - unmirroredCost) * 10) / 10);
     buildBaseCost = Math.round((buildBaseCost + basePieceCost) * 10) / 10;
     buildPiecePaidCost = Math.round((buildPiecePaidCost + pieceCost) * 10) / 10;
+    buildCycleExtraCost = Math.round((buildCycleExtraCost + cycleExtra) * 10) / 10;
     buildMirrorExtraCost = Math.round((buildMirrorExtraCost + mirrorExtra) * 10) / 10;
 
     budget = Math.round((budget - pieceCost) * 10) / 10;
@@ -4825,8 +4866,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (shape[r][c] === 1) cellsCount++;
       }
     }
-    // 建築予算からは特注加工費を含めた pieceCost (1.2倍) を引き落とすが、
-    // 基礎家賃や物件の資産価値(リセール)には反転割増を含めないため、定価(piece.cost)で按分する
+    // 建築予算からは特注加工費・2周目以降の追加発注割増を含めた pieceCost を引き落とすが、
+    // 基礎家賃や物件の資産価値(リセール)には割増料金を含めないため、定価(piece.cost)で按分する
     const costPerCell = basePieceCost / cellsCount;
 
     const rid = nextRoomId++;
@@ -6269,7 +6310,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (counts.unreachable > 0) badCombos++; // 到達不能ペナルティ
 
     const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
-    const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost)) * 10) / 10);
+    const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
 
     window.currentPropertyData = {
       rent: rent,
@@ -6279,6 +6320,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       baseCost: buildBaseCost,
       piecePaidCost: buildPiecePaidCost,
       mirrorCost: buildMirrorExtraCost,
+      cycleExtraCost: buildCycleExtraCost,
       rerollCost: buildRerollCost,
       totalCost: totalSpentCost,
       isClear: isClear,
@@ -6314,14 +6356,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const fRoiEl = document.getElementById('flyer-roi-note');
     if (fTotalEl) fTotalEl.textContent = `${totalSpentCost.toFixed(1)}万円`;
     if (fDetailEl) {
-      let extraPart = '諸経費 0.0万';
-      if (buildMirrorExtraCost > 0 && buildRerollCost > 0) {
-        extraPart = `反転+${buildMirrorExtraCost.toFixed(1)}万・更新+${buildRerollCost.toFixed(1)}万`;
-      } else if (buildMirrorExtraCost > 0) {
-        extraPart = `反転割増 +${buildMirrorExtraCost.toFixed(1)}万`;
-      } else if (buildRerollCost > 0) {
-        extraPart = `更新・維持 +${buildRerollCost.toFixed(1)}万`;
-      }
+      const extraItems = [];
+      if (buildCycleExtraCost > 0) extraItems.push(`追加発注+${buildCycleExtraCost.toFixed(1)}万`);
+      if (buildMirrorExtraCost > 0) extraItems.push(`反転+${buildMirrorExtraCost.toFixed(1)}万`);
+      if (buildRerollCost > 0) extraItems.push(`更新+${buildRerollCost.toFixed(1)}万`);
+      const extraPart = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
       const discPart = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
       fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 / ${extraPart}${discPart}`;
     }
@@ -6564,6 +6603,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     buildBaseCost = 0;
     buildPiecePaidCost = 0;
     buildMirrorExtraCost = 0;
+    buildCycleExtraCost = 0;
     buildRerollCost = 0;
     currentLevelIdx = GameState.level;
     
@@ -6798,28 +6838,36 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const totalDeck = getActiveDeckPieceIds().length;
     const handPieces = draftSlots.filter(p => p !== null);
+    const curCycle = deckCycle || 1;
+    const curPct = getCycleSurchargePct(curCycle);
+    const nextCycle = curCycle + 1;
+    const nextPct = getCycleSurchargePct(nextCycle);
     if (sub) {
-      sub.textContent = `デッキ総数 ${totalDeck}枚 ｜ 山札残り ${drawPile.length}枚 ｜ 手札 ${handPieces.length}枚 ｜ 捨て札・配置済 ${discardPile.length}枚`;
+      const cycleStr = curCycle >= 2 ? `現在 ${curCycle}周目 (+${curPct}%割増)` : `現在 1周目 (標準原価)`;
+      sub.textContent = `${cycleStr} ｜ 山札残り ${drawPile.length}/${totalDeck}枚 ｜ 手札 ${handPieces.length}枚 ｜ 捨て札 ${discardPile.length}枚`;
     }
 
-    const renderGroupedList = (idList, emptyText) => {
+    const renderGroupedList = (idList, emptyText, targetCycle = curCycle) => {
       if (!idList || idList.length === 0) {
         return `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:10px; background:rgba(15,23,42,0.35); border-radius:6px; border:1px dashed rgba(255,255,255,0.08);">${emptyText}</div>`;
       }
       const counts = {};
       for (const pid of idList) counts[pid] = (counts[pid] || 0) + 1;
+      const tPct = getCycleSurchargePct(targetCycle);
       let html = `<div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px;">`;
       for (const p of PIECE_LIB) {
         const cnt = counts[p.id];
         if (!cnt) continue;
-        const unitCost = getPieceCost(p, false);
+        const unitCost = getPieceCost(p, false, targetCycle);
+        const priceColor = tPct > 0 ? '#fbbf24' : 'var(--c-emerald)';
+        const pctBadge = tPct > 0 ? `<span style="font-size:8.5px; color:#fde68a; margin-left:3px;">(+${tPct}%)</span>` : '';
         html += `
           <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(15,23,42,0.55); border:1px solid rgba(255,255,255,0.1); border-radius:6px; gap:6px;">
             <div style="display:flex; align-items:center; gap:6px; min-width:0;">
               <div style="min-width:26px; display:flex; justify-content:center;">${renderMiniPieceShape(p, 8)}</div>
               <div style="min-width:0;">
                 <div style="font-size:11px; font-weight:bold; color:var(--c-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                <div style="font-size:9.5px; color:var(--c-emerald); font-weight:bold;">${unitCost.toFixed(1)}万</div>
+                <div style="font-size:9.5px; color:${priceColor}; font-weight:bold;">${unitCost.toFixed(1)}万${pctBadge}</div>
               </div>
             </div>
             <span style="font-size:11px; font-weight:900; padding:2px 6px; border-radius:99px; background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); flex-shrink:0;">×${cnt}</span>
@@ -6833,20 +6881,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     body.innerHTML = `
       <div style="margin-bottom:12px;">
         <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-          <span><i class="ph-bold ph-stack"></i> 山札の残りピース（これから引ける候補）</span>
+          <span><i class="ph-bold ph-stack"></i> 山札の残りピース（${curCycle}周目${curPct > 0 ? `：+${curPct}%割増` : '：標準価格'}）</span>
           <span class="font-num">${drawPile.length}枚</span>
         </div>
-        ${renderGroupedList(drawPile, '山札は空です（次のドローで捨て札がシャッフルされます）')}
+        ${renderGroupedList(drawPile, `山札は空です（次のドローで捨て札がシャッフルされ${nextCycle}周目[+${nextPct}%]に入ります）`, curCycle)}
       </div>
       <div style="margin-bottom:10px;">
         <div style="font-size:12px; font-weight:bold; color:var(--c-text2); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-          <span><i class="ph-bold ph-trash"></i> 捨て札・配置済みピース</span>
+          <span><i class="ph-bold ph-trash"></i> 捨て札・配置済み（次周${nextCycle}周目引直し時：+${nextPct}%）</span>
           <span class="font-num">${discardPile.length}枚</span>
         </div>
-        ${renderGroupedList(discardPile, 'まだ捨て札・配置済みピースはありません')}
+        ${renderGroupedList(discardPile, 'まだ捨て札・配置済みピースはありません', nextCycle)}
       </div>
       <div style="font-size:10px; color:var(--c-text3); line-height:1.45; background:rgba(15,23,42,0.4); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
-        💡 <strong>山札ルール:</strong> 山札から優先してピースが引かれます。山札が0枚になると、捨て札・配置済みのピースがシャッフルされて新しい山札になります。
+        💡 <strong>山札周回ルール:</strong> 山札が0枚になると捨て札がシャッフルされ、<strong>2周目は+25%、3周目以降は+50%の追加発注手数料</strong>がピース配置時に上乗せされます（※物件の原価評価額や基礎家賃は変わりません）。
       </div>
     `;
     modal.style.display = 'flex';
@@ -7999,10 +8047,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const totalCost = !isLegacyCost ? p.totalCost : estBaseCost;
     const baseCost = (p.baseCost !== undefined) ? p.baseCost : estBaseCost;
     const mirrorCost = p.mirrorCost || 0;
+    const cycleExtraCost = p.cycleExtraCost || 0;
     const rerollCost = p.rerollCost || 0;
-    const extraCost = Math.round((mirrorCost + rerollCost) * 10) / 10;
+    const extraCost = Math.round((mirrorCost + cycleExtraCost + rerollCost) * 10) / 10;
     const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
-    const discountSaved = Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost)) * 10) / 10);
+    const discountSaved = Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost - cycleExtraCost)) * 10) / 10);
     const earnedRent = Math.round((p.earnedRent || 0) * 10) / 10;
     const resaleNum = parseFloat(stats.resaleValue) || 0;
     const netIfSold = Math.round((earnedRent + resaleNum - totalCost) * 10) / 10;
@@ -8016,14 +8065,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (isLegacyCost) {
         elCostBreak.textContent = `(旧セーブ推定原価 ${baseCost.toFixed(1)}万)`;
       } else {
-        let extraLabel = `諸経費 0.0万`;
-        if (mirrorCost > 0 && rerollCost > 0) {
-          extraLabel = `反転+${mirrorCost.toFixed(1)}万・更新+${rerollCost.toFixed(1)}万`;
-        } else if (mirrorCost > 0) {
-          extraLabel = `反転割増 +${mirrorCost.toFixed(1)}万`;
-        } else if (rerollCost > 0) {
-          extraLabel = `更新・維持 +${rerollCost.toFixed(1)}万`;
-        }
+        const extraItems = [];
+        if (cycleExtraCost > 0) extraItems.push(`追加発注+${cycleExtraCost.toFixed(1)}万`);
+        if (mirrorCost > 0) extraItems.push(`反転+${mirrorCost.toFixed(1)}万`);
+        if (rerollCost > 0) extraItems.push(`更新+${rerollCost.toFixed(1)}万`);
+        const extraLabel = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
         const discStr = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
         elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 / ${extraLabel}${discStr})`;
       }
