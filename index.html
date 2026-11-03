@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.96</title>
+  <title>間取り図パズル — Floor Plan v0.97</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -484,7 +484,23 @@
     #hold-card-wrap .draft-card { height: 100%; }
     
     #draft-container {
-      flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+      min-width: 0;
+    }
+    #draft-container::-webkit-scrollbar {
+      height: 4px;
+    }
+    #draft-container::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 4px;
     }
     .draft-card {
       position: relative;
@@ -726,7 +742,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.96 (11/02)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.97 (11/03)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -766,7 +782,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.96 (11/02)
+        Floor Plan v0.97 (11/03)
       </div>
     </div>
   </section>
@@ -1304,8 +1320,8 @@
       </div>
 
       <!-- Draft tray -->
-      <div id="draft-area" style="display:flex; width:100%;">
-        <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%;">
+      <div id="draft-area" style="display:flex; width:100%; min-width:0;">
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%; min-width:0;">
           <div id="reroll-info" style="display:none;"></div>
           <div id="draft-container" style="display:flex; gap:8px;"></div>
           <div class="action-btn-row" style="display:flex; gap:6px; width:100%;">
@@ -1919,6 +1935,16 @@
           { level: 1, name: '設計やり直し保険 Lv.1', cost: 400, reqOfficeLevel: 1, bonus: 1, desc: 'パズル中の再設計可能回数 +1回（2回 ➔ 3回）' },
           { level: 2, name: '総合設計補償 Lv.2',     cost: 800, reqOfficeLevel: 3, bonus: 2, desc: 'パズル中の再設計可能回数 +2回（3回 ➔ 4回）' }
         ]
+      },
+      handSize: {
+        id: 'handSize',
+        name: '設計テーブル拡張',
+        icon: 'ph-columns',
+        levels: [
+          { level: 0, name: '標準デスク', cost: 0,   reqOfficeLevel: 0, slots: 3, desc: '手札の同時保持枠 3枚（基本枠）' },
+          { level: 1, name: 'ワイド設計デスク Lv.1', cost: 350, reqOfficeLevel: 1, slots: 4, desc: '手札の同時保持枠 +1枚（3枚 ➔ 4枚・横スライド）' },
+          { level: 2, name: '大型図面テーブル Lv.2', cost: 750, reqOfficeLevel: 3, slots: 5, desc: '手札の同時保持枠 +2枚（4枚 ➔ 5枚・横スライド）' }
+        ]
       }
     }
   };
@@ -2207,11 +2233,18 @@
     if (key === 'extraAttempts') {
       return Math.min(2, Math.max(0, Number(val) || 0));
     }
+    if (key === 'handSize') {
+      return Math.min(2, Math.max(0, Number(val) || 0));
+    }
     return Number(val) || 0;
   }
 
   function getMaxAttempts() {
     return 2 + getFeatureLevel('extraAttempts');
+  }
+
+  function getMaxHandSlots() {
+    return 3 + getFeatureLevel('handSize');
   }
 
   function generateStage(level = 0, overrideType = null) {
@@ -2600,7 +2633,8 @@
       features: {
         freeFlip: 0,
         extraRerolls: 0,
-        extraAttempts: 0
+        extraAttempts: 0,
+        handSize: 0
       },
       hiredStaff: [],
       unlockedPieces: [...STARTER_UNLOCKED_IDS],
@@ -2619,7 +2653,7 @@
         officeLevel: 0,
         debt: 0,
         emergencyDebt: 0,
-        features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 },
+        features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0, handSize: 0 },
         hiredStaff: [],
         unlockedPieces: [...STARTER_UNLOCKED_IDS],
         deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
@@ -2627,11 +2661,12 @@
     }
     const co = GameState.company;
     if (!co.features) {
-      co.features = { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 };
+      co.features = { freeFlip: 0, extraRerolls: 0, extraAttempts: 0, handSize: 0 };
     } else {
       co.features.freeFlip = getFeatureLevel('freeFlip');
       co.features.extraRerolls = getFeatureLevel('extraRerolls');
       co.features.extraAttempts = getFeatureLevel('extraAttempts');
+      co.features.handSize = getFeatureLevel('handSize');
     }
     if (co.emergencyDebt === undefined) co.emergencyDebt = 0;
     if (!Array.isArray(co.unlockedPieces)) {
@@ -3634,13 +3669,19 @@
       buildMirrorExtraCost = ab.buildMirrorExtraCost || 0;
       buildRerollCost = ab.buildRerollCost || 0;
 
-      draftSlots = ab.draftSlots || [null, null, null];
-      keepStates = ab.keepStates || [false, false, false];
-      keepCounts = ab.keepCounts || [0, 0, 0];
+      const maxSlots = getMaxHandSlots();
+      draftSlots = ab.draftSlots || Array(maxSlots).fill(null);
+      keepStates = ab.keepStates || Array(maxSlots).fill(false);
+      keepCounts = ab.keepCounts || Array(maxSlots).fill(0);
       discardCount = ab.discardCount || 0;
       handRefreshesRemaining = (ab.handRefreshesRemaining !== undefined) ? ab.handRefreshesRemaining : 0;
       drawPile = ab.drawPile || [];
       discardPile = ab.discardPile || [];
+      while (draftSlots.length < maxSlots) {
+        draftSlots.push(ab.screen === 'game' ? drawPieceFromDeck() : null);
+        keepStates.push(false);
+        keepCounts.push(0);
+      }
       selectedSlot = (ab.selectedSlot !== null && ab.selectedSlot !== undefined) ? ab.selectedSlot : 0;
       selectedRot = ab.selectedRot || 0;
       isMirrored = !!ab.isMirrored;
@@ -3836,7 +3877,7 @@
     let discardCost = 0;
     let keepCost = 0;
     let tempCount = discardCount;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i] !== null) {
         if (!keepStates[i]) {
           discardCost += getDiscardCostForNext(tempCount);
@@ -3888,7 +3929,7 @@
     if (handRefreshesRemaining <= 0) return;
     initAudio();
     let returned = 0;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i]) {
         drawPile.push(draftSlots[i].id);
         draftSlots[i] = null;
@@ -3901,7 +3942,6 @@
     drawPile = shuffleArray(drawPile);
     handRefreshesRemaining--;
     refillDraft();
-    renderDraft();
     updateRerollButton();
     updateDeckPeekButton();
     updateHandRefreshButton();
@@ -3937,7 +3977,13 @@
   }
 
   function refillDraft() {
-    for (let i = 0; i < 3; i++) {
+    const maxSlots = getMaxHandSlots();
+    while (draftSlots.length < maxSlots) {
+      draftSlots.push(null);
+      keepStates.push(false);
+      keepCounts.push(0);
+    }
+    for (let i = 0; i < maxSlots; i++) {
       if (!draftSlots[i]) {
         draftSlots[i] = drawPieceFromDeck();
         keepStates[i] = false;
@@ -4001,6 +4047,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function renderDraftUI() {
     const container = document.getElementById('draft-container');
     container.innerHTML = '';
+    const isScrollable = draftSlots.length > 3;
     
     draftSlots.forEach((piece, idx) => {
       const isSel = (idx === selectedSlot);
@@ -4008,7 +4055,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       wrap.style.display = 'flex';
       wrap.style.flexDirection = 'column';
       wrap.style.gap = '4px';
-      wrap.style.flex = '1';
+      if (isScrollable) {
+        // 3枚表示時とほぼ同じ幅を保ちつつ、4枚目の左端がチラッと見える幅（約3.22枚分）にして横スライド可能と直感的に伝える
+        wrap.style.flex = '0 0 calc((100% - 16px) / 3.22)';
+        wrap.style.minWidth = '88px';
+        wrap.style.scrollSnapAlign = 'start';
+      } else {
+        wrap.style.flex = '1 1 0';
+        wrap.style.minWidth = '0';
+      }
 
       if (piece) {
         const card = createCardElement(piece, isSel, () => {
@@ -4107,7 +4162,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!btn) return;
     
     let canReroll = false;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i] === null) {
         canReroll = true; // 空枠補充のため
       } else if (!keepStates[i]) {
@@ -4801,11 +4856,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     keepCounts[selectedSlot] = 0;
     
     let allEmpty = true;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i] !== null) allEmpty = false;
     }
     if (allEmpty) {
-      for (let i = 0; i < 3; i++) {
+      const maxSlots = getMaxHandSlots();
+      for (let i = 0; i < maxSlots; i++) {
         draftSlots[i] = drawPieceFromDeck();
         keepStates[i] = false;
         keepCounts[i] = 0;
@@ -6519,9 +6575,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     previewMode = false; hoverCell = null;
     const co = document.getElementById('confirm-overlay');
     if (co) co.style.display = 'none';
-    draftSlots = [null, null, null];
-    keepStates = [false, false, false];
-    keepCounts = [0, 0, 0];
+    const maxSlots = getMaxHandSlots();
+    draftSlots = Array(maxSlots).fill(null);
+    keepStates = Array(maxSlots).fill(false);
+    keepCounts = Array(maxSlots).fill(0);
     discardCount = 0;
     handRefreshesRemaining = getStaffSkillLevel('hand_refresh');
     initDeckPiles();
@@ -6680,7 +6737,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     cancelRerollConfirm();
     
     let discarded = 0;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i] !== null) {
         if (!keepStates[i]) {
           discarded++;
@@ -6699,7 +6756,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 捨てたカードが直後のシャッフルで即座に引き直されないよう、
     // 先に山札から新しいカードを引き、その後で今回捨てたカードを捨て札へ送る
     const newlyDiscardedIds = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i] !== null && keepStates[i]) {
         keepCounts[i]++;
       } else {
@@ -8548,7 +8605,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const cardFeat = document.getElementById('upg-card-features');
     if (cardFeat) {
       let featListHtml = '';
-      const featKeys = ['freeFlip', 'extraRerolls', 'extraAttempts'];
+      const featKeys = ['handSize', 'freeFlip', 'extraRerolls', 'extraAttempts'];
 
       featKeys.forEach(key => {
         const featGroup = UPGRADE_CONFIG.features[key];
@@ -9744,6 +9801,26 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       co.features[key] = curLv + 1;
       if (key === 'extraAttempts') {
         GameState.attempts = getMaxAttempts();
+      }
+      if (key === 'handSize') {
+        const targetSlots = getMaxHandSlots();
+        while (draftSlots.length < targetSlots) {
+          draftSlots.push(drawPieceFromDeck());
+          keepStates.push(false);
+          keepCounts.push(0);
+        }
+        if (GameState.activeBuild && Array.isArray(GameState.activeBuild.draftSlots)) {
+          while (GameState.activeBuild.draftSlots.length < targetSlots) {
+            GameState.activeBuild.draftSlots.push(drawPieceFromDeck());
+            if (Array.isArray(GameState.activeBuild.keepStates)) GameState.activeBuild.keepStates.push(false);
+            if (Array.isArray(GameState.activeBuild.keepCounts)) GameState.activeBuild.keepCounts.push(0);
+          }
+          GameState.activeBuild.drawPile = drawPile;
+          GameState.activeBuild.discardPile = discardPile;
+        }
+        if (screens.game?.classList.contains('active')) {
+          renderDraftUI();
+        }
       }
       playSound('clear');
       showUpgradeFeedback(`✨ 設備投資「${featGroup.name} Lv.${co.features[key]}（${nextLvDef.name}）」を導入しました！`, 'var(--c-emerald)');
