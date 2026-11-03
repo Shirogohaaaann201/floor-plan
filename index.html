@@ -742,7 +742,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <button id="btn-edit-co-name" type="button" style="background:none; border:none; padding:2px 4px; margin:-2px -4px; border-radius:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-align:left;" title="会社名を変更する">
             <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>
-            <span id="home-co-name" style="font-size:16px; font-weight:900; color:#0f172a; letter-spacing:0.2px;">和歌山不動産</span>
+            <span id="home-co-name" style="font-size:16px; font-weight:900; color:#0f172a; letter-spacing:0.2px;">焼飯不動産</span>
             <i class="ph-bold ph-pencil-simple" style="font-size:13px; color:#64748b;"></i>
           </button>
           <div id="home-co-badges" style="display:flex; align-items:center;"></div>
@@ -1093,8 +1093,8 @@
           あなたの不動産・建築会社の名前を決めてください（後からいつでも変更できます）。
         </div>
         <div style="margin-bottom:14px;">
-          <input id="input-co-name" type="text" maxlength="16" placeholder="和歌山不動産" value="和歌山不動産" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:15px; font-weight:bold; color:#0f172a; background:#f8fafc; border:2px solid #38bdf8; border-radius:8px; outline:none;" />
-          <div style="font-size:10px; color:var(--c-text2); margin-top:4px; text-align:right;">※最大16文字（空欄時は「和歌山不動産」）</div>
+          <input id="input-co-name" type="text" maxlength="16" placeholder="焼飯不動産" value="焼飯不動産" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:15px; font-weight:bold; color:#0f172a; background:#f8fafc; border:2px solid #38bdf8; border-radius:8px; outline:none;" />
+          <div style="font-size:10px; color:var(--c-text2); margin-top:4px; text-align:right;">※最大16文字（空欄時は「焼飯不動産」）</div>
         </div>
         <div style="display:flex; gap:8px;">
           <button id="btn-co-name-cancel" class="btn btn-slate" style="flex:1; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
@@ -1140,7 +1140,7 @@
       <div class="mission-card" style="position:relative; width:100%; max-width:360px; text-align:center; border:2px solid #f43f5e; box-shadow:0 15px 40px rgba(244,63,94,0.35); padding:20px;">
         <div style="font-size:40px; margin-bottom:6px;">📉</div>
         <div style="font-size:18px; font-weight:900; color:#f43f5e; letter-spacing:1px; margin-bottom:4px;">経営破綻（倒産）</div>
-        <div id="go-company-name" style="font-size:13px; font-weight:bold; color:var(--c-text2); margin-bottom:12px;">和歌山不動産</div>
+        <div id="go-company-name" style="font-size:13px; font-weight:bold; color:var(--c-text2); margin-bottom:12px;">焼飯不動産</div>
 
         <div id="go-reason-box" style="background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.35); color:#fecdd3; font-size:11px; line-height:1.5; padding:10px 12px; border-radius:6px; margin-bottom:14px; text-align:left;">
           運転資金および銀行の融資限度額が枯渇し、これ以上の物件建築・事業継続が不可能となりました。
@@ -2680,7 +2680,7 @@
   ============================================================ */
   const SAVE_KEY = 'floorplan_save_v1';
   const GameState = {
-    companyName: '和歌山不動産',
+    companyName: '焼飯不動産',
     funds: 100.0,
     month: 1,
     level: 0,
@@ -3237,6 +3237,9 @@
       if (data) {
         const parsed = JSON.parse(data);
         Object.assign(GameState, parsed);
+        if (!GameState.companyName || GameState.companyName === '和歌山不動産') {
+          GameState.companyName = '焼飯不動産';
+        }
         if (GameState.hasNamedCompany === undefined) {
           GameState.hasNamedCompany = true;
         }
@@ -10208,7 +10211,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const fundsEl = document.getElementById('go-funds');
     const debtEl = document.getElementById('go-debt');
 
-    if (nameEl) nameEl.textContent = GameState.companyName || '和歌山不動産';
+    if (nameEl) nameEl.textContent = GameState.companyName || '焼飯不動産';
     if (reasonEl && reason) reasonEl.textContent = reason;
     if (monthsEl) monthsEl.textContent = `全 ${GameState.month || 1} ヶ月（クリア案件 ${GameState.level || 0} 件）`;
     if (propsEl) propsEl.textContent = `${(GameState.properties || []).length} 棟`;
@@ -10223,7 +10226,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     try {
       localStorage.removeItem(SAVE_KEY);
     } catch(e) {}
-    GameState.companyName = '和歌山不動産';
+    GameState.companyName = '焼飯不動産';
     GameState.hasNamedCompany = false;
     GameState.funds = 100.0;
     GameState.lastFunds = 100.0;
@@ -10658,7 +10661,7 @@ function updateHomeUI() {
     const debt = GameState.company.debt || 0;
     const emergDebt = GameState.company.emergencyDebt || 0;
     const nameEl = document.getElementById('home-co-name');
-    if (nameEl) nameEl.textContent = GameState.companyName || '和歌山不動産';
+    if (nameEl) nameEl.textContent = GameState.companyName || '焼飯不動産';
     const curM = GameState.month || 1;
     const monthInYear = ((curM - 1) % 12) + 1;
     const curYear = Math.floor((curM - 1) / 12) + 1;
@@ -10820,7 +10823,7 @@ function updateHomeUI() {
     const descEl = document.getElementById('co-name-modal-desc');
 
     if (input) {
-      input.value = GameState.companyName || '和歌山不動産';
+      input.value = GameState.companyName || '焼飯不動産';
     }
     if (titleEl) {
       titleEl.innerHTML = isInitial
@@ -10848,7 +10851,7 @@ function updateHomeUI() {
     initAudio();
     const input = document.getElementById('input-co-name');
     const raw = input ? input.value.trim() : '';
-    GameState.companyName = raw ? raw.slice(0, 16) : '和歌山不動産';
+    GameState.companyName = raw ? raw.slice(0, 16) : '焼飯不動産';
     GameState.hasNamedCompany = true;
     saveGame();
     updateHomeUI();
