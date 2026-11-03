@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.98</title>
+  <title>間取り図パズル — Floor Plan v0.99</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -742,7 +742,7 @@
         <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
         <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
         <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.98 (11/03)</span>
+          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.99 (11/03)</span>
         </div>
         <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
         <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
@@ -782,7 +782,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.98 (11/03)
+        Floor Plan v0.99 (11/03)
       </div>
     </div>
   </section>
@@ -996,7 +996,7 @@
           </div>
           <div id="mem-salary-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px; padding-top:6px; justify-content:space-between;">
             <span>家賃: <strong id="mem-raw-income" style="color:var(--c-emerald);">+0.0万</strong></span>
-            <span>人件費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong></span>
+            <span>人件費・求人費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong></span>
           </div>
           <div id="mem-loan-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:6px; padding-top:6px; justify-content:space-between;">
             <span>銀行返済(元利): <strong id="mem-loan-pay" style="color:var(--c-rose);">-0.0万</strong></span>
@@ -1027,6 +1027,30 @@
           <i class="ph-bold ph-arrow-right" style="margin-right:6px;"></i>次月へ進む
         </button>
 
+      </div>
+    </div>
+
+    <!-- 年末スタッフ昇給交渉＆スキル成長モーダル -->
+    <div id="salary-negotiation-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:265; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:390px; max-height:88vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.6); border:1.5px solid rgba(245,158,11,0.45); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:15px; font-weight:bold; color:var(--c-amber-lt); display:flex; align-items:center; gap:6px;">
+              <i class="ph-fill ph-handshake" style="color:var(--c-amber);"></i> 年末・スタッフ契約更改（昇給交渉）
+            </div>
+            <div id="sal-neg-subtitle" style="font-size:11px; color:var(--c-text2); margin-top:2px;">
+              1年間の活躍を踏まえ、スタッフが昇給を希望しています。
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10.5px; color:#cbd5e1; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.28); border-radius:6px; padding:7px 9px; margin-bottom:10px; line-height:1.45;">
+          💡 <strong>昇給承認:</strong> 契約継続＋<strong>10%で既存スキル成長 / 5%で新スキル開眼！</strong><br>
+          ⚠️ <strong>据え置き(拒否):</strong> 給与維持ですが、<strong>40%（連続拒否で80%）の確率で退職</strong>します。
+        </div>
+        <div id="sal-neg-list" style="overflow-y:auto; flex:1; padding-right:4px; margin-bottom:10px;"></div>
+        <button id="btn-sal-neg-done" class="btn btn-primary" style="width:100%; padding:12px; font-size:13.5px; font-weight:bold; justify-content:center; cursor:pointer;" disabled>
+          全員の契約更改を完了して新年へ進む
+        </button>
       </div>
     </div>
 
@@ -1301,8 +1325,8 @@
     <!-- Footer controls -->
     <footer class="game-footer">
       <!-- Toolbar -->
-      <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-        <div class="toolbar-left" style="display:flex; align-items:center; gap:6px;">
+      <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:6px; min-width:0;">
+        <div class="toolbar-left" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow-x:auto; white-space:nowrap; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
           <button class="btn btn-slate" id="btn-deck-peek" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; cursor:pointer; flex-shrink:0;" title="山札の残りピースと捨て札を確認">
             <i class="ph-bold ph-cards" style="font-size:13px; color:#4f46e5;"></i>
             <span id="deck-peek-count" class="font-num">山札 17/20</span>
@@ -1311,7 +1335,7 @@
             <i class="ph-bold ph-arrows-counter-clockwise" style="font-size:13px; color:#0284c7;"></i>
             <span id="hand-refresh-count">引直 1/1</span>
           </button>
-          <span id="piece-label" style="font-size:11px; color:var(--c-text2);"></span>
+          <span id="piece-label" style="font-size:11px; color:var(--c-text2); white-space:nowrap; flex-shrink:0;"></span>
         </div>
         <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; flex-shrink:0;">
           <i class="ph-bold ph-check-square-offset" style="font-size:14px; color:var(--c-emerald);"></i>
@@ -1542,6 +1566,10 @@
   let buildPiecePaidCost = 0;   // 配置したピースの実支払合計 (割引・反転割増・2周目以降割増込み)
   let buildMirrorExtraCost = 0; // 反転加工による追加費用合計
   let buildCycleExtraCost = 0;  // 山札2周目以降の追加発注割増による費用合計
+  let buildWallRemoveCost = 0;  // 赤壁(耐力壁)の有料撤去による費用合計
+  let wallRemoveCount = 0;      // 現在のパズル中で撤去した赤壁の回数
+  let selectedWallTarget = null;// 赤壁撤去の選択中ターゲット { r1, c1, r2, c2, ori, mx, my }
+  let hintDismissedForBuild = false; // パズル開始後、一度でも操作したら中央ヒントを再表示しないフラグ
   let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
   let deckCycle = 1;            // 現在の山札周回数 (1周目: 1, 2周目: 2, 3周目以降: 3...)
 
@@ -1959,8 +1987,21 @@
     5: { single: 10, dinks: 20, family: 40, mansion: 30 },
   };
 
-  const RECRUIT_AD_COST = 30.0;    // 求人広告掲載費（30万円）
-  const RECRUIT_SCOUT_COST = 50.0; // 即時スカウト費（50万円）
+  const RECRUIT_AD_COST = 30.0;    // 初回(0人時)求人広告掲載費（30万円）
+  const RECRUIT_SCOUT_COST = 50.0; // 初回(0人時)即時スカウト費（50万円）
+  const RECRUIT_MAINT_COST = 15.0; // 求人広告の月次掲載維持費（15万円/月）
+
+  function getRecruitAdCost(hiredCount = null) {
+    const cnt = hiredCount !== null ? hiredCount : (GameState?.company?.hiredStaff?.length || 0);
+    const table = [30.0, 60.0, 100.0, 150.0];
+    return table[Math.min(cnt, table.length - 1)];
+  }
+
+  function getRecruitScoutCost(hiredCount = null) {
+    const cnt = hiredCount !== null ? hiredCount : (GameState?.company?.hiredStaff?.length || 0);
+    const table = [50.0, 100.0, 160.0, 240.0];
+    return table[Math.min(cnt, table.length - 1)];
+  }
 
   const STAFF_SKILL_DEFS = {
     broker: {
@@ -2963,11 +3004,12 @@
     if (GameState && GameState.company && GameState.company.hiredStaff) {
       salaries = GameState.company.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
     }
+    const recMaint = (GameState?.company?.recruitment?.status === 'active') ? RECRUIT_MAINT_COST : 0;
     const currentDebt = (GameState && GameState.company && GameState.company.debt) || 0;
     const loanPay = calcMonthlyLoanPayment(currentDebt);
     const emergDebt = (GameState && GameState.company && GameState.company.emergencyDebt) || 0;
     const emergPayTotal = emergDebt > 0 ? Math.round((emergDebt * 0.10 + Math.min(emergDebt, Math.max(1.0, emergDebt * 0.05))) * 10) / 10 : 0;
-    const net = income - salaries - loanPay.total - emergPayTotal;
+    const net = income - salaries - recMaint - loanPay.total - emergPayTotal;
     return Math.round(net * 10) / 10;
   }
 
@@ -3039,20 +3081,19 @@
       GameState.stats.lifetimeEarnedRent = Math.round(((GameState.stats.lifetimeEarnedRent || 0) + totalIncome) * 10) / 10;
     }
 
-    // スタッフ人件費の控除
+    // スタッフ人件費＋求人広告維持費の控除
     let totalSalaries = 0;
     if (GameState.company && GameState.company.hiredStaff) {
       totalSalaries = GameState.company.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
-      totalSalaries = Math.round(totalSalaries * 10) / 10;
     }
 
-    // スタッフ求人の月次更新
+    // スタッフ求人の月次更新（満席でも入替用に継続可能、active継続時は維持費RECRUIT_MAINT_COSTが発生）
+    let recruitMaintCost = 0;
     const co = GameState.company;
     if (co) {
       if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
       const maxSlots = co.deskCount || 0;
-      const hiredCount = co.hiredStaff?.length || 0;
-      if (hiredCount >= maxSlots) {
+      if (maxSlots <= 0) {
         co.recruitment.status = 'none';
         co.recruitment.candidates = [];
       } else {
@@ -3060,10 +3101,12 @@
           co.recruitment.status = 'active';
           co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
         } else if (co.recruitment.status === 'active') {
+          recruitMaintCost = RECRUIT_MAINT_COST;
           co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
         }
       }
     }
+    totalSalaries = Math.round((totalSalaries + recruitMaintCost) * 10) / 10;
 
     // 銀行借入の月次返済（元本＋利息）
     const currentDebt = (GameState.company && GameState.company.debt) || 0;
@@ -3631,6 +3674,9 @@
         buildPiecePaidCost: buildPiecePaidCost,
         buildMirrorExtraCost: buildMirrorExtraCost,
         buildCycleExtraCost: buildCycleExtraCost,
+        buildWallRemoveCost: buildWallRemoveCost,
+        wallRemoveCount: wallRemoveCount,
+        hintDismissedForBuild: hintDismissedForBuild,
         buildRerollCost: buildRerollCost,
         deckCycle: deckCycle,
         draftSlots: draftSlots,
@@ -3672,6 +3718,10 @@
       buildPiecePaidCost = ab.buildPiecePaidCost || 0;
       buildMirrorExtraCost = ab.buildMirrorExtraCost || 0;
       buildCycleExtraCost = ab.buildCycleExtraCost || 0;
+      buildWallRemoveCost = ab.buildWallRemoveCost || 0;
+      wallRemoveCount = ab.wallRemoveCount || 0;
+      hintDismissedForBuild = !!ab.hintDismissedForBuild || (nextRoomId > 1);
+      selectedWallTarget = null;
       buildRerollCost = ab.buildRerollCost || 0;
       deckCycle = ab.deckCycle || 1;
 
@@ -3706,6 +3756,8 @@
         if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
         const mbt = document.getElementById('mission-banner-text');
         if (mbt) mbt.textContent = `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
+        const hint = document.getElementById('hint-overlay');
+        if (hint) hint.style.opacity = hintDismissedForBuild ? '0' : '1';
 
         showScreen('game');
         resizeCanvas();
@@ -4105,6 +4157,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const card = createCardElement(piece, isSel, () => {
           initAudio();
           cancelRerollConfirm();
+          selectedWallTarget = null;
           if (selectedSlot === idx) {
             // 選択中のピースを再タップ -> 選択解除！
             selectedSlot = null;
@@ -4118,6 +4171,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             selectedSlot = idx;
             selectedRot = 0;
             isMirrored = false;
+            hoverCell = null;
+            previewMode = false;
+            showConfirmUI(false);
             playSound('rotate');
           }
           renderDraftUI();
@@ -4247,6 +4303,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
+  function getWallRemoveCost(count = wallRemoveCount) {
+    const table = [5.0, 10.0, 20.0, 40.0];
+    return table[Math.min(Math.max(0, count || 0), table.length - 1)];
+  }
+
   function updatePieceLabel() {
     const p = (selectedSlot !== null) ? draftSlots[selectedSlot] : null;
     const cost = p ? getPieceCost(p, isMirrored).toFixed(1) : '0.0';
@@ -4254,9 +4315,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const cycleTag = pCycle >= 2 ? ` <span style="font-size:10px; color:#fbbf24;">[${pCycle}周目+${getCycleSurchargePct(pCycle)}%]</span>` : '';
     const pl = document.getElementById('piece-label');
     if (pl) {
-      pl.innerHTML = p
-        ? `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:${pCycle >= 2 ? '#fbbf24' : 'var(--c-emerald)'}; font-weight:bold; font-size:12px;">(${cost}万)</span>${cycleTag}`
-        : `<span style="color:var(--c-text3); font-size:11px;">ピース未選択</span>`;
+      if (p) {
+        pl.innerHTML = `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:${pCycle >= 2 ? '#fbbf24' : 'var(--c-emerald)'}; font-weight:bold; font-size:12px;">(${cost}万)</span>${cycleTag}`;
+      } else {
+        const wCost = getWallRemoveCost().toFixed(1);
+        pl.innerHTML = `<span style="color:var(--c-text2); font-size:10.5px;">未選択 <span style="color:#fca5a5;">(🔨赤壁タップで撤去 -${wCost}万)</span></span>`;
+      }
     }
       
     const btnMirror = document.getElementById('btn-mirror');
@@ -4279,8 +4343,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     const spentEl = document.getElementById('hdr-spent-cost');
     const breakEl = document.getElementById('hdr-cost-breakdown');
-    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
-    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost) * 10) / 10;
+    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost) * 10) / 10;
+    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost + buildWallRemoveCost) * 10) / 10;
     const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
     if (spentEl) {
       spentEl.innerHTML = `${totalSpent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
@@ -4352,6 +4416,39 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function drawPreview() {
+    if (selectedWallTarget) {
+      ctx.save();
+      const { r1, c1, r2, c2 } = selectedWallTarget;
+      let x1, y1, x2, y2;
+      if (r1 === r2) {
+        const col = Math.max(c1, c2);
+        x1 = x2 = col * cellSize;
+        y1 = r1 * cellSize;
+        y2 = (r1 + 1) * cellSize;
+      } else {
+        const row = Math.max(r1, r2);
+        x1 = c1 * cellSize;
+        x2 = (c1 + 1) * cellSize;
+        y1 = y2 = row * cellSize;
+      }
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
     if (!hoverCell) return;
     const piece = draftSlots[selectedSlot];
     if (!piece) return;
@@ -4508,12 +4605,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return E.WALL;
     }
     if (c1_cell.type === T.CORRIDOR && c2_cell.type === T.CORRIDOR) return E.NONE;
+    // 玄関（ワイド玄関含む）と廊下が接する辺は、赤壁（耐力壁）でない限りすべて直通（E.NONE）にする
+    if ((c1_cell.type === T.CORRIDOR && c2_cell.type === T.ENTRANCE) ||
+        (c2_cell.type === T.CORRIDOR && c1_cell.type === T.ENTRANCE)) {
+      return E.NONE;
+    }
     
     if (isDesignatedDoor(r1, c1, r2, c2, c1_cell.roomId, c2_cell.roomId)) {
-      if ((c1_cell.type === T.CORRIDOR && c2_cell.type === T.ENTRANCE) || 
-          (c2_cell.type === T.CORRIDOR && c1_cell.type === T.ENTRANCE)) {
-        return E.NONE;
-      }
       return E.DOOR;
     }
     return E.WALL;
@@ -4886,6 +4984,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     mergeCorridors();
 
+    hintDismissedForBuild = true;
     document.getElementById('hint-overlay').style.opacity = '0';
     playSound('place');
     
@@ -4963,11 +5062,126 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return {r: pr - offR, c: pc - offC};
   }
 
+  function findSolidWallNearPointer(e) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const px = cx - rect.left;
+    const py = cy - rect.top;
+    const gx = px / cellSize;
+    const gy = py / cellSize;
+
+    let best = null;
+    let bestDist = cellSize * 0.42; // タップ判定半径
+
+    // 垂直な壁 (r, c) と (r, c+1) の境界
+    for (let r = 0; r < GRID; r++) {
+      for (let c = -1; c < GRID; c++) {
+        if (!hasSolidWall(r, c, r, c + 1)) continue;
+        // 同じ部屋として既に統合されている内部壁はスキップ
+        const c1 = grid[r]?.[c], c2 = grid[r]?.[c + 1];
+        if (c1 && c2 && c1.roomId && c1.roomId === c2.roomId) continue;
+        const wx = (c + 1) * cellSize;
+        const wy1 = r * cellSize;
+        const wy2 = (r + 1) * cellSize;
+        const clampY = Math.max(wy1, Math.min(wy2, py));
+        const dist = Math.hypot(px - wx, py - clampY);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = { r1: r, c1: c, r2: r, c2: c + 1, mx: wx, my: (wy1 + wy2) / 2 };
+        }
+      }
+    }
+
+    // 水平な壁 (r, c) と (r+1, c) の境界
+    for (let r = -1; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        if (!hasSolidWall(r, c, r + 1, c)) continue;
+        const c1 = grid[r]?.[c], c2 = grid[r + 1]?.[c];
+        if (c1 && c2 && c1.roomId && c1.roomId === c2.roomId) continue;
+        const wy = (r + 1) * cellSize;
+        const wx1 = c * cellSize;
+        const wx2 = (c + 1) * cellSize;
+        const clampX = Math.max(wx1, Math.min(wx2, px));
+        const dist = Math.hypot(px - clampX, py - wy);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = { r1: r, c1: c, r2: r + 1, c2: c, mx: (wx1 + wx2) / 2, my: wy };
+        }
+      }
+    }
+
+    return best;
+  }
+
+  function removeSolidWall(target) {
+    if (!target) return false;
+    const { r1, c1, r2, c2 } = target;
+    if (!hasSolidWall(r1, c1, r2, c2)) return false;
+
+    const cost = getWallRemoveCost();
+    if (budget < cost) {
+      playSound('error');
+      showFloatingText('資金不足！', 'var(--c-rose)');
+      showEmergencyLoanPrompt(cost - budget);
+      return false;
+    }
+
+    // 隣接する両セルの赤壁フラグを除去
+    const cell1 = grid[r1]?.[c1];
+    if (cell1 && cell1.walls) {
+      if (r2 === r1 - 1) cell1.walls.top = false;
+      if (r2 === r1 + 1) cell1.walls.bottom = false;
+      if (c2 === c1 - 1) cell1.walls.left = false;
+      if (c2 === c1 + 1) cell1.walls.right = false;
+    }
+    const cell2 = grid[r2]?.[c2];
+    if (cell2 && cell2.walls) {
+      if (r1 === r2 - 1) cell2.walls.top = false;
+      if (r1 === r2 + 1) cell2.walls.bottom = false;
+      if (c1 === c2 - 1) cell2.walls.left = false;
+      if (c1 === c2 + 1) cell2.walls.right = false;
+    }
+
+    budget = Math.round((budget - cost) * 10) / 10;
+    buildWallRemoveCost = Math.round((buildWallRemoveCost + cost) * 10) / 10;
+    wallRemoveCount = (wallRemoveCount || 0) + 1;
+
+    mergeCorridors();
+    updateBudgetUI();
+    updatePieceLabel();
+    playSound('place');
+    showFloatingText(`🔨 赤壁撤去 (-${cost.toFixed(1)}万)`, '#f59e0b');
+
+    if (typeof updateRealtimeRent === 'function') updateRealtimeRent();
+    saveActiveBuild('game');
+    return true;
+  }
+
   function showConfirmUI(show) {
     const co = document.getElementById('confirm-overlay');
+    const btn = document.getElementById('btn-confirm-place');
     co.style.display = show ? 'flex' : 'none';
     
-    if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
+    if (show && selectedWallTarget) {
+      const wCost = getWallRemoveCost().toFixed(1);
+      if (btn) {
+        btn.innerHTML = `<i class="ph-bold ph-hammer"></i> 壁撤去 (-${wCost}万)`;
+        btn.style.background = '#e11d48';
+      }
+      const canvasWidth = GRID * cellSize;
+      let targetX = selectedWallTarget.mx + 12;
+      let targetY = Math.max(4, selectedWallTarget.my - 18);
+      if (targetX + 125 > canvasWidth) {
+        targetX = Math.max(4, selectedWallTarget.mx - 135);
+      }
+      co.style.left = `${targetX}px`;
+      co.style.top = `${targetY}px`;
+    } else if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
+      if (btn) {
+        btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
+        btn.style.background = '';
+      }
       const piece = draftSlots[selectedSlot];
       const shape = getShape(piece, selectedRot, isMirrored);
       const w = shape[0].length * cellSize;
@@ -4987,16 +5201,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     
     const hint = document.getElementById('hint-overlay');
     if (hint) {
-      hint.style.opacity = show ? '0' : '1';
+      // パズル開始時のみ表示し、一度でも盤面操作や配置を行ったらそのパズル中は非表示を維持する
+      hint.style.opacity = (show || hintDismissedForBuild) ? '0' : '1';
     }
   }
 
   canvas.addEventListener('pointerdown', e => {
     initAudio();
     cancelRerollConfirm();
+    hintDismissedForBuild = true;
     if (selectedSlot === null || !draftSlots[selectedSlot]) {
-      return; // ピース未選択時はプレビューを出さない
+      // ピース未選択時は赤壁（耐力壁）のタップ判定を行い、ヒットすれば有料撤去ボタンを表示する
+      const wallHit = findSolidWallNearPointer(e);
+      if (wallHit) {
+        selectedWallTarget = wallHit;
+        playSound('tap');
+        showConfirmUI(true);
+      } else {
+        selectedWallTarget = null;
+        showConfirmUI(false);
+      }
+      drawPlan();
+      return;
     }
+    selectedWallTarget = null;
     const pos = getCellFromPointer(e);
     if (pos) {
       hoverCell = pos;
@@ -5021,13 +5249,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
   
   canvas.addEventListener('pointerleave', () => { 
-    if (!previewMode) {
+    if (!previewMode && !selectedWallTarget) {
       hoverCell = null; drawPlan(); 
     }
   });
 
   document.getElementById('btn-confirm-place').addEventListener('click', () => {
     initAudio();
+    if (selectedWallTarget) {
+      const ok = removeSolidWall(selectedWallTarget);
+      if (ok) {
+        selectedWallTarget = null;
+        showConfirmUI(false);
+        drawPlan();
+      }
+      return;
+    }
     if (previewMode && hoverCell) {
       const success = placePiece(hoverCell.r, hoverCell.c);
       if (success) {
@@ -6309,7 +6546,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     });
     if (counts.unreachable > 0) badCombos++; // 到達不能ペナルティ
 
-    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost) * 10) / 10;
+    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost) * 10) / 10;
     const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
 
     window.currentPropertyData = {
@@ -6322,6 +6559,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       mirrorCost: buildMirrorExtraCost,
       cycleExtraCost: buildCycleExtraCost,
       rerollCost: buildRerollCost,
+      wallRemoveCost: buildWallRemoveCost,
       totalCost: totalSpentCost,
       isClear: isClear,
       satisfiedCount: satisfiedCount,
@@ -6360,6 +6598,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (buildCycleExtraCost > 0) extraItems.push(`追加発注+${buildCycleExtraCost.toFixed(1)}万`);
       if (buildMirrorExtraCost > 0) extraItems.push(`反転+${buildMirrorExtraCost.toFixed(1)}万`);
       if (buildRerollCost > 0) extraItems.push(`更新+${buildRerollCost.toFixed(1)}万`);
+      if (buildWallRemoveCost > 0) extraItems.push(`壁撤去+${buildWallRemoveCost.toFixed(1)}万`);
       const extraPart = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
       const discPart = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
       fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 / ${extraPart}${discPart}`;
@@ -6605,6 +6844,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     buildMirrorExtraCost = 0;
     buildCycleExtraCost = 0;
     buildRerollCost = 0;
+    buildWallRemoveCost = 0;
+    wallRemoveCount = 0;
+    selectedWallTarget = null;
+    hintDismissedForBuild = false;
     currentLevelIdx = GameState.level;
     
     updateCompanyUI();
@@ -7370,16 +7613,216 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
+    // 年末（第12, 24, 36...ヶ月目の終了時）に雇用スタッフがおり破産していない場合、契約更改（昇給交渉）を実施
+    const finishedMonth = endMonth || month || (GameState.month - 1);
+    const isYearEnd = !isBankrupt && (finishedMonth > 0) && (finishedMonth % 12 === 0);
+    const hasHiredStaff = (GameState?.company?.hiredStaff?.length || 0) > 0;
+    window.pendingSalaryNegMonth = (isYearEnd && hasHiredStaff) ? finishedMonth : null;
+
     modal.style.display = 'flex';
   }
+
+  let salaryNegSession = null;
+
+  function openSalaryNegotiationModal(finishedMonth, onDone) {
+    const modal = document.getElementById('salary-negotiation-modal');
+    const listEl = document.getElementById('sal-neg-list');
+    const subEl = document.getElementById('sal-neg-subtitle');
+    const doneBtn = document.getElementById('btn-sal-neg-done');
+    const staffList = GameState?.company?.hiredStaff || [];
+    if (!modal || !listEl || staffList.length === 0) {
+      if (typeof onDone === 'function') onDone();
+      return;
+    }
+
+    const yearNum = Math.max(1, Math.round(finishedMonth / 12));
+    if (subEl) {
+      subEl.textContent = `第${yearNum}年目 終了 — 在籍スタッフ${staffList.length}名が来期の契約更改を希望しています。`;
+    }
+
+    salaryNegSession = {
+      onDone: onDone,
+      items: staffList.map(s => {
+        const curSal = Number(s.salary) || 1.0;
+        const inc = Math.max(0.3, Math.round((curSal * 0.15) * 10) / 10);
+        const reqSal = Math.round((curSal + inc) * 10) / 10;
+        const quitProb = (s.rejectedCount || 0) >= 1 ? 80 : 40;
+        return {
+          staffId: s.id,
+          name: s.name,
+          avatar: s.avatar || '🧑‍💼',
+          role: s.role || '',
+          curSalary: curSal,
+          reqSalary: reqSal,
+          incAmount: inc,
+          quitProb: quitProb,
+          decided: false,
+          resultHtml: ''
+        };
+      })
+    };
+
+    renderSalaryNegotiationList();
+    modal.style.display = 'flex';
+  }
+
+  function renderSalaryNegotiationList() {
+    const listEl = document.getElementById('sal-neg-list');
+    const doneBtn = document.getElementById('btn-sal-neg-done');
+    if (!listEl || !salaryNegSession) return;
+
+    let html = '';
+    let allDecided = true;
+
+    for (const item of salaryNegSession.items) {
+      if (!item.decided) allDecided = false;
+      const staffObj = (GameState?.company?.hiredStaff || []).find(s => s.id === item.staffId);
+      const skillsSummary = (staffObj && Array.isArray(staffObj.skills))
+        ? staffObj.skills.map(sk => {
+            const def = STAFF_SKILL_DEFS[sk.id];
+            return `<span style="display:inline-block; font-size:9.5px; background:rgba(255,255,255,0.08); color:#fde68a; padding:1px 5px; border-radius:4px; margin-right:4px;">${def ? def.name : sk.id} Lv${sk.level}</span>`;
+          }).join('')
+        : '';
+
+      html += `
+        <div style="padding:10px; background:rgba(15,23,42,0.65); border:1px solid rgba(255,255,255,0.12); border-radius:8px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:22px;">${item.avatar}</span>
+              <div>
+                <div style="font-size:13px; font-weight:bold; color:var(--c-text);">${item.name}</div>
+                <div style="font-size:10px; color:var(--c-text2);">${item.role}</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px; color:var(--c-text2);">希望月額給与</div>
+              <div style="font-size:12.5px; font-weight:bold; color:var(--c-amber-lt);">
+                ${item.curSalary.toFixed(1)}万 ➔ <span style="color:#fde047;">${item.reqSalary.toFixed(1)}万</span> <span style="font-size:10px; color:#fca5a5;">(+${item.incAmount.toFixed(1)})</span>
+              </div>
+            </div>
+          </div>
+          ${skillsSummary ? `<div style="margin-top:5px;">${skillsSummary}</div>` : ''}
+          ${item.decided ? `
+            <div style="margin-top:8px; padding:6px 8px; border-radius:6px; background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.1); font-size:11px; line-height:1.4;">
+              ${item.resultHtml}
+            </div>
+          ` : `
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="btn btn-primary" onclick="handleSalaryDecision('${item.staffId}', true)" style="flex:1; padding:7px 8px; font-size:11.5px; font-weight:bold; justify-content:center; gap:4px;">
+                <i class="ph-bold ph-sparkle"></i> 昇給承認 (+${item.incAmount.toFixed(1)}万)
+              </button>
+              <button class="btn btn-slate" onclick="handleSalaryDecision('${item.staffId}', false)" style="flex:1; padding:7px 8px; font-size:11px; justify-content:center; border:1px solid rgba(244,63,94,0.35); color:#fda4af;">
+                据え置き (退職率${item.quitProb}%)
+              </button>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    listEl.innerHTML = html;
+    if (doneBtn) {
+      doneBtn.disabled = !allDecided;
+      doneBtn.style.opacity = allDecided ? '1' : '0.45';
+      doneBtn.style.cursor = allDecided ? 'pointer' : 'not-allowed';
+    }
+  }
+
+  function handleSalaryDecision(staffId, approved) {
+    initAudio();
+    if (!salaryNegSession) return;
+    const item = salaryNegSession.items.find(x => x.staffId === staffId);
+    if (!item || item.decided) return;
+
+    const staffList = GameState?.company?.hiredStaff || [];
+    const staff = staffList.find(s => s.id === staffId);
+    if (!staff) {
+      item.decided = true;
+      item.resultHtml = `<span style="color:var(--c-text2);">契約終了</span>`;
+      renderSalaryNegotiationList();
+      return;
+    }
+
+    item.decided = true;
+
+    if (approved) {
+      staff.salary = item.reqSalary;
+      staff.rejectedCount = 0;
+      let msg = `<div style="color:var(--c-emerald); font-weight:bold;">✅ 昇給を承認しました！（新給与: ${staff.salary.toFixed(1)}万/月）</div>`;
+
+      // スキル成長イベント抽選（既存スキル強化: 10% / 新スキル獲得: 5%）
+      if (!Array.isArray(staff.skills)) staff.skills = [];
+      const upgradableSkills = staff.skills.filter(sk => (sk.level || 1) < 3);
+      const ownedIds = new Set(staff.skills.map(sk => sk.id));
+      const unownedIds = Object.keys(STAFF_SKILL_DEFS).filter(k => !ownedIds.has(k));
+
+      const roll = Math.random();
+      let bonusTriggered = false;
+
+      if (roll < 0.05 && staff.skills.length < 3 && unownedIds.length > 0) {
+        // 5%: 新スキル獲得！
+        const newSkillId = unownedIds[Math.floor(Math.random() * unownedIds.length)];
+        staff.skills.push({ id: newSkillId, level: 1 });
+        const def = STAFF_SKILL_DEFS[newSkillId];
+        msg += `<div style="margin-top:4px; padding:4px 6px; background:rgba(245,158,11,0.22); border:1px solid #f59e0b; border-radius:4px; color:#fef08a; font-weight:bold;">🌟 【新能力開眼！】「${def ? def.name : newSkillId} Lv1」を新たに習得しました！</div>`;
+        bonusTriggered = true;
+      } else if (roll < 0.15 && upgradableSkills.length > 0) {
+        // 10%: 既存スキル成長！
+        const targetSk = upgradableSkills[Math.floor(Math.random() * upgradableSkills.length)];
+        const oldLv = targetSk.level || 1;
+        targetSk.level = oldLv + 1;
+        const def = STAFF_SKILL_DEFS[targetSk.id];
+        msg += `<div style="margin-top:4px; padding:4px 6px; background:rgba(16,185,129,0.22); border:1px solid #10b981; border-radius:4px; color:#a7f3d0; font-weight:bold;">🎉 【スキル成長！】「${def ? def.name : targetSk.id}」が Lv${oldLv} ➔ Lv${targetSk.level} にパワーアップ！</div>`;
+        bonusTriggered = true;
+      }
+
+      playSound(bonusTriggered ? 'combo' : 'clear');
+      item.resultHtml = msg;
+    } else {
+      // 据え置き（拒否）: 40%（連続拒否で80%）の確率で退職
+      const quitRoll = Math.random() * 100;
+      if (quitRoll < item.quitProb) {
+        GameState.company.hiredStaff = GameState.company.hiredStaff.filter(s => s.id !== staffId);
+        playSound('error');
+        item.resultHtml = `<div style="color:var(--c-rose); font-weight:bold;">💔 「他社から良い条件を頂いたので…」<br>${item.name}は退職しました。</div>`;
+      } else {
+        staff.rejectedCount = (staff.rejectedCount || 0) + 1;
+        playSound('tap');
+        item.resultHtml = `<div style="color:#fcd34d; font-weight:bold;">😅 不満そうですが、現在の給与（${staff.salary.toFixed(1)}万/月）で残留してくれました。（次回拒否時の退職率80%）</div>`;
+      }
+    }
+
+    saveGame();
+    updateHomeUI();
+    renderSalaryNegotiationList();
+  }
+
+  window.handleSalaryDecision = handleSalaryDecision;
+
+  document.getElementById('btn-sal-neg-done')?.addEventListener('click', () => {
+    initAudio();
+    const modal = document.getElementById('salary-negotiation-modal');
+    if (modal) modal.style.display = 'none';
+    const cb = salaryNegSession ? salaryNegSession.onDone : null;
+    salaryNegSession = null;
+    saveGame();
+    updateHomeUI();
+    if (typeof cb === 'function') cb();
+  });
 
   document.getElementById('btn-mem-confirm')?.addEventListener('click', () => {
     initAudio();
     const modal = document.getElementById('month-end-modal');
     if (modal) modal.style.display = 'none';
-    if (typeof monthEndCallback === 'function') {
-      const cb = monthEndCallback;
-      monthEndCallback = null;
+    const pendingMonth = window.pendingSalaryNegMonth;
+    window.pendingSalaryNegMonth = null;
+    const cb = monthEndCallback;
+    monthEndCallback = null;
+    if (pendingMonth && (GameState?.company?.hiredStaff?.length || 0) > 0) {
+      openSalaryNegotiationModal(pendingMonth, () => {
+        if (typeof cb === 'function') cb();
+      });
+    } else if (typeof cb === 'function') {
       cb();
     }
   });
@@ -7675,7 +8118,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       baseCost: p.baseCost !== undefined ? p.baseCost : 0,
       piecePaidCost: p.piecePaidCost !== undefined ? p.piecePaidCost : 0,
       mirrorCost: p.mirrorCost || 0,
+      cycleExtraCost: p.cycleExtraCost || 0,
       rerollCost: p.rerollCost || 0,
+      wallRemoveCost: p.wallRemoveCost || 0,
       totalCost: p.totalCost !== undefined ? p.totalCost : 0,
       earnedRent: 0,
       isClear: p.isClear || false,
@@ -8049,7 +8494,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const mirrorCost = p.mirrorCost || 0;
     const cycleExtraCost = p.cycleExtraCost || 0;
     const rerollCost = p.rerollCost || 0;
-    const extraCost = Math.round((mirrorCost + cycleExtraCost + rerollCost) * 10) / 10;
+    const wallRemoveCost = p.wallRemoveCost || 0;
+    const extraCost = Math.round((mirrorCost + cycleExtraCost + rerollCost + wallRemoveCost) * 10) / 10;
     const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
     const discountSaved = Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost - cycleExtraCost)) * 10) / 10);
     const earnedRent = Math.round((p.earnedRent || 0) * 10) / 10;
@@ -8069,6 +8515,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (cycleExtraCost > 0) extraItems.push(`追加発注+${cycleExtraCost.toFixed(1)}万`);
         if (mirrorCost > 0) extraItems.push(`反転+${mirrorCost.toFixed(1)}万`);
         if (rerollCost > 0) extraItems.push(`更新+${rerollCost.toFixed(1)}万`);
+        if (wallRemoveCost > 0) extraItems.push(`壁撤去+${wallRemoveCost.toFixed(1)}万`);
         const extraLabel = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
         const discStr = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
         elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 / ${extraLabel}${discStr})`;
@@ -8734,11 +9181,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const statusBox = document.getElementById('upg-staff-status-box');
     if (statusBox) {
       const totalSalary = co.hiredStaff.reduce((sum, s) => sum + (s.salary || 0), 0);
+      const recActive = co.recruitment?.status === 'active';
+      const maintLine = recActive ? `<div style="font-size:10px; color:#fbbf24; margin-top:2px;">(＋求人掲載維持費 -${RECRUIT_MAINT_COST.toFixed(1)}万/月)</div>` : '';
       let noteHtml = '';
       if (maxSlots === 0) {
         noteHtml = `<div style="margin-top:6px; font-size:11px; color:#f59e0b; background:rgba(245,158,11,0.12); padding:6px 8px; border-radius:4px; border:1px solid rgba(245,158,11,0.25);"><i class="ph-bold ph-info"></i> デスクがありません。「事務所強化」でデスクを増設するとスタッフを雇用できます。</div>`;
       } else if (hiredCount >= maxSlots) {
-        noteHtml = `<div style="margin-top:6px; font-size:11px; color:#38bdf8; background:rgba(56,189,248,0.1); padding:6px 8px; border-radius:4px; border:1px solid rgba(56,189,248,0.25);"><i class="ph-bold ph-check-circle"></i> デスク満席（さらに雇用するにはオフィス移転が必要です）</div>`;
+        noteHtml = `<div style="margin-top:6px; font-size:10.5px; color:#38bdf8; background:rgba(56,189,248,0.1); padding:6px 8px; border-radius:4px; border:1px solid rgba(56,189,248,0.25);"><i class="ph-bold ph-arrows-left-right"></i> デスク満席（現在も求人を出して<strong>既存スタッフとの入れ替え採用</strong>が可能です）</div>`;
       }
 
       statusBox.innerHTML = `
@@ -8750,10 +9199,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="text-align:right;">
             <div style="font-size:11px; color:var(--c-text2);">月間総人件費</div>
             <div style="font-size:16px; font-weight:bold; color:var(--c-rose);">-${totalSalary.toFixed(1)}<span style="font-size:10px; font-weight:normal;">万/月</span></div>
+            ${maintLine}
           </div>
         </div>
         <div style="font-size:10px; color:var(--c-text3); margin-top:5px; line-height:1.3;">
-          ※ 人件費は毎月末の家賃精算時に差し引かれます。
+          ※ 人件費は毎月末の家賃精算時に差し引かれます。毎年12月末に昇給交渉があります。
         </div>
         ${noteHtml}
       `;
@@ -8822,32 +9272,33 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
-    // 候補リスト
+    // 候補リスト（満席でも入替採用のために求人可能・雇用人数に応じて費用上昇・掲載中は月次維持費発生）
     const candListEl = document.getElementById('upg-candidate-staff-list');
     if (candListEl) {
       if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
       const rec = co.recruitment;
       const isSlotFull = hiredCount >= maxSlots;
+      const adCost = getRecruitAdCost(hiredCount);
+      const scoutCost = getRecruitScoutCost(hiredCount);
 
       if (maxSlots === 0) {
         candListEl.innerHTML = `<div style="font-size:11px; color:#f59e0b; text-align:center; padding:14px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25);"><i class="ph-bold ph-info"></i> デスクがありません。「事務所強化」でデスクを増設すると求人募集が可能になります。</div>`;
-      } else if (isSlotFull) {
-        candListEl.innerHTML = `<div style="font-size:11px; color:#38bdf8; text-align:center; padding:14px; background:rgba(56,189,248,0.08); border-radius:6px; border:1px solid rgba(56,189,248,0.2);"><i class="ph-bold ph-check-circle"></i> デスク満席です（空きスロットがないため求人は停止中です）。新たなスタッフを迎えるにはオフィス移転するか、既存スタッフを解雇してください。</div>`;
       } else if (rec.status === 'none') {
         candListEl.innerHTML = `
           <div style="text-align:center; padding:16px 12px; background:rgba(15,23,42,0.45); border:1px dashed rgba(255,255,255,0.15); border-radius:8px;">
             <div style="font-size:24px; margin-bottom:4px;">📢</div>
             <div style="font-size:13px; font-weight:bold; color:var(--c-text); margin-bottom:4px;">現在、求人広告は出していません</div>
-            <div style="font-size:11px; color:var(--c-text2); margin-bottom:12px; line-height:1.4;">
-              求人広告を掲載すると、翌月に新たな応募者（3名）が届きます。<br>
-              急ぎで候補を見たい場合は、即時スカウトも利用可能です。
+            <div style="font-size:10.5px; color:var(--c-text2); margin-bottom:10px; line-height:1.45;">
+              求人広告を掲載すると、翌月に応募者（3名）が到着します。<br>
+              <span style="color:#fbbf24;">※応募到着後、求人掲載を継続すると毎月 <strong>${RECRUIT_MAINT_COST}万円の掲載維持費</strong> がかかります（いつでも停止可）。</span>
+              ${isSlotFull ? `<br><span style="color:#38bdf8;">💡 デスク満席のため、採用時は<strong>現在のスタッフとの入れ替え</strong>になります。</span>` : ''}
             </div>
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-              <button class="btn btn-primary" onclick="postJobAd()" style="padding:8px 14px; font-size:12px; font-weight:bold; gap:6px;">
-                <i class="ph-bold ph-megaphone"></i> 求人広告を掲載 (30万 / 翌月到着)
+              <button class="btn btn-primary" onclick="postJobAd()" style="padding:8px 12px; font-size:11.5px; font-weight:bold; gap:5px;">
+                <i class="ph-bold ph-megaphone"></i> 求人広告を掲載 (${adCost}万 / 翌月到着)
               </button>
-              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:8px 12px; font-size:12px; font-weight:bold; gap:6px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
-                <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 即時スカウト (50万 / 即時到着)
+              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:8px 12px; font-size:11.5px; font-weight:bold; gap:5px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+                <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 即時スカウト (${scoutCost}万 / 即時到着)
               </button>
             </div>
           </div>
@@ -8856,30 +9307,45 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         candListEl.innerHTML = `
           <div style="text-align:center; padding:16px 12px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); border-radius:8px;">
             <div style="font-size:22px; margin-bottom:4px;">📢</div>
-            <div style="font-size:13px; font-weight:bold; color:#93c5fd; margin-bottom:4px;">求人広告を掲載中！</div>
-            <div style="font-size:11px; color:var(--c-text2); margin-bottom:10px; line-height:1.4;">
-              今月の設計を完了して翌月になると、応募者3名が到着します。<br>
-              来月まで待てない場合は、即時スカウトをご利用ください。
+            <div style="font-size:13px; font-weight:bold; color:#93c5fd; margin-bottom:4px;">求人広告を掲載中！（翌月到着）</div>
+            <div style="font-size:10.5px; color:var(--c-text2); margin-bottom:10px; line-height:1.45;">
+              翌月になると応募者3名が到着します。<br>
+              （到着した翌々月以降も掲載を続けると、月${RECRUIT_MAINT_COST}万の維持費で毎月新しい候補が届きます）
             </div>
-            <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:7px 14px; font-size:11px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
-              <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 今すぐ即時スカウト (50万)
-            </button>
+            <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:7px 12px; font-size:11px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+                <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 今すぐ即時スカウト (${scoutCost}万)
+              </button>
+              <button class="btn btn-slate" onclick="stopJobAd()" style="padding:7px 10px; font-size:10.5px; border:1px solid rgba(244,63,94,0.35); color:#fda4af;">
+                求人を停止する
+              </button>
+            </div>
           </div>
         `;
       } else { // active
         let candHtml = `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:rgba(30,41,59,0.5); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
-            <div style="font-size:11px; color:var(--c-text2);">
-              応募者（全${rec.candidates ? rec.candidates.length : 0}名）<span style="font-size:10px; color:var(--c-text3); margin-left:4px;">※翌月自動更新</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px; background:rgba(30,41,59,0.55); padding:7px 10px; border-radius:6px; border:1px solid rgba(245,158,11,0.3);">
+            <div>
+              <div style="font-size:11px; font-weight:bold; color:var(--c-text);">
+                応募者（全${rec.candidates ? rec.candidates.length : 0}名）
+              </div>
+              <div style="font-size:9.5px; color:#fbbf24; margin-top:1px;">
+                📢 求人掲載継続中（翌月更新・維持費 -${RECRUIT_MAINT_COST}万/月）
+              </div>
             </div>
-            <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:4px 8px; font-size:10px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.3); color:#bae6fd;" title="新しい候補者3名を即時再募集">
-              <i class="ph-bold ph-arrows-clockwise" style="color:#38bdf8;"></i> 即時再募集 (50万)
-            </button>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:4px 8px; font-size:10px; font-weight:bold; gap:3px; border:1px solid rgba(56,189,248,0.3); color:#bae6fd;" title="新しい候補者3名を即時再募集">
+                <i class="ph-bold ph-arrows-clockwise" style="color:#38bdf8;"></i> 即時再募集 (${scoutCost}万)
+              </button>
+              <button class="btn btn-slate" onclick="stopJobAd()" style="padding:4px 8px; font-size:10px; font-weight:bold; border:1px solid rgba(244,63,94,0.4); color:#fda4af;" title="求人掲載を終了し月次維持費を止めます">
+                掲載停止
+              </button>
+            </div>
           </div>
         `;
 
         if (!rec.candidates || rec.candidates.length === 0) {
-          candHtml += `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:12px; background:rgba(15,23,42,0.3); border-radius:6px;">現在応募者はいません（翌月新しい応募者が届きます）</div>`;
+          candHtml += `<div style="font-size:11px; color:var(--c-text3); text-align:center; padding:12px; background:rgba(15,23,42,0.3); border-radius:6px;">現在応募者はいません（翌月新しい応募者が届きます。不要な場合は「掲載停止」を押してください）</div>`;
         } else {
           rec.candidates.forEach(c => {
             let skillsHtml = '';
@@ -8904,6 +9370,34 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               rankBadge = `<span style="font-size:9px; background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3); padding:1px 5px; border-radius:4px;">★ アシスタント</span>`;
             }
 
+            const isReplacingThis = (window.replacingCandidateId === c.id);
+            let replaceSelectorHtml = '';
+            if (isSlotFull && isReplacingThis) {
+              const targetBtns = co.hiredStaff.map(hs => `
+                <button class="btn btn-slate" onclick="replaceHireCandidate('${c.id}', '${hs.id}')" style="padding:5px 8px; font-size:10.5px; border:1px solid rgba(245,158,11,0.45); color:#fde68a; justify-content:space-between; width:100%; margin-top:4px;">
+                  <span>🔄 ${hs.avatar} <strong>${hs.name}</strong> (${hs.role || ''}) と入れ替える</span>
+                  <span style="font-size:9.5px; color:#fca5a5;">現給-${hs.salary.toFixed(1)}万</span>
+                </button>
+              `).join('');
+              replaceSelectorHtml = `
+                <div style="margin-top:8px; padding:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(245,158,11,0.4); border-radius:6px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:#fcd34d; font-weight:bold; margin-bottom:2px;">
+                    <span>誰と入れ替えますか？（解雇して採用）</span>
+                    <button onclick="cancelReplaceCandidate()" style="background:none; border:none; color:var(--c-text2); font-size:10px; cursor:pointer; text-decoration:underline;">キャンセル</button>
+                  </div>
+                  ${targetBtns}
+                </div>
+              `;
+            }
+
+            const actionBtnHtml = isSlotFull
+              ? `<button class="btn btn-amber" onclick="startReplaceCandidate('${c.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
+                   <i class="ph-bold ph-arrows-left-right"></i> 入替採用
+                 </button>`
+              : `<button class="btn btn-primary" onclick="hireCandidate('${c.id}')" style="padding:6px 12px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
+                   <i class="ph-bold ph-user-plus"></i> 採用する
+                 </button>`;
+
             candHtml += `
               <div style="padding:10px; background:rgba(15,23,42,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:8px; margin-bottom:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -8919,12 +9413,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
                   </div>
                   <div style="text-align:right;">
                     <div style="font-size:11px; color:var(--c-amber-lt); font-weight:bold; margin-bottom:4px;">給与: ${c.salary.toFixed(1)}万/月</div>
-                    <button class="btn btn-primary" onclick="hireCandidate('${c.id}')" style="padding:6px 12px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
-                      <i class="ph-bold ph-user-plus"></i> 採用する
-                    </button>
+                    ${actionBtnHtml}
                   </div>
                 </div>
                 <div style="margin-top:6px;">${skillsHtml}</div>
+                ${replaceSelectorHtml}
               </div>
             `;
           });
@@ -9895,21 +10388,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       showUpgradeFeedback('デスクがありません。「執務デスク増設」でスロットを増設してください！', 'var(--c-rose)');
       return;
     }
-    if ((co.hiredStaff?.length || 0) >= maxSlots) {
+    const adCost = getRecruitAdCost(co.hiredStaff?.length || 0);
+    if (GameState.funds < adCost) {
       playSound('error');
-      showUpgradeFeedback('デスク満席のため、求人を出す必要がありません。', 'var(--c-rose)');
+      showUpgradeFeedback(`資金不足です！（掲載費: ${adCost}万円）`, 'var(--c-rose)');
       return;
     }
-    if (GameState.funds < RECRUIT_AD_COST) {
-      playSound('error');
-      showUpgradeFeedback(`資金不足です！（掲載費: ${RECRUIT_AD_COST}万円）`, 'var(--c-rose)');
-      return;
-    }
-    GameState.funds = Math.round((GameState.funds - RECRUIT_AD_COST) * 10) / 10;
+    GameState.funds = Math.round((GameState.funds - adCost) * 10) / 10;
     if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
     co.recruitment.status = 'posted';
+    window.replacingCandidateId = null;
     playSound('clear');
-    showUpgradeFeedback(`📢 求人広告を掲載しました（-${RECRUIT_AD_COST}万）。来月応募者が届きます！`, 'var(--c-emerald)');
+    showUpgradeFeedback(`📢 求人広告を掲載しました（-${adCost}万）。来月応募者が届きます！`, 'var(--c-emerald)');
     saveGame();
     renderCompanyUpgradeUI();
     updateHomeUI();
@@ -9925,22 +10415,87 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       showUpgradeFeedback('デスクがありません。「執務デスク増設」でスロットを増設してください！', 'var(--c-rose)');
       return;
     }
-    if ((co.hiredStaff?.length || 0) >= maxSlots) {
+    const scoutCost = getRecruitScoutCost(co.hiredStaff?.length || 0);
+    if (GameState.funds < scoutCost) {
       playSound('error');
-      showUpgradeFeedback('デスク満席のため、スカウトの必要がありません。', 'var(--c-rose)');
+      showUpgradeFeedback(`資金不足です！（即時スカウト費: ${scoutCost}万円）`, 'var(--c-rose)');
       return;
     }
-    if (GameState.funds < RECRUIT_SCOUT_COST) {
-      playSound('error');
-      showUpgradeFeedback(`資金不足です！（即時スカウト費: ${RECRUIT_SCOUT_COST}万円）`, 'var(--c-rose)');
-      return;
-    }
-    GameState.funds = Math.round((GameState.funds - RECRUIT_SCOUT_COST) * 10) / 10;
+    GameState.funds = Math.round((GameState.funds - scoutCost) * 10) / 10;
     if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
     co.recruitment.status = 'active';
     co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
+    window.replacingCandidateId = null;
     playSound('clear');
-    showUpgradeFeedback(`⚡ 人材紹介エージェントから応募者3名が到着しました！（-${RECRUIT_SCOUT_COST}万）`, 'var(--c-emerald)');
+    showUpgradeFeedback(`⚡ 人材紹介エージェントから応募者3名が到着しました！（-${scoutCost}万）`, 'var(--c-emerald)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function stopJobAd() {
+    initAudio();
+    if (!GameState?.company?.recruitment) return;
+    GameState.company.recruitment.status = 'none';
+    GameState.company.recruitment.candidates = [];
+    window.replacingCandidateId = null;
+    playSound('tap');
+    showUpgradeFeedback('📢 求人掲載を停止しました（来月以降の維持費はかかりません）', 'var(--c-text2)');
+    saveGame();
+    renderCompanyUpgradeUI();
+    updateHomeUI();
+  }
+
+  function startReplaceCandidate(candId) {
+    initAudio();
+    window.replacingCandidateId = (window.replacingCandidateId === candId) ? null : candId;
+    playSound('tap');
+    renderCompanyUpgradeUI();
+  }
+
+  function cancelReplaceCandidate() {
+    initAudio();
+    window.replacingCandidateId = null;
+    playSound('tap');
+    renderCompanyUpgradeUI();
+  }
+
+  function replaceHireCandidate(candId, targetStaffId) {
+    initAudio();
+    if (!GameState?.company) return;
+    const co = GameState.company;
+    if (!co.hiredStaff) co.hiredStaff = [];
+    const candIdx = co.recruitment?.candidates?.findIndex(c => c.id === candId);
+    const staffIdx = co.hiredStaff.findIndex(s => s.id === targetStaffId);
+    if (candIdx === -1 || candIdx === undefined || staffIdx === -1) return;
+
+    const cand = co.recruitment.candidates[candIdx];
+    const oldStaff = co.hiredStaff[staffIdx];
+
+    co.hiredStaff[staffIdx] = {
+      id: cand.id,
+      name: cand.name,
+      avatar: cand.avatar,
+      rank: cand.rank,
+      rankLabel: cand.rankLabel,
+      stars: cand.stars,
+      role: cand.role,
+      salary: cand.salary,
+      skills: cand.skills
+    };
+
+    co.recruitment.candidates.splice(candIdx, 1);
+    window.replacingCandidateId = null;
+
+    // 満席での入替採用完了後は、意図しない維持費発生を防ぐため求人掲載を自動終了する
+    const maxSlots = getMaxStaffSlots();
+    if (co.hiredStaff.length >= maxSlots || co.recruitment.candidates.length === 0) {
+      co.recruitment.status = 'none';
+      co.recruitment.candidates = [];
+    }
+
+    playSound('clear');
+    showUpgradeFeedback(`🔄 ${oldStaff.name}を解雇し、新たに${cand.name}を迎え入れました！`, 'var(--c-emerald)');
     saveGame();
     renderCompanyUpgradeUI();
     updateHomeUI();
@@ -9953,8 +10508,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const maxSlots = getMaxStaffSlots();
     if (!co.hiredStaff) co.hiredStaff = [];
     if (co.hiredStaff.length >= maxSlots) {
-      playSound('error');
-      showUpgradeFeedback('デスクに空きがありません！オフィスを移転してください。', 'var(--c-rose)');
+      startReplaceCandidate(candId);
       return;
     }
     const candIdx = co.recruitment?.candidates?.findIndex(c => c.id === candId);
@@ -9974,8 +10528,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     });
 
     co.recruitment.candidates.splice(candIdx, 1);
+    window.replacingCandidateId = null;
 
-    if (co.hiredStaff.length >= maxSlots) {
+    if (co.hiredStaff.length >= maxSlots || co.recruitment.candidates.length === 0) {
       co.recruitment.status = 'none';
       co.recruitment.candidates = [];
     }
@@ -10020,6 +10575,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   window.buyCompanyUpgrade = buyCompanyUpgrade;
   window.postJobAd = postJobAd;
   window.scoutImmediately = scoutImmediately;
+  window.stopJobAd = stopJobAd;
+  window.startReplaceCandidate = startReplaceCandidate;
+  window.cancelReplaceCandidate = cancelReplaceCandidate;
+  window.replaceHireCandidate = replaceHireCandidate;
   window.hireCandidate = hireCandidate;
   window.startDismissStaff = startDismissStaff;
   window.confirmDismissStaff = confirmDismissStaff;
@@ -10200,15 +10759,17 @@ function updateHomeUI() {
     }
 
     const totalSalaries = (GameState.company?.hiredStaff || []).reduce((acc, s) => acc + (s.salary || 0), 0);
+    const recMaint = (GameState.company?.recruitment?.status === 'active') ? RECRUIT_MAINT_COST : 0;
     const loanPay = calcMonthlyLoanPayment(debt);
-    const netIncome = Math.round((totalRent - totalSalaries - loanPay.total) * 10) / 10;
+    const netIncome = Math.round((totalRent - totalSalaries - recMaint - loanPay.total) * 10) / 10;
     const incomeEl = document.getElementById('home-co-income');
     if (incomeEl) {
       const sign = netIncome >= 0 ? '+' : '';
       incomeEl.style.color = netIncome >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
-      if (totalSalaries > 0 || loanPay.total > 0) {
+      if (totalSalaries > 0 || recMaint > 0 || loanPay.total > 0) {
         const parts = [`家賃 ${totalRent.toFixed(1)}`];
         if (totalSalaries > 0) parts.push(`人件費 -${totalSalaries.toFixed(1)}`);
+        if (recMaint > 0) parts.push(`求人 -${recMaint.toFixed(1)}`);
         if (loanPay.total > 0) parts.push(`返済 -${loanPay.total.toFixed(1)}`);
         incomeEl.innerHTML = `${sign}${netIncome.toFixed(1)}<span class="stat-unit">万/月</span>
           <div style="font-size:10px; color:var(--c-text2); font-weight:normal; margin-top:2px;">
