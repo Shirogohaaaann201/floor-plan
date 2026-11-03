@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v0.99</title>
+  <title>間取り図パズル — Floor Plan v1.00</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -738,14 +738,19 @@
       </button>
     </div>
     <div class="mission-container" style="width:92%; max-width:600px; box-sizing:border-box; margin:24px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
-      <div style="text-align:center; margin-bottom:20px;">
-        <i class="ph-bold ph-buildings" style="font-size:44px; color:var(--c-blue);"></i>
-        <h2 id="home-co-name" style="margin:6px 0 2px; font-size:24px; color:#0f172a;">和歌山不動産</h2>
-        <div style="margin-bottom:4px;">
-          <span style="display:inline-block; font-size:10px; font-weight:bold; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px; border:1px solid #cbd5e1; letter-spacing:0.5px;">Floor Plan v0.99 (11/03)</span>
+      <div style="margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button id="btn-edit-co-name" type="button" style="background:none; border:none; padding:2px 4px; margin:-2px -4px; border-radius:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-align:left;" title="会社名を変更する">
+            <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>
+            <span id="home-co-name" style="font-size:16px; font-weight:900; color:#0f172a; letter-spacing:0.2px;">和歌山不動産</span>
+            <i class="ph-bold ph-pencil-simple" style="font-size:13px; color:#64748b;"></i>
+          </button>
+          <div id="home-co-badges" style="display:flex; align-items:center;"></div>
         </div>
-        <div style="color:var(--c-text2); font-weight:bold; font-size:13px;">第<span id="home-co-month" style="font-size:17px; color:#0f172a;">1</span>ヶ月目 <span id="home-co-calendar" style="font-size:12px; color:var(--c-text2); font-weight:normal; margin-left:4px;">(1年目 1月)</span></div>
-        <div id="home-co-badges" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
+        <div style="display:flex; align-items:center; gap:5px; margin-top:4px; color:#334155; font-weight:800; font-size:13.5px;">
+          <i class="ph-bold ph-calendar-blank" style="color:var(--c-blue); font-size:15px;"></i>
+          <span id="home-co-calendar">1年目 1月</span>
+        </div>
       </div>
       
       <div style="display:flex; gap:12px; margin-bottom:24px;">
@@ -782,7 +787,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v0.99 (11/03)
+        Floor Plan v1.00 (11/03)
       </div>
     </div>
   </section>
@@ -1076,6 +1081,25 @@
         </div>
 
         <button id="btn-skip-cancel" class="btn btn-slate" style="width:100%; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
+      </div>
+    </div>
+    <!-- 会社名設定・変更モーダル -->
+    <div id="company-name-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:260; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:left; border:1.5px solid rgba(56,189,248,0.4); box-shadow:0 12px 35px rgba(0,0,0,0.5);">
+        <div class="mission-card-title" id="co-name-modal-title" style="color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:16px;">
+          <i class="ph-bold ph-buildings"></i> 会社名の設定
+        </div>
+        <div id="co-name-modal-desc" style="font-size:11.5px; color:var(--c-text2); margin-bottom:12px; line-height:1.5;">
+          あなたの不動産・建築会社の名前を決めてください（後からいつでも変更できます）。
+        </div>
+        <div style="margin-bottom:14px;">
+          <input id="input-co-name" type="text" maxlength="16" placeholder="和歌山不動産" value="和歌山不動産" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:15px; font-weight:bold; color:#0f172a; background:#f8fafc; border:2px solid #38bdf8; border-radius:8px; outline:none;" />
+          <div style="font-size:10px; color:var(--c-text2); margin-top:4px; text-align:right;">※最大16文字（空欄時は「和歌山不動産」）</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-co-name-cancel" class="btn btn-slate" style="flex:1; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
+          <button id="btn-co-name-save" class="btn btn-primary" style="flex:1.4; padding:9px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center;">決定する</button>
+        </div>
       </div>
     </div>
     <!-- 管理戸数上限アラートモーダル -->
@@ -3188,12 +3212,17 @@
     };
   }
   
+  function formatYearMonth(m = GameState.month) {
+    const cur = Math.max(1, Number(m) || 1);
+    const y = Math.floor((cur - 1) / 12) + 1;
+    const mo = ((cur - 1) % 12) + 1;
+    return `${y}年目 ${mo}月`;
+  }
+
   function updateCompanyUI() {
     const el = document.getElementById('game-subtitle');
     const m = GameState.month || 1;
-    const monthInYear = ((m - 1) % 12) + 1;
-    const year = Math.floor((m - 1) / 12) + 1;
-    if (el) el.textContent = `${GameState.companyName} 第${m}ヶ月 (${year}年目${monthInYear}月) ｜ ステージ ${currentLevelIdx + 1}`;
+    if (el) el.textContent = `${GameState.companyName} (${formatYearMonth(m)}) ｜ ステージ ${currentLevelIdx + 1}`;
   }
 
   function saveGame() {
@@ -3208,6 +3237,9 @@
       if (data) {
         const parsed = JSON.parse(data);
         Object.assign(GameState, parsed);
+        if (GameState.hasNamedCompany === undefined) {
+          GameState.hasNamedCompany = true;
+        }
         if (!GameState.company) {
           GameState.company = {
             salesLevel: 1,
@@ -3251,6 +3283,8 @@
         if (GameState.availableMissions && Array.isArray(GameState.availableMissions)) {
           GameState.availableMissions.forEach(m => attachRequestFunctions(m));
         }
+      } else {
+        GameState.hasNamedCompany = false;
       }
     } catch(e) {}
     ensureDeckState();
@@ -7466,9 +7500,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     if (titleEl) {
       if (monthsElapsed > 1 && startMonth && endMonth) {
-        titleEl.textContent = `第${startMonth}〜${endMonth}ヶ月（計${monthsElapsed}ヶ月分）決算報告`;
+        titleEl.textContent = `${formatYearMonth(startMonth)}〜${formatYearMonth(endMonth)}（計${monthsElapsed}ヶ月分）決算報告`;
       } else {
-        titleEl.textContent = `第${month}ヶ月目 決算報告`;
+        titleEl.textContent = `${formatYearMonth(month)} 決算報告`;
       }
     }
     
@@ -7838,7 +7872,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const dateEl = document.getElementById('skip-modal-current-date');
     if (dateEl) {
-      dateEl.textContent = `現在：第${currentMonth}ヶ月目（${year}年目 ${monthInYear}月）`;
+      dateEl.textContent = `現在：${year}年目 ${monthInYear}月`;
     }
 
     const net = getEstimatedMonthlyNetIncome();
@@ -8013,11 +8047,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     let customSubtitle = null;
     if (monthsRun > 1) {
       if (stopReason === 'eviction') {
-        customSubtitle = `⚠️ 入居者の退去が発生したため、第${endMonth}ヶ月で一時停止しました。`;
+        customSubtitle = `⚠️ 入居者の退去が発生したため、${formatYearMonth(endMonth)}で一時停止しました。`;
       } else if (stopReason === 'reentry') {
-        customSubtitle = `🎉 空室に新しい入居者が決まったため、第${endMonth}ヶ月で一時停止しました。`;
+        customSubtitle = `🎉 空室に新しい入居者が決まったため、${formatYearMonth(endMonth)}で一時停止しました。`;
       } else if (stopReason === 'overdraft') {
-        customSubtitle = `🚨 運転資金不足が発生したため、第${endMonth}ヶ月で一時停止しました。`;
+        customSubtitle = `🚨 運転資金不足が発生したため、${formatYearMonth(endMonth)}で一時停止しました。`;
       } else {
         customSubtitle = `予定していた期間（${monthsRun}ヶ月分）時間を進めました。`;
       }
@@ -10190,6 +10224,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       localStorage.removeItem(SAVE_KEY);
     } catch(e) {}
     GameState.companyName = '和歌山不動産';
+    GameState.hasNamedCompany = false;
     GameState.funds = 100.0;
     GameState.lastFunds = 100.0;
     GameState.month = 1;
@@ -10208,6 +10243,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       emergencyDebt: 0,
       features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 },
       hiredStaff: [],
+      recruitment: { status: 'none', candidates: [] },
       unlockedPieces: [...STARTER_UNLOCKED_IDS],
       deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
     };
@@ -10224,6 +10260,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     playSound('clear');
     updateHomeUI();
     showScreen('home');
+    openCompanyNameModal(true);
   }
 
   function buyCompanyUpgrade(type, key) {
@@ -10620,19 +10657,19 @@ function updateHomeUI() {
     ensureDeckState();
     const debt = GameState.company.debt || 0;
     const emergDebt = GameState.company.emergencyDebt || 0;
-    document.getElementById('home-co-name').textContent = GameState.companyName;
-    document.getElementById('home-co-month').textContent = GameState.month;
+    const nameEl = document.getElementById('home-co-name');
+    if (nameEl) nameEl.textContent = GameState.companyName || '和歌山不動産';
     const curM = GameState.month || 1;
     const monthInYear = ((curM - 1) % 12) + 1;
     const curYear = Math.floor((curM - 1) / 12) + 1;
     const calEl = document.getElementById('home-co-calendar');
-    if (calEl) calEl.textContent = `(${curYear}年目 ${monthInYear}月)`;
+    if (calEl) calEl.textContent = `${curYear}年目 ${monthInYear}月`;
     let debtHtml = '';
     if (debt > 0) debtHtml += `<div style="font-size:10px; color:var(--c-rose); font-weight:bold; margin-top:2px;">(銀行借入: -${debt.toFixed(1)}万)</div>`;
     if (emergDebt > 0) debtHtml += `<div style="font-size:10px; color:#fb7185; font-weight:bold; margin-top:1px;">(街金: -${emergDebt.toFixed(1)}万 / 月利10%)</div>`;
     document.getElementById('home-co-funds').innerHTML = `${GameState.funds.toFixed(1)}<span class="stat-unit">万</span>` + debtHtml;
     
-    // Company Badges
+    // Company Badges (Rankのみシンプルに表示)
     const activeCount = getActivePropertyCount();
     const maxCap = getMaxPropertyCapacity();
     const isAtCap = activeCount >= maxCap;
@@ -10641,37 +10678,10 @@ function updateHomeUI() {
     if (badgesEl) {
       const curOfficeLv = GameState.company.officeLevel || 0;
       const curOfficeDef = UPGRADE_CONFIG.office[curOfficeLv] || UPGRADE_CONFIG.office[0];
-      const salesDef = UPGRADE_CONFIG.sales[(GameState.company.salesLevel || 1) - 1] || UPGRADE_CONFIG.sales[0];
-      const brandDef = UPGRADE_CONFIG.brand[(GameState.company.brandLevel || 1) - 1] || UPGRADE_CONFIG.brand[0];
-      const maxSlots = getMaxStaffSlots();
-      const hiredCount = GameState.company.hiredStaff?.length || 0;
-      const deckLen = getActiveDeckPieceIds().length;
-      const debtBadge = debt > 0 ? `
-        <span style="font-size:11px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-          <i class="ph-bold ph-bank"></i>借入 ${debt.toFixed(1)}万
-        </span>
-      ` : '';
-
       badgesEl.innerHTML = `
-        <span style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
+        <span onclick="openCompanyUpgradeModal('company')" title="タップで会社強化を開く" style="font-size:11.5px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 10px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.06);">
           <i class="ph-bold ph-buildings"></i>Rank ${curOfficeLv + 1} ${curOfficeDef.name}
         </span>
-        <span style="font-size:11px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-          <i class="ph-bold ph-trend-up"></i>営業 Lv.${GameState.company.salesLevel || 1} ${salesDef.name}
-        </span>
-        <span style="font-size:11px; background:#fdf4ff; color:#a21caf; border:1px solid #f0abfc; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-          <i class="ph-bold ph-megaphone"></i>知名度 Lv.${GameState.company.brandLevel || 1} ${brandDef.name}
-        </span>
-        <span style="font-size:11px; background:${isAtCap ? '#fff1f2' : '#f8fafc'}; color:${isAtCap ? '#e11d48' : '#334155'}; border:1px solid ${isAtCap ? '#fecdd3' : '#cbd5e1'}; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-          <i class="ph-bold ph-house-line"></i>管理 ${activeCount}/${maxCap}棟
-        </span>
-        <span style="font-size:11px; background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-          <i class="ph-bold ph-cards"></i>デッキ ${deckLen}枚
-        </span>
-        <span style="font-size:11px; background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; padding:2px 8px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-          <i class="ph-bold ph-users"></i>スタッフ ${hiredCount}/${maxSlots}名
-        </span>
-        ${debtBadge}
       `;
     }
 
@@ -10801,6 +10811,75 @@ function updateHomeUI() {
     }
   }
 
+  function openCompanyNameModal(isInitial = false) {
+    const modal = document.getElementById('company-name-modal');
+    if (!modal) return;
+    const input = document.getElementById('input-co-name');
+    const cancelBtn = document.getElementById('btn-co-name-cancel');
+    const titleEl = document.getElementById('co-name-modal-title');
+    const descEl = document.getElementById('co-name-modal-desc');
+
+    if (input) {
+      input.value = GameState.companyName || '和歌山不動産';
+    }
+    if (titleEl) {
+      titleEl.innerHTML = isInitial
+        ? `<i class="ph-bold ph-buildings"></i> 会社設立・社名の決定`
+        : `<i class="ph-bold ph-pencil-simple"></i> 会社名の変更`;
+    }
+    if (descEl) {
+      descEl.textContent = isInitial
+        ? '新たに設立するあなたの不動産・建築会社の名前を決めてください（後からホーム画面左上の社名タップでいつでも変更できます）。'
+        : '新しい会社名を入力してください。';
+    }
+    if (cancelBtn) {
+      cancelBtn.style.display = isInitial ? 'none' : 'inline-flex';
+    }
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }
+
+  function saveCompanyName() {
+    initAudio();
+    const input = document.getElementById('input-co-name');
+    const raw = input ? input.value.trim() : '';
+    GameState.companyName = raw ? raw.slice(0, 16) : '和歌山不動産';
+    GameState.hasNamedCompany = true;
+    saveGame();
+    updateHomeUI();
+    updateCompanyUI();
+    const modal = document.getElementById('company-name-modal');
+    if (modal) modal.style.display = 'none';
+    playSound('tap');
+  }
+
+  document.getElementById('btn-edit-co-name')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    openCompanyNameModal(false);
+  });
+
+  document.getElementById('btn-co-name-save')?.addEventListener('click', saveCompanyName);
+
+  document.getElementById('btn-co-name-cancel')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('company-name-modal');
+    if (modal) modal.style.display = 'none';
+  });
+
+  document.getElementById('input-co-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveCompanyName();
+    }
+  });
+
   loadGame();
   if(!GameState.properties) GameState.properties = [];
   updateHomeUI();
@@ -10821,6 +10900,8 @@ function updateHomeUI() {
     const initialDeadEnd = checkDeadEndBankruptcy();
     if (initialDeadEnd.isBankrupt) {
       showGameOverModal(initialDeadEnd.reason);
+    } else if (!GameState.hasNamedCompany) {
+      openCompanyNameModal(true);
     }
   }
   </script>
