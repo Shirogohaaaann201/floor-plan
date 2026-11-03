@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.00</title>
+  <title>間取り図パズル — Floor Plan v1.10</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -776,9 +776,15 @@
         </div>
       </div>
       
-      <button id="btn-open-upgrade" class="btn btn-secondary" style="width:100%; padding:14px; font-size:15px; font-weight:bold; margin-bottom:10px; cursor:pointer; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-        <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>会社強化・デッキ・銀行・人事
-      </button>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <button id="btn-open-upgrade" class="btn btn-secondary" style="flex:1.35; padding:13px 10px; font-size:13.5px; font-weight:bold; cursor:pointer; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+          <i class="ph-bold ph-buildings" style="font-size:17px; color:var(--c-blue);"></i>会社強化・人事
+        </button>
+        <button id="btn-open-records" class="btn btn-secondary" style="flex:1; padding:13px 10px; font-size:13.5px; font-weight:bold; cursor:pointer; background:#fffbeb; color:#92400e; border:1.5px solid #fde68a; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+          <i class="ph-fill ph-trophy" style="font-size:17px; color:#d97706;"></i><span>実績・記録帳</span>
+          <span id="home-records-badge" style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fcd34d; padding:1px 6px; border-radius:10px; font-weight:800;">0/24</span>
+        </button>
+      </div>
       <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:10px; cursor:pointer;">
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
@@ -787,7 +793,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v1.00 (11/03)
+        Floor Plan v1.10 (11/04)
       </div>
     </div>
   </section>
@@ -881,9 +887,12 @@
           <canvas id="pv-canvas" width="280" height="280" style="display:block; margin:0 auto; border-radius:4px; max-width:100%; height:auto;"></canvas>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0 4px;">
-          <span style="font-size:11px; color:var(--c-text2);" id="pv-subinfo">完成間取り図</span>
-          <button id="btn-close-plan-viewer-bottom" class="btn btn-slate" style="padding:4px 12px; font-size:11px; cursor:pointer;">閉じる</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0 4px; gap:8px;">
+          <span style="font-size:11px; color:var(--c-text2); text-align:left; flex:1;" id="pv-subinfo">完成間取り図</span>
+          <button id="btn-save-pv-png" type="button" class="btn btn-primary" style="padding:5px 10px; font-size:11px; font-weight:bold; cursor:pointer; gap:4px; white-space:nowrap;">
+            <i class="ph-bold ph-download-simple"></i> 💾 画像保存
+          </button>
+          <button id="btn-close-plan-viewer-bottom" class="btn btn-slate" style="padding:5px 12px; font-size:11px; cursor:pointer; white-space:nowrap;">閉じる</button>
         </div>
       </div>
     </div>
@@ -1169,6 +1178,85 @@
         <button id="btn-gameover-reset" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px; font-weight:bold; cursor:pointer; background:linear-gradient(135deg, #f43f5e, #e11d48); border:none; color:#fff; justify-content:center; gap:6px;">
           <i class="ph-bold ph-arrows-clockwise"></i> 新会社を設立して再挑戦
         </button>
+      </div>
+    </div>
+
+    <!-- エンディング（本社自社ビル到達・表彰状）モーダル -->
+    <div id="modal-ending" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.94); z-index:320; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:390px; max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; text-align:center; border:2.5px solid #f59e0b; background:linear-gradient(180deg, #1e293b 0%, #0f172a 100%); box-shadow:0 15px 45px rgba(245,158,11,0.35); padding:22px 18px; box-sizing:border-box;">
+        <div style="font-size:42px; line-height:1; margin-bottom:6px;">🏆</div>
+        <div style="font-size:11px; font-weight:800; color:#fbbf24; letter-spacing:2px; margin-bottom:2px;">CERTIFICATE OF EXCELLENCE</div>
+        <div style="font-size:19px; font-weight:900; color:#fef08a; letter-spacing:0.5px; margin-bottom:6px;">一流不動産会社認定 表彰状</div>
+        <div id="ending-company-name" style="font-size:15px; font-weight:900; color:#38bdf8; margin-bottom:12px;">焼飯不動産 殿</div>
+
+        <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); color:#fef3c7; font-size:11.5px; line-height:1.6; padding:10px 12px; border-radius:8px; margin-bottom:14px; text-align:left;">
+          おめでとうございます！一人親方から始まった不動産屋は、見事に自社ビルを構える地域屈指の一流企業へと成長しました！
+        </div>
+
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px; margin-bottom:14px; text-align:left; font-size:12px;">
+          <div style="font-size:11px; color:#fde047; font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; display:flex; align-items:center; gap:5px;">
+            <i class="ph-fill ph-Buildings"></i> 経営達成レコード
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">本社ビル到達時期:</span>
+            <strong id="ending-date" style="color:var(--c-text);">1年目 1月</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">現在の総資産:</span>
+            <strong id="ending-funds" style="color:var(--c-emerald);">100.0 万円</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">管理物件総数:</span>
+            <strong id="ending-props" style="color:#38bdf8;">0 棟</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">累計施工 / 累計家賃収入:</span>
+            <strong id="ending-lifetime" style="color:var(--c-text);">0件 / 0.0万</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--c-text2);">発見コンボ・珍間取り数:</span>
+            <strong id="ending-combos" style="color:#fbbf24;">0 / 24 種</strong>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-ending-copy" type="button" class="btn btn-secondary" style="width:100%; padding:11px; font-size:12.5px; font-weight:bold; cursor:pointer; background:#334155; color:#f8fafc; border:1px solid #64748b; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-copy"></i> 結果をテキストコピー
+          </button>
+          <button id="btn-ending-continue" type="button" class="btn btn-amber" style="width:100%; padding:13px; font-size:14px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-buildings"></i> 経営を続ける（エンドレス）
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 実績・記録帳（コンボ・珍間取り全24種図鑑）モーダル -->
+    <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+              <i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・記録帳（間取りコンボ図鑑）
+            </div>
+            <div id="records-progress-text" style="font-size:11.5px; color:#fde047; font-weight:bold; margin-top:3px;">
+              図鑑収集率: 0 / 24 (0%)
+            </div>
+          </div>
+          <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.4); height:8px; border-radius:4px; overflow:hidden; margin-bottom:12px; border:1px solid rgba(255,255,255,0.08);">
+          <div id="records-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #f59e0b, #10b981); transition:width 0.3s;"></div>
+        </div>
+
+        <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
+          <!-- JSで24種のカードを生成 -->
+        </div>
+
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:10.5px; color:var(--c-text2);">※パズル完了（査定時）に発生したコンボが自動登録されます</span>
+          <button id="btn-close-records-bottom" class="btn btn-slate" style="padding:6px 14px; font-size:12px; cursor:pointer;">閉じる</button>
+        </div>
       </div>
     </div>
 
@@ -1491,9 +1579,14 @@
 
         <!-- Floor plan thumbnail -->
         <div class="flyer-thumbnail">
-          <div class="flyer-thumbnail-label">
-            <i class="ph-bold ph-floor-plan" style="color:#64748b;"></i>
-            完成間取り図
+          <div class="flyer-thumbnail-label" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span style="display:inline-flex; align-items:center; gap:4px;">
+              <i class="ph-bold ph-floor-plan" style="color:#64748b;"></i>
+              完成間取り図
+            </span>
+            <button id="btn-save-result-png" type="button" style="background:#f8fafc; color:#0f172a; border:1px solid #cbd5e1; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+              <i class="ph-bold ph-download-simple" style="color:var(--c-blue);"></i> 💾 間取り図を保存
+            </button>
           </div>
           <canvas id="result-canvas"></canvas>
         </div>
@@ -2681,6 +2774,8 @@
   const SAVE_KEY = 'floorplan_save_v1';
   const GameState = {
     companyName: '焼飯不動産',
+    hasCleared: false,
+    clearedMonth: null,
     funds: 100.0,
     month: 1,
     level: 0,
@@ -3231,6 +3326,30 @@
     } catch(e) {}
   }
 
+  function ensureGameState() {
+    if (GameState.hasCleared === undefined) GameState.hasCleared = false;
+    if (GameState.clearedMonth === undefined) GameState.clearedMonth = null;
+    if (!GameState.discovered) GameState.discovered = { combos: [] };
+    if (!Array.isArray(GameState.discovered.combos)) GameState.discovered.combos = [];
+    if (GameState.company && (GameState.company.officeLevel || 0) >= UPGRADE_CONFIG.office.length - 1) {
+      if (!GameState.hasCleared) {
+        GameState.hasCleared = true;
+        if (!GameState.clearedMonth) GameState.clearedMonth = GameState.month || 1;
+      }
+    }
+    if (Array.isArray(GameState.properties)) {
+      for (const p of GameState.properties) {
+        if (Array.isArray(p.combosList)) {
+          for (const c of p.combosList) {
+            if (c && c.name && !GameState.discovered.combos.includes(c.name)) {
+              GameState.discovered.combos.push(c.name);
+            }
+          }
+        }
+      }
+    }
+  }
+
   function loadGame() {
     try {
       const data = localStorage.getItem(SAVE_KEY);
@@ -3276,6 +3395,7 @@
         }
         getLifetimeStats();
         ensureDeckState();
+        ensureGameState();
         if (GameState.attempts === undefined || typeof GameState.attempts !== 'number' || GameState.attempts < 0) {
           GameState.attempts = getMaxAttempts();
         }
@@ -3291,6 +3411,7 @@
       }
     } catch(e) {}
     ensureDeckState();
+    ensureGameState();
     if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
       GameState.availableMissions = generateMissionPool(GameState.level);
       saveGame();
@@ -5574,8 +5695,58 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   /* ============================================================
-     COMBO DETECTION
+     COMBO MASTER DATA (24 TYPES) & DETECTION
   ============================================================ */
+  const COMBO_MASTER_LIST = [
+    { id: 1,  name: '水回り集約',     category: '王道',     bonus: '+2.0万', icon: 'ph-drop',             hint: '風呂・トイレ・洗面所をまとめて配置すると…？', desc: '風呂・トイレ・洗面が相互に隣接（配管効率化ボーナス）' },
+    { id: 2,  name: '家事ラク動線',   category: '王道',     bonus: '+1.5万', icon: 'ph-washing-machine',  hint: '料理と洗濯の移動をスムーズに',             desc: 'LDKと洗面所が直通で接続' },
+    { id: 3,  name: '日当たり良好',   category: '王道',     bonus: '+1.5万', icon: 'ph-sun',              hint: 'リビングを一番明るい方角へ',               desc: '南側（下辺）外壁に面する窓付きLDK' },
+    { id: 4,  name: '完全防音',       category: '王道',     bonus: '+1.0万', icon: 'ph-ear-slash',        hint: 'トイレの音やプライバシーを守る配置',       desc: 'トイレが廊下を挟んで居室に接続' },
+    { id: 5,  name: '古き良き日本家屋', category: '王道',   bonus: '+5.0万', icon: 'ph-house-line',       hint: '伝統的な和室の並び（田の字）',             desc: '和室4部屋が2×2の田の字型に直結' },
+    { id: 6,  name: '陽だまりの家',   category: '王道',     bonus: '+2.0万', icon: 'ph-sun',              hint: '外壁にたくさんの窓を配置',                 desc: '建物全体の窓が8〜14箇所' },
+    { id: 7,  name: 'セレブ浴室',     category: '王道',     bonus: '+4.0万', icon: 'ph-bathtub',          hint: 'ゆったり足を伸ばせる大きなお風呂',         desc: '浴室が4〜7マス連結' },
+    { id: 8,  name: '倉庫付き物件',   category: '王道',     bonus: '+3.0万', icon: 'ph-package',          hint: '荷物が多くても安心の収納スペース',         desc: '収納が4〜7マス連結' },
+    { id: 9,  name: '食欲減退',       category: 'NG',       bonus: '-3.0万', icon: 'ph-warning',          hint: '食事の場と便器が近すぎる…',               desc: 'LDKとトイレが直結ドア' },
+    { id: 10, name: '玄関直風呂',     category: 'NG',       bonus: '-2.0万', icon: 'ph-warning',          hint: 'ドアを開けたらすぐにお風呂場',             desc: '玄関と浴室が直結ドア' },
+    { id: 11, name: 'バカデカトイレ', category: '珍間取り', bonus: '+2.5万', icon: 'ph-toilet',           hint: 'トイレに情熱を注ぎすぎた空間',             desc: 'トイレが4マス以上連結' },
+    { id: 12, name: 'もはや銭湯',     category: '珍間取り', bonus: '+4.0万', icon: 'ph-shower',           hint: '家の中に広大な温泉施設…？',               desc: '浴室が8マス以上連結' },
+    { id: 13, name: '収納が本体',     category: '珍間取り', bonus: '+2.5万', icon: 'ph-package',          hint: '住居というより倉庫',                       desc: '収納が8マス以上連結' },
+    { id: 14, name: '究極のオープン', category: '珍間取り', bonus: '+3.5万', icon: 'ph-door',             hint: '廊下を一切作らず全ての部屋を繋ぐ',         desc: '廊下0マスで居室・LDK合計4室以上' },
+    { id: 15, name: '封印されし闇',   category: '珍間取り', bonus: '+5.0万', icon: 'ph-ghost',            hint: '入口も窓も存在しない謎の密室',             desc: '到達不能かつ窓なしの部屋' },
+    { id: 16, name: '水門',           category: '珍間取り', bonus: '+1.5万', icon: 'ph-waves',            hint: '玄関から水回りにしか行けない構造',         desc: '玄関隣接が水回りのみ' },
+    { id: 17, name: '秘密のトイレ',   category: '珍間取り', bonus: '+1.0万', icon: 'ph-lock-key',         hint: 'クローゼットの奥に潜む便器',               desc: '収納経由でのみ入れるトイレ' },
+    { id: 18, name: '隠し部屋',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-door',             hint: '収納の奥に広がるプライベート空間',         desc: '収納経由でのみ入れる居室' },
+    { id: 19, name: 'トイレビュッフェ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-toilet',         hint: '廊下にずらりと並ぶ便器',                   desc: '1つの廊下にトイレ3つ以上隣接' },
+    { id: 20, name: 'スケルトンバス', category: '珍間取り', bonus: '-1.0万', icon: 'ph-shower',           hint: '玄関正面に浴室の扉が見える',               desc: '玄関正面直線上に浴室ドア' },
+    { id: 21, name: '無限回廊',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-arrows-clockwise', hint: '廊下がぐるりと一周ループ',                 desc: '廊下が環状に連結' },
+    { id: 22, name: 'マトリョーシカ', category: '珍間取り', bonus: '-1.0万', icon: 'ph-tree-structure',   hint: '部屋の奥に部屋、その奥にさらに部屋',       desc: '居室を3室以上連続で通り抜け' },
+    { id: 23, name: 'プライバシーゼロ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
+    { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' }
+  ];
+
+  function recordDiscoveredCombos(combos) {
+    ensureGameState();
+    const newlyDiscovered = [];
+    if (Array.isArray(combos)) {
+      for (const c of combos) {
+        if (c && c.name && !GameState.discovered.combos.includes(c.name)) {
+          GameState.discovered.combos.push(c.name);
+          newlyDiscovered.push(c.name);
+        }
+      }
+    }
+    if (newlyDiscovered.length > 0) {
+      saveGame();
+    }
+    return newlyDiscovered;
+  }
+
+  function getDiscoveredMasterComboCount() {
+    ensureGameState();
+    const set = new Set(GameState.discovered.combos || []);
+    return COMBO_MASTER_LIST.filter(item => set.has(item.name)).length;
+  }
+
   function detectCombos(counts, visited) {
     const combos = [];
     
@@ -6547,6 +6718,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const visited = runBFS();
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
+    const newlyDiscovered = recordDiscoveredCombos(combos);
 
     const { rent, normalRent, reports, optSatisfiedCount, amenityPenalty } = calcRent(counts, combos, visited);
 
@@ -6716,6 +6888,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // Report list
     const rl = document.getElementById('report-list');
     rl.innerHTML = '';
+    if (newlyDiscovered.length > 0) {
+      const newBanner = document.createElement('div');
+      newBanner.className = 'report-item';
+      newBanner.style.cssText = 'background:#fef3c7; border:1px solid #f59e0b; color:#92400e; font-weight:bold;';
+      newBanner.innerHTML = `<i class="ph-fill ph-trophy" style="font-size:15px; color:#d97706;"></i><span>🆕 記録帳に新コンボ登録：「${newlyDiscovered.join('」「')}」</span>`;
+      rl.appendChild(newBanner);
+    }
     for (const rep of reports) {
       const item = document.createElement('div');
       item.className = 'report-item';
@@ -8454,6 +8633,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function openPlanViewer(p) {
     if (!p) return;
     initAudio();
+    window.currentViewerProp = p;
     const pvModal = document.getElementById('plan-viewer-modal');
     const pvCanvas = document.getElementById('pv-canvas');
     const pvTitle = document.getElementById('pv-title');
@@ -8473,6 +8653,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     const pvModal = document.getElementById('plan-viewer-modal');
     if (pvModal) pvModal.style.display = 'none';
+  }
+
+  function downloadCanvasAsPng(canvasEl, filename = 'madori.png', btnEl = null) {
+    if (!canvasEl) return;
+    initAudio();
+    try {
+      const dataUrl = canvasEl.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      playSound('tap');
+      if (btnEl) {
+        const origHtml = btnEl.innerHTML;
+        btnEl.innerHTML = `<i class="ph-bold ph-check"></i> 保存完了！`;
+        setTimeout(() => {
+          btnEl.innerHTML = origHtml;
+        }, 1600);
+      }
+    } catch (e) {
+      console.error('Failed to save PNG:', e);
+    }
   }
 
   function showPropertyDetail(p) {
@@ -8695,11 +8899,24 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
-  // 間取り拡大モーダル閉じる
+  // 間取り拡大モーダル閉じる・画像保存
   document.getElementById('btn-close-plan-viewer')?.addEventListener('click', closePlanViewer);
   document.getElementById('btn-close-plan-viewer-bottom')?.addEventListener('click', closePlanViewer);
   document.getElementById('plan-viewer-modal')?.addEventListener('pointerdown', (e) => {
     if (e.target.id === 'plan-viewer-modal') closePlanViewer();
+  });
+  document.getElementById('btn-save-pv-png')?.addEventListener('click', function() {
+    const p = window.currentViewerProp || window.currentDetailProp;
+    const pNum = p ? (p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)) : 1;
+    const pvCanvas = document.getElementById('pv-canvas');
+    downloadCanvasAsPng(pvCanvas, `madori_No${pNum}.png`, this);
+  });
+  document.getElementById('btn-save-result-png')?.addEventListener('click', function() {
+    const nextNo = (GameState.properties && GameState.properties.length > 0)
+      ? Math.max(...GameState.properties.map(x => x.propertyNo || 0)) + 1
+      : 1;
+    const rc = document.getElementById('result-canvas');
+    downloadCanvasAsPng(rc, `madori_No${nextNo}.png`, this);
   });
 
   /* ============================================================
@@ -10228,6 +10445,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     } catch(e) {}
     GameState.companyName = '焼飯不動産';
     GameState.hasNamedCompany = false;
+    GameState.hasCleared = false;
+    GameState.clearedMonth = null;
     GameState.funds = 100.0;
     GameState.lastFunds = 100.0;
     GameState.month = 1;
@@ -10271,6 +10490,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ensureDeckState();
     const co = GameState.company;
     const curOfficeDef = UPGRADE_CONFIG.office[co.officeLevel || 0] || UPGRADE_CONFIG.office[0];
+    let triggeredEnding = false;
 
     if (type === 'office') {
       const curLevel = co.officeLevel || 0;
@@ -10286,6 +10506,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       co.officeLevel++;
       playSound('clear');
       showUpgradeFeedback(`🏢 本社オフィスを「Rank ${co.officeLevel + 1} ${nextDef.name}」へ移転しました！各機能の上限が拡張されました！`, 'var(--c-emerald)');
+      if (co.officeLevel >= UPGRADE_CONFIG.office.length - 1 && !GameState.hasCleared) {
+        GameState.hasCleared = true;
+        GameState.clearedMonth = GameState.month || 1;
+        triggeredEnding = true;
+      }
     } else if (type === 'desk') {
       const curDesks = co.deskCount || 0;
       if (curDesks >= UPGRADE_CONFIG.desks.length) return;
@@ -10408,6 +10633,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     saveGame();
     renderCompanyUpgradeUI();
     updateHomeUI();
+
+    if (triggeredEnding) {
+      setTimeout(() => {
+        openEndingModal();
+      }, 350);
+      return;
+    }
 
     const deadEnd = checkDeadEndBankruptcy();
     if (deadEnd.isBankrupt) {
@@ -10681,11 +10913,24 @@ function updateHomeUI() {
     if (badgesEl) {
       const curOfficeLv = GameState.company.officeLevel || 0;
       const curOfficeDef = UPGRADE_CONFIG.office[curOfficeLv] || UPGRADE_CONFIG.office[0];
-      badgesEl.innerHTML = `
+      let badgeHtml = `
         <span onclick="openCompanyUpgradeModal('company')" title="タップで会社強化を開く" style="font-size:11.5px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 10px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.06);">
           <i class="ph-bold ph-buildings"></i>Rank ${curOfficeLv + 1} ${curOfficeDef.name}
         </span>
       `;
+      if (GameState.hasCleared) {
+        badgeHtml += `
+          <span onclick="openEndingModal()" title="タップで表彰状を見る" style="font-size:11.5px; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; border:1px solid #fbbf24; padding:3px 10px; border-radius:12px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer; box-shadow:0 1px 3px rgba(245,158,11,0.35);">
+            🏆 表彰状
+          </span>
+        `;
+      }
+      badgesEl.innerHTML = badgeHtml;
+    }
+
+    const recordsBadgeEl = document.getElementById('home-records-badge');
+    if (recordsBadgeEl) {
+      recordsBadgeEl.textContent = `${getDiscoveredMasterComboCount()}/${COMBO_MASTER_LIST.length}`;
     }
 
     const capEl = document.getElementById('home-property-capacity');
@@ -10881,6 +11126,182 @@ function updateHomeUI() {
       e.preventDefault();
       saveCompanyName();
     }
+  });
+
+  // --- エンディング（表彰状）モーダル＆実績・記録帳モーダル ---
+  function formatYearMonthStr(monthNum) {
+    const m = Math.max(1, monthNum || 1);
+    const y = Math.floor((m - 1) / 12) + 1;
+    const mi = ((m - 1) % 12) + 1;
+    return `${y}年目 ${mi}月`;
+  }
+
+  function openEndingModal() {
+    const modal = document.getElementById('modal-ending');
+    if (!modal) return;
+    const coName = GameState.companyName || '焼飯不動産';
+    const reachedMonth = GameState.clearedMonth || GameState.month || 1;
+    const lifetime = getLifetimeStats();
+    const comboCount = getDiscoveredMasterComboCount();
+    const activeProps = getActivePropertyCount();
+
+    const nameEl = document.getElementById('ending-company-name');
+    if (nameEl) nameEl.textContent = `${coName} 殿`;
+    const dateEl = document.getElementById('ending-date');
+    if (dateEl) dateEl.textContent = formatYearMonthStr(reachedMonth);
+    const fundsEl = document.getElementById('ending-funds');
+    if (fundsEl) fundsEl.textContent = `${(GameState.funds || 0).toFixed(1)} 万円`;
+    const propsEl = document.getElementById('ending-props');
+    if (propsEl) propsEl.textContent = `${activeProps} 棟`;
+    const lifeEl = document.getElementById('ending-lifetime');
+    if (lifeEl) lifeEl.textContent = `${lifetime.lifetimeClearedMissions}件 / ${lifetime.lifetimeEarnedRent.toFixed(1)}万`;
+    const combosEl = document.getElementById('ending-combos');
+    if (combosEl) combosEl.textContent = `${comboCount} / ${COMBO_MASTER_LIST.length} 種`;
+
+    modal.style.display = 'flex';
+  }
+  window.openEndingModal = openEndingModal;
+
+  function closeEndingModal() {
+    const modal = document.getElementById('modal-ending');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function copyEndingStats() {
+    initAudio();
+    const coName = GameState.companyName || '焼飯不動産';
+    const reachedMonth = GameState.clearedMonth || GameState.month || 1;
+    const lifetime = getLifetimeStats();
+    const comboCount = getDiscoveredMasterComboCount();
+    const activeProps = getActivePropertyCount();
+
+    const text = [
+      `🏆【間取りパズル＆不動産経営】一流不動産会社認定！`,
+      `🏢 社名: ${coName}`,
+      `📅 本社ビル到達: ${formatYearMonthStr(reachedMonth)}`,
+      `💰 総資産: ${(GameState.funds || 0).toFixed(1)}万円 / 所有物件: ${activeProps}棟`,
+      `🔨 累計施工: ${lifetime.lifetimeClearedMissions}件 / 累計家賃: ${lifetime.lifetimeEarnedRent.toFixed(1)}万円`,
+      `📖 コンボ図鑑: ${comboCount}/${COMBO_MASTER_LIST.length}種`
+    ].join('\n');
+
+    const btn = document.getElementById('btn-ending-copy');
+    const showCopiedFeedback = () => {
+      playSound('clear');
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<i class="ph-bold ph-check"></i> コピーしました！`;
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      }
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopiedFeedback).catch(() => {
+        window.prompt('以下のテキストをコピーしてください:', text);
+      });
+    } else {
+      window.prompt('以下のテキストをコピーしてください:', text);
+    }
+  }
+
+  function renderRecordsModal() {
+    const listContainer = document.getElementById('records-list-container');
+    const progText = document.getElementById('records-progress-text');
+    const progBar = document.getElementById('records-progress-bar');
+    if (!listContainer) return;
+
+    const discovered = (GameState.discovered && Array.isArray(GameState.discovered.combos))
+      ? GameState.discovered.combos
+      : [];
+    const total = COMBO_MASTER_LIST.length;
+    const count = getDiscoveredMasterComboCount();
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+
+    if (progText) {
+      progText.textContent = `図鑑収集率: ${count} / ${total} (${pct}%)`;
+    }
+    if (progBar) {
+      progBar.style.width = `${pct}%`;
+    }
+
+    let html = '';
+    COMBO_MASTER_LIST.forEach((item, index) => {
+      const isFound = discovered.includes(item.id);
+      const isGood = item.category === 'good';
+      const badgeColor = isGood
+        ? 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4);'
+        : 'background:rgba(244,63,94,0.2); color:#fb7185; border:1px solid rgba(244,63,94,0.4);';
+      const bonusLabel = isGood
+        ? `🌟 優良コンボ (+${item.bonus}万)`
+        : `💥 珍間取り (${item.bonus}万)`;
+
+      if (isFound) {
+        html += `
+          <div style="background:var(--c-surface2); border:1px solid ${isGood ? 'rgba(16,185,129,0.35)' : 'rgba(244,63,94,0.35)'}; border-radius:8px; padding:10px 12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
+              <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:5px;">
+                <span style="font-size:11px; color:var(--c-text2); font-family:monospace;">No.${String(index + 1).padStart(2, '0')}</span>
+                <span>${item.icon} ${item.name}</span>
+              </div>
+              <span style="font-size:10px; font-weight:bold; padding:2px 7px; border-radius:999px; white-space:nowrap; ${badgeColor}">${bonusLabel}</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--c-text2); line-height:1.45;">
+              ${item.desc}
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="background:rgba(15,23,42,0.55); border:1px dashed rgba(148,163,184,0.25); border-radius:8px; padding:10px 12px; opacity:0.85;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
+              <div style="font-size:13px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:5px;">
+                <span style="font-size:11px; color:#64748b; font-family:monospace;">No.${String(index + 1).padStart(2, '0')}</span>
+                <span>🔒 ？？？</span>
+              </div>
+              <span style="font-size:10px; font-weight:bold; padding:2px 7px; border-radius:999px; white-space:nowrap; background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.35);">
+                ${isGood ? '🌟 優良コンボ' : '💥 珍間取り'}
+              </span>
+            </div>
+            <div style="font-size:11px; color:#64748b; line-height:1.45;">
+              💡 ヒント: ${item.hint}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    listContainer.innerHTML = html;
+  }
+
+  function openRecordsModal() {
+    initAudio();
+    playSound('tap');
+    renderRecordsModal();
+    const modal = document.getElementById('modal-records');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeRecordsModal() {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('modal-records');
+    if (modal) modal.style.display = 'none';
+  }
+
+  document.getElementById('btn-open-records')?.addEventListener('click', openRecordsModal);
+  document.getElementById('btn-close-records')?.addEventListener('click', closeRecordsModal);
+  document.getElementById('btn-close-records-bottom')?.addEventListener('click', closeRecordsModal);
+  document.getElementById('modal-records')?.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'modal-records') closeRecordsModal();
+  });
+
+  document.getElementById('btn-ending-continue')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    closeEndingModal();
+  });
+  document.getElementById('btn-ending-copy')?.addEventListener('click', copyEndingStats);
+  document.getElementById('modal-ending')?.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'modal-ending') closeEndingModal();
   });
 
   loadGame();
