@@ -1260,6 +1260,39 @@
       </div>
     </div>
 
+    <!-- 間取り図 画像保存・共有プレビューモーダル（iPhone/スマホ長押し保存＆共有シート対応） -->
+    <div id="image-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.94); z-index:350; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:400px; max-height:90vh; overflow-y:auto; text-align:center; border:1.5px solid rgba(56,189,248,0.45); box-shadow:0 15px 40px rgba(0,0,0,0.65); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:10px;">
+          <div style="font-size:15px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ph-image" style="color:#38bdf8;"></i> 間取り図の保存・共有
+          </div>
+          <button id="btn-close-image-save" type="button" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <div style="background:rgba(56,189,248,0.14); border:1px solid rgba(56,189,248,0.35); color:#bae6fd; font-size:11.5px; line-height:1.5; padding:8px 10px; border-radius:8px; margin-bottom:10px; text-align:left;">
+          📱 <strong>iPhone / スマホの方:</strong><br>
+          下の<strong>画像を長押し</strong>して<strong>「“写真”に保存（画像を保存）」</strong>を選ぶか、下の<strong>「共有・カメラロールに保存」</strong>ボタンをタップしてください。
+        </div>
+
+        <div style="background:#0f172a; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); margin-bottom:12px; display:flex; justify-content:center; align-items:center;">
+          <img id="image-save-preview" src="" alt="間取り図" style="max-width:100%; max-height:46vh; border-radius:6px; object-fit:contain; -webkit-touch-callout:default !important; user-select:auto !important; -webkit-user-select:auto !important; pointer-events:auto !important;" />
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-image-native-share" type="button" class="btn btn-primary" style="width:100%; padding:11px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-export"></i> 共有・カメラロールに保存
+          </button>
+          <button id="btn-image-direct-dl" type="button" class="btn btn-secondary" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:pointer; background:#334155; color:#f8fafc; border:1px solid #64748b; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-download-simple"></i> ファイルとしてダウンロード（PC向け）
+          </button>
+          <button id="btn-close-image-save-bottom" type="button" class="btn btn-slate" style="width:100%; padding:9px; font-size:12px; cursor:pointer; justify-content:center;">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- パズル中の山札・捨て札確認モーダル -->
     <div id="deck-peek-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:260; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:420px; max-height:86vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); padding:16px; box-sizing:border-box;">
@@ -8655,29 +8688,119 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (pvModal) pvModal.style.display = 'none';
   }
 
+  let currentSaveImageDataUrl = null;
+  let currentSaveImageFilename = 'madori.png';
+  let currentSaveImageBlob = null;
+
+  function dataUrlToBlob(dataUrl) {
+    const parts = dataUrl.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1] || 'image/png';
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  }
+
+  function closeImageSaveModal() {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('image-save-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
   function downloadCanvasAsPng(canvasEl, filename = 'madori.png', btnEl = null) {
     if (!canvasEl) return;
     initAudio();
+    playSound('tap');
     try {
       const dataUrl = canvasEl.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      playSound('tap');
-      if (btnEl) {
-        const origHtml = btnEl.innerHTML;
-        btnEl.innerHTML = `<i class="ph-bold ph-check"></i> 保存完了！`;
-        setTimeout(() => {
-          btnEl.innerHTML = origHtml;
-        }, 1600);
+      currentSaveImageDataUrl = dataUrl;
+      currentSaveImageFilename = filename;
+      currentSaveImageBlob = dataUrlToBlob(dataUrl);
+
+      const previewImg = document.getElementById('image-save-preview');
+      if (previewImg) {
+        previewImg.src = dataUrl;
+      }
+
+      const shareBtn = document.getElementById('btn-image-native-share');
+      if (shareBtn) {
+        let canShareFile = false;
+        try {
+          if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
+            const testFile = new File([currentSaveImageBlob], filename, { type: 'image/png' });
+            canShareFile = navigator.canShare({ files: [testFile] });
+          }
+        } catch (_) {
+          canShareFile = false;
+        }
+        shareBtn.style.display = canShareFile ? 'inline-flex' : 'none';
+      }
+
+      const modal = document.getElementById('image-save-modal');
+      if (modal) {
+        modal.style.display = 'flex';
       }
     } catch (e) {
       console.error('Failed to save PNG:', e);
     }
   }
+
+  document.getElementById('btn-close-image-save')?.addEventListener('click', closeImageSaveModal);
+  document.getElementById('btn-close-image-save-bottom')?.addEventListener('click', closeImageSaveModal);
+  document.getElementById('image-save-modal')?.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'image-save-modal') closeImageSaveModal();
+  });
+
+  document.getElementById('btn-image-native-share')?.addEventListener('click', async () => {
+    initAudio();
+    playSound('tap');
+    if (!currentSaveImageBlob) return;
+    try {
+      const file = new File([currentSaveImageBlob], currentSaveImageFilename, { type: 'image/png' });
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({
+          files: [file],
+          title: '間取り図',
+          text: `${GameState.companyName || '焼飯不動産'}の間取り図`
+        });
+      }
+    } catch (err) {
+      // ユーザーが共有シートをキャンセルした場合は何もしない
+      console.log('Share canceled or failed:', err);
+    }
+  });
+
+  document.getElementById('btn-image-direct-dl')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    if (!currentSaveImageBlob && !currentSaveImageDataUrl) return;
+    try {
+      const url = currentSaveImageBlob
+        ? URL.createObjectURL(currentSaveImageBlob)
+        : currentSaveImageDataUrl;
+      const link = document.createElement('a');
+      link.download = currentSaveImageFilename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (currentSaveImageBlob) {
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+      const dlBtn = document.getElementById('btn-image-direct-dl');
+      if (dlBtn) {
+        const orig = dlBtn.innerHTML;
+        dlBtn.innerHTML = `<i class="ph-bold ph-check"></i> ダウンロードを開始しました`;
+        setTimeout(() => { dlBtn.innerHTML = orig; }, 2000);
+      }
+    } catch (e) {
+      console.error('Direct download failed:', e);
+    }
+  });
 
   function showPropertyDetail(p) {
     window.currentDetailProp = p;
