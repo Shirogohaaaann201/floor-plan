@@ -6708,23 +6708,44 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     if (et === E.DOOR) {
       const len = ori === 'h' ? Math.abs(x2-x1) : Math.abs(y2-y1);
-      const post = len * 0.2; // 壁の出っ張り
+      const post = len * 0.18; // 壁の出っ張り
+      const isWashitsu = Boolean((c1_cell && (c1_cell.label === '和室' || c1_cell.label?.includes('和') || c1_cell.pieceLibId === 'room-wa' || c1_cell.pieceLibId === 'room-wa2')) || 
+                                 (c2_cell && (c2_cell.label === '和室' || c2_cell.label?.includes('和') || c2_cell.pieceLibId === 'room-wa' || c2_cell.pieceLibId === 'room-wa2')));
       rctx.strokeStyle = '#1e293b';
       rctx.lineWidth = 1.5;
       rctx.lineCap = 'round';
       
+      const dw = len - post * 2;
       if (ori === 'h') {
         rctx.beginPath(); rctx.moveTo(x1,y1); rctx.lineTo(x1+post,y1); rctx.stroke();
         rctx.beginPath(); rctx.moveTo(x2-post,y2); rctx.lineTo(x2,y2); rctx.stroke();
-        // 扉の線
-        rctx.strokeStyle = '#94a3b8'; rctx.lineWidth = 1;
-        rctx.beginPath(); rctx.moveTo(x1+post,y1); rctx.lineTo(x1+post+(len-post*2)*0.7, y1+(len-post*2)*0.7); rctx.stroke();
+        if (isWashitsu) {
+          rctx.strokeStyle = '#94a3b8';
+          rctx.lineWidth = 1.2;
+          const off = Math.max(1.5, cs * 0.06);
+          rctx.beginPath(); rctx.moveTo(x1+post, y1-off); rctx.lineTo(x1+post+dw, y1-off); rctx.stroke();
+          rctx.beginPath(); rctx.moveTo(x1+post, y1+off); rctx.lineTo(x1+post+dw, y1+off); rctx.stroke();
+        } else {
+          rctx.strokeStyle = '#94a3b8'; rctx.lineWidth = 1;
+          rctx.beginPath(); rctx.arc(x1+post, y1, dw, 0, Math.PI/2, false); rctx.stroke();
+          rctx.strokeStyle = '#0f172a'; rctx.lineWidth = 1.5;
+          rctx.beginPath(); rctx.moveTo(x1+post,y1); rctx.lineTo(x1+post+dw*0.7, y1+dw*0.7); rctx.stroke();
+        }
       } else {
         rctx.beginPath(); rctx.moveTo(x1,y1); rctx.lineTo(x1,y1+post); rctx.stroke();
         rctx.beginPath(); rctx.moveTo(x2,y2-post); rctx.lineTo(x2,y2); rctx.stroke();
-        // 扉の線
-        rctx.strokeStyle = '#94a3b8'; rctx.lineWidth = 1;
-        rctx.beginPath(); rctx.moveTo(x1,y1+post); rctx.lineTo(x1+(len-post*2)*0.7, y1+post-(len-post*2)*0.7); rctx.stroke();
+        if (isWashitsu) {
+          rctx.strokeStyle = '#94a3b8';
+          rctx.lineWidth = 1.2;
+          const off = Math.max(1.5, cs * 0.06);
+          rctx.beginPath(); rctx.moveTo(x1-off, y1+post); rctx.lineTo(x1-off, y1+post+dw); rctx.stroke();
+          rctx.beginPath(); rctx.moveTo(x1+off, y1+post); rctx.lineTo(x1+off, y1+post+dw); rctx.stroke();
+        } else {
+          rctx.strokeStyle = '#94a3b8'; rctx.lineWidth = 1;
+          rctx.beginPath(); rctx.arc(x1, y1+post, dw, -Math.PI/2, 0, false); rctx.stroke();
+          rctx.strokeStyle = '#0f172a'; rctx.lineWidth = 1.5;
+          rctx.beginPath(); rctx.moveTo(x1,y1+post); rctx.lineTo(x1+dw*0.7, y1+post-dw*0.7); rctx.stroke();
+        }
       }
       return;
     }
