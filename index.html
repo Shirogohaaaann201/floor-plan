@@ -1215,7 +1215,7 @@
           </div>
           <div style="display:flex; justify-content:space-between;">
             <span style="color:var(--c-text2);">発見コンボ・珍間取り数:</span>
-            <strong id="ending-combos" style="color:#fbbf24;">0 / 24 種</strong>
+            <strong id="ending-combos" style="color:#fbbf24;">0 / 26 種</strong>
           </div>
         </div>
 
@@ -1230,7 +1230,7 @@
       </div>
     </div>
 
-    <!-- 実績・記録帳（コンボ・珍間取り全24種図鑑）モーダル -->
+    <!-- 実績・記録帳（コンボ・珍間取り全26種図鑑）モーダル -->
     <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:16px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
@@ -1239,7 +1239,7 @@
               <i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・記録帳（間取りコンボ図鑑）
             </div>
             <div id="records-progress-text" style="font-size:11.5px; color:#fde047; font-weight:bold; margin-top:3px;">
-              図鑑収集率: 0 / 24 (0%)
+              図鑑収集率: 0 / 26 (0%)
             </div>
           </div>
           <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -5754,7 +5754,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     { id: 21, name: '無限回廊',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-arrows-clockwise', hint: '廊下がぐるりと一周ループ',                 desc: '廊下が環状に連結' },
     { id: 22, name: 'マトリョーシカ', category: '珍間取り', bonus: '-1.0万', icon: 'ph-tree-structure',   hint: '部屋の奥に部屋、その奥にさらに部屋',       desc: '居室を3室以上連続で通り抜け' },
     { id: 23, name: 'プライバシーゼロ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
-    { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' }
+    { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' },
+    { id: 25, name: '大ホワイエ',       category: '王道',     bonus: '+3.5万', icon: 'ph-columns',        hint: '玄関を入った先に、広間のようなゆったりとした廊下（2×3以上）を設けると…？', desc: '玄関から広がる贅沢なエントランスホール（2×3以上の広間状の廊下空間）' },
+    { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（5マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線5マス以上の連続廊下）' }
   ];
 
   function recordDiscoveredCombos(combos) {
@@ -5976,6 +5978,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     } else if (winCount >= 15) {
       combos.push({ name:'ガラス張りハウス', bonus:3.0, icon:'ph-sparkle text-cyan-600', type:'funny',
         text:`【珍間取り】ガラス張りハウス — 窓${winCount}箇所の超パノラマビュー (+3.0万)` });
+    }
+
+    // 11. 廊下空間のこだわりコンボ
+    if (hasGrandFoyer(visited)) {
+      combos.push({ name:'大ホワイエ', bonus:3.5, icon:'ph-columns text-amber-500', type:'good',
+        text:'【王道】大ホワイエ — 玄関から広がる贅沢なエントランスホール (+3.5万)' });
+    }
+    if (hasLongCorridor(visited)) {
+      combos.push({ name:'ロングコリドー', bonus:2.5, icon:'ph-arrows-left-right text-teal-600', type:'funny',
+        text:'【珍間取り】ロングコリドー — 視線がすっと抜ける一本の長廊下 (+2.5万)' });
     }
 
     return combos;
@@ -6229,6 +6241,152 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (d !== Infinity) maxDist = Math.max(maxDist, d);
     }
     return maxDist >= 3;
+  }
+
+  // 玄関直結の広間状廊下（2x3以上、3x2以上、または3x3以上のエントランス空間）
+  function hasGrandFoyer(visited) {
+    if (!STAGE) return false;
+    const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
+    const foyerCorridor = new Set();
+    const queue = [];
+    const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+
+    for (const ec of entCells) {
+      foyerCorridor.add(`${ec.r},${ec.c}`);
+      for (const {dr,dc} of dirs) {
+        const nr = ec.r + dr, nc = ec.c + dc;
+        if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) {
+          const et = edgeType(ec.r, ec.c, nr, nc);
+          if ((et === E.NONE || et === E.DOOR) && grid[nr][nc].type === T.CORRIDOR) {
+            const key = `${nr},${nc}`;
+            if (!foyerCorridor.has(key)) {
+              foyerCorridor.add(key);
+              queue.push({ r: nr, c: nc });
+            }
+          }
+        }
+      }
+    }
+
+    if (queue.length === 0) return false;
+
+    while (queue.length > 0) {
+      const cur = queue.shift();
+      for (const {dr,dc} of dirs) {
+        const nr = cur.r + dr, nc = cur.c + dc;
+        if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) {
+          const key = `${nr},${nc}`;
+          if (!foyerCorridor.has(key) && grid[nr][nc].type === T.CORRIDOR) {
+            const et = edgeType(cur.r, cur.c, nr, nc);
+            if (et === E.NONE || et === E.DOOR) {
+              foyerCorridor.add(key);
+              queue.push({ r: nr, c: nc });
+            }
+          }
+        }
+      }
+    }
+
+    // 廊下セルが少なくとも4マス以上含まれていること
+    let corridorCount = 0;
+    for (const k of foyerCorridor) {
+      const [r, c] = k.split(',').map(Number);
+      if (grid[r] && grid[r][c] && grid[r][c].type === T.CORRIDOR) corridorCount++;
+    }
+    if (corridorCount < 4) return false;
+
+    // 2x3, 3x2, または 3x3 の長方形/正方形がfoyerCorridor内に存在するか
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        // 3x3
+        let is3x3 = true;
+        for (let dr = 0; dr < 3; dr++) {
+          for (let dc = 0; dc < 3; dc++) {
+            if (!foyerCorridor.has(`${r + dr},${c + dc}`)) {
+              is3x3 = false;
+              break;
+            }
+          }
+          if (!is3x3) break;
+        }
+        if (is3x3) return true;
+
+        // 2x3 (縦2 x 横3)
+        let is2x3 = true;
+        for (let dr = 0; dr < 2; dr++) {
+          for (let dc = 0; dc < 3; dc++) {
+            if (!foyerCorridor.has(`${r + dr},${c + dc}`)) {
+              is2x3 = false;
+              break;
+            }
+          }
+          if (!is2x3) break;
+        }
+        if (is2x3) return true;
+
+        // 3x2 (縦3 x 横2)
+        let is3x2 = true;
+        for (let dr = 0; dr < 3; dr++) {
+          for (let dc = 0; dc < 2; dc++) {
+            if (!foyerCorridor.has(`${r + dr},${c + dc}`)) {
+              is3x2 = false;
+              break;
+            }
+          }
+          if (!is3x2) break;
+        }
+        if (is3x2) return true;
+      }
+    }
+    return false;
+  }
+
+  // 縦または横に一直線に5マス以上連続する長廊下
+  function hasLongCorridor(visited) {
+    // 水平方向
+    for (let r = 0; r < GRID; r++) {
+      let currentLen = 0;
+      for (let c = 0; c < GRID; c++) {
+        if (grid[r][c].type === T.CORRIDOR && (!visited || visited.has(`${r},${c}`))) {
+          if (currentLen > 0) {
+            const et = edgeType(r, c - 1, r, c);
+            if (et === E.NONE || et === E.DOOR) {
+              currentLen++;
+            } else {
+              currentLen = 1;
+            }
+          } else {
+            currentLen = 1;
+          }
+          if (currentLen >= 5) return true;
+        } else {
+          currentLen = 0;
+        }
+      }
+    }
+
+    // 垂直方向
+    for (let c = 0; c < GRID; c++) {
+      let currentLen = 0;
+      for (let r = 0; r < GRID; r++) {
+        if (grid[r][c].type === T.CORRIDOR && (!visited || visited.has(`${r},${c}`))) {
+          if (currentLen > 0) {
+            const et = edgeType(r - 1, c, r, c);
+            if (et === E.NONE || et === E.DOOR) {
+              currentLen++;
+            } else {
+              currentLen = 1;
+            }
+          } else {
+            currentLen = 1;
+          }
+          if (currentLen >= 5) return true;
+        } else {
+          currentLen = 0;
+        }
+      }
+    }
+    return false;
   }
 
   /* ============================================================
@@ -11348,22 +11506,23 @@ function updateHomeUI() {
 
     let html = '';
     COMBO_MASTER_LIST.forEach((item, index) => {
-      const isFound = discovered.includes(item.id);
-      const isGood = item.category === 'good';
+      const isFound = discovered.includes(item.name) || discovered.includes(item.id);
+      const isGood = item.category === '王道';
+      const isNG = item.category === 'NG';
       const badgeColor = isGood
         ? 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4);'
-        : 'background:rgba(244,63,94,0.2); color:#fb7185; border:1px solid rgba(244,63,94,0.4);';
-      const bonusLabel = isGood
-        ? `🌟 優良コンボ (+${item.bonus}万)`
-        : `💥 珍間取り (${item.bonus}万)`;
+        : (isNG
+          ? 'background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);'
+          : 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4);');
+      const bonusLabel = `${item.category} (${item.bonus})`;
 
       if (isFound) {
         html += `
-          <div style="background:var(--c-surface2); border:1px solid ${isGood ? 'rgba(16,185,129,0.35)' : 'rgba(244,63,94,0.35)'}; border-radius:8px; padding:10px 12px;">
+          <div style="background:var(--c-surface2); border:1px solid ${isGood ? 'rgba(16,185,129,0.35)' : (isNG ? 'rgba(239,68,68,0.35)' : 'rgba(168,85,247,0.35)')}; border-radius:8px; padding:10px 12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
-              <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:5px;">
+              <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
                 <span style="font-size:11px; color:var(--c-text2); font-family:monospace;">No.${String(index + 1).padStart(2, '0')}</span>
-                <span>${item.icon} ${item.name}</span>
+                <span><i class="ph-bold ${item.icon}" style="color:${isGood ? '#34d399' : (isNG ? '#f87171' : '#c084fc')};"></i> ${item.name}</span>
               </div>
               <span style="font-size:10px; font-weight:bold; padding:2px 7px; border-radius:999px; white-space:nowrap; ${badgeColor}">${bonusLabel}</span>
             </div>
@@ -11376,12 +11535,12 @@ function updateHomeUI() {
         html += `
           <div style="background:rgba(15,23,42,0.55); border:1px dashed rgba(148,163,184,0.25); border-radius:8px; padding:10px 12px; opacity:0.85;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
-              <div style="font-size:13px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:5px;">
+              <div style="font-size:13px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:6px;">
                 <span style="font-size:11px; color:#64748b; font-family:monospace;">No.${String(index + 1).padStart(2, '0')}</span>
                 <span>🔒 ？？？</span>
               </div>
               <span style="font-size:10px; font-weight:bold; padding:2px 7px; border-radius:999px; white-space:nowrap; background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.35);">
-                ${isGood ? '🌟 優良コンボ' : '💥 珍間取り'}
+                ${item.category}
               </span>
             </div>
             <div style="font-size:11px; color:#64748b; line-height:1.45;">
