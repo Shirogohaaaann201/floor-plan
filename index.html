@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.11</title>
+  <title>間取り図パズル — Floor Plan v1.12</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -793,7 +793,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v1.11 (11/05)
+        Floor Plan v1.12 (11/05)
       </div>
     </div>
   </section>
@@ -6457,7 +6457,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return maxDist >= 3;
   }
 
-  // 玄関直結の広間状廊下（2x3以上、3x2以上、または3x3以上のエントランス空間）
+  // 玄関直結の広間状廊下（廊下セルのみで2x3以上、3x2以上、または3x3以上の広間空間）
   function hasGrandFoyer(visited) {
     if (!STAGE) return false;
     const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
@@ -6465,8 +6465,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const queue = [];
     const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
 
+    // 玄関セル自身は含めず、玄関に直結する廊下セルのみを起点とする
     for (const ec of entCells) {
-      foyerCorridor.add(`${ec.r},${ec.c}`);
       for (const {dr,dc} of dirs) {
         const nr = ec.r + dr, nc = ec.c + dc;
         if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) {
@@ -6484,6 +6484,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     if (queue.length === 0) return false;
 
+    // 玄関直結の廊下連結成分を広げる（廊下セルのみ）
     while (queue.length > 0) {
       const cur = queue.shift();
       for (const {dr,dc} of dirs) {
@@ -6501,55 +6502,35 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
-    // 廊下セルが少なくとも4マス以上含まれていること
-    let corridorCount = 0;
-    for (const k of foyerCorridor) {
-      const [r, c] = k.split(',').map(Number);
-      if (grid[r] && grid[r][c] && grid[r][c].type === T.CORRIDOR) corridorCount++;
-    }
-    if (corridorCount < 4) return false;
+    // 廊下セルだけで最低6マス以上存在すること
+    if (foyerCorridor.size < 6) return false;
 
-    // 2x3, 3x2, または 3x3 の長方形/正方形がfoyerCorridor内に存在するか
+    // 矩形領域がすべてfoyerCorridorに含まれ、かつ内部に壁がないかを判定
+    function checkRect(r0, c0, h, w) {
+      if (r0 + h > GRID || c0 + w > GRID) return false;
+      for (let dr = 0; dr < h; dr++) {
+        for (let dc = 0; dc < w; dc++) {
+          const cr = r0 + dr, cc = c0 + dc;
+          if (!foyerCorridor.has(`${cr},${cc}`)) return false;
+          if (dc < w - 1) {
+            const et = edgeType(cr, cc, cr, cc + 1);
+            if (et === E.WALL) return false;
+          }
+          if (dr < h - 1) {
+            const et = edgeType(cr, cc, cr + 1, cc);
+            if (et === E.WALL) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // 廊下セルのみで 3x3, 2x3, または 3x2 の長方形/正方形が存在するか判定
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
-        // 3x3
-        let is3x3 = true;
-        for (let dr = 0; dr < 3; dr++) {
-          for (let dc = 0; dc < 3; dc++) {
-            if (!foyerCorridor.has(`${r + dr},${c + dc}`)) {
-              is3x3 = false;
-              break;
-            }
-          }
-          if (!is3x3) break;
-        }
-        if (is3x3) return true;
-
-        // 2x3 (縦2 x 横3)
-        let is2x3 = true;
-        for (let dr = 0; dr < 2; dr++) {
-          for (let dc = 0; dc < 3; dc++) {
-            if (!foyerCorridor.has(`${r + dr},${c + dc}`)) {
-              is2x3 = false;
-              break;
-            }
-          }
-          if (!is2x3) break;
-        }
-        if (is2x3) return true;
-
-        // 3x2 (縦3 x 横2)
-        let is3x2 = true;
-        for (let dr = 0; dr < 3; dr++) {
-          for (let dc = 0; dc < 2; dc++) {
-            if (!foyerCorridor.has(`${r + dr},${c + dc}`)) {
-              is3x2 = false;
-              break;
-            }
-          }
-          if (!is3x2) break;
-        }
-        if (is3x2) return true;
+        if (checkRect(r, c, 3, 3)) return true;
+        if (checkRect(r, c, 2, 3)) return true;
+        if (checkRect(r, c, 3, 2)) return true;
       }
     }
     return false;
