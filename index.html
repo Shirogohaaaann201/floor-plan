@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.12</title>
+  <title>間取り図パズル — Floor Plan v1.13</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -793,7 +793,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v1.12 (11/05)
+        Floor Plan v1.13 (11/06)
       </div>
     </div>
   </section>
@@ -1842,59 +1842,63 @@
       fn: counts => (counts.maxClosetSize >= 4) || ((counts.closetCells || 0) >= 4)
     },
     'opt-closet': {
-      id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり',
+      id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり', tier: 'light',
       fn: counts => (counts.maxClosetSize >= 1) || ((counts.closetCells || 0) >= 1)
     },
     'opt-closet2': {
-      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (3マス以上)',
+      id: 'opt-closet2', icon: 'ph-coat-hanger', color: '#f59e0b', text: '大容量収納 (3マス以上)', tier: 'standard',
       fn: counts => (counts.maxClosetSize >= 3) || ((counts.closetCells || 0) >= 3)
     },
     'opt-kitchen': {
-      id: 'opt-kitchen', icon: 'ph-cooking-pot', color: '#ec4899', text: '自炊キッチンあり (K/DK/LDK)',
+      id: 'opt-kitchen', icon: 'ph-cooking-pot', color: '#ec4899', text: '自炊キッチンあり (K/DK/LDK)', tier: 'light',
       fn: counts => (counts.ldkCells || 0) >= 1
     },
     'opt-wash': {
-      id: 'opt-wash', icon: 'ph-drop', color: '#059669', text: '独立洗面所あり',
+      id: 'opt-wash', icon: 'ph-drop', color: '#059669', text: '独立洗面所あり', tier: 'light',
       fn: counts => counts.washroom > 0
     },
     'opt-bath': {
-      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (4マス以上連結)',
+      id: 'opt-bath', icon: 'ph-bathtub', color: '#0891b2', text: 'ゆったり浴室 (4マス以上連結)', tier: 'standard',
       fn: counts => counts.maxBathSize >= 4
     },
     'opt-ldk8': {
-      id: 'opt-ldk8', icon: 'ph-arrows-out', color: '#7c3aed', text: '広々LDK (8マス以上)',
+      id: 'opt-ldk8', icon: 'ph-arrows-out', color: '#7c3aed', text: '広々LDK (8マス以上)', tier: 'standard',
       fn: counts => counts.ldkCells >= 8
     },
     'opt-housework': {
-      id: 'opt-housework', icon: 'ph-washing-machine', color: '#0d9488', text: '家事ラク動線 (LDK↔洗面所直通)',
+      id: 'opt-housework', icon: 'ph-washing-machine', color: '#0d9488', text: '家事ラク動線 (LDK↔洗面所直通)', tier: 'light',
       fn: () => hasDirectConnection(grid, T.LDK, T.WASHROOM)
     },
+    'opt-circulation': {
+      id: 'opt-circulation', icon: 'ph-arrows-clockwise', color: '#0d9488', text: '家事回遊動線 (洗面所↔LDK&廊下2方向通り抜け)', tier: 'expert',
+      fn: () => hasCirculationRoute(grid)
+    },
     'opt-south': {
-      id: 'opt-south', icon: 'ph-sun', color: '#f59e0b', text: '南向きLDK (日当たり良好)',
+      id: 'opt-south', icon: 'ph-sun', color: '#f59e0b', text: '南向きLDK (日当たり良好)', tier: 'standard',
       fn: () => ldkFacesSouth()
     },
     'opt-plumbing': {
-      id: 'opt-plumbing', icon: 'ph-drop', color: '#2563eb', text: '水回り集約 (風呂・トイレ・洗面隣接)',
+      id: 'opt-plumbing', icon: 'ph-drop', color: '#2563eb', text: '水回り集約 (風呂・トイレ・洗面隣接)', tier: 'expert',
       fn: () => wetAdjacencyCluster()
     },
     'opt-soundproof': {
-      id: 'opt-soundproof', icon: 'ph-ear-slash', color: '#64748b', text: '完全防音 (トイレ廊下隔離)',
+      id: 'opt-soundproof', icon: 'ph-ear-slash', color: '#64748b', text: '完全防音 (トイレ廊下隔離)', tier: 'expert',
       fn: () => toiletHasCorridor()
     },
     'opt-sunlight': {
-      id: 'opt-sunlight', icon: 'ph-sun-dim', color: '#eab308', text: '陽だまりの家 (窓8箇所以上)',
+      id: 'opt-sunlight', icon: 'ph-sun-dim', color: '#eab308', text: '陽だまりの家 (窓8箇所以上)', tier: 'expert',
       fn: () => countWindows(grid) >= 8
     },
     'opt-foyer': {
-      id: 'opt-foyer', icon: 'ph-columns', color: '#b45309', text: '大ホワイエ (玄関前の広間状廊下)',
+      id: 'opt-foyer', icon: 'ph-columns', color: '#b45309', text: '大ホワイエ (玄関前の広間状廊下)', tier: 'expert',
       fn: (counts, bfs) => hasGrandFoyer(bfs)
     },
     'opt-corridor': {
-      id: 'opt-corridor', icon: 'ph-arrows-left-right', color: '#0284c7', text: 'ロングコリドー (一直線の長廊下5マス以上)',
+      id: 'opt-corridor', icon: 'ph-arrows-left-right', color: '#0284c7', text: 'ロングコリドー (一直線の長廊下5マス以上)', tier: 'expert',
       fn: (counts, bfs) => hasLongCorridor(bfs)
     },
     'opt-washitsu': {
-      id: 'opt-washitsu', icon: 'ph-house-line', color: '#059669', text: '和の趣 (和室1室以上)',
+      id: 'opt-washitsu', icon: 'ph-house-line', color: '#059669', text: '和の趣 (和室1室以上)', tier: 'standard',
       fn: () => {
         for (let r=0; r<GRID; r++) {
           for (let c=0; c<GRID; c++) {
@@ -2256,9 +2260,9 @@
       name: '顧客リレーション',
       icon: 'ph-ear',
       desc: [
-        '任意オプション達成の満足度加算が +7% にアップ',
-        '任意オプション達成の満足度加算が +10% にアップ',
-        '任意オプション達成の満足度加算が +14% にアップ'
+        '任意オプション達成の満足度加算が約1.4倍（標準+7%/こだわり+10%）',
+        '任意オプション達成の満足度加算が約2.0倍（標準+10%/こだわり+14%）',
+        '任意オプション達成の満足度加算が約2.6倍（標準+14%/こだわり+18%）'
       ],
       salary: [0.6, 2.0, 4.8]
     },
@@ -2351,11 +2355,24 @@
     return getStaffSkillLevel(skillId) > 0;
   }
 
+  function getOptionalReqBonus(opt) {
+    if (!opt) return 5;
+    const optDef = (typeof REQUEST_REGISTRY !== 'undefined' && REQUEST_REGISTRY[opt.id]) ? REQUEST_REGISTRY[opt.id] : opt;
+    const tier = optDef.tier || opt.tier || 'standard';
+    const listLv = getStaffSkillLevel('listener');
+    if (tier === 'light') {
+      return [3, 4, 6, 8][listLv] || 3;
+    } else if (tier === 'expert') {
+      return [7, 10, 14, 18][listLv] || 7;
+    } else { // standard
+      return [5, 7, 10, 14][listLv] || 5;
+    }
+  }
+
   function getOptionalReqText(opt) {
     if (!opt) return '';
     const cleanText = (opt.text || '').replace(/\s*\(満足度\+\d+%\)/g, '').trim();
-    const listLv = getStaffSkillLevel('listener');
-    const optBonusPct = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
+    const optBonusPct = getOptionalReqBonus(opt);
     return `${cleanText} (満足度+${optBonusPct}%)`;
   }
 
@@ -2731,8 +2748,8 @@
         // 子育てファミリー標準
         const names = ['吉田 夫婦', '松本 浩二', '井上 恵美'];
         const quotes = [
-          '「子ども部屋と大きなLDK、家族みんなでくつろげる家を！」',
-          '「お風呂もゆったり入れて、3部屋以上はしっかり確保したいです。」'
+          '「子ども部屋と大きなLDK、家族みんなでくつろげる家を！洗面所は廊下とLDKの両方から出入りできる回遊動線が希望です。」',
+          '「朝の支度や家事がスムーズに回るよう、洗面脱衣所を通り抜けられる回遊動線をお願いします！」'
         ];
         const avatars = ['👨‍👩‍👧', '👨‍👩‍👦', '👨‍👩‍👧‍👦'];
         clientData = {
@@ -2742,7 +2759,7 @@
           typeBadge: '子育てファミリー'
         };
         reqKeys = ['ldk2', 'wash', 'reach'];
-        optKeys = ['opt-bath', 'opt-housework'];
+        optKeys = ['opt-bath', 'opt-circulation'];
         initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
         targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
       } else if (subRoll < 0.45) {
@@ -2860,11 +2877,11 @@
         targetRent = 21.5 + Math.floor(Math.random() * 8) * 0.6;
         maxTurns = 24;
       } else if (subRoll < 0.66) {
-        // 3. 美食サロン邸宅 (大LDK & 家事ラク動線)
+        // 3. 美食サロン邸宅 (大LDK & 家事回遊動線)
         const names = ['一条 麗子', '綾小路 薫', '神崎 エリザベス'];
         const quotes = [
-          '「大勢の賓客を招いて料理を振る舞える広大なLDKと、スムーズな家事動線を頼みます。」',
-          '「ホームパーティーを最高のものにしたいの。広大なサロン空間と使いやすい動線を！」'
+          '「大勢の賓客を招いて料理を振る舞える広大なサロン空間と、廊下からも抜けられる贅沢な家事回遊動線を頼みます。」',
+          '「ホームパーティーを最高のものにしたいの。広大なサロン(LDK)と使いやすい回遊動線を！」'
         ];
         const avatars = ['🥂', '🍷', '💃'];
         clientData = {
@@ -2874,7 +2891,7 @@
           typeBadge: '美食サロン邸宅'
         };
         reqKeys = ['ldk1_room2', 'closet2', 'wash', 'reach'];
-        optKeys = ['opt-ldk8', 'opt-housework'];
+        optKeys = ['opt-ldk8', 'opt-circulation'];
         initialBudget = 6400.0 + Math.floor(Math.random() * 15) * 100;
         targetRent = 23.0 + Math.floor(Math.random() * 8) * 0.6;
         maxTurns = 24;
@@ -2997,6 +3014,7 @@
           opt.icon = REQUEST_REGISTRY[opt.id].icon;
           opt.color = REQUEST_REGISTRY[opt.id].color;
           opt.text = REQUEST_REGISTRY[opt.id].text;
+          opt.tier = REQUEST_REGISTRY[opt.id].tier;
         }
       });
     }
@@ -3779,10 +3797,19 @@
       // 3. コンボボーナス（整数）
       comboBonus = (goodC * 5) - (badC * 20);
 
-      // 4. 任意オプションボーナス (顧客リレーションLv1:+7%, Lv2:+10%, Lv3:+14%)
-      const listLv = getStaffSkillLevel('listener');
-      const optPerReq = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
-      optBonus = (p.optionalSatisfied || 0) * optPerReq;
+      // 4. 任意オプションボーナス (難易度ティア制: ライト3%/標準5%/エキスパート7% & 顧客リレーション)
+      let optBonusSum = 0;
+      if (p.satisfiedOptIds && Array.isArray(p.satisfiedOptIds)) {
+        for (const optId of p.satisfiedOptIds) {
+          optBonusSum += getOptionalReqBonus({ id: optId });
+        }
+      } else if (p.optionalSatisfied) {
+        // 後方互換性（既存セーブデータ用）
+        const listLv = getStaffSkillLevel('listener');
+        const optPerReq = listLv > 0 ? ([0, 7, 10, 14][listLv] || 8) : 5;
+        optBonusSum = p.optionalSatisfied * optPerReq;
+      }
+      optBonus = optBonusSum;
 
       // 5. おもてなしコンシェルジュ (Lv1:+4%, Lv2:+8%, Lv3:+12%)
       const conLv = getStaffSkillLevel('concierge');
@@ -5794,6 +5821,67 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return false;
   }
 
+  // 洗面所がLDKと廊下/玄関の2方向へ通り抜け可能な「家事回遊動線」かを判定
+  function hasCirculationRoute(grid) {
+    if (!grid) return false;
+    const visited = new Set();
+    const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        if (grid[r] && grid[r][c] && grid[r][c].type === T.WASHROOM && !visited.has(`${r},${c}`)) {
+          // 洗面所の連結成分を探索
+          const comp = [];
+          const queue = [{ r, c }];
+          visited.add(`${r},${c}`);
+
+          while (queue.length > 0) {
+            const cur = queue.shift();
+            comp.push(cur);
+            for (const {dr,dc} of dirs) {
+              const nr = cur.r + dr, nc = cur.c + dc;
+              if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) {
+                if (grid[nr] && grid[nr][nc] && grid[nr][nc].type === T.WASHROOM && !visited.has(`${nr},${nc}`)) {
+                  const et = edgeType(cur.r, cur.c, nr, nc);
+                  if (et === E.NONE || et === E.DOOR) {
+                    visited.add(`${nr},${nc}`);
+                    queue.push({ r: nr, c: nc });
+                  }
+                }
+              }
+            }
+          }
+
+          // この洗面所連結成分がLDKと廊下/玄関の両方に接続（扉または壁なし）しているか判定
+          let connectsToLDK = false;
+          let connectsToCorridor = false;
+
+          for (const cell of comp) {
+            for (const {dr,dc} of dirs) {
+              const nr = cell.r + dr, nc = cell.c + dc;
+              if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && grid[nr] && grid[nr][nc]) {
+                const targetType = grid[nr][nc].type;
+                const et = edgeType(cell.r, cell.c, nr, nc);
+                if (et === E.NONE || et === E.DOOR) {
+                  if (targetType === T.LDK) {
+                    connectsToLDK = true;
+                  } else if (targetType === T.CORRIDOR || targetType === T.ENTRANCE) {
+                    connectsToCorridor = true;
+                  }
+                }
+              }
+            }
+          }
+
+          if (connectsToLDK && connectsToCorridor) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   // 田の字プラン判定: 和室4部屋が田の字（2×2）に隣接し、襖（ドア）で直結しているかを判定
   function hasTanojiWashitsu(visited) {
     const washitsuRooms = new Map();
@@ -6651,11 +6739,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     // 2.5 任意オプション (バリア延長)
     let optSatisfiedCount = 0;
+    const satisfiedOptIds = [];
     if (STAGE.optionalRequests) {
       for (const opt of STAGE.optionalRequests) {
         const ok = opt.fn ? opt.fn(counts, {unreachable: counts.unreachable}, STAGE) : false;
         if (ok) {
           optSatisfiedCount++;
+          satisfiedOptIds.push(opt.id);
           reports.push({ icon:'ph-sparkle-fill text-amber-500', text:`【任意達成】${getOptionalReqText(opt)}` });
         }
       }
@@ -6701,7 +6791,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     rent += customBonusDiff;
     rent = Math.round(rent * 10) / 10;
     normalRent = Math.round(normalRent * 10) / 10;
-    return { rent, normalRent, reports, optSatisfiedCount, amenityPenalty };
+    return { rent, normalRent, reports, optSatisfiedCount, satisfiedOptIds, amenityPenalty };
   }
 
   /* ============================================================
@@ -7132,7 +7222,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const combos  = detectCombos(counts, visited);
     const newlyDiscovered = recordDiscoveredCombos(combos);
 
-    const { rent, normalRent, reports, optSatisfiedCount, amenityPenalty } = calcRent(counts, combos, visited);
+    const { rent, normalRent, reports, optSatisfiedCount, satisfiedOptIds, amenityPenalty } = calcRent(counts, combos, visited);
 
     const isClear = rent >= STAGE.targetRent;
     
@@ -7186,6 +7276,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       satisfiedCount: satisfiedCount,
       totalRequests: STAGE.requests.length,
       optionalSatisfied: optSatisfiedCount || 0,
+      satisfiedOptIds: satisfiedOptIds || [],
       hasStorage: (counts.closetCells > 0) || (counts.closetRooms > 0),
       closetCells: counts.closetCells || 0,
       amenityPenalty: amenityPenalty || 0,
