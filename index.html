@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.13</title>
+  <title>間取り図パズル — Floor Plan v1.14</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -793,7 +793,7 @@
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v1.13 (11/06)
+        Floor Plan v1.14 (11/07)
       </div>
     </div>
   </section>
@@ -1250,7 +1250,7 @@
         </div>
 
         <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
-          <!-- JSで24種のカードを生成 -->
+          <!-- JSで全26種のカードを生成 -->
         </div>
 
         <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
@@ -1502,7 +1502,7 @@
             </button>
             <button class="btn btn-slate" id="btn-mirror" style="flex:1; padding:4px 4px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; flex-direction:column; align-items:center; justify-content:center;">
               <div style="display:flex; align-items:center; gap:3px;"><i class="ph-bold ph-arrows-left-right" style="color:var(--c-indigo); font-size:13px;"></i> 反転</div>
-              <span style="font-size:8px; color:var(--c-text2); margin-top:1px;">(費用1.2倍)</span>
+              <span id="btn-mirror-sub" style="font-size:8px; color:var(--c-text2); margin-top:1px;">(費用1.2倍)</span>
             </button>
           </div>
         </div>
@@ -4238,6 +4238,12 @@
     if (c === 2) return 25;
     return 50;
   }
+  function getMirrorCostMultiplier() {
+    const flipLv = getFeatureLevel('freeFlip');
+    const lvDef = UPGRADE_CONFIG?.features?.freeFlip?.levels?.[flipLv];
+    return (lvDef && typeof lvDef.mult === 'number') ? lvDef.mult : (flipLv >= 2 ? 1.0 : (flipLv === 1 ? 1.1 : 1.2));
+  }
+
   function getPieceCost(piece, mirrored = false, overrideCycle = null) {
     if (!piece) return 0;
     let base = piece.cost || 0;
@@ -4261,8 +4267,7 @@
     if (!mirrored) {
       return Math.round(base * 10) / 10;
     }
-    const flipLv = getFeatureLevel('freeFlip');
-    const flipMult = flipLv >= 2 ? 1.0 : (flipLv === 1 ? 1.1 : 1.2);
+    const flipMult = getMirrorCostMultiplier();
     return Math.round(base * flipMult * 10) / 10;
   }
 
@@ -4665,6 +4670,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     updatePieceLabel();
     updateRerollButton();
+    updateMirrorButton();
   }
 
   let isRerollConfirming = false;
@@ -4764,6 +4770,22 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         btnMirror.style.background = '';
         btnMirror.style.borderColor = '';
       }
+    }
+    updateMirrorButton();
+  }
+
+  function updateMirrorButton() {
+    const sub = document.getElementById('btn-mirror-sub');
+    if (!sub) return;
+    const mult = getMirrorCostMultiplier();
+    if (mult <= 1.0) {
+      sub.textContent = '(割増なし)';
+      sub.style.color = isMirrored ? '#047857' : 'var(--c-emerald)';
+      sub.style.fontWeight = 'bold';
+    } else {
+      sub.textContent = `(費用${mult.toFixed(1)}倍)`;
+      sub.style.color = isMirrored ? '#4338ca' : 'var(--c-text2)';
+      sub.style.fontWeight = 'normal';
     }
   }
 
@@ -6030,7 +6052,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   /* ============================================================
-     COMBO MASTER DATA (24 TYPES) & DETECTION
+     COMBO MASTER DATA (26 TYPES) & DETECTION
   ============================================================ */
   const COMBO_MASTER_LIST = [
     { id: 1,  name: '水回り集約',     category: '王道',     bonus: '+2.0万', icon: 'ph-drop',             hint: '風呂・トイレ・洗面所をまとめて配置すると…？', desc: '風呂・トイレ・洗面が相互に隣接（配管効率化ボーナス）' },
@@ -11218,6 +11240,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (screens.game?.classList.contains('active')) {
           renderDraftUI();
         }
+      }
+      if (key === 'freeFlip') {
+        updateMirrorButton();
       }
       playSound('clear');
       showUpgradeFeedback(`✨ 設備投資「${featGroup.name} Lv.${co.features[key]}（${nextLvDef.name}）」を導入しました！`, 'var(--c-emerald)');
