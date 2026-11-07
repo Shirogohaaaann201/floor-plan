@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.15</title>
+  <title>間取り図パズル — Floor Plan v1.16</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -770,9 +770,9 @@
       
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">
-          <h3 style="margin:0; color:#0f172a; font-size:16px;">所有物件一覧</h3>
+          <h3 style="margin:0; color:#0f172a; font-size:16px;">物件</h3>
           <span id="home-property-capacity" style="font-size:11px; font-weight:bold; padding:2px 8px; border-radius:12px; background:#e2e8f0; color:#475569;">
-            所有 0 / 4棟
+            0 / 4棟
           </span>
         </div>
         <div id="property-list" style="max-height:350px; overflow-y:auto; font-size:13px; color:#475569;">
@@ -781,11 +781,11 @@
       </div>
       
       <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <button id="btn-open-upgrade" class="btn btn-secondary" style="flex:1.35; padding:13px 10px; font-size:13.5px; font-weight:bold; cursor:pointer; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-          <i class="ph-bold ph-buildings" style="font-size:17px; color:var(--c-blue);"></i>会社強化・人事
+        <button id="btn-open-upgrade" class="btn btn-secondary" style="flex:1; padding:13px 10px; font-size:13.5px; font-weight:bold; cursor:pointer; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+          <i class="ph-bold ph-buildings" style="font-size:17px; color:var(--c-blue);"></i>オフィス
         </button>
         <button id="btn-open-records" class="btn btn-secondary" style="flex:1; padding:13px 10px; font-size:13.5px; font-weight:bold; cursor:pointer; background:#fffbeb; color:#92400e; border:1.5px solid #fde68a; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-          <i class="ph-fill ph-trophy" style="font-size:17px; color:#d97706;"></i><span>実績・記録帳</span>
+          <i class="ph-fill ph-trophy" style="font-size:17px; color:#d97706;"></i><span>記録帳</span>
           <span id="home-records-badge" style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fcd34d; padding:1px 6px; border-radius:10px; font-weight:800;">0/26</span>
         </button>
       </div>
@@ -793,11 +793,11 @@
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
       <button id="btn-skip-month" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
-        <i class="ph-bold ph-fast-forward" style="margin-right:8px;"></i>時間を進める (月送り)
+        <i class="ph-bold ph-fast-forward" style="margin-right:8px;"></i>月を進める
       </button>
       
       <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v1.15 (11/07)
+        Floor Plan v1.16
       </div>
     </div>
   </section>
@@ -825,52 +825,49 @@
             <span style="font-size:12px; color:var(--c-text2);">家賃</span>
             <span style="font-weight:900; color:var(--c-emerald); font-size:16px;" id="pd-rent">4.5<span style="font-size:10px;font-weight:normal;">万/月</span></span>
           </div>
-          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">満足度 (初期空室リスク: <span id="pd-initial-evict">0</span>%)</div>
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">満足度<span id="pd-initial-evict" style="display:none;">0</span></div>
           <div style="display:flex; align-items:center; gap:8px;">
             <div style="flex:1; height:8px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
               <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
             </div>
             <div style="font-weight:bold; color:var(--c-text);" id="pd-sat-val">80%</div>
           </div>
-          <div style="font-size:10px; color:var(--c-text2); margin-top:4px;" id="pd-sat-breakdown">家賃+40% / 依頼+50% / コンボ-10%</div>
+          <div style="display:none;" id="pd-sat-breakdown"></div>
         </div>
 
         <!-- 建築コスト・投資回収パネル (売却判断用) -->
         <div id="pd-cost-roi-box" style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.22); padding:10px 12px; border-radius:6px; margin-bottom:10px; font-size:11px;">
           <div style="font-weight:bold; color:#93c5fd; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-            <span>📊 建築コスト・投資回収状況</span>
+            <span>📊 収支</span>
             <span id="pd-roi-badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8;">回収 0%</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;">
-            <span style="color:var(--c-text2);">建築総投資額:</span>
+            <span style="color:var(--c-text2);">建築費:</span>
             <strong id="pd-total-cost" class="font-num" style="color:var(--c-text); font-size:13px;">0.0万</strong>
           </div>
-          <div id="pd-cost-breakdown" style="font-size:10px; color:var(--c-text3); text-align:right; margin-bottom:6px;">
-            (ピース原価 0.0万 / 反転・更新費 0.0万)
-          </div>
+          <div id="pd-cost-breakdown" style="display:none;"></div>
           <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:1px dashed rgba(255,255,255,0.1); padding-top:6px; margin-bottom:4px;">
-            <span style="color:var(--c-text2);">累計家賃収入:</span>
+            <span style="color:var(--c-text2);">家賃累計:</span>
             <strong id="pd-earned-rent" class="font-num" style="color:var(--c-emerald); font-size:13px;">+0.0万</strong>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.5); padding:5px 8px; border-radius:4px; margin-top:4px;">
-            <span style="color:#cbd5e1; font-size:10px;">今売却した時の通算損益:</span>
+            <span style="color:#cbd5e1; font-size:10px;">売却損益:</span>
             <strong id="pd-net-profit" class="font-num" style="font-size:12px; color:var(--c-emerald);">+0.0万</strong>
           </div>
         </div>
 
         <div style="display:flex; gap:8px; margin-bottom:10px;">
           <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);" id="pd-risk-label">現在の空室リスク</div>
+            <div style="font-size:10px; color:var(--c-text2);" id="pd-risk-label">退去率</div>
             <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
           </div>
           <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);">物件ランク</div>
+            <div style="font-size:10px; color:var(--c-text2);">ランク</div>
             <div style="font-weight:bold; color:var(--c-amber); font-size:14px;" id="pd-deg-rate">S</div>
           </div>
         </div>
 
-        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; min-height:40px; margin-bottom:14px;" id="pd-combos">
-          (コンボ情報)
+        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; margin-bottom:14px; display:none;" id="pd-combos">
         </div>
 
         <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:12px; font-size:14px; border-color:var(--c-border); color:var(--c-amber-lt);">
@@ -909,11 +906,11 @@
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
           <div>
             <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-              <i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> 会社強化・デッキ・銀行・人事
+              <i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> オフィス
             </div>
             <div style="font-size:11px; color:var(--c-text2); margin-top:2px; display:flex; gap:10px; align-items:center;">
-              <span>所持資金: <strong id="upg-current-funds" style="color:var(--c-emerald); font-size:13px;">0.0万</strong></span>
-              <span>借入残高: <strong id="upg-current-debt" style="color:var(--c-rose); font-size:13px;">0.0万</strong></span>
+              <span>資金: <strong id="upg-current-funds" style="color:var(--c-emerald); font-size:13px;">0.0万</strong></span>
+              <span>借入: <strong id="upg-current-debt" style="color:var(--c-rose); font-size:13px;">0.0万</strong></span>
             </div>
           </div>
           <button id="btn-close-upgrade" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -964,12 +961,12 @@
             <div id="upg-staff-status-box" style="background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 12px; margin-bottom:12px;"></div>
             <!-- 雇用中スタッフ -->
             <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
-              <i class="ph-bold ph-identification-card"></i> 雇用中のスタッフ
+              <i class="ph-bold ph-identification-card"></i> 在籍
             </div>
             <div id="upg-hired-staff-list" style="margin-bottom:14px;"></div>
             <!-- 採用候補一覧 -->
             <div style="font-size:12px; font-weight:bold; color:var(--c-text); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
-              <i class="ph-bold ph-user-plus"></i> 採用候補のスペシャリスト
+              <i class="ph-bold ph-user-plus"></i> 候補
             </div>
             <div id="upg-candidate-staff-list"></div>
           </div>
@@ -995,12 +992,12 @@
         </div>
 
         <div style="font-size:12px; color:var(--c-text2); margin-bottom:14px;" id="mem-subtitle">
-          第1ヶ月目の経営報告です。
+          今月の経営報告
         </div>
 
         <!-- 収支ボックス -->
         <div style="background:var(--c-surface2); padding:12px 14px; border-radius:8px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.06);">
-          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">今月の収支決算</div>
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">今月の収支</div>
           <div style="display:flex; align-items:baseline; justify-content:space-between;">
             <div>
               <span style="font-size:24px; font-weight:900; color:var(--c-emerald);" id="mem-income">+0.0</span>
@@ -1350,7 +1347,7 @@
     <!-- Client info -->
     <div class="mission-card">
       <div class="mission-card-title">
-        <i class="ph-bold ph-user-circle"></i> 依頼クライアント
+        <i class="ph-bold ph-user-circle"></i> クライアント
       </div>
       <div class="client-block">
         <div class="client-avatar">🏠</div>
@@ -1369,7 +1366,7 @@
     <!-- Requirements -->
     <div class="mission-card">
       <div class="mission-card-title">
-        <i class="ph-bold ph-list-checks"></i> クライアントのご要望
+        <i class="ph-bold ph-list-checks"></i> 要望
       </div>
       <div class="req-list" id="req-list"></div>
     </div>
@@ -1377,7 +1374,7 @@
     <!-- Site preview -->
     <div class="mission-card">
       <div class="mission-card-title">
-        <i class="ph-bold ph-map-pin"></i> 敷地情報
+        <i class="ph-bold ph-map-pin"></i> 敷地
       </div>
       <div class="site-preview-wrap">
         <canvas id="site-preview-canvas"></canvas>
@@ -1508,7 +1505,7 @@
             </button>
             <button class="btn btn-slate" id="btn-mirror" style="flex:1; padding:4px 4px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; flex-direction:column; align-items:center; justify-content:center;">
               <div style="display:flex; align-items:center; gap:3px;"><i class="ph-bold ph-arrows-left-right" style="color:var(--c-indigo); font-size:13px;"></i> 反転</div>
-              <span id="btn-mirror-sub" style="font-size:8px; color:var(--c-text2); margin-top:1px;">(費用1.2倍)</span>
+              <span id="btn-mirror-sub" style="font-size:8px; color:var(--c-text2); margin-top:1px;">+20%</span>
             </button>
           </div>
         </div>
@@ -1604,12 +1601,10 @@
         <!-- Construction Cost & ROI -->
         <div id="flyer-cost-box" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:var(--r-md); padding:9px 12px; font-size:11px; color:#334155;">
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px;">
-            <span style="font-weight:700; color:#475569;">💰 建築総投資額</span>
+            <span style="font-weight:700; color:#475569;">💰 建築費</span>
             <strong id="flyer-total-cost" class="font-num" style="font-size:15px; font-weight:800; color:#0f172a;">0.0万円</strong>
           </div>
-          <div id="flyer-cost-detail" style="font-size:10px; color:#64748b; text-align:right; margin-bottom:5px;">
-            ピース原価 0.0万 / 反転・更新費 0.0万
-          </div>
+          <div id="flyer-cost-detail" style="display:none;"></div>
           <div id="flyer-roi-note" style="font-size:10px; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; border-radius:4px; padding:4px 8px; display:flex; justify-content:space-between; align-items:center;">
             <span>初期売価: 0.0万</span>
             <span>家賃回収目安: —</span>
@@ -1624,7 +1619,7 @@
               完成間取り図
             </span>
             <button id="btn-save-result-png" type="button" style="background:#f8fafc; color:#0f172a; border:1px solid #cbd5e1; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-              <i class="ph-bold ph-download-simple" style="color:var(--c-blue);"></i> 💾 間取り図を保存
+              <i class="ph-bold ph-download-simple" style="color:var(--c-blue);"></i> 💾 画像保存
             </button>
           </div>
           <canvas id="result-canvas"></canvas>
@@ -1634,7 +1629,7 @@
         <div class="flyer-report-section">
           <div class="flyer-report-title">
             <i class="ph-bold ph-chart-polar" style="color:#3b82f6;font-size:13px;"></i>
-            間取り診断レポート
+            診断
           </div>
           <div class="report-list" id="report-list"></div>
         </div>
@@ -1643,7 +1638,7 @@
         <div class="flyer-comment-box">
           <div class="flyer-comment-title" id="flyer-comment-title">
             <i class="ph-bold ph-chat-centered-dots"></i>
-            <span>ご入居者の感想</span>
+            <span>入居者の声</span>
           </div>
           <div class="flyer-comment-text" id="flyer-comment">—</div>
         </div>
@@ -1658,7 +1653,7 @@
         </button>
         <button class="btn btn-dark" id="btn-restart">
           <i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i>
-          もう一度設計
+          やり直す
         </button>
         <button class="btn btn-dark" id="btn-giveup" style="display:none; background:var(--c-rose);">
           <i class="ph-bold ph-x" style="font-size:13px;"></i>
@@ -2035,18 +2030,18 @@
   ============================================================ */
   const UPGRADE_CONFIG = {
     sales: [
-      { level: 1, name: '町の小さな設計所', mult: 1.0,  cost: 0,   desc: '基準値（補正なし ×1.0）' },
-      { level: 2, name: '地元で話題の事務所', mult: 1.15, cost: 300, desc: '依頼者の希望家賃上限 +15%（高家賃設定が可能に）' },
-      { level: 3, name: 'エリア屈指の実力派', mult: 1.30, cost: 800, desc: '依頼者の希望家賃上限 +30%（高家賃設定が可能に）' },
-      { level: 4, name: '有名アーキテクト',   mult: 1.45, cost: 1800,desc: '依頼者の希望家賃上限 +45%（高家賃設定が可能に）' },
-      { level: 5, name: '一流デザインファーム', mult: 1.60, cost: 4000,desc: '依頼者の希望家賃上限 +60%（最大）' },
+      { level: 1, name: '町の小さな設計所', mult: 1.0,  cost: 0,   desc: '希望家賃 ×1.0' },
+      { level: 2, name: '地元で話題の事務所', mult: 1.15, cost: 300, desc: '希望家賃 +15%' },
+      { level: 3, name: 'エリア屈指の実力派', mult: 1.30, cost: 800, desc: '希望家賃 +30%' },
+      { level: 4, name: '有名アーキテクト',   mult: 1.45, cost: 1800,desc: '希望家賃 +45%' },
+      { level: 5, name: '一流デザインファーム', mult: 1.60, cost: 4000,desc: '希望家賃 +60%' },
     ],
     brand: [
       { level: 1, name: '無名・開業直後',   cost: 0,   desc: '単身 70% / DINKS 30%' },
       { level: 2, name: '口コミの広まり',   cost: 400, desc: '単身 45% / DINKS 40% / ファミリー 15%' },
       { level: 3, name: 'メディア掲載',     cost: 1000,desc: '単身 25% / DINKS 40% / ファミリー 25% / 豪邸 10%' },
       { level: 4, name: '業界の注目株',     cost: 2500,desc: '単身 15% / DINKS 30% / ファミリー 35% / 豪邸 20%' },
-      { level: 5, name: 'プレステージ',     cost: 5000,desc: '単身 10% / DINKS 20% / ファミリー 40% / 豪邸 30% (最大)' },
+      { level: 5, name: 'プレステージ',     cost: 5000,desc: '単身 10% / DINKS 20% / ファミリー 40% / 豪邸 30%' },
     ],
     // 本社オフィス（タウンホール / 会社規模）
     office: [
@@ -2060,7 +2055,7 @@
         maxSalesLevel: 1,
         maxBrandLevel: 1,
         missions: null,
-        desc: '自宅兼事務所。単独で4棟まで管理可能（上位強化には地元事務所への移転が必要）。'
+        desc: '自宅兼事務所。'
       },
       {
         level: 1,
@@ -2076,7 +2071,7 @@
           { type: 'netCombos', label: '設計品質', target: 12, discount: 300, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 500, discount: 300, unit: '万' }
         ],
-        desc: '雑居ビルの1室。デスク1席・管理枠7棟・営業/知名度Lv2・設備投資Lv1まで解放。'
+        desc: '雑居ビルの1室。'
       },
       {
         level: 2,
@@ -2092,7 +2087,7 @@
           { type: 'netCombos', label: '設計品質', target: 35, discount: 700, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 1800, discount: 800, unit: '万' }
         ],
-        desc: '駅前の自社フロア。デスク2席・管理枠11棟・営業/知名度Lv3・設備投資Lv2まで解放。'
+        desc: '駅前の自社フロア。'
       },
       {
         level: 3,
@@ -2108,7 +2103,7 @@
           { type: 'netCombos', label: '設計品質', target: 75, discount: 1600, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 5000, discount: 1800, unit: '万' }
         ],
-        desc: 'デザインスタジオ。デスク3席・管理枠16棟・営業/知名度Lv4・全設備投資解放。'
+        desc: 'デザインスタジオ。'
       },
       {
         level: 4,
@@ -2124,7 +2119,7 @@
           { type: 'netCombos', label: '設計品質', target: 130, discount: 3500, unit: '個' },
           { type: 'earnedRent', label: '賃貸実績', target: 12000, discount: 4000, unit: '万' }
         ],
-        desc: '大手不動産本社ビル。最大4名雇用・管理枠22棟・営業/知名度Lv5完全制覇。'
+        desc: '自社ビル。'
       }
     ],
     // 執務デスク増設（スタッフ雇用枠）
@@ -2136,11 +2131,11 @@
     ],
     // 管理システム導入（管理戸数キャパシティ）
     capacity: [
-      { level: 0, capacity: 4,  cost: 0,    name: '台帳管理（基本枠）', desc: 'プレイヤー単独での管理限界（4棟）' },
-      { level: 1, capacity: 7,  cost: 150,  name: 'PC管理システム',   desc: '管理上限 +3棟（最大7棟）' },
-      { level: 2, capacity: 11, cost: 350,  name: 'クラウド管理システム', desc: '管理上限 +4棟（最大11棟）' },
-      { level: 3, capacity: 16, cost: 800,  name: '自社管理サーバー',   desc: '管理上限 +5棟（最大16棟）' },
-      { level: 4, capacity: 22, cost: 1500, name: '自社管理センター',   desc: '管理上限 +6棟（最大22棟）' }
+      { level: 0, capacity: 4,  cost: 0,    name: '台帳管理',       desc: '管理 4棟' },
+      { level: 1, capacity: 7,  cost: 150,  name: 'PC管理システム',   desc: '管理 7棟' },
+      { level: 2, capacity: 11, cost: 350,  name: 'クラウド管理システム', desc: '管理 11棟' },
+      { level: 3, capacity: 16, cost: 800,  name: '自社管理サーバー',   desc: '管理 16棟' },
+      { level: 4, capacity: 22, cost: 1500, name: '自社管理センター',   desc: '管理 22棟' }
     ],
     features: {
       freeFlip: {
@@ -2148,20 +2143,20 @@
         name: '反転加工設備',
         icon: 'ph-arrows-left-right',
         levels: [
-          { level: 0, name: '外注特注加工', cost: 0,   reqOfficeLevel: 0, mult: 1.2, desc: '反転時の加工割増 +20%（×1.2倍）' },
-          { level: 1, name: '簡易反転治具', cost: 250, reqOfficeLevel: 1, mult: 1.1, desc: 'ピース反転時の特注割増を半減（+20% ➔ +10%）' },
-          { level: 2, name: '自社反転ライン', cost: 500, reqOfficeLevel: 2, mult: 1.0, desc: 'ピース反転時の特注割増を恒久無料化（+10% ➔ 0%）' }
+          { level: 0, name: '外注特注加工', cost: 0,   reqOfficeLevel: 0, mult: 1.2, desc: '反転 +20%' },
+          { level: 1, name: '簡易反転治具', cost: 250, reqOfficeLevel: 1, mult: 1.1, desc: '反転 +10%' },
+          { level: 2, name: '自社反転ライン', cost: 500, reqOfficeLevel: 2, mult: 1.0, desc: '反転 無料' }
         ]
       },
       extraRerolls: {
         id: 'extraRerolls',
-        name: 'クイックリロール設備',
+        name: '無料破棄枠',
         icon: 'ph-arrows-clockwise',
         levels: [
-          { level: 0, name: '標準資材手配', cost: 0,   reqOfficeLevel: 0, bonus: 0, desc: '無料ピース再抽選の基本枠 5回' },
-          { level: 1, name: '迅速手配網 Lv.1', cost: 200, reqOfficeLevel: 1, bonus: 1, desc: '無料ピース再抽選の上限 +1回（5回 ➔ 6回）' },
-          { level: 2, name: '迅速手配網 Lv.2', cost: 350, reqOfficeLevel: 2, bonus: 2, desc: '無料ピース再抽選の上限 +2回（6回 ➔ 7回）' },
-          { level: 3, name: '直通物流網 Lv.3', cost: 600, reqOfficeLevel: 3, bonus: 3, desc: '無料ピース再抽選の上限 +3回（7回 ➔ 8回）' }
+          { level: 0, name: '標準資材手配', cost: 0,   reqOfficeLevel: 0, bonus: 0, desc: '無料破棄 5個' },
+          { level: 1, name: '迅速手配網 Lv.1', cost: 200, reqOfficeLevel: 1, bonus: 1, desc: '無料破棄 6個' },
+          { level: 2, name: '迅速手配網 Lv.2', cost: 350, reqOfficeLevel: 2, bonus: 2, desc: '無料破棄 7個' },
+          { level: 3, name: '直通物流網 Lv.3', cost: 600, reqOfficeLevel: 3, bonus: 3, desc: '無料破棄 8個' }
         ]
       },
       extraAttempts: {
@@ -2169,9 +2164,9 @@
         name: '再設計保険',
         icon: 'ph-shield-check',
         levels: [
-          { level: 0, name: '基本保証のみ', cost: 0,   reqOfficeLevel: 0, bonus: 0, desc: 'パズル中の再設計可能回数 2回' },
-          { level: 1, name: '設計やり直し保険 Lv.1', cost: 400, reqOfficeLevel: 1, bonus: 1, desc: 'パズル中の再設計可能回数 +1回（2回 ➔ 3回）' },
-          { level: 2, name: '総合設計補償 Lv.2',     cost: 800, reqOfficeLevel: 3, bonus: 2, desc: 'パズル中の再設計可能回数 +2回（3回 ➔ 4回）' }
+          { level: 0, name: '基本保証のみ', cost: 0,   reqOfficeLevel: 0, bonus: 0, desc: 'やり直し 2回' },
+          { level: 1, name: '設計やり直し保険 Lv.1', cost: 400, reqOfficeLevel: 1, bonus: 1, desc: 'やり直し 3回' },
+          { level: 2, name: '総合設計補償 Lv.2',     cost: 800, reqOfficeLevel: 3, bonus: 2, desc: 'やり直し 4回' }
         ]
       },
       handSize: {
@@ -2179,9 +2174,9 @@
         name: '設計テーブル拡張',
         icon: 'ph-columns',
         levels: [
-          { level: 0, name: '標準デスク', cost: 0,   reqOfficeLevel: 0, slots: 3, desc: '手札の同時保持枠 3枚（基本枠）' },
-          { level: 1, name: 'ワイド設計デスク Lv.1', cost: 350, reqOfficeLevel: 1, slots: 4, desc: '手札の同時保持枠 +1枚（3枚 ➔ 4枚・横スライド）' },
-          { level: 2, name: '大型図面テーブル Lv.2', cost: 750, reqOfficeLevel: 3, slots: 5, desc: '手札の同時保持枠 +2枚（4枚 ➔ 5枚・横スライド）' }
+          { level: 0, name: '標準デスク', cost: 0,   reqOfficeLevel: 0, slots: 3, desc: '手札 3枚' },
+          { level: 1, name: 'ワイド設計デスク Lv.1', cost: 350, reqOfficeLevel: 1, slots: 4, desc: '手札 4枚' },
+          { level: 2, name: '大型図面テーブル Lv.2', cost: 750, reqOfficeLevel: 3, slots: 5, desc: '手札 5枚' }
         ]
       }
     }
@@ -4736,7 +4731,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       btn.style.cursor = 'pointer';
       const costText = costs.total === 0 ? '無料' : `-${costs.total.toFixed(1)}万`;
       let nextCost = getDiscardCostForNext(discardCount);
-      let subText = `破棄:${discardCount}個(次${nextCost.toFixed(1)}万)`;
+      let subText = `破棄${discardCount} (次${nextCost.toFixed(1)}万)`;
       if (costs.keep > 0) subText += ` ＋ 維持:${costs.keep.toFixed(1)}万`;
 
       if (isRerollConfirming) {
@@ -4745,8 +4740,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.45)';
         btn.style.color = '#fef08a';
         btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
-          <div style="font-weight:bold; font-size:10px;"><i class="ph-bold ph-warning-circle" style="color:#fde047;"></i> もう一度押す</div>
-          <div style="font-size:8px; color:#fde68a; margin-top:1px;">更新実行 (${costText})</div>
+          <div style="font-weight:bold; font-size:10px;"><i class="ph-bold ph-warning-circle" style="color:#fde047;"></i> 再タップで実行</div>
+          <div style="font-size:8px; color:#fde68a; margin-top:1px;">${costText}</div>
         </div>`;
       } else {
         btn.style.background = '';
@@ -4777,7 +4772,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         pl.innerHTML = `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:${pCycle >= 2 ? '#fbbf24' : 'var(--c-emerald)'}; font-weight:bold; font-size:12px;">(${cost}万)</span>${cycleTag}`;
       } else {
         const wCost = getWallRemoveCost().toFixed(1);
-        pl.innerHTML = `<span style="color:var(--c-text2); font-size:10.5px;">未選択 <span style="color:#fca5a5;">(🔨赤壁タップで撤去 -${wCost}万)</span></span>`;
+        pl.innerHTML = `<span style="color:var(--c-text2); font-size:10.5px;">未選択 <span style="color:#fca5a5;">(🔨壁撤去 ${wCost}万)</span></span>`;
       }
     }
       
@@ -4799,11 +4794,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!sub) return;
     const mult = getMirrorCostMultiplier();
     if (mult <= 1.0) {
-      sub.textContent = '(割増なし)';
+      sub.textContent = '無料';
       sub.style.color = isMirrored ? '#047857' : 'var(--c-emerald)';
       sub.style.fontWeight = 'bold';
     } else {
-      sub.textContent = `(費用${mult.toFixed(1)}倍)`;
+      const pct = Math.round((mult - 1) * 100);
+      sub.textContent = `+${pct}%`;
       sub.style.color = isMirrored ? '#4338ca' : 'var(--c-text2)';
       sub.style.fontWeight = 'normal';
     }
@@ -8236,21 +8232,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (type === 'deliver') {
       badgeEl.textContent = '物件引き渡し';
       badgeEl.className = 'badge badge-emerald';
-      subtitleEl.textContent = '物件を納品し、鍵を引き渡しました！';
+      subtitleEl.textContent = '物件を引き渡しました。';
     } else if (type === 'skip') {
       if (monthsElapsed > 1) {
         badgeEl.textContent = '一括月送り';
         badgeEl.className = 'badge badge-slate';
-        subtitleEl.textContent = customSubtitle || `${monthsElapsed}ヶ月時間を進めました。`;
+        subtitleEl.textContent = customSubtitle || `${monthsElapsed}ヶ月経過`;
       } else {
         badgeEl.textContent = '月送り';
         badgeEl.className = 'badge badge-slate';
-        subtitleEl.textContent = customSubtitle || '案件を受注せず、1ヶ月時間を進めました。';
+        subtitleEl.textContent = customSubtitle || '1ヶ月経過';
       }
     } else if (type === 'giveup') {
       badgeEl.textContent = '案件破棄';
       badgeEl.className = 'badge badge-rose';
-      subtitleEl.textContent = '依頼を破棄して、今月を終了しました。';
+      subtitleEl.textContent = '依頼を破棄しました。';
     }
 
     if (reward > 0) {
@@ -9416,21 +9412,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     const elNetProfit = document.getElementById('pd-net-profit');
     if (elNetProfit) {
-      const discountTag = stats.isVacant ? ' (空室20%引)' : (stats.satisfaction < 100 ? ` (満足度${stats.satisfaction}%査定)` : '');
-      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万 (家賃${earnedRent.toFixed(1)}+査定${resaleNum.toFixed(1)}${discountTag})`;
+      elNetProfit.textContent = `${netIfSold >= 0 ? '+' : ''}${netIfSold.toFixed(1)}万`;
       elNetProfit.style.color = netIfSold >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
     }
     
     const riskLabelEl = document.getElementById('pd-risk-label');
     const evictEl = document.getElementById('pd-current-evict');
     if (stats.isVacant) {
-      if (riskLabelEl) riskLabelEl.textContent = '来月入居決定率';
+      if (riskLabelEl) riskLabelEl.textContent = '入居率';
       if (evictEl) {
         evictEl.textContent = `${stats.fillChance}%`;
         evictEl.style.color = 'var(--c-emerald)';
       }
     } else {
-      if (riskLabelEl) riskLabelEl.textContent = '現在の退去リスク';
+      if (riskLabelEl) riskLabelEl.textContent = '退去率';
       if (evictEl) {
         evictEl.textContent = `${stats.evictRate}%`;
         evictEl.style.color = 'var(--c-rose)';
@@ -9438,28 +9433,32 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     document.getElementById('pd-deg-rate').textContent = `Rank ${getPropertyRank(stats.degRate)}`;
     
-    let comboHtml = '';
-    if (p.combosList && p.combosList.length > 0) {
-      comboHtml = p.combosList.map(c => {
-        let isNegative = c.bonus < 0;
-        let bonusText = (c.bonus > 0 ? '+' : '') + c.bonus + '万';
-        if (p.customCombo && p.customCombo.name === c.name) {
-          if (stats.isOriginal) {
-            bonusText = `+${p.customCombo.customBonus.toFixed(1)}万 (特注)`;
-            isNegative = false;
-          } else {
-            bonusText = `${p.customCombo.normalBonus > 0 ? '+' : ''}${p.customCombo.normalBonus.toFixed(1)}万 (一般化)`;
-            if (p.customCombo.isNegativeInversion) isNegative = true;
+    const combosEl = document.getElementById('pd-combos');
+    if (combosEl) {
+      if (p.combosList && p.combosList.length > 0) {
+        const comboHtml = p.combosList.map(c => {
+          let isNegative = c.bonus < 0;
+          let bonusText = (c.bonus > 0 ? '+' : '') + c.bonus + '万';
+          if (p.customCombo && p.customCombo.name === c.name) {
+            if (stats.isOriginal) {
+              bonusText = `+${p.customCombo.customBonus.toFixed(1)}万 (特注)`;
+              isNegative = false;
+            } else {
+              bonusText = `${p.customCombo.normalBonus > 0 ? '+' : ''}${p.customCombo.normalBonus.toFixed(1)}万 (一般化)`;
+              if (p.customCombo.isNegativeInversion) isNegative = true;
+            }
           }
-        }
-        const badgeColor = isNegative ? 'var(--c-rose)' : 'var(--c-emerald)';
-        const icon = isNegative ? '🚨' : '👍';
-        return `<div style="margin-bottom:4px;"><span style="font-size:10px; padding:2px 4px; border-radius:4px; margin-right:4px; color:#fff; background:${badgeColor};">${icon}</span> ${c.name} (${bonusText})</div>`;
-      }).join('');
-    } else {
-      comboHtml = '<div style="color:var(--c-text2);">発動しているコンボはありません。</div>';
+          const badgeColor = isNegative ? 'var(--c-rose)' : 'var(--c-emerald)';
+          const icon = isNegative ? '🚨' : '👍';
+          return `<div style="margin-bottom:4px;"><span style="font-size:10px; padding:2px 4px; border-radius:4px; margin-right:4px; color:#fff; background:${badgeColor};">${icon}</span> ${c.name} (${bonusText})</div>`;
+        }).join('');
+        combosEl.innerHTML = comboHtml;
+        combosEl.style.display = 'block';
+      } else {
+        combosEl.innerHTML = '';
+        combosEl.style.display = 'none';
+      }
     }
-    document.getElementById('pd-combos').innerHTML = comboHtml;
     
     const btnSell = document.getElementById('btn-pd-sell');
     const newBtnSell = btnSell.cloneNode(true);
@@ -9704,11 +9703,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               </span>
             </div>
             <div style="font-size:10px; color:var(--c-text2); line-height:1.4; margin-bottom:6px;">
-              ${nextDef.desc}（デスク最大${nextDef.maxDesks}席 / 管理枠最大${nextCapNum}棟）
+              ${nextDef.desc}（デスク${nextDef.maxDesks}席 / 管理${nextCapNum}棟）
             </div>
 
             <div style="font-size:10.5px; font-weight:bold; color:#cbd5e1; margin-top:6px;">
-              🎯 実績達成ディスカウント（最大 -${nextDef.basePrice - nextDef.minPrice}万円）:
+              🎯 実績値引:
             </div>
             ${missionsHtml}
 
@@ -9733,8 +9732,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:20px;">🏢</span>
             <div>
-              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">本社オフィス（会社規模）</div>
-              <div style="font-size:10px; color:var(--c-text2);">タウンホール：各機能の最大拡張上限を規定</div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">本社オフィス</div>
             </div>
           </div>
           <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(245,158,11,0.18); border:1px solid rgba(245,158,11,0.35); color:#fcd34d;">
@@ -9742,7 +9740,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           </span>
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">
-          現在上限: デスク最大 <strong>${curDef.maxDesks}席</strong> / 管理枠最大 <strong>${curCapNum}棟</strong> / 営業・知名度最大 <strong>Lv.${curDef.maxSalesLevel}</strong>
+          上限: デスク <strong>${curDef.maxDesks}席</strong> / 管理 <strong>${curCapNum}棟</strong> / 営業・知名度 <strong>Lv.${curDef.maxSalesLevel}</strong>
         </div>
         ${nextHtml}
       `;
@@ -9760,15 +9758,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
       let actionHtml = '';
       if (isMaxOverall) {
-        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ デスク最大数（4席）増設済み</div>`;
+        actionHtml = `<div style="font-size:11px; color:var(--c-emerald); font-weight:bold; text-align:center; padding:8px; background:rgba(16,185,129,0.1); border-radius:6px; border:1px solid rgba(16,185,129,0.25);">★ デスク最大（4席）増設済み</div>`;
       } else if (isLockedByOffice) {
         actionHtml = `
           <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
-            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
-            現在のオフィス（${curOfficeDef.name}）ではデスクは最大${maxDesksForOffice}席までです。「本社オフィス」を移転すると次のデスクを増設できます。
+            <i class="ph-bold ph-lock"></i> オフィス移転で解放（上限 ${maxDesksForOffice}席）
           </div>
           <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
-            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 ${maxDesksForOffice}席 到達)
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放
           </button>
         `;
       } else {
@@ -9778,7 +9775,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextDeskDef.name} (雇用枠 ${curDesks + 1}席)</span>
               <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDeskDef.cost}万</span>
             </div>
-            <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">スタッフを雇用するための執務デスクを増設します</div>
           </div>
           <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('desk')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
             <i class="ph-bold ph-armchair"></i> デスク増設（${nextDeskDef.cost}万）
@@ -9791,8 +9787,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:18px;">🪑</span>
             <div>
-              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">執務デスク増設</div>
-              <div style="font-size:10px; color:var(--c-text2);">専門スタッフの雇用スロットを解放</div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">執務デスク</div>
             </div>
           </div>
           <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.35); color:#93c5fd;">
@@ -9800,7 +9795,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           </span>
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
-          雇用状況: <strong>${co.hiredStaff?.length || 0}名 着席</strong>（空き ${Math.max(0, curDesks - (co.hiredStaff?.length || 0))}席）
+          着席 <strong>${co.hiredStaff?.length || 0}名</strong> / 空き ${Math.max(0, curDesks - (co.hiredStaff?.length || 0))}席
         </div>
         ${actionHtml}
       `;
@@ -9823,18 +9818,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       } else if (isLockedByOffice) {
         actionHtml = `
           <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
-            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
-            現在のオフィス（${curOfficeDef.name}）ではこれ以上の上位システムを運用できません。「本社オフィス」を移転すると上位管理枠を解放できます。
+            <i class="ph-bold ph-lock"></i> オフィス移転で解放（上限 Lv.${maxCapLvForOffice}）
           </div>
           <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
-            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 Lv.${maxCapLvForOffice} 到達)
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放
           </button>
         `;
       } else {
         actionHtml = `
           <div style="background:rgba(15,23,42,0.45); padding:8px 10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.12); margin-bottom:8px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextCapDef.name} (基本管理枠 ${nextCapDef.capacity}棟 / +${nextCapDef.capacity - curCapDef.capacity}棟)</span>
+              <span style="font-size:11px; color:#fde047; font-weight:bold;">次: ${nextCapDef.name} (管理 ${nextCapDef.capacity}棟)</span>
               <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextCapDef.cost}万</span>
             </div>
             <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextCapDef.desc}</div>
@@ -9852,8 +9846,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:18px;">📂</span>
             <div>
-              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">管理システム導入</div>
-              <div style="font-size:10px; color:var(--c-text2);">物件の最大管理戸数キャパシティを拡張</div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">管理枠</div>
             </div>
           </div>
           <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.35); color:#86efac;">
@@ -9861,7 +9854,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           </span>
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
-          現在能力: 基本 <strong>${curCapDef.capacity}棟</strong>（スタッフ補正込: <strong>${activeProps} / ${maxPropCap}棟</strong>）
+          現在: <strong>${activeProps} / ${maxPropCap}棟</strong> (基本${curCapDef.capacity}棟)
         </div>
         ${actionHtml}
       `;
@@ -9884,11 +9877,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       } else if (isLockedByOffice) {
         actionHtml = `
           <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
-            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
-            現在のオフィス（${curOfficeDef.name}）では Lv.${maxSalesForOffice} が上限です。「本社オフィス」を移転すると上位の営業拠点を解放できます。
+            <i class="ph-bold ph-lock"></i> オフィス移転で解放（上限 Lv.${maxSalesForOffice}）
           </div>
           <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
-            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 Lv.${maxSalesForOffice} 到達)
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放
           </button>
         `;
       } else {
@@ -9911,8 +9903,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:18px;">💼</span>
             <div>
-              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">営業力強化</div>
-              <div style="font-size:10px; color:var(--c-text2);">依頼者の希望家賃上限を底上げ</div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">営業力</div>
             </div>
           </div>
           <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(59,130,246,0.18); border:1px solid rgba(59,130,246,0.35); color:#93c5fd;">
@@ -9920,7 +9911,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           </span>
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
-          現在効果: <strong>依頼者の希望家賃上限 +${Math.round((curDef.mult - 1) * 100)}%</strong>
+          現在: <strong>希望家賃 +${Math.round((curDef.mult - 1) * 100)}%</strong>
         </div>
         ${actionHtml}
       `;
@@ -9943,11 +9934,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       } else if (isLockedByOffice) {
         actionHtml = `
           <div style="font-size:11px; color:#f59e0b; padding:8px; background:rgba(245,158,11,0.1); border-radius:6px; border:1px solid rgba(245,158,11,0.25); margin-bottom:8px; line-height:1.4;">
-            <i class="ph-bold ph-lock"></i> <strong>オフィス拡張が必要です</strong><br>
-            現在のオフィス（${curOfficeDef.name}）では Lv.${maxBrandForOffice} が上限です。「本社オフィス」を移転すると上位の広告宣伝を解放できます。
+            <i class="ph-bold ph-lock"></i> オフィス移転で解放（上限 Lv.${maxBrandForOffice}）
           </div>
           <button class="btn btn-slate" disabled style="width:100%; padding:9px; font-size:12px; font-weight:bold; opacity:0.5; justify-content:center; gap:6px; cursor:not-allowed;">
-            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放 (上限 Lv.${maxBrandForOffice} 到達)
+            <i class="ph-bold ph-lock-key"></i> 事務所移転で解放
           </button>
         `;
       } else {
@@ -9970,8 +9960,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:18px;">📢</span>
             <div>
-              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">ブランド知名度</div>
-              <div style="font-size:10px; color:var(--c-text2);">上位クライアント遭遇率＆銀行信用枠UP</div>
+              <div style="font-size:14px; font-weight:bold; color:var(--c-text);">知名度</div>
             </div>
           </div>
           <span style="font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; background:rgba(168,85,247,0.18); border:1px solid rgba(168,85,247,0.35); color:#d8b4fe;">
@@ -9979,7 +9968,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           </span>
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">
-          出現傾向: <strong>${curDef.desc}</strong>
+          客層: <strong>${curDef.desc}</strong>
         </div>
         ${actionHtml}
       `;
@@ -11594,18 +11583,18 @@ function updateHomeUI() {
     const capEl = document.getElementById('home-property-capacity');
     if (capEl) {
       if (activeCount > maxCap) {
-        capEl.textContent = `所有 ${activeCount} / ${maxCap}棟 (上限超過)`;
+        capEl.textContent = `${activeCount} / ${maxCap}棟 (超過)`;
         capEl.style.background = '#ffe4e6';
         capEl.style.color = '#be123c';
         capEl.style.border = '1px solid #fecdd3';
       } else if (activeCount === maxCap) {
-        capEl.textContent = `所有 ${activeCount} / ${maxCap}棟 (満杯)`;
+        capEl.textContent = `${activeCount} / ${maxCap}棟 (満杯)`;
         capEl.style.background = '#fff1f2';
         capEl.style.color = '#e11d48';
         capEl.style.border = '1px solid #fecdd3';
       } else {
         const rem = maxCap - activeCount;
-        capEl.textContent = `所有 ${activeCount} / ${maxCap}棟 (空き${rem})`;
+        capEl.textContent = `${activeCount} / ${maxCap}棟 (空き${rem})`;
         capEl.style.background = '#e2e8f0';
         capEl.style.color = '#475569';
         capEl.style.border = 'none';
