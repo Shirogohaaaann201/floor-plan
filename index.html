@@ -1880,7 +1880,7 @@
     },
     'opt-plumbing': {
       id: 'opt-plumbing', icon: 'ph-drop', color: '#2563eb', text: '水回り集約 (風呂・トイレ・洗面隣接)', tier: 'expert',
-      fn: () => wetAdjacencyCluster()
+      fn: () => (wetAdjacencyCluster() >= 2)
     },
     'opt-soundproof': {
       id: 'opt-soundproof', icon: 'ph-ear-slash', color: '#64748b', text: '完全防音 (トイレ廊下隔離)', tier: 'expert',
@@ -1892,10 +1892,10 @@
     },
     'opt-foyer': {
       id: 'opt-foyer', icon: 'ph-columns', color: '#b45309', text: '大ホワイエ (玄関前の広間状廊下)', tier: 'expert',
-      fn: (counts, bfs) => hasGrandFoyer(bfs)
+      fn: (counts, bfs) => (hasGrandFoyer(bfs) >= 1)
     },
     'opt-corridor': {
-      id: 'opt-corridor', icon: 'ph-arrows-left-right', color: '#0284c7', text: 'ロングコリドー (一直線の長廊下5マス以上)', tier: 'expert',
+      id: 'opt-corridor', icon: 'ph-arrows-left-right', color: '#0284c7', text: 'ロングコリドー (一直線の長廊下7マス以上)', tier: 'expert',
       fn: (counts, bfs) => hasLongCorridor(bfs)
     },
     'opt-washitsu': {
@@ -6071,8 +6071,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
      COMBO MASTER DATA (26 TYPES) & DETECTION
   ============================================================ */
   const COMBO_MASTER_LIST = [
-    { id: 1,  name: '水回り集約',     category: '王道',     bonus: '+2.0万', icon: 'ph-drop',             hint: '風呂・トイレ・洗面所をまとめて配置すると…？', desc: '風呂・トイレ・洗面が相互に隣接（配管効率化ボーナス）' },
-    { id: 2,  name: '家事ラク動線',   category: '王道',     bonus: '+1.5万', icon: 'ph-washing-machine',  hint: '料理と洗濯の移動をスムーズに',             desc: 'LDKと洗面所が直通で接続' },
+    { id: 1,  name: '水回り集約',     category: '王道',     bonus: '+0.8〜2万', icon: 'ph-drop',             hint: '風呂・トイレ・洗面所をまとめて配置すると…？', desc: '風呂・トイレ・洗面が隣接（部分集約+0.8万 / 全集約+2.0万）' },
+    { id: 2,  name: '家事ラク動線',   category: '王道',     bonus: '+1.0万', icon: 'ph-washing-machine',  hint: '料理と洗濯の移動をスムーズに',             desc: 'LDKと洗面所が直通で接続' },
     { id: 3,  name: '日当たり良好',   category: '王道',     bonus: '+1.5万', icon: 'ph-sun',              hint: 'リビングを一番明るい方角へ',               desc: '南側（下辺）外壁に面する窓付きLDK' },
     { id: 4,  name: '完全防音',       category: '王道',     bonus: '+1.0万', icon: 'ph-ear-slash',        hint: 'トイレの音やプライバシーを守る配置',       desc: 'トイレが廊下を挟んで居室に接続' },
     { id: 5,  name: '古き良き日本家屋', category: '王道',   bonus: '+5.0万', icon: 'ph-house-line',       hint: '伝統的な和室の並び（田の字）',             desc: '和室4部屋が2×2の田の字型に直結' },
@@ -6095,8 +6095,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     { id: 22, name: 'マトリョーシカ', category: '珍間取り', bonus: '-1.0万', icon: 'ph-tree-structure',   hint: '部屋の奥に部屋、その奥にさらに部屋',       desc: '居室を3室以上連続で通り抜け' },
     { id: 23, name: 'プライバシーゼロ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
     { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' },
-    { id: 25, name: '大ホワイエ',       category: '王道',     bonus: '+3.5万', icon: 'ph-columns',        hint: '玄関を入った先に、広間のようなゆったりとした廊下（2×3以上）を設けると…？', desc: '玄関から広がる贅沢なエントランスホール（2×3以上の広間状の廊下空間）' },
-    { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（5マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線5マス以上の連続廊下）' }
+    { id: 25, name: '大ホワイエ',       category: '王道',     bonus: '+2〜4万', icon: 'ph-columns',        hint: '玄関を入った先に、広間のようなゆったりとした廊下（2×3以上）を設けると…？', desc: '玄関から広がるエントランスホール（2×3で+2.0万 / 特大で+4.0万）' },
+    { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（7マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線7マス以上の連続廊下）' }
   ];
 
   function recordDiscoveredCombos(combos) {
@@ -6256,19 +6256,27 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:'【珍間取り】隠し部屋 — 収納の奥に広がる秘密空間 (+1.5万)' });
     }
 
-    // 1. 水回り集約: 風呂・トイレ・洗面が相互に隣接
-    if (wetAdjacencyCluster()) {
+    // 1. 水回り集約: 風呂・トイレ・洗面が相互に隣接（全集約: +2.0万 / 部分集約: +0.8万）
+    const wetTier = wetAdjacencyCluster();
+    if (wetTier >= 2) {
       const plumbLv = getStaffSkillLevel('plumber');
       const extraBonus = plumbLv > 0 ? ([0, 0.3, 0.6, 1.0][plumbLv] || 0.3) : 0;
       const b = 2.0 + extraBonus;
       const bDesc = plumbLv > 0 ? ` (+${b.toFixed(1)}万 配管バフLv${plumbLv})` : ' (+2.0万)';
       combos.push({ name:'水回り集約', bonus:b, icon:'ph-drop text-blue-600', type:'good',
-        text:`【王道コンボ】水回り集約 — 配管効率化ボーナス${bDesc}` });
+        text:`【王道コンボ】水回り集約（全集約） — 風呂・トイレ・洗面が集中${bDesc}` });
+    } else if (wetTier === 1) {
+      const plumbLv = getStaffSkillLevel('plumber');
+      const extraBonus = plumbLv > 0 ? ([0, 0.1, 0.2, 0.4][plumbLv] || 0.1) : 0;
+      const b = 0.8 + extraBonus;
+      const bDesc = plumbLv > 0 ? ` (+${b.toFixed(1)}万 配管バフLv${plumbLv})` : ' (+0.8万)';
+      combos.push({ name:'水回り集約', bonus:b, icon:'ph-drop text-blue-600', type:'good',
+        text:`【王道コンボ】水回り集約（部分） — 2箇所の水回りが隣接${bDesc}` });
     }
     // 2. 家事ラク動線: LDKと洗面所が直通接続
     if (hasDirectConnection(grid, T.LDK, T.WASHROOM)) {
-      combos.push({ name:'家事ラク動線', bonus:1.5, icon:'ph-washing-machine text-teal-600', type:'good',
-        text:'【王道コンボ】家事ラク動線 — キッチン↔洗面直通 (+1.5万)' });
+      combos.push({ name:'家事ラク動線', bonus:1.0, icon:'ph-washing-machine text-teal-600', type:'good',
+        text:'【王道コンボ】家事ラク動線 — キッチン↔洗面直通 (+1.0万)' });
     }
     // 3. 日当たり良好: LDKが敷地南側（下辺）外壁に面する
     if (ldkFacesSouth()) {
@@ -6321,13 +6329,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     // 11. 廊下空間のこだわりコンボ
-    if (hasGrandFoyer(visited)) {
-      combos.push({ name:'大ホワイエ', bonus:3.5, icon:'ph-columns text-amber-500', type:'good',
-        text:'【王道】大ホワイエ — 玄関から広がる贅沢なエントランスホール (+3.5万)' });
+    const foyerTier = hasGrandFoyer(visited);
+    if (foyerTier === 2) {
+      combos.push({ name:'大ホワイエ', bonus:4.0, icon:'ph-columns text-amber-500', type:'good',
+        text:'【王道】大ホワイエ（特大） — 玄関から広がる壮大なエントランス空間 (+4.0万)' });
+    } else if (foyerTier === 1) {
+      combos.push({ name:'大ホワイエ', bonus:2.0, icon:'ph-columns text-amber-500', type:'good',
+        text:'【王道】大ホワイエ — 玄関から広がる贅沢なエントランスホール (+2.0万)' });
     }
     if (hasLongCorridor(visited)) {
       combos.push({ name:'ロングコリドー', bonus:2.5, icon:'ph-arrows-left-right text-teal-600', type:'funny',
-        text:'【珍間取り】ロングコリドー — 視線がすっと抜ける一本の長廊下 (+2.5万)' });
+        text:'【珍間取り】ロングコリドー — 視線がすっと抜ける7マス以上の長廊下 (+2.5万)' });
     }
 
     return combos;
@@ -6376,28 +6388,75 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function wetAdjacencyCluster() {
-    let hasBath=false, hasToilet=false, hasWash=false;
-    for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
-      const cell=grid[r][c];
-      if (cell.type===T.BATH) {
-        hasBath = true;
-        if (cell.pieceLibId === 'unit-bath' || cell.label === 'UB') hasToilet = true;
+    const wetCells = [];
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cell = grid[r][c];
+        if (cell && (cell.type === T.BATH || cell.type === T.TOILET || cell.type === T.WASHROOM)) {
+          wetCells.push({
+            r, c,
+            type: cell.type,
+            isUB: (cell.pieceLibId === 'unit-bath' || cell.label === 'UB')
+          });
+        }
       }
-      if (cell.type===T.TOILET)   hasToilet=true;
-      if (cell.type===T.WASHROOM) hasWash=true;
     }
-    if (!hasBath || !hasToilet || !hasWash) return false;
-    for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
-      if (grid[r][c].type !== T.BATH) continue;
-      const isUB = (grid[r][c].pieceLibId === 'unit-bath' || grid[r][c].label === 'UB');
-      const ns = getNeighbors(r,c);
-      if (isUB) {
-        if (ns.some(n => n.type===T.WASHROOM)) return true;
+    if (wetCells.length === 0) return 0;
+
+    const visited = new Set();
+    let maxTier = 0;
+
+    for (let i = 0; i < wetCells.length; i++) {
+      const startKey = `${wetCells[i].r},${wetCells[i].c}`;
+      if (visited.has(startKey)) continue;
+
+      const compCells = [];
+      const queue = [wetCells[i]];
+      visited.add(startKey);
+
+      while (queue.length > 0) {
+        const cur = queue.shift();
+        compCells.push(cur);
+
+        const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+        for (const {dr, dc} of dirs) {
+          const nr = cur.r + dr, nc = cur.c + dc;
+          const nKey = `${nr},${nc}`;
+          if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && !visited.has(nKey)) {
+            const nCell = grid[nr][nc];
+            if (nCell && (nCell.type === T.BATH || nCell.type === T.TOILET || nCell.type === T.WASHROOM)) {
+              visited.add(nKey);
+              queue.push({
+                r: nr, c: nc,
+                type: nCell.type,
+                isUB: (nCell.pieceLibId === 'unit-bath' || nCell.label === 'UB')
+              });
+            }
+          }
+        }
+      }
+
+      const hasOrdinaryBath = compCells.some(c => c.type === T.BATH && !c.isUB);
+      const hasOrdinaryToilet = compCells.some(c => c.type === T.TOILET);
+      const hasWash = compCells.some(c => c.type === T.WASHROOM);
+      const hasUB = compCells.some(c => c.isUB);
+
+      // 全集約: 風呂・トイレ・洗面の3種すべて（またはユニットバス+洗面所）
+      if ((hasOrdinaryBath && hasOrdinaryToilet && hasWash) || (hasUB && hasWash)) {
+        maxTier = Math.max(maxTier, 2);
       } else {
-        if (ns.some(n => n.type===T.TOILET||n.type===T.WASHROOM)) return true;
+        // 部分集約: 2種類の水回りが隣接
+        const distinctPairs = (hasOrdinaryBath && hasOrdinaryToilet) ||
+                              (hasOrdinaryBath && hasWash) ||
+                              (hasOrdinaryToilet && hasWash) ||
+                              (hasUB && (hasOrdinaryBath || hasOrdinaryToilet));
+        if (distinctPairs) {
+          maxTier = Math.max(maxTier, 1);
+        }
       }
     }
-    return false;
+
+    return maxTier;
   }
 
   function isDirectlyConnected(typeA, typeB) {
@@ -6583,9 +6642,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return maxDist >= 3;
   }
 
-  // 玄関直結の広間状廊下（廊下セルのみで2x3以上、3x2以上、または3x3以上の広間空間）
+  // 玄関直結の広間状廊下（廊下セルのみで 2x3以上、3x2以上は通常+2.0万、2x4/4x2/3x3以上の特大は+4.0万）
   function hasGrandFoyer(visited) {
-    if (!STAGE) return false;
+    if (!STAGE) return 0;
     const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     const foyerCorridor = new Set();
     const queue = [];
@@ -6608,7 +6667,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
-    if (queue.length === 0) return false;
+    if (queue.length === 0) return 0;
 
     // 玄関直結の廊下連結成分を広げる（廊下セルのみ）
     while (queue.length > 0) {
@@ -6629,7 +6688,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     // 廊下セルだけで最低6マス以上存在すること
-    if (foyerCorridor.size < 6) return false;
+    if (foyerCorridor.size < 6) return 0;
 
     // 矩形領域がすべてfoyerCorridorに含まれ、かつ内部に壁がないかを判定
     function checkRect(r0, c0, h, w) {
@@ -6651,18 +6710,27 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return true;
     }
 
-    // 廊下セルのみで 3x3, 2x3, または 3x2 の長方形/正方形が存在するか判定
+    let hasTier2 = false;
+    let hasTier1 = false;
+
+    // 廊下セルのみで判定: 特大(3x3, 2x4, 4x2) / 通常(2x3, 3x2)
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
-        if (checkRect(r, c, 3, 3)) return true;
-        if (checkRect(r, c, 2, 3)) return true;
-        if (checkRect(r, c, 3, 2)) return true;
+        if (checkRect(r, c, 3, 3) || checkRect(r, c, 2, 4) || checkRect(r, c, 4, 2)) {
+          hasTier2 = true;
+        }
+        if (checkRect(r, c, 2, 3) || checkRect(r, c, 3, 2)) {
+          hasTier1 = true;
+        }
       }
     }
-    return false;
+
+    if (hasTier2) return 2;
+    if (hasTier1) return 1;
+    return 0;
   }
 
-  // 縦または横に一直線に5マス以上連続する長廊下
+  // 縦または横に一直線に7マス以上連続する長廊下
   function hasLongCorridor(visited) {
     const checkVisited = (r, c) => {
       if (visited && typeof visited.has === 'function') return visited.has(`${r},${c}`);
@@ -6684,7 +6752,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           } else {
             currentLen = 1;
           }
-          if (currentLen >= 5) return true;
+          if (currentLen >= 7) return true;
         } else {
           currentLen = 0;
         }
@@ -6706,7 +6774,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           } else {
             currentLen = 1;
           }
-          if (currentLen >= 5) return true;
+          if (currentLen >= 7) return true;
         } else {
           currentLen = 0;
         }
