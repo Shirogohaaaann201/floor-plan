@@ -1719,6 +1719,8 @@
   let buildCycleExtraCost = 0;  // 山札2周目以降の追加発注割増による費用合計
   let buildWallRemoveCost = 0;  // 赤壁(耐力壁)の有料撤去による費用合計
   let wallRemoveCount = 0;      // 現在のパズル中で撤去した赤壁の回数
+  let buildEncroachCost = 0;    // 敷地外・障害物(✕マス)の造成・拡張による費用合計
+  let encroachCount = 0;        // 現在のパズル中で造成した✕マスの数
   let selectedWallTarget = null;// 赤壁撤去の選択中ターゲット { r1, c1, r2, c2, ori, mx, my }
   let hintDismissedForBuild = false; // パズル開始後、一度でも操作したら中央ヒントを再表示しないフラグ
   let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
@@ -1916,6 +1918,26 @@
   // LOT DEFINITIONS
   // ============================================================
   const LOT_DEFINITIONS = {
+    tiny_square: {
+      name: '極小5×5敷地',
+      minR: 3, maxR: 7, minC: 3, maxC: 7,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 3 },
+        { r: 8, c: 0, w: 12, h: 4 },
+        { r: 3, c: 0, w: 3, h: 5 },
+        { r: 3, c: 8, w: 4, h: 5 }
+      ]
+    },
+    narrow_strip: {
+      name: 'うなぎの寝床',
+      minR: 1, maxR: 10, minC: 3, maxC: 7,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 3, h: 10 },
+        { r: 1, c: 8, w: 4, h: 10 }
+      ]
+    },
     compact_square: {
       name: 'コンパクト正方形',
       minR: 2, maxR: 9, minC: 2, maxC: 9,
@@ -1955,6 +1977,28 @@
         { r: 1, c: 0, w: 1, h: 10 },
         { r: 1, c: 11, w: 1, h: 10 },
         { r: 1, c: 7, w: 4, h: 4 }
+      ]
+    },
+    u_shape: {
+      name: 'コの字変形敷地',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 1, c: 4, w: 4, h: 4 }
+      ]
+    },
+    courtyard: {
+      name: '中庭シンボル敷地',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 5, c: 5, w: 2, h: 2 }
       ]
     },
     mansion: {
@@ -2511,26 +2555,30 @@
     let lotKey = 'compact';
     let allowWide = false;
 
-    const pickCompact = () => Math.random() < 0.5 ? 'compact_square' : 'compact_rect';
+    const pickFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const pickSingleLot = () => pickFrom(['tiny_square', 'tiny_square', 'narrow_strip', 'compact_rect', 'compact_square']);
+    const pickDinksLot = () => pickFrom(['narrow_strip', 'compact_square', 'standard', 'l_shape', 'u_shape']);
+    const pickFamilyLot = () => pickFrom(['standard', 'l_shape', 'u_shape', 'courtyard', 'mansion']);
+    const pickMansionLot = () => pickFrom(['mansion', 'mansion', 'mansion', 'courtyard', 'u_shape']);
 
     if (overrideType) {
       clientType = overrideType;
       if (clientType === 'single') {
-        lotKey = Math.random() < 0.6 ? pickCompact() : 'standard';
+        lotKey = pickSingleLot();
         allowWide = false;
       } else if (clientType === 'dinks') {
-        lotKey = Math.random() < 0.5 ? 'standard' : 'l_shape';
+        lotKey = pickDinksLot();
         allowWide = false;
       } else if (clientType === 'family') {
-        lotKey = Math.random() < 0.5 ? 'l_shape' : 'mansion';
+        lotKey = pickFamilyLot();
         allowWide = (lotKey === 'mansion' && Math.random() < 0.5);
       } else { // mansion
-        lotKey = 'mansion';
+        lotKey = pickMansionLot();
         allowWide = true;
       }
     } else if (level === 0) {
       clientType = 'single';
-      lotKey = pickCompact();
+      lotKey = Math.random() < 0.5 ? 'tiny_square' : 'compact_square';
       allowWide = false;
     } else if (level === 1) {
       clientType = 'dinks';
@@ -2538,24 +2586,24 @@
       allowWide = false;
     } else if (level === 2) {
       clientType = 'family';
-      lotKey = 'l_shape';
+      lotKey = Math.random() < 0.5 ? 'l_shape' : 'u_shape';
       allowWide = false;
     } else {
       const roll = Math.random();
       const mansionChance = Math.min(0.35, 0.10 + (level - 3) * 0.04);
       if (roll < 0.25) {
         clientType = 'single';
-        lotKey = Math.random() < 0.6 ? pickCompact() : 'standard';
+        lotKey = pickSingleLot();
       } else if (roll < 0.55) {
         clientType = 'dinks';
-        lotKey = Math.random() < 0.5 ? 'standard' : 'l_shape';
+        lotKey = pickDinksLot();
       } else if (roll < 0.55 + (1 - 0.55 - mansionChance)) {
         clientType = 'family';
-        lotKey = Math.random() < 0.5 ? 'l_shape' : 'mansion';
+        lotKey = pickFamilyLot();
         allowWide = (lotKey === 'mansion' && Math.random() < 0.5);
       } else {
         clientType = 'mansion';
-        lotKey = 'mansion';
+        lotKey = pickMansionLot();
         allowWide = true;
       }
     }
@@ -3385,9 +3433,12 @@
 
   function getEstimatedMonthlyNetIncome() {
     let income = 0;
+    let maint = 0;
     if (GameState && GameState.properties) {
       for (const p of GameState.properties) {
         if (p.isSold) continue;
+        const stats = calcPropertyStats(p);
+        maint += (stats.maintCost || 0);
         if ((p.vacantMonths || 0) <= 0 && (p.vacancyTurns || 0) <= 0) {
           income += (p.rent || 0);
         }
@@ -3402,13 +3453,14 @@
     const loanPay = calcMonthlyLoanPayment(currentDebt);
     const emergDebt = (GameState && GameState.company && GameState.company.emergencyDebt) || 0;
     const emergPayTotal = emergDebt > 0 ? Math.round((emergDebt * 0.10 + Math.min(emergDebt, Math.max(1.0, emergDebt * 0.05))) * 10) / 10 : 0;
-    const net = income - salaries - recMaint - loanPay.total - emergPayTotal;
+    const net = income - maint - salaries - recMaint - loanPay.total - emergPayTotal;
     return Math.round(net * 10) / 10;
   }
 
   function processMonthEnd() {
     GameState.month += 1;
     let totalIncome = 0;
+    let totalMaintCost = 0;
     let evictedList = [];
     let reEnteredList = [];
 
@@ -3419,6 +3471,12 @@
       if (p.vacantMonths === undefined) {
         p.vacantMonths = (p.vacancyTurns && p.vacancyTurns > 0) ? p.vacancyTurns : 0;
       }
+
+      // 毎月の物件維持管理費（空室中も発生・築年数に応じて上昇）
+      const preStats = calcPropertyStats(p);
+      const propMaint = preStats.maintCost || 0;
+      totalMaintCost = Math.round((totalMaintCost + propMaint) * 10) / 10;
+      p.paidMaint = Math.round(((p.paidMaint || 0) + propMaint) * 10) / 10;
 
       if (p.vacantMonths > 0) {
         // 空室中: 毎月の再入居マッチング抽選！
@@ -3452,7 +3510,7 @@
           continue;
         }
 
-        const stats = calcPropertyStats(p);
+        const stats = preStats;
         const evictChance = parseFloat(stats.evictRate) / 100.0;
 
         // サイコロを振る
@@ -3520,7 +3578,7 @@
       }
     }
 
-    const netIncome = Math.round((totalIncome - totalSalaries - loanPay.total - emergPay.total) * 10) / 10;
+    const netIncome = Math.round((totalIncome - totalMaintCost - totalSalaries - loanPay.total - emergPay.total) * 10) / 10;
     GameState.funds = Math.round((GameState.funds + netIncome) * 10) / 10;
 
     // 資金ショート（マイナス転落）時の処理
@@ -3551,7 +3609,7 @@
         } else {
           // 融資限度額超過による不渡り（倒産）
           isBankrupt = true;
-          bankruptReason = `月末の支払い（人件費・借入返済）により運転資金が不足し、銀行融資および街金枠の限度額を超過して不渡りが発生しました。`;
+          bankruptReason = `月末の支払い（維持管理費・人件費・借入返済）により運転資金が不足し、銀行融資および街金枠の限度額を超過して不渡りが発生しました。`;
         }
       }
     }
@@ -3567,6 +3625,7 @@
     saveGame();
     return {
       income: totalIncome,
+      maintCost: totalMaintCost,
       salaries: totalSalaries,
       loanPayment: loanPay.total,
       loanPrincipal: loanPay.principal,
@@ -3762,6 +3821,89 @@
       default:  return 'background:#94a3b8; color:#ffffff;'; // ライトスレート
     }
   }
+
+  // 間取りの最小包含長方形（占有土地面積）・延床面積・余白庭面積・造成マス数を算出
+  function calcFootprintStats(targetGrid, fallbackEncroachCount = 0) {
+    if (!targetGrid || !Array.isArray(targetGrid)) {
+      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: fallbackEncroachCount || 0 };
+    }
+    const gSize = targetGrid.length || GRID;
+    let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+    let hasPlacedPiece = false;
+    let encroached = 0;
+
+    // 1. プレイヤーが配置した部屋・廊下ピースから最小長方形の枠を決定
+    for (let r = 0; r < gSize; r++) {
+      for (let c = 0; c < gSize; c++) {
+        const cell = targetGrid[r]?.[c];
+        if (!cell) continue;
+        if (cell.encroached) encroached++;
+        if (cell.type !== T.EMPTY && cell.type !== T.GARDEN && cell.type !== T.OBSTACLE && cell.type !== T.ENTRANCE) {
+          hasPlacedPiece = true;
+          if (r < minR) minR = r;
+          if (r > maxR) maxR = r;
+          if (c < minC) minC = c;
+          if (c > maxC) maxC = c;
+        }
+      }
+    }
+
+    // まだピースが1つも置かれていない場合は玄関セルを基準にする
+    if (!hasPlacedPiece) {
+      for (let r = 0; r < gSize; r++) {
+        for (let c = 0; c < gSize; c++) {
+          const cell = targetGrid[r]?.[c];
+          if (cell && cell.type === T.ENTRANCE) {
+            if (r < minR) minR = r;
+            if (r > maxR) maxR = r;
+            if (c < minC) minC = c;
+            if (c > maxC) maxC = c;
+          }
+        }
+      }
+    }
+
+    if (minR === Infinity) {
+      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: Math.max(encroached, fallbackEncroachCount || 0) };
+    }
+
+    let floorCells = 0;
+    let marginGardenCells = 0;
+
+    // 2. 最小長方形の枠内・枠外を走査（未開発の✕マスは計算から完全除外）
+    for (let r = 0; r < gSize; r++) {
+      for (let c = 0; c < gSize; c++) {
+        const cell = targetGrid[r]?.[c];
+        const inBox = (r >= minR && r <= maxR && c >= minC && c <= maxC);
+        if (inBox) {
+          if (cell && cell.type === T.OBSTACLE) {
+            // 未開発の✕マス（障害物・変形敷地の欠け部分）は占有面積から除外
+            continue;
+          } else if (cell && cell.type !== T.EMPTY && cell.type !== T.GARDEN) {
+            // 部屋・廊下・枠内に含まれる玄関は延床面積としてカウント
+            floorCells++;
+          } else {
+            // 長方形の枠内にある空き地・庭は余白庭面積としてカウント
+            marginGardenCells++;
+          }
+        } else {
+          // 長方形の枠外に玄関だけが1マス出っ張っている場合は、枠を広げず延床面積にのみ加算
+          if (cell && cell.type === T.ENTRANCE) {
+            floorCells++;
+          }
+        }
+      }
+    }
+
+    const finalEncroached = Math.max(encroached, fallbackEncroachCount || 0);
+    return {
+      floorCells,
+      marginGardenCells,
+      occupiedArea: floorCells + marginGardenCells,
+      encroachedCells: finalEncroached
+    };
+  }
+
   function calcPropertyStats(p) {
     const targetRent = p.targetRent || 1;
     const baseRent = p.baseRent || (p.rent * 0.8) || 0;
@@ -3902,14 +4044,6 @@
     const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
 
     // 売却査定額:
-    // 建築原価 + (コンボによる純増家賃 × 12ヶ月分 × 満足度連動係数)
-    // ・満足度100%以上: プラスコンボのプレミアム100%評価
-    // ・満足度80%〜99%: プラスコンボのプレミアムが0%〜100%で線形スケール
-    // ・満足度80%未満: プラスコンボのプレミアム0 + 建築原価自体も最大20%減額 (不良設計ペナルティ)
-    // ・マイナスコンボ(純減家賃 < 0): 物件の構造的欠陥のため満足度に関わらず100%減額反映
-    // オーナーチェンジ（入居中）: 査定額100%（満額）
-    // 空室売却（空室中）: リスク割引 80%（20%引き）
-    // 最低保有期間: 築6ヶ月目以降で売却解禁（短期転売規制）
     const baseCost = p.baseCost || (baseRent * 20) || 0;
     const effectiveRent = (p.isOriginalTenant !== false) ? (p.rent || baseRent) : calcMarketRent(p, GameState.month);
     const comboRentDiff = effectiveRent - baseRent;
@@ -3941,6 +4075,30 @@
 
     const nextRecruitRent = calcMarketRent(p, GameState.month);
 
+    // 占有面積（最小長方形）・延床面積・余白庭・造成マス数と月次維持管理費の計算
+    let floorCells = p.floorCells;
+    let marginGardenCells = p.marginGardenCells;
+    let encroachedCells = p.encroachCount || 0;
+    if (floorCells === undefined || marginGardenCells === undefined) {
+      const targetG = p.propertyGrid || ((typeof grid !== 'undefined' && p === window.currentPropertyData) ? grid : null);
+      if (targetG) {
+        const fp = calcFootprintStats(targetG, encroachedCells);
+        floorCells = fp.floorCells;
+        marginGardenCells = fp.marginGardenCells;
+        encroachedCells = fp.encroachedCells;
+      } else {
+        floorCells = Math.max(8, Math.round((baseRent || 3) * 4));
+        marginGardenCells = 0;
+      }
+    }
+    const occupiedArea = floorCells + marginGardenCells;
+    // 基礎維持費: 延床 0.04万/マス + 長方形内の余白庭 0.06万/マス + 造成区画 0.20万/マス (最低0.2万)
+    const baseMaintCost = Math.max(0.2, Math.round((floorCells * 0.04 + marginGardenCells * 0.06 + encroachedCells * 0.20) * 10) / 10);
+    // 経年老朽化による修繕維持費上昇: 1ヶ月あたり +4% (1年で+48%)
+    const maintCost = Math.round(baseMaintCost * (1 + buildingAge * 0.04) * 10) / 10;
+    const activeRent = isVacant ? 0 : currentRent;
+    const netMonthlyProfit = Math.round((activeRent - maintCost) * 10) / 10;
+
     return {
       satisfaction: satisfaction,
       degRate: degRate.toFixed(1),
@@ -3968,7 +4126,14 @@
       storeLv: storeLv,
       amenityPenalty: amenityPenalty,
       currentRent: currentRent,
-      isOriginal: isOriginal
+      isOriginal: isOriginal,
+      floorCells: floorCells,
+      marginGardenCells: marginGardenCells,
+      occupiedArea: occupiedArea,
+      encroachedCells: encroachedCells,
+      baseMaintCost: baseMaintCost,
+      maintCost: maintCost,
+      netMonthlyProfit: netMonthlyProfit
     };
   }
 
@@ -4058,7 +4223,7 @@
   }
 
   function makeCell(type, roomId=null, label='', costPerCell=0.0) {
-    return { type, roomId, pieceId: roomId, label, costPerCell, walls: {top:false, right:false, bottom:false, left:false} };
+    return { type, roomId, pieceId: roomId, label, costPerCell, encroached: false, walls: {top:false, right:false, bottom:false, left:false} };
   }
 
   function gardenize() {
@@ -4081,6 +4246,7 @@
         label: cell.label,
         costPerCell: cell.costPerCell || 0,
         pieceLibId: cell.pieceLibId || '',
+        encroached: !!cell.encroached,
         walls: cell.walls ? { ...cell.walls } : {top:false, right:false, bottom:false, left:false}
       };
     }));
@@ -4097,6 +4263,7 @@
           const cell = makeCell(d.type, d.roomId, d.label, d.costPerCell || 0);
           cell.pieceId = d.pieceId;
           cell.pieceLibId = d.pieceLibId || '';
+          cell.encroached = !!d.encroached;
           cell.walls = d.walls ? { ...d.walls } : {top:false, right:false, bottom:false, left:false};
           row.push(cell);
         } else {
@@ -4123,6 +4290,8 @@
         buildCycleExtraCost: buildCycleExtraCost,
         buildWallRemoveCost: buildWallRemoveCost,
         wallRemoveCount: wallRemoveCount,
+        buildEncroachCost: buildEncroachCost,
+        encroachCount: encroachCount,
         hintDismissedForBuild: hintDismissedForBuild,
         buildRerollCost: buildRerollCost,
         deckCycle: deckCycle,
@@ -4167,6 +4336,8 @@
       buildCycleExtraCost = ab.buildCycleExtraCost || 0;
       buildWallRemoveCost = ab.buildWallRemoveCost || 0;
       wallRemoveCount = ab.wallRemoveCount || 0;
+      buildEncroachCost = ab.buildEncroachCost || 0;
+      encroachCount = ab.encroachCount || 0;
       hintDismissedForBuild = !!ab.hintDismissedForBuild || (nextRoomId > 1);
       selectedWallTarget = null;
       buildRerollCost = ab.buildRerollCost || 0;
@@ -4761,6 +4932,49 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return table[Math.min(Math.max(0, count || 0), table.length - 1)];
   }
 
+  // 現在の敷地の初期有効面積（T.OBSTACLE 以外のマス数）を返す
+  function getBaseLotArea(stage = STAGE) {
+    if (!stage) return 100;
+    const obsSet = new Set();
+    if (stage.obstacles) {
+      for (const obs of stage.obstacles) {
+        for (let r = obs.r; r < obs.r + (obs.h || 1); r++) {
+          for (let c = obs.c; c < obs.c + (obs.w || 1); c++) {
+            if (r >= 0 && r < GRID && c >= 0 && c < GRID) obsSet.add(`${r},${c}`);
+          }
+        }
+      }
+    }
+    return Math.max(1, (GRID * GRID) - obsSet.size);
+  }
+
+  // 指定位置にshapeを置いた際に重なる T.OBSTACLE（✕マス）の数と造成費用を算出
+  // 1マスあたり: (造成後の総面積 = baseLotArea + 既存造成数 + 1) × (1.0 + 既存造成数 × 0.2) 万円
+  function getEncroachCostForPlacement(gr, gc, shape) {
+    if (!shape || !grid || !grid.length) return { count: 0, cost: 0 };
+    const sr = shape.length, sc = shape[0].length;
+    if (gr < 0 || gc < 0 || gr + sr > GRID || gc + sc > GRID) return { count: 0, cost: 0 };
+    let count = 0;
+    for (let r = 0; r < sr; r++) {
+      for (let c = 0; c < sc; c++) {
+        if (shape[r][c] === 1 && grid[gr + r]?.[gc + c]?.type === T.OBSTACLE) {
+          count++;
+        }
+      }
+    }
+    if (count === 0) return { count: 0, cost: 0 };
+    const baseArea = getBaseLotArea(STAGE);
+    const curCount = encroachCount || 0;
+    let totalCost = 0;
+    for (let i = 0; i < count; i++) {
+      const n = curCount + i;
+      const expandedArea = baseArea + n + 1;
+      const mult = 1.0 + n * 0.2;
+      totalCost += Math.round((expandedArea * mult) * 10) / 10;
+    }
+    return { count, cost: Math.round(totalCost * 10) / 10 };
+  }
+
   function updatePieceLabel() {
     const p = (selectedSlot !== null) ? draftSlots[selectedSlot] : null;
     const cost = p ? getPieceCost(p, isMirrored).toFixed(1) : '0.0';
@@ -4813,8 +5027,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     const spentEl = document.getElementById('hdr-spent-cost');
     const breakEl = document.getElementById('hdr-cost-breakdown');
-    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost) * 10) / 10;
-    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost + buildWallRemoveCost) * 10) / 10;
+    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost) * 10) / 10;
+    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost) * 10) / 10;
     const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
     if (spentEl) {
       spentEl.innerHTML = `${totalSpent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
@@ -4925,17 +5139,29 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
     const pieceCost = getPieceCost(piece, isMirrored);
-    const canAfford = budget >= pieceCost;
+    const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
+    const totalPlaceCost = Math.round((pieceCost + enc.cost) * 10) / 10;
+    const canAfford = budget >= totalPlaceCost;
     const valid = canPlace(hoverCell.r, hoverCell.c, shape) && canAfford;
     ctx.save();
     for (let r = 0; r < shape.length; r++) {
       for (let c = 0; c < shape[0].length; c++) {
         if (shape[r][c] !== 1) continue;
-        const x = (hoverCell.c + c) * cellSize;
-        const y = (hoverCell.r + r) * cellSize;
-        ctx.fillStyle = valid ? 'rgba(59,130,246,0.35)' : 'rgba(239,68,68,0.35)';
+        const gr = hoverCell.r + r, gc = hoverCell.c + c;
+        const x = gc * cellSize;
+        const y = gr * cellSize;
+        const isObs = grid[gr]?.[gc]?.type === T.OBSTACLE;
+        if (!valid) {
+          ctx.fillStyle = 'rgba(239,68,68,0.35)';
+          ctx.strokeStyle = '#dc2626';
+        } else if (isObs) {
+          ctx.fillStyle = 'rgba(245,158,11,0.45)';
+          ctx.strokeStyle = '#d97706';
+        } else {
+          ctx.fillStyle = 'rgba(59,130,246,0.35)';
+          ctx.strokeStyle = '#2563eb';
+        }
         ctx.fillRect(x, y, cellSize, cellSize);
-        ctx.strokeStyle = valid ? '#2563eb' : '#dc2626';
         ctx.lineWidth = 2;
         ctx.setLineDash([4,4]);
         ctx.strokeRect(x+2, y+2, cellSize-4, cellSize-4);
@@ -5331,7 +5557,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     for (let r = 0; r < sr; r++) {
       for (let c = 0; c < sc; c++) {
         if (shape[r][c] === 1) {
-          if (grid[gr+r][gc+c].type !== T.EMPTY) return false;
+          const targetType = grid[gr+r][gc+c].type;
+          if (targetType !== T.EMPTY && targetType !== T.OBSTACLE) return false;
           
           const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
           for (const {dr,dc} of dirs) {
@@ -5401,18 +5628,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const piece = draftSlots[selectedSlot];
     if (!piece) return false;
     
-    // Check Budget
-    const pieceCost = getPieceCost(piece, isMirrored);
-    if (budget < pieceCost) {
-      playSound('error');
-      showFloatingText('資金不足！', 'var(--c-rose)');
-      showEmergencyLoanPrompt(pieceCost - budget);
-      return false;
-    }
-
     const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
     if (!canPlace(gr, gc, shape)) { playSound('error'); return false; }
+
+    // Check Budget (Piece Cost + Encroachment Cost on Obstacle cells)
+    const pieceCost = getPieceCost(piece, isMirrored);
+    const enc = getEncroachCostForPlacement(gr, gc, shape);
+    const totalPlaceCost = Math.round((pieceCost + enc.cost) * 10) / 10;
+    if (budget < totalPlaceCost) {
+      playSound('error');
+      showFloatingText('資金不足！', 'var(--c-rose)');
+      showEmergencyLoanPrompt(totalPlaceCost - budget);
+      return false;
+    }
 
     const basePieceCost = piece.cost || 0;
     const cycle1UnmirroredCost = getPieceCost(piece, false, 1);
@@ -5423,10 +5652,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     buildPiecePaidCost = Math.round((buildPiecePaidCost + pieceCost) * 10) / 10;
     buildCycleExtraCost = Math.round((buildCycleExtraCost + cycleExtra) * 10) / 10;
     buildMirrorExtraCost = Math.round((buildMirrorExtraCost + mirrorExtra) * 10) / 10;
+    if (enc.count > 0) {
+      buildEncroachCost = Math.round((buildEncroachCost + enc.cost) * 10) / 10;
+      encroachCount = (encroachCount || 0) + enc.count;
+    }
 
-    budget = Math.round((budget - pieceCost) * 10) / 10;
+    budget = Math.round((budget - totalPlaceCost) * 10) / 10;
     updateBudgetUI();
-    showFloatingText(`-${pieceCost.toFixed(1)}万`, 'var(--c-rose)');
+    if (enc.count > 0) {
+      showFloatingText(`⛏️造成${enc.count}マス (-${totalPlaceCost.toFixed(1)}万)`, '#f59e0b');
+    } else {
+      showFloatingText(`-${pieceCost.toFixed(1)}万`, 'var(--c-rose)');
+    }
 
     let cellsCount = 0;
     for (let r = 0; r < shape.length; r++) {
@@ -5434,16 +5671,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (shape[r][c] === 1) cellsCount++;
       }
     }
-    // 建築予算からは特注加工費・2周目以降の追加発注割増を含めた pieceCost を引き落とすが、
-    // 基礎家賃や物件の資産価値(リセール)には割増料金を含めないため、定価(piece.cost)で按分する
+    // 建築予算からは特注加工費・2周目以降の追加発注割増・造成費を含めた金額を引き落とすが、
+    // 基礎家賃や物件の資産価値(リセール)には割増料金や造成費を含めないため、定価(piece.cost)で按分する
     const costPerCell = basePieceCost / cellsCount;
 
     const rid = nextRoomId++;
     for (let r = 0; r < shape.length; r++) {
       for (let c = 0; c < shape[0].length; c++) {
         if (shape[r][c] === 1) {
+          const wasObstacle = (grid[gr+r][gc+c].type === T.OBSTACLE);
           const cell = makeCell(piece.cat, rid, piece.label, costPerCell);
           cell.pieceLibId = piece.id;
+          cell.encroached = wasObstacle;
           for (const w of rw) {
             if (w.r === r && w.c === c) cell.walls[w.dir] = true;
           }
@@ -5648,12 +5887,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       co.style.left = `${targetX}px`;
       co.style.top = `${targetY}px`;
     } else if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
-      if (btn) {
-        btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
-        btn.style.background = '';
-      }
       const piece = draftSlots[selectedSlot];
       const shape = getShape(piece, selectedRot, isMirrored);
+      const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
+      if (btn) {
+        if (enc.count > 0) {
+          btn.innerHTML = `<i class="ph-bold ph-pickaxe"></i> 確定 (+造成${enc.cost.toFixed(1)}万)`;
+          btn.style.background = '#f59e0b';
+        } else {
+          btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
+          btn.style.background = '';
+        }
+      }
       const w = shape[0].length * cellSize;
       
       // 親要素(canvas-container)からの相対座標
@@ -5661,8 +5906,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       let targetY = hoverCell.r * cellSize;
       
       const canvasWidth = GRID * cellSize;
-      if (targetX + 80 > canvasWidth) {
-        targetX = hoverCell.c * cellSize - 90; // 左側に出す
+      const btnWidthEst = enc.count > 0 ? 150 : 80;
+      if (targetX + btnWidthEst > canvasWidth) {
+        targetX = Math.max(4, hoverCell.c * cellSize - (btnWidthEst + 10)); // 左側に出す
       }
       
       co.style.left = `${targetX}px`;
@@ -7363,8 +7609,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     });
     if (counts.unreachable > 0) badCombos++; // 到達不能ペナルティ
 
-    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost) * 10) / 10;
+    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost) * 10) / 10;
     const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
+    const fp = calcFootprintStats(grid, encroachCount);
 
     window.currentPropertyData = {
       rent: rent,
@@ -7377,6 +7624,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       cycleExtraCost: buildCycleExtraCost,
       rerollCost: buildRerollCost,
       wallRemoveCost: buildWallRemoveCost,
+      encroachCost: buildEncroachCost,
+      encroachCount: fp.encroachedCells,
+      floorCells: fp.floorCells,
+      marginGardenCells: fp.marginGardenCells,
+      occupiedArea: fp.occupiedArea,
       totalCost: totalSpentCost,
       isClear: isClear,
       satisfiedCount: satisfiedCount,
@@ -7417,15 +7669,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (buildMirrorExtraCost > 0) extraItems.push(`反転+${buildMirrorExtraCost.toFixed(1)}万`);
       if (buildRerollCost > 0) extraItems.push(`更新+${buildRerollCost.toFixed(1)}万`);
       if (buildWallRemoveCost > 0) extraItems.push(`壁撤去+${buildWallRemoveCost.toFixed(1)}万`);
+      if (buildEncroachCost > 0) extraItems.push(`造成+${buildEncroachCost.toFixed(1)}万`);
       const extraPart = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
       const discPart = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
       fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 / ${extraPart}${discPart}`;
     }
     if (fRoiEl) {
-      const paybackText = rent > 0
-        ? (totalSpentCost <= 0 ? '即時回収' : `家賃回収目安: 約${Math.ceil(totalSpentCost / rent)}ヶ月`)
-        : '家賃回収不可 (0円物件)';
-      fRoiEl.innerHTML = `<span>査定額: <strong>${stats.resaleValue}万</strong> (築6ヶ月〜売却可)</span><span>${paybackText}</span>`;
+      const netMonthly = Math.round((rent - stats.maintCost) * 10) / 10;
+      const paybackText = netMonthly > 0
+        ? (totalSpentCost <= 0 ? '即時回収' : `実質回収目安: 約${Math.ceil(totalSpentCost / netMonthly)}ヶ月`)
+        : '実質回収不可';
+      fRoiEl.innerHTML = `<span>査定額: <strong>${stats.resaleValue}万</strong> (維持費 -${stats.maintCost.toFixed(1)}万/月)</span><span>${paybackText}</span>`;
     }
 
     const badge = document.getElementById('flyer-clear-badge');
@@ -7510,6 +7764,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       item.innerHTML = `<i class="ph-bold ${rep.icon}" style="font-size:14px;"></i><span>${rep.text}</span>`;
       rl.appendChild(item);
     }
+    // 占有面積＆月間維持費の診断アイテムを追加
+    const maintItem = document.createElement('div');
+    maintItem.className = 'report-item';
+    const encText = stats.encroachedCells > 0 ? `・造成${stats.encroachedCells}マス` : '';
+    maintItem.innerHTML = `<i class="ph-bold ph-ruler" style="font-size:14px; color:#64748b;"></i><span>占有面積 ${stats.occupiedArea}マス (延床${stats.floorCells}・余白庭${stats.marginGardenCells}${encText}) ／ 初期維持費 <strong style="color:#e11d48;">-${stats.maintCost.toFixed(1)}万/月</strong></span>`;
+    rl.appendChild(maintItem);
 
     // 初代借主コメント
     const commentTitleEl = document.getElementById('flyer-comment-title');
@@ -7671,6 +7931,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     buildRerollCost = 0;
     buildWallRemoveCost = 0;
     wallRemoveCount = 0;
+    buildEncroachCost = 0;
+    encroachCount = 0;
     selectedWallTarget = null;
     hintDismissedForBuild = false;
     currentLevelIdx = GameState.level;
@@ -8248,6 +8510,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     monthsElapsed = 1,
     customSubtitle = null,
     income = 0,
+    maintCost = 0,
     salaries = 0,
     loanPayment = 0,
     remainingDebt = 0,
@@ -8325,10 +8588,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     const grandTotal = netIncome + reward;
-    if (salaries > 0 || income > 0 || loanPayment > 0) {
-      if (salaryBox) salaryBox.style.display = 'flex';
-      if (rawIncomeEl) rawIncomeEl.textContent = `+${income.toFixed(1)}万`;
-      if (salariesEl) salariesEl.textContent = `-${salaries.toFixed(1)}万`;
+    if (salaries > 0 || maintCost > 0 || income > 0 || loanPayment > 0) {
+      if (salaryBox) {
+        salaryBox.style.display = 'flex';
+        salaryBox.style.flexWrap = 'wrap';
+        salaryBox.style.gap = '4px 10px';
+        const expParts = [];
+        if (maintCost > 0) expParts.push(`維持費: <strong style="color:var(--c-rose);">-${maintCost.toFixed(1)}万</strong>`);
+        if (salaries > 0) expParts.push(`人件・求人: <strong id="mem-salaries" style="color:var(--c-rose);">-${salaries.toFixed(1)}万</strong>`);
+        else expParts.push(`経費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong>`);
+        salaryBox.innerHTML = `
+          <span>家賃: <strong id="mem-raw-income" style="color:var(--c-emerald);">+${income.toFixed(1)}万</strong></span>
+          <span>${expParts.join(' / ')}</span>
+        `;
+      }
     } else {
       if (salaryBox) salaryBox.style.display = 'none';
     }
@@ -8780,6 +9053,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const startMonth = GameState.month;
     let monthsRun = 0;
     let totalIncome = 0;
+    let totalMaintCost = 0;
     let totalSalaries = 0;
     let totalLoanPayment = 0;
     let totalLoanPrincipal = 0;
@@ -8797,6 +9071,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const res = processMonthEnd();
       monthsRun++;
       totalIncome += res.income;
+      totalMaintCost += (res.maintCost || 0);
       totalSalaries += res.salaries;
       totalLoanPayment += res.loanPayment;
       totalLoanPrincipal += res.loanPrincipal;
@@ -8828,6 +9103,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
 
     totalIncome = Math.round(totalIncome * 10) / 10;
+    totalMaintCost = Math.round(totalMaintCost * 10) / 10;
     totalSalaries = Math.round(totalSalaries * 10) / 10;
     totalLoanPayment = Math.round(totalLoanPayment * 10) / 10;
     totalNetIncome = Math.round(totalNetIncome * 10) / 10;
@@ -8856,6 +9132,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       monthsElapsed: monthsRun,
       customSubtitle: customSubtitle,
       income: totalIncome,
+      maintCost: totalMaintCost,
       salaries: totalSalaries,
       loanPayment: totalLoanPayment,
       loanPrincipal: totalLoanPrincipal,
@@ -8925,10 +9202,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const p = window.currentPropertyData || {};
     // currentPropertyData がない場合のフォールバック（念のため）
     const rentToSave = p.rent !== undefined ? p.rent : parseFloat(document.getElementById('flyer-rent').textContent);
-    // gridの簡易コピーを保存 (type, label, roomId, pieceLibId)
+    // gridの簡易コピーを保存 (type, label, roomId, pieceLibId, encroached)
     const savedGrid = grid.map(row => row.map(cell => {
       if (!cell || cell.type === T.EMPTY || cell.type === T.GARDEN) return null;
-      return { type: cell.type, label: cell.label, roomId: cell.roomId, pieceLibId: cell.pieceLibId };
+      return { type: cell.type, label: cell.label, roomId: cell.roomId, pieceLibId: cell.pieceLibId, encroached: !!cell.encroached };
     }));
     
     const propNo = (GameState.properties.length > 0) ? Math.max(...GameState.properties.map(x => x.propertyNo || 0)) + 1 : 1;
@@ -8946,6 +9223,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       cycleExtraCost: p.cycleExtraCost || 0,
       rerollCost: p.rerollCost || 0,
       wallRemoveCost: p.wallRemoveCost || 0,
+      encroachCost: p.encroachCost || 0,
+      encroachCount: p.encroachCount || 0,
+      floorCells: p.floorCells,
+      marginGardenCells: p.marginGardenCells,
+      occupiedArea: p.occupiedArea,
       totalCost: p.totalCost !== undefined ? p.totalCost : 0,
       earnedRent: 0,
       isClear: p.isClear || false,
@@ -9399,14 +9681,27 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('pd-age').textContent = `築${stats.buildingAge}ヶ月${stats.isVacant ? ' (空室中)' : ` (入居${stats.tenantTenure}ヶ月)`}`;
     
     const rentEl = document.getElementById('pd-rent');
+    const encBreakdownStr = stats.encroachedCells > 0 ? `・造成${stats.encroachedCells}` : '';
+    const maintHtml = `<div style="font-size:10.5px; color:#f87171; font-weight:bold; margin-top:2px; text-align:right;">
+      維持管理費: -${stats.maintCost.toFixed(1)}万/月 <span style="font-weight:normal; color:var(--c-text2);">(占有${stats.occupiedArea}マス: 延床${stats.floorCells}・余白${stats.marginGardenCells}${encBreakdownStr})</span>
+    </div>`;
     if (stats.isVacant) {
       const discountPct = Math.min(40, Math.round((stats.buildingAge / 12) * 8));
-      rentEl.innerHTML = `<span style="color:var(--c-rose);">0.0<span style="font-size:10px;font-weight:normal;">万/月 (空室中)</span></span>
+      rentEl.innerHTML = `<div style="text-align:right;">
+        <span style="color:var(--c-rose);">0.0<span style="font-size:10px;font-weight:normal;">万/月 (空室中)</span></span>
         <div style="font-size:11px; color:#38bdf8; font-weight:bold; margin-top:2px;">
           次回募集家賃: ${stats.nextRecruitRent.toFixed(1)}万/月 (築${stats.buildingAge}ヶ月 相場-${discountPct}%)
-        </div>`;
+        </div>
+        ${maintHtml}
+      </div>`;
     } else {
-      rentEl.innerHTML = `${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>`;
+      const netPropSign = stats.netMonthlyProfit >= 0 ? '+' : '';
+      const netPropColor = stats.netMonthlyProfit >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
+      rentEl.innerHTML = `<div style="text-align:right;">
+        ${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
+        <span style="font-size:11px; color:${netPropColor}; font-weight:bold; margin-left:4px;">(実質 ${netPropSign}${stats.netMonthlyProfit.toFixed(1)}万/月)</span>
+        ${maintHtml}
+      </div>`;
     }
     
     document.getElementById('pd-initial-evict').parentElement.style.display = 'none'; // 初期退去率の表示削除
@@ -9435,7 +9730,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const cycleExtraCost = p.cycleExtraCost || 0;
     const rerollCost = p.rerollCost || 0;
     const wallRemoveCost = p.wallRemoveCost || 0;
-    const extraCost = Math.round((mirrorCost + cycleExtraCost + rerollCost + wallRemoveCost) * 10) / 10;
+    const encroachCost = p.encroachCost || 0;
+    const extraCost = Math.round((mirrorCost + cycleExtraCost + rerollCost + wallRemoveCost + encroachCost) * 10) / 10;
     const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
     const discountSaved = Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost - cycleExtraCost)) * 10) / 10);
     const earnedRent = Math.round((p.earnedRent || 0) * 10) / 10;
@@ -9456,6 +9752,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (mirrorCost > 0) extraItems.push(`反転+${mirrorCost.toFixed(1)}万`);
         if (rerollCost > 0) extraItems.push(`更新+${rerollCost.toFixed(1)}万`);
         if (wallRemoveCost > 0) extraItems.push(`壁撤去+${wallRemoveCost.toFixed(1)}万`);
+        if (encroachCost > 0) extraItems.push(`造成+${encroachCost.toFixed(1)}万`);
         const extraLabel = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
         const discStr = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
         elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 / ${extraLabel}${discStr})`;
@@ -11672,6 +11969,7 @@ function updateHomeUI() {
     const listEl = document.getElementById('property-list');
     listEl.innerHTML = '';
     let totalRent = 0;
+    let totalMaint = 0;
     if (!GameState.properties || GameState.properties.length === 0) {
       listEl.innerHTML = '<div style="padding:20px; text-align:center; color:#94a3b8;">所有物件はありません</div>';
     } else {
@@ -11686,11 +11984,12 @@ function updateHomeUI() {
         }
 
         const stats = calcPropertyStats(p);
+        totalMaint += stats.maintCost;
         
         let statusHtml = '';
         let rentDisplay = p.rent;
         if (stats.isVacant) {
-          statusHtml = `<div style="color:var(--c-rose); font-size:11px; font-weight:bold; margin-top:2px;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率: ${stats.fillChance}%)</div>`;
+          statusHtml = `<div style="color:var(--c-rose); font-size:11px; font-weight:bold; margin-top:2px;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率: ${stats.fillChance}% / 維持費 -${stats.maintCost.toFixed(1)}万)</div>`;
           rentDisplay = 0;
         } else {
           totalRent += p.rent;
@@ -11712,6 +12011,7 @@ function updateHomeUI() {
               <div style="font-weight:bold; color:#1e293b; font-size:14px;"><span style="display:inline-block; padding:2px 6px; ${rankStyle} border-radius:4px; font-size:11px; font-weight:bold; margin-right:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">Rank ${rank}</span> 物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : idx + 1)}</div>
               <div style="font-size:11px; color:var(--c-text2); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap;">
                 <span>築${stats.buildingAge}ヶ月</span>
+                <span style="color:#e11d48;">維持費: -${stats.maintCost.toFixed(1)}万</span>
                 ${stats.isVacant 
                   ? `<span style="color:#2563eb; font-weight:bold;">入居率: ${stats.fillChance}%</span>` 
                   : `<span>退去リスク: ${stats.evictRate}%</span>`}
@@ -11724,23 +12024,25 @@ function updateHomeUI() {
               <div style="font-weight:900; color:${stats.isVacant ? '#94a3b8' : color}; font-size:16px;">
                 ${stats.isVacant ? '0.0' : rentDisplay.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
               </div>
-              ${stats.isVacant ? '<div style="font-size:10px; color:var(--c-rose); font-weight:bold;">空室中</div>' : '<div style="font-size:10px; color:#94a3b8; margin-top:2px;">タップで詳細</div>'}
+              ${stats.isVacant ? '<div style="font-size:10px; color:var(--c-rose); font-weight:bold;">空室中</div>' : `<div style="font-size:10px; color:#64748b; margin-top:2px;">実質 ${stats.netMonthlyProfit >= 0 ? '+' : ''}${stats.netMonthlyProfit.toFixed(1)}万</div>`}
             </div>
           </div>
         `;
       });
     }
 
+    totalMaint = Math.round(totalMaint * 10) / 10;
     const totalSalaries = (GameState.company?.hiredStaff || []).reduce((acc, s) => acc + (s.salary || 0), 0);
     const recMaint = (GameState.company?.recruitment?.status === 'active') ? RECRUIT_MAINT_COST : 0;
     const loanPay = calcMonthlyLoanPayment(debt);
-    const netIncome = Math.round((totalRent - totalSalaries - recMaint - loanPay.total) * 10) / 10;
+    const netIncome = Math.round((totalRent - totalMaint - totalSalaries - recMaint - loanPay.total) * 10) / 10;
     const incomeEl = document.getElementById('home-co-income');
     if (incomeEl) {
       const sign = netIncome >= 0 ? '+' : '';
       incomeEl.style.color = netIncome >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
-      if (totalSalaries > 0 || recMaint > 0 || loanPay.total > 0) {
+      if (totalMaint > 0 || totalSalaries > 0 || recMaint > 0 || loanPay.total > 0) {
         const parts = [`家賃 ${totalRent.toFixed(1)}`];
+        if (totalMaint > 0) parts.push(`維持費 -${totalMaint.toFixed(1)}`);
         if (totalSalaries > 0) parts.push(`人件費 -${totalSalaries.toFixed(1)}`);
         if (recMaint > 0) parts.push(`求人 -${recMaint.toFixed(1)}`);
         if (loanPay.total > 0) parts.push(`返済 -${loanPay.total.toFixed(1)}`);
