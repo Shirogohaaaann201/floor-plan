@@ -4123,6 +4123,8 @@
       baseCostVal: Math.round(baseCost * 10) / 10,
       satBaseFactor: satBaseFactor,
       comboPremiumVal: Math.round(comboPremium * 10) / 10,
+      comboRentDiff: Math.round(comboRentDiff * 10) / 10,
+      rawComboPremium: Math.round(rawComboPremium * 10) / 10,
       initialValuation: Math.round(initialValuation * 10) / 10,
       ageValFactor: ageValFactor,
       canSell: canSell,
@@ -9798,21 +9800,49 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     if (key === 'val') {
       const rows = [];
-      const satPct = Math.round((stats.satBaseFactor || 1) * 100);
-      rows.push(`<div style="display:flex; justify-content:space-between;"><span>建物基礎価値 (原価${stats.baseCostVal.toFixed(1)}万×${satPct}%):</span><strong>${(stats.baseCostVal * stats.satBaseFactor).toFixed(1)}万</strong></div>`);
+      const isBaseDiscounted = (stats.satBaseFactor || 1) < 0.999;
+      const baseDiscountPct = Math.round((1 - (stats.satBaseFactor || 1)) * 100);
+      const effectiveBaseVal = Math.round(stats.baseCostVal * (stats.satBaseFactor || 1) * 10) / 10;
+
+      if (isBaseDiscounted) {
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>建物原価 (原価${stats.baseCostVal.toFixed(1)}万 / 満足度不足 -${baseDiscountPct}%):</span><strong>${effectiveBaseVal.toFixed(1)}万</strong></div>`);
+      } else {
+        rows.push(`<div style="display:flex; justify-content:space-between;"><span>建物原価 (ピース定価):</span><strong>${stats.baseCostVal.toFixed(1)}万</strong></div>`);
+      }
+
+      const diff = (stats.comboRentDiff !== undefined) ? stats.comboRentDiff : (Math.round(((stats.comboPremiumVal || 0) / 12) * 10) / 10);
       const cPrem = stats.comboPremiumVal || 0;
-      rows.push(`<div style="display:flex; justify-content:space-between;"><span>付加価値 (家賃差×12ヶ月×満足度反映${stats.satPremiumRate}%):</span><strong>${cPrem >= 0 ? '+' : ''}${cPrem.toFixed(1)}万</strong></div>`);
+      if (diff > 0.01) {
+        if (stats.satisfaction >= 100) {
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (+${diff.toFixed(1)}万/月 × 12ヶ月):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+        } else if (stats.satisfaction >= 80) {
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (+${diff.toFixed(1)}万/月 × 12ヶ月 × 満足度反映${stats.satPremiumRate}%):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+        } else {
+          rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ設計価値 (満足度80%未満のため査定除外):</span><span>0.0万</span></div>`);
+        }
+      } else if (diff < -0.01) {
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>間取り欠陥ペナルティ (${diff.toFixed(1)}万/月 × 12ヶ月):</span><strong>${cPrem.toFixed(1)}万</strong></div>`);
+      } else {
+        rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ付加価値:</span><span>なし (0.0万)</span></div>`);
+      }
+
       if (stats.buildingAge > 0) {
-        rows.push(`<div style="display:flex; justify-content:space-between;"><span>経年減価 (築${stats.buildingAge}ヶ月 / ×${Math.round(stats.ageValFactor * 100)}%):</span><strong>${stats.standardResaleValue}万</strong></div>`);
+        const agePenaltyPct = Math.round((1 - (stats.ageValFactor || 1)) * 100);
+        const agePenaltyVal = Math.round((stats.initialValuation - parseFloat(stats.standardResaleValue)) * 10) / 10;
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#64748b;"><span>経年減価 (築${stats.buildingAge}ヶ月 / -${agePenaltyPct}%):</span><strong style="color:#e11d48;">-${agePenaltyVal.toFixed(1)}万</strong></div>`);
       }
+
       if (stats.isVacant) {
-        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>空室売却割引 (-20%):</span><strong>${stats.resaleValue}万</strong></div>`);
+        const vacantPenaltyVal = Math.round((parseFloat(stats.standardResaleValue) - parseFloat(stats.resaleValue)) * 10) / 10;
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>空室売却ペナルティ (-20%):</span><strong>-${vacantPenaltyVal.toFixed(1)}万</strong></div>`);
       }
+
       if (p.earnedRent !== undefined) {
         const earned = Math.round((p.earnedRent || 0) * 10) / 10;
         const net = Math.round((earned + parseFloat(stats.resaleValue) - totalCost) * 10) / 10;
-        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>累計家賃(+${earned.toFixed(1)})＋査定(${stats.resaleValue})−建築費(${totalCost.toFixed(1)}):</span><strong>${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>累計手残り (家賃+${earned.toFixed(1)}万＋査定${stats.resaleValue}万−建築費${totalCost.toFixed(1)}万):</span><strong style="color:${net >= 0 ? '#16a34a' : '#e11d48'};">${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
       }
+
       return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🏷️ 査定額の内訳（${stats.resaleValue}万）</div>` + rows.join('');
     }
 
