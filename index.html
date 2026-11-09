@@ -825,35 +825,38 @@
             <span style="font-size:12px; color:var(--c-text2);">家賃</span>
             <span style="font-weight:900; color:var(--c-emerald); font-size:16px;" id="pd-rent">4.5<span style="font-size:10px;font-weight:normal;">万/月</span></span>
           </div>
-          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">満足度<span id="pd-initial-evict" style="display:none;">0</span></div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div style="flex:1; height:8px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
-              <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
+          <div onclick="togglePdBreakdown('sat')" style="cursor:pointer;" title="タップで満足度の内訳を表示">
+            <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px; display:flex; align-items:center; gap:4px;">満足度 <i class="ph-bold ph-info" style="font-size:11px; color:#94a3b8;"></i><span id="pd-initial-evict" style="display:none;">0</span></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="flex:1; height:8px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
+                <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
+              </div>
+              <div style="font-weight:bold; color:var(--c-text);" id="pd-sat-val">80%</div>
             </div>
-            <div style="font-weight:bold; color:var(--c-text);" id="pd-sat-val">80%</div>
           </div>
-          <div style="display:none;" id="pd-sat-breakdown"></div>
+          <div style="display:none; font-size:10px; color:#cbd5e1; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.1); border-radius:5px; padding:6px 8px; margin-top:6px; line-height:1.4;" id="pd-sat-breakdown"></div>
         </div>
 
         <!-- 建築コスト・投資回収パネル (売却判断用) -->
         <div id="pd-cost-roi-box" style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.22); padding:10px 12px; border-radius:6px; margin-bottom:10px; font-size:11px;">
           <div style="font-weight:bold; color:#93c5fd; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-            <span>📊 収支</span>
+            <span>📊 収支 <span style="font-size:9.5px; font-weight:normal; color:var(--c-text2);">(項目タップで内訳)</span></span>
             <span id="pd-roi-badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8;">回収 0%</span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;">
-            <span style="color:var(--c-text2);">建築費:</span>
+          <div onclick="togglePdBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; cursor:pointer; padding:2px 4px; border-radius:4px;" title="タップで建築費の内訳を表示">
+            <span style="color:var(--c-text2); display:inline-flex; align-items:center; gap:3px;">建築費 <i class="ph-bold ph-info" style="font-size:11px; color:#64748b;"></i></span>
             <strong id="pd-total-cost" class="font-num" style="color:var(--c-text); font-size:13px;">0.0万</strong>
           </div>
           <div id="pd-cost-breakdown" style="display:none;"></div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:1px dashed rgba(255,255,255,0.1); padding-top:6px; margin-bottom:4px;">
-            <span style="color:var(--c-text2);">家賃累計:</span>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:1px dashed rgba(255,255,255,0.1); padding:6px 4px 4px;">
+            <span style="color:var(--c-text2);">家賃累計</span>
             <strong id="pd-earned-rent" class="font-num" style="color:var(--c-emerald); font-size:13px;">+0.0万</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.5); padding:5px 8px; border-radius:4px; margin-top:4px;">
-            <span style="color:#cbd5e1; font-size:10px;">売却損益:</span>
+          <div onclick="togglePdBreakdown('val')" style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.5); padding:5px 8px; border-radius:4px; margin-top:4px; cursor:pointer;" title="タップで査定額・売却損益の内訳を表示">
+            <span style="color:#cbd5e1; font-size:10px; display:inline-flex; align-items:center; gap:3px;">売却損益 (査定内訳) <i class="ph-bold ph-info" style="font-size:11px; color:#38bdf8;"></i></span>
             <strong id="pd-net-profit" class="font-num" style="font-size:12px; color:var(--c-emerald);">+0.0万</strong>
           </div>
+          <div id="pd-breakdown-drawer" style="display:none; margin-top:6px; padding:7px 9px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.35); border-radius:6px; font-size:10.5px; color:#e2e8f0; line-height:1.5;"></div>
         </div>
 
         <div style="display:flex; gap:8px; margin-bottom:10px;">
@@ -1600,15 +1603,17 @@
 
         <!-- Construction Cost & ROI -->
         <div id="flyer-cost-box" style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:var(--r-md); padding:9px 12px; font-size:11px; color:#334155;">
-          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px;">
-            <span style="font-weight:700; color:#475569;">💰 建築費</span>
+          <div id="flyer-cost-row" onclick="toggleFlyerBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; cursor:pointer; padding:2px 4px; border-radius:4px; transition:background 0.15s;" title="タップで内訳を表示">
+            <span style="font-weight:700; color:#475569; display:inline-flex; align-items:center; gap:3px;">💰 建築費 <i class="ph-bold ph-info" style="font-size:11px; color:#64748b;"></i></span>
             <strong id="flyer-total-cost" class="font-num" style="font-size:15px; font-weight:800; color:#0f172a;">0.0万円</strong>
           </div>
           <div id="flyer-cost-detail" style="display:none;"></div>
-          <div id="flyer-roi-note" style="font-size:10px; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; border-radius:4px; padding:4px 8px; display:flex; justify-content:space-between; align-items:center;">
-            <span>初期売価: 0.0万</span>
-            <span>家賃回収目安: —</span>
+          <div id="flyer-roi-note" style="font-size:10px; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; border-radius:4px; padding:4px 6px; display:flex; justify-content:space-between; align-items:center; gap:4px;">
+            <span>査定額: 0.0万</span>
+            <span>維持費: -0.0万/月</span>
+            <span>回収目安: —</span>
           </div>
+          <div id="flyer-breakdown-drawer" style="display:none; margin-top:6px; padding:7px 9px; background:#ffffff; border:1px solid #93c5fd; border-radius:6px; font-size:10.5px; color:#1e293b; line-height:1.5; box-shadow:0 2px 6px rgba(0,0,0,0.04);"></div>
         </div>
 
         <!-- Floor plan thumbnail -->
@@ -3826,7 +3831,7 @@
   // 間取りの最小包含長方形（占有土地面積）・延床面積・余白庭面積・造成マス数を算出
   function calcFootprintStats(targetGrid, fallbackEncroachCount = 0) {
     if (!targetGrid || !Array.isArray(targetGrid)) {
-      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: fallbackEncroachCount || 0 };
+      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: fallbackEncroachCount || 0, bbox: null, hasPlacedPiece: false };
     }
     const gSize = targetGrid.length || GRID;
     let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
@@ -3865,7 +3870,7 @@
     }
 
     if (minR === Infinity) {
-      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: Math.max(encroached, fallbackEncroachCount || 0) };
+      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: Math.max(encroached, fallbackEncroachCount || 0), bbox: null, hasPlacedPiece: false };
     }
 
     let floorCells = 0;
@@ -3901,7 +3906,9 @@
       floorCells,
       marginGardenCells,
       occupiedArea: floorCells + marginGardenCells,
-      encroachedCells: finalEncroached
+      encroachedCells: finalEncroached,
+      bbox: { minR, maxR, minC, maxC, w: maxC - minC + 1, h: maxR - minR + 1 },
+      hasPlacedPiece
     };
   }
 
@@ -4080,25 +4087,30 @@
     let floorCells = p.floorCells;
     let marginGardenCells = p.marginGardenCells;
     let encroachedCells = p.encroachCount || 0;
-    if (floorCells === undefined || marginGardenCells === undefined) {
-      const targetG = p.propertyGrid || ((typeof grid !== 'undefined' && p === window.currentPropertyData) ? grid : null);
-      if (targetG) {
-        const fp = calcFootprintStats(targetG, encroachedCells);
-        floorCells = fp.floorCells;
-        marginGardenCells = fp.marginGardenCells;
-        encroachedCells = fp.encroachedCells;
-      } else {
-        floorCells = Math.max(8, Math.round((baseRent || 3) * 4));
-        marginGardenCells = 0;
-      }
+    let bbox = p.bbox || null;
+    const targetG = p.propertyGrid || ((typeof grid !== 'undefined' && p === window.currentPropertyData) ? grid : null);
+    if (targetG) {
+      const fp = calcFootprintStats(targetG, encroachedCells);
+      if (floorCells === undefined) floorCells = fp.floorCells;
+      if (marginGardenCells === undefined) marginGardenCells = fp.marginGardenCells;
+      encroachedCells = Math.max(encroachedCells, fp.encroachedCells);
+      if (!bbox) bbox = fp.bbox;
+    } else if (floorCells === undefined || marginGardenCells === undefined) {
+      floorCells = Math.max(8, Math.round((baseRent || 3) * 4));
+      marginGardenCells = 0;
     }
     const occupiedArea = floorCells + marginGardenCells;
+    const floorMaint = Math.round(floorCells * 0.04 * 100) / 100;
+    const gardenMaint = Math.round(marginGardenCells * 0.06 * 100) / 100;
+    const encroachMaint = Math.round(encroachedCells * 0.20 * 100) / 100;
     // 基礎維持費: 延床 0.04万/マス + 長方形内の余白庭 0.06万/マス + 造成区画 0.20万/マス (最低0.2万)
     const baseMaintCost = Math.max(0.2, Math.round((floorCells * 0.04 + marginGardenCells * 0.06 + encroachedCells * 0.20) * 10) / 10);
+    const ageMaintMult = 1 + buildingAge * 0.04;
     // 経年老朽化による修繕維持費上昇: 1ヶ月あたり +4% (1年で+48%)
-    const maintCost = Math.round(baseMaintCost * (1 + buildingAge * 0.04) * 10) / 10;
+    const maintCost = Math.round(baseMaintCost * ageMaintMult * 10) / 10;
     const activeRent = isVacant ? 0 : currentRent;
     const netMonthlyProfit = Math.round((activeRent - maintCost) * 10) / 10;
+    const ageValFactor = Math.max(0.3, 1.0 - (buildingAge * 0.02));
 
     return {
       satisfaction: satisfaction,
@@ -4108,6 +4120,11 @@
       initialEvict: Math.max(0, 100 - satisfaction),
       resaleValue: resaleValue,
       standardResaleValue: standardResaleValue,
+      baseCostVal: Math.round(baseCost * 10) / 10,
+      satBaseFactor: satBaseFactor,
+      comboPremiumVal: Math.round(comboPremium * 10) / 10,
+      initialValuation: Math.round(initialValuation * 10) / 10,
+      ageValFactor: ageValFactor,
       canSell: canSell,
       sellLockRemain: sellLockRemain,
       satPremiumRate: Math.round(satPremiumRate * 100),
@@ -4132,6 +4149,11 @@
       marginGardenCells: marginGardenCells,
       occupiedArea: occupiedArea,
       encroachedCells: encroachedCells,
+      bbox: bbox,
+      floorMaint: floorMaint,
+      gardenMaint: gardenMaint,
+      encroachMaint: encroachMaint,
+      ageMaintMult: ageMaintMult,
       baseMaintCost: baseMaintCost,
       maintCost: maintCost,
       netMonthlyProfit: netMonthlyProfit
@@ -5068,19 +5090,76 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function drawPlan() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     try { drawCells(); } catch(e) { console.error('drawCells error:', e); }
+    try { drawOccupiedBoxOverlay(ctx, grid, cellSize, true); } catch(e) { console.error('drawOccupiedBoxOverlay error:', e); }
     try { drawArchLines(); } catch(e) { console.error('drawArchLines error:', e); }
     try { drawLabels(); } catch(e) { console.error('drawLabels error:', e); }
     try { drawEntrance(); } catch(e) { console.error('drawEntrance error:', e); }
     try { drawPreview(); } catch(e) { console.error('drawPreview error:', e); }
   }
 
+  // 占有長方形（最小包含長方形）の境界破線とサイズバッジを描画する共通ヘルパー
+  function drawOccupiedBoxOverlay(targetCtx, targetGrid, cs, isLiveBuild = false, isCompact = false) {
+    const fp = calcFootprintStats(targetGrid);
+    if (!fp || !fp.bbox || (isLiveBuild && !fp.hasPlacedPiece)) return;
+    const { minR, maxR, minC, maxC, w, h } = fp.bbox;
+    const bx = minC * cs;
+    const by = minR * cs;
+    const bw = w * cs;
+    const bh = h * cs;
+
+    targetCtx.save();
+    targetCtx.strokeStyle = isLiveBuild ? 'rgba(22, 163, 74, 0.7)' : 'rgba(21, 128, 61, 0.85)';
+    targetCtx.lineWidth = isCompact ? 1.5 : 2;
+    targetCtx.setLineDash(isCompact ? [3, 2] : [5, 3]);
+    targetCtx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
+    targetCtx.setLineDash([]);
+
+    if (!isCompact) {
+      const badgeText = `占有 ${w}×${h} (${fp.occupiedArea}ﾏｽ)`;
+      targetCtx.font = `bold ${Math.max(8.5, Math.min(10.5, cs * 0.34))}px "Zen Kaku Gothic New", sans-serif`;
+      const tw = targetCtx.measureText(badgeText).width;
+      const padX = 5, padY = 2;
+      const pillW = tw + padX * 2;
+      const pillH = 14;
+      let px = bx + 2;
+      let py = by - pillH - 2;
+      if (py < 2) py = by + 2;
+      if (px + pillW > GRID * cs - 2) px = Math.max(2, GRID * cs - pillW - 2);
+
+      targetCtx.fillStyle = 'rgba(21, 128, 61, 0.88)';
+      targetCtx.beginPath();
+      if (targetCtx.roundRect) {
+        targetCtx.roundRect(px, py, pillW, pillH, 4);
+      } else {
+        targetCtx.rect(px, py, pillW, pillH);
+      }
+      targetCtx.fill();
+
+      targetCtx.fillStyle = '#ffffff';
+      targetCtx.textAlign = 'left';
+      targetCtx.textBaseline = 'middle';
+      targetCtx.fillText(badgeText, px + padX, py + pillH / 2 + 0.5);
+    }
+    targetCtx.restore();
+  }
+
   function drawCells() {
+    const fp = calcFootprintStats(grid);
+    const bbox = (fp && fp.hasPlacedPiece) ? fp.bbox : null;
+
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const cell = grid[r][c];
-        const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
+        const inBox = bbox && r >= bbox.minR && r <= bbox.maxR && c >= bbox.minC && c <= bbox.maxC;
         const x = c * cellSize, y = r * cellSize;
-        ctx.fillStyle = s.bg;
+
+        if (cell.type === T.EMPTY || cell.type === T.GARDEN) {
+          // 占有長方形の内側の空き地は「庭（薄緑）」、外側は「未使用敷地（白グレー）」
+          ctx.fillStyle = inBox ? '#ecfccb' : '#f8fafc';
+        } else {
+          const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
+          ctx.fillStyle = s.bg;
+        }
         ctx.fillRect(x, y, cellSize, cellSize);
         
         if (cell.type === T.OBSTACLE) {
@@ -5093,7 +5172,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         }
 
         // Grid guide
-        ctx.strokeStyle = '#e2e8f0';
+        ctx.strokeStyle = (inBox && (cell.type === T.EMPTY || cell.type === T.GARDEN)) ? '#bef264' : '#e2e8f0';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(x, y, cellSize, cellSize);
       }
@@ -7263,15 +7342,33 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     rctx.resetTransform();
     rctx.scale(devicePixelRatio, devicePixelRatio);
 
+    const fp = calcFootprintStats(grid);
+    const bbox = fp ? fp.bbox : null;
+
     for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
       const cell = grid[r][c];
-      const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
-      rctx.fillStyle = s.bg;
-      rctx.fillRect(c*cs, r*cs, cs, cs);
-      rctx.strokeStyle = '#e2e8f0';
+      const inBox = bbox && r >= bbox.minR && r <= bbox.maxR && c >= bbox.minC && c <= bbox.maxC;
+      if (cell.type === T.GARDEN || cell.type === T.EMPTY) {
+        // 占有長方形の内側は鮮やかな庭（黄緑）、外側は未使用の敷地（淡いグレーベージュ）
+        rctx.fillStyle = inBox ? '#d9f99d' : '#eef2f6';
+        rctx.fillRect(c*cs, r*cs, cs, cs);
+        if (!inBox) {
+          // 未使用の敷地には控えめなドット模様を入れて区別しやすくする
+          rctx.fillStyle = '#cbd5e1';
+          rctx.fillRect(c*cs + cs*0.46, r*cs + cs*0.46, Math.max(1.2, cs*0.08), Math.max(1.2, cs*0.08));
+        }
+        rctx.strokeStyle = inBox ? '#bef264' : '#e2e8f0';
+      } else {
+        const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
+        rctx.fillStyle = s.bg;
+        rctx.fillRect(c*cs, r*cs, cs, cs);
+        rctx.strokeStyle = '#e2e8f0';
+      }
       rctx.lineWidth = 0.5;
       rctx.strokeRect(c*cs, r*cs, cs, cs);
     }
+    // 占有長方形の破線枠とサイズラベル
+    drawOccupiedBoxOverlay(rctx, grid, cs, false, false);
     // Draw walls (simplified)
     rctx.save();
     for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
@@ -7631,6 +7728,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       marginGardenCells: fp.marginGardenCells,
       occupiedArea: fp.occupiedArea,
       totalCost: totalSpentCost,
+      discountSaved: discountSaved,
+      bbox: fp.bbox,
       isClear: isClear,
       satisfiedCount: satisfiedCount,
       totalRequests: STAGE.requests.length,
@@ -7663,6 +7762,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const fTotalEl = document.getElementById('flyer-total-cost');
     const fDetailEl = document.getElementById('flyer-cost-detail');
     const fRoiEl = document.getElementById('flyer-roi-note');
+    const fDrawerEl = document.getElementById('flyer-breakdown-drawer');
+    window.activeFlyerBreakdownKey = null;
+    if (fDrawerEl) fDrawerEl.style.display = 'none';
+    const fCostRow = document.getElementById('flyer-cost-row');
+    if (fCostRow) fCostRow.style.background = 'transparent';
+
     if (fTotalEl) fTotalEl.textContent = `${totalSpentCost.toFixed(1)}万円`;
     if (fDetailEl) {
       const extraItems = [];
@@ -7678,9 +7783,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (fRoiEl) {
       const netMonthly = Math.round((rent - stats.maintCost) * 10) / 10;
       const paybackText = netMonthly > 0
-        ? (totalSpentCost <= 0 ? '即時回収' : `回収目安: 約${Math.ceil(totalSpentCost / netMonthly)}ヶ月`)
-        : '回収不可';
-      fRoiEl.innerHTML = `<span>査定額: <strong>${stats.resaleValue}万</strong></span><span>維持費: <strong>-${stats.maintCost.toFixed(1)}万/月</strong></span><span>${paybackText}</span>`;
+        ? (totalSpentCost <= 0 ? '即時回収' : `回収目安: <strong>約${Math.ceil(totalSpentCost / netMonthly)}ヶ月</strong>`)
+        : '<strong>回収不可</strong>';
+      fRoiEl.innerHTML = `
+        <span id="flyer-pill-val" onclick="toggleFlyerBreakdown('val')" style="cursor:pointer; padding:2px 5px; border-radius:4px; transition:background 0.15s;" title="タップで査定額の内訳">査定額: <strong>${stats.resaleValue}万</strong> <i class="ph-bold ph-info" style="font-size:10px; opacity:0.75;"></i></span>
+        <span id="flyer-pill-maint" onclick="toggleFlyerBreakdown('maint')" style="cursor:pointer; padding:2px 5px; border-radius:4px; transition:background 0.15s;" title="タップで維持費の内訳">維持費: <strong>-${stats.maintCost.toFixed(1)}万/月</strong> <i class="ph-bold ph-info" style="font-size:10px; opacity:0.75;"></i></span>
+        <span id="flyer-pill-roi" onclick="toggleFlyerBreakdown('roi')" style="cursor:pointer; padding:2px 5px; border-radius:4px; transition:background 0.15s;" title="タップで回収目安の内訳">${paybackText} <i class="ph-bold ph-info" style="font-size:10px; opacity:0.75;"></i></span>
+      `;
     }
 
     const badge = document.getElementById('flyer-clear-badge');
@@ -9376,11 +9485,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
       const gSize = p.propertyGrid.length || 12;
       const cSize = baseSize / gSize;
+      const fp = calcFootprintStats(p.propertyGrid, p.encroachCount || 0);
+      const bbox = fp ? fp.bbox : null;
       
       // 1. セル背景
       for (let r=0; r<gSize; r++) {
         for (let c=0; c<gSize; c++) {
           const cell = p.propertyGrid[r][c];
+          const inBox = bbox && r >= bbox.minR && r <= bbox.maxR && c >= bbox.minC && c <= bbox.maxC;
           if (cell && cell.type !== T.EMPTY && cell.type !== T.GARDEN && cell.type !== T.OBSTACLE) {
             const s = CELL_STYLE[cell.type] || { bg: '#94a3b8', border: '#64748b' };
             ctx.fillStyle = cell.color || s.bg;
@@ -9400,15 +9512,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             ctx.moveTo((c + 1) * cSize, r * cSize); ctx.lineTo(c * cSize, (r + 1) * cSize);
             ctx.stroke();
           } else {
-            // Garden / Empty / Background
-            ctx.fillStyle = '#1e293b';
+            // Garden (inBox) vs Unused lot (outside bbox)
+            ctx.fillStyle = inBox ? '#d9f99d' : '#1e293b';
             ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
-            ctx.strokeStyle = '#334155';
+            ctx.strokeStyle = inBox ? '#a3e635' : '#334155';
             ctx.lineWidth = 0.5;
             ctx.strokeRect(c * cSize, r * cSize, cSize, cSize);
           }
         }
       }
+      drawOccupiedBoxOverlay(ctx, p.propertyGrid, cSize, false, isCompact);
 
       // 2. 部屋ラベル（重心に白フチ付きテキストを描画）
       const rooms = extractRoomsFromProperty(p.propertyGrid);
@@ -9654,8 +9767,140 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   });
 
+  function getPropertyBreakdownHtml(p, stats, key) {
+    if (!p || !stats) return '';
+    const estBaseCost = Math.round(((p.baseRent || 0) * 20) * 10) / 10;
+    const isLegacyCost = (p.totalCost === undefined);
+    const totalCost = !isLegacyCost ? p.totalCost : estBaseCost;
+    const baseCost = (p.baseCost !== undefined) ? p.baseCost : estBaseCost;
+    const mirrorCost = p.mirrorCost || 0;
+    const cycleExtraCost = p.cycleExtraCost || 0;
+    const rerollCost = p.rerollCost || 0;
+    const wallRemoveCost = p.wallRemoveCost || 0;
+    const encroachCost = p.encroachCost || 0;
+    const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
+    const discountSaved = (p.discountSaved !== undefined)
+      ? p.discountSaved
+      : Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost - cycleExtraCost)) * 10) / 10);
+
+    if (key === 'cost') {
+      const rows = [];
+      rows.push(`<div style="display:flex; justify-content:space-between;"><span>ピース定価合計 (${stats.floorCells}ﾏｽ):</span><strong>${baseCost.toFixed(1)}万</strong></div>`);
+      if (discountSaved > 0) rows.push(`<div style="display:flex; justify-content:space-between; color:#059669;"><span>スタッフ割引:</span><strong>-${discountSaved.toFixed(1)}万</strong></div>`);
+      if (cycleExtraCost > 0) rows.push(`<div style="display:flex; justify-content:space-between;"><span>山札2周目以降の割増:</span><strong>+${cycleExtraCost.toFixed(1)}万</strong></div>`);
+      if (mirrorCost > 0) rows.push(`<div style="display:flex; justify-content:space-between;"><span>反転加工費:</span><strong>+${mirrorCost.toFixed(1)}万</strong></div>`);
+      if (rerollCost > 0) rows.push(`<div style="display:flex; justify-content:space-between;"><span>手札更新・KEEP維持費:</span><strong>+${rerollCost.toFixed(1)}万</strong></div>`);
+      if (wallRemoveCost > 0) rows.push(`<div style="display:flex; justify-content:space-between;"><span>赤壁(耐力壁)撤去費:</span><strong>+${wallRemoveCost.toFixed(1)}万</strong></div>`);
+      if (encroachCost > 0) rows.push(`<div style="display:flex; justify-content:space-between; color:#d97706;"><span>障害物(✕)造成費 (${stats.encroachedCells}ﾏｽ):</span><strong>+${encroachCost.toFixed(1)}万</strong></div>`);
+      if (rows.length === 1) rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>追加経費・造成費:</span><span>0.0万</span></div>`);
+      return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">💰 建築費の内訳（計 ${totalCost.toFixed(1)}万）</div>` + rows.join('');
+    }
+
+    if (key === 'val') {
+      const rows = [];
+      const satPct = Math.round((stats.satBaseFactor || 1) * 100);
+      rows.push(`<div style="display:flex; justify-content:space-between;"><span>建物基礎価値 (原価${stats.baseCostVal.toFixed(1)}万×${satPct}%):</span><strong>${(stats.baseCostVal * stats.satBaseFactor).toFixed(1)}万</strong></div>`);
+      const cPrem = stats.comboPremiumVal || 0;
+      rows.push(`<div style="display:flex; justify-content:space-between;"><span>付加価値 (家賃差×12ヶ月×満足度反映${stats.satPremiumRate}%):</span><strong>${cPrem >= 0 ? '+' : ''}${cPrem.toFixed(1)}万</strong></div>`);
+      if (stats.buildingAge > 0) {
+        rows.push(`<div style="display:flex; justify-content:space-between;"><span>経年減価 (築${stats.buildingAge}ヶ月 / ×${Math.round(stats.ageValFactor * 100)}%):</span><strong>${stats.standardResaleValue}万</strong></div>`);
+      }
+      if (stats.isVacant) {
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>空室売却割引 (-20%):</span><strong>${stats.resaleValue}万</strong></div>`);
+      }
+      if (p.earnedRent !== undefined) {
+        const earned = Math.round((p.earnedRent || 0) * 10) / 10;
+        const net = Math.round((earned + parseFloat(stats.resaleValue) - totalCost) * 10) / 10;
+        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>累計家賃(+${earned.toFixed(1)})＋査定(${stats.resaleValue})−建築費(${totalCost.toFixed(1)}):</span><strong>${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
+      }
+      return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🏷️ 査定額の内訳（${stats.resaleValue}万）</div>` + rows.join('');
+    }
+
+    if (key === 'maint') {
+      const boxStr = stats.bbox ? `${stats.bbox.w}×${stats.bbox.h}枠 / ` : '';
+      const rows = [];
+      rows.push(`<div style="display:flex; justify-content:space-between;"><span>延床面積 (${stats.floorCells}ﾏｽ × 0.04万):</span><strong>-${stats.floorMaint.toFixed(2)}万</strong></div>`);
+      rows.push(`<div style="display:flex; justify-content:space-between;"><span>占有内の余白庭 (${stats.marginGardenCells}ﾏｽ × 0.06万):</span><strong>-${stats.gardenMaint.toFixed(2)}万</strong></div>`);
+      if (stats.encroachedCells > 0) {
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#d97706;"><span>造成区画ペナルティ (${stats.encroachedCells}ﾏｽ × 0.20万):</span><strong>-${stats.encroachMaint.toFixed(2)}万</strong></div>`);
+      }
+      if (stats.buildingAge > 0) {
+        rows.push(`<div style="display:flex; justify-content:space-between;"><span>経年劣化 (築${stats.buildingAge}ヶ月 / ×${stats.ageMaintMult.toFixed(2)}):</span><strong>-${stats.maintCost.toFixed(1)}万/月</strong></div>`);
+      }
+      return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🧹 維持費の内訳（${boxStr}占有${stats.occupiedArea}ﾏｽ）</div>` + rows.join('');
+    }
+
+    if (key === 'roi') {
+      const rentVal = stats.isVacant ? 0 : stats.currentRent;
+      const netMonthly = Math.round((rentVal - stats.maintCost) * 10) / 10;
+      const monthsStr = netMonthly > 0 ? `約${Math.ceil(totalCost / netMonthly)}ヶ月 (${(totalCost / netMonthly).toFixed(1)}ヶ月)` : '回収不可（赤字）';
+      return `
+        <div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">⏱️ 回収目安の算出根拠</div>
+        <div style="display:flex; justify-content:space-between;"><span>実質月収 (家賃${rentVal.toFixed(1)}万 − 維持費${stats.maintCost.toFixed(1)}万):</span><strong>${netMonthly >= 0 ? '+' : ''}${netMonthly.toFixed(1)}万/月</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>建築費 ${totalCost.toFixed(1)}万 ÷ 実質月収:</span><strong>${monthsStr}</strong></div>
+      `;
+    }
+    return '';
+  }
+
+  function toggleFlyerBreakdown(key) {
+    initAudio();
+    playSound('tap');
+    const drawer = document.getElementById('flyer-breakdown-drawer');
+    if (!drawer || !window.currentPropertyData) return;
+
+    if (window.activeFlyerBreakdownKey === key && drawer.style.display !== 'none') {
+      window.activeFlyerBreakdownKey = null;
+      drawer.style.display = 'none';
+    } else {
+      window.activeFlyerBreakdownKey = key;
+      const stats = calcPropertyStats(window.currentPropertyData);
+      drawer.innerHTML = getPropertyBreakdownHtml(window.currentPropertyData, stats, key);
+      drawer.style.display = 'block';
+    }
+
+    const activeKey = window.activeFlyerBreakdownKey;
+    const costRow = document.getElementById('flyer-cost-row');
+    if (costRow) costRow.style.background = (activeKey === 'cost') ? '#e2e8f0' : 'transparent';
+    ['val', 'maint', 'roi'].forEach(k => {
+      const el = document.getElementById(`flyer-pill-${k}`);
+      if (el) el.style.background = (activeKey === k) ? '#bae6fd' : 'transparent';
+    });
+  }
+  window.toggleFlyerBreakdown = toggleFlyerBreakdown;
+
+  function togglePdBreakdown(key) {
+    initAudio();
+    playSound('tap');
+    const p = window.currentDetailProp;
+    if (!p) return;
+    if (key === 'sat') {
+      const satEl = document.getElementById('pd-sat-breakdown');
+      if (satEl) satEl.style.display = (satEl.style.display === 'none') ? 'block' : 'none';
+      return;
+    }
+    const drawer = document.getElementById('pd-breakdown-drawer');
+    if (!drawer) return;
+    if (window.activePdBreakdownKey === key && drawer.style.display !== 'none') {
+      window.activePdBreakdownKey = null;
+      drawer.style.display = 'none';
+    } else {
+      window.activePdBreakdownKey = key;
+      const stats = calcPropertyStats(p);
+      drawer.innerHTML = getPropertyBreakdownHtml(p, stats, key);
+      drawer.style.display = 'block';
+    }
+  }
+  window.togglePdBreakdown = togglePdBreakdown;
+
   function showPropertyDetail(p) {
     window.currentDetailProp = p;
+    window.activePdBreakdownKey = null;
+    const pdDrawer = document.getElementById('pd-breakdown-drawer');
+    if (pdDrawer) pdDrawer.style.display = 'none';
+    const pdSatBreak = document.getElementById('pd-sat-breakdown');
+    if (pdSatBreak) pdSatBreak.style.display = 'none';
+
     const stats = calcPropertyStats(p);
     
     let tenantBadge = '';
@@ -9675,8 +9920,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     document.getElementById('pd-age').textContent = `築${stats.buildingAge}ヶ月${stats.isVacant ? ' (空室中)' : ` (入居${stats.tenantTenure}ヶ月)`}`;
     
     const rentEl = document.getElementById('pd-rent');
-    const maintHtml = `<div style="font-size:10.5px; color:#f87171; font-weight:bold; margin-top:2px; text-align:right;">
-      維持費: -${stats.maintCost.toFixed(1)}万/月
+    const maintHtml = `<div onclick="togglePdBreakdown('maint')" style="font-size:10.5px; color:#f87171; font-weight:bold; margin-top:2px; text-align:right; cursor:pointer;" title="タップで維持費の内訳を表示">
+      維持費: -${stats.maintCost.toFixed(1)}万/月 <i class="ph-bold ph-info" style="font-size:10px;"></i>
     </div>`;
     if (stats.isVacant) {
       const discountPct = Math.min(40, Math.round((stats.buildingAge / 12) * 8));
@@ -9694,7 +9939,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       </div>`;
     }
     
-    document.getElementById('pd-initial-evict').parentElement.style.display = 'none'; // 初期退去率の表示削除
     document.getElementById('pd-sat-val').textContent = `${stats.satisfaction}%`;
     const bar = document.getElementById('pd-sat-bar');
     bar.style.width = `${Math.min(100, Math.max(0, stats.satisfaction))}%`;
@@ -9706,9 +9950,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const conciergeStr = stats.conciergeBonus > 0 ? ` / 接客 +${stats.conciergeBonus}%` : '';
     const amenityStr = stats.amenityPenalty > 0 ? ` / 設備欠陥 -${stats.amenityPenalty}%` : '';
     if (stats.isOriginal) {
-      document.getElementById('pd-sat-breakdown').textContent = `家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${optStr}${conciergeStr}${amenityStr}`;
+      document.getElementById('pd-sat-breakdown').textContent = `内訳: 家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus >= 0 ? '+' : ''}${stats.comboBonus}%${optStr}${conciergeStr}${amenityStr}`;
     } else {
-      document.getElementById('pd-sat-breakdown').textContent = `適正家賃 ${stats.rentBonus}% / 標準仕様 ${stats.reqBonus}% / コンボ ${stats.comboBonus}%${conciergeStr}${amenityStr}`;
+      document.getElementById('pd-sat-breakdown').textContent = `内訳: 適正家賃 ${stats.rentBonus}% / 標準仕様 ${stats.reqBonus}% / コンボ ${stats.comboBonus >= 0 ? '+' : ''}${stats.comboBonus}%${conciergeStr}${amenityStr}`;
     }
 
     // 建築コスト・投資回収パネルの更新
