@@ -10868,7 +10868,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const bgStyle = isEditing
           ? 'linear-gradient(180deg, rgba(245,158,11,0.22), rgba(15,23,42,0.9))'
           : (isModified ? 'linear-gradient(180deg, rgba(56,189,248,0.16), rgba(15,23,42,0.85))' : 'rgba(30,41,59,0.9)');
-        const badgeText = isEditing ? '🎯選択中' : (isModified ? '✨変更中' : '🔄入替可');
+        const badgeText = isEditing ? '🎯選択' : (isModified ? '✨変更' : '🔄入替');
         const badgeColor = isEditing ? '#fde047' : '#38bdf8';
 
         return `
@@ -10882,7 +10882,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             </div>
             <div style="text-align:center; width:100%;">
               <div style="font-size:10px; font-weight:bold; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-              <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万 ${isDiscounted ? `<s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s> ` : ''}<span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
+              <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s>` : ''}</div>
             </div>
           </div>
         `;
@@ -10894,7 +10894,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const lockedCandidates = catFilter
           ? PIECE_LIB.filter(p => p.cat === catFilter && !isPieceUnlocked(p.id))
           : PIECE_LIB.filter(p => !isPieceUnlocked(p.id));
-        const curPiece = curPieceId ? PIECE_MAP[curPieceId] : null;
         const defPiece = defaultPieceId ? PIECE_MAP[defaultPieceId] : null;
 
         let cardsHtml = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:6px;">`;
@@ -10903,8 +10902,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           cardsHtml += `
             <div onclick="setDeckCustomSlot(${slotKey}, '')" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; border-radius:7px; background:${isEmptySel ? 'rgba(244,63,94,0.18)' : 'rgba(15,23,42,0.6)'}; border:1.5px dashed ${isEmptySel ? '#f43f5e' : '#475569'}; cursor:pointer; min-height:78px;">
               <i class="ph-bold ph-prohibit" style="font-size:18px; color:#94a3b8; margin-bottom:4px;"></i>
-              <div style="font-size:10px; font-weight:bold; color:#cbd5e1;">空枠にする</div>
-              <div style="font-size:8.5px; color:#64748b;">(枚数を増やさない)</div>
+              <div style="font-size:10px; font-weight:bold; color:#cbd5e1;">外す</div>
             </div>
           `;
         }
@@ -10912,7 +10910,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           const isSel = p.id === curPieceId;
           const cells = countCellsInShape(p.shape);
           const effCost = getPieceCost(p, false);
-          const perCell = (effCost / cells).toFixed(1);
           const isDiscounted = effCost < (p.cost || 0);
           const actionCall = slotType === 'upgrade'
             ? `setDeckSlotOverride('${slotKey}', '${p.id}')`
@@ -10928,7 +10925,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               </div>
               <div style="text-align:center; width:100%;">
                 <div style="font-size:10px; font-weight:bold; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万 ${isDiscounted ? `<s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s> ` : ''}<span style="color:#94a3b8; font-weight:normal;">(${perCell}/ﾏｽ)</span></div>
+                <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s>` : ''}</div>
               </div>
             </div>
           `;
@@ -10937,13 +10934,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           const cells = countCellsInShape(lp.shape);
           cardsHtml += `
             <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:7px; background:rgba(15,23,42,0.35); border:1px dashed rgba(148,163,184,0.2); opacity:0.55; min-height:78px;">
-              <div style="font-size:8px; color:#f59e0b;">🔒未開発(${lp.unlockCost}万)</div>
+              <div style="width:100%; display:flex; justify-content:space-between; font-size:8px; color:#f59e0b; padding:0 2px;">
+                <span>🔒${lp.unlockCost}万</span>
+                <span style="color:#94a3b8;">${cells}ﾏｽ</span>
+              </div>
               <div style="margin:3px 0; min-height:24px; display:flex; align-items:center; justify-content:center;">
                 ${renderMiniPieceShape(lp, 6)}
               </div>
               <div style="text-align:center; width:100%;">
-                <div style="font-size:9.5px; color:#94a3b8;">${lp.name}(${cells}ﾏｽ)</div>
-                <div style="font-size:8px; color:#64748b;">下のR&Dで解放</div>
+                <div style="font-size:9.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${lp.name}</div>
               </div>
             </div>
           `;
@@ -10954,7 +10953,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           <div style="margin-top:8px; padding:9px 10px; border-radius:8px; background:#0f172a; border:1.5px solid #f59e0b; box-shadow:0 6px 16px rgba(0,0,0,0.4);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="font-size:11px; font-weight:bold; color:#fde047;">
-                <i class="ph-bold ph-hand-pointing"></i> ${slotType === 'upgrade' ? `入れるカードを選択（初期: ${defPiece ? defPiece.name : ''}）` : `追加枠${slotKey + 1} に入れるカードを選択`}
+                <i class="ph-bold ph-hand-pointing"></i> ${slotType === 'upgrade' ? `カード選択（初期: ${defPiece ? defPiece.name : ''}）` : `追加枠${slotKey + 1} のカード選択`}
               </div>
               <button class="btn btn-slate" onclick="toggleDeckSlotEditor(null, null)" style="padding:2px 7px; font-size:10px; cursor:pointer;">閉じる</button>
             </div>
@@ -10967,28 +10966,28 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const binderGroups = [
         {
           key: 'room',
-          title: '🛏️ 居室カード（基本5枚：🔒固定2枚 ＋ 🔄入替3枚）',
+          title: '🛏️ 居室 (5)',
           fixedIds: ['room-22', 'room-22'],
           slotIds: ['room_slot_1', 'room_slot_2', 'room_slot_3'],
           cat: T.ROOM
         },
         {
           key: 'corr',
-          title: '🏃 廊下カード（基本4枚：🔒固定2枚 ＋ 🔄入替2枚）',
+          title: '🏃 廊下 (4)',
           fixedIds: ['corr-1', 'corr-i2'],
           slotIds: ['corr_slot_1', 'corr_slot_2'],
           cat: T.CORRIDOR
         },
         {
           key: 'ldk',
-          title: '🛋️ LDK・キッチンカード（基本3枚：🔒固定1枚 ＋ 🔄入替2枚）',
+          title: '🛋️ LDK (3)',
           fixedIds: ['k-1'],
           slotIds: ['ldk_slot_1', 'ldk_slot_2'],
           cat: T.LDK
         },
         {
           key: 'wet_closet',
-          title: '🚿 水回り＆収納カード（基本8枚：🔒固定6枚 ＋ 🔄入替2枚）',
+          title: '🚿 水回り・収納 (8)',
           fixedIds: ['toilet', 'toilet', 'wash', 'wash', 'bath', 'closet'],
           slotIds: ['bath_slot_1', 'closet_slot_1'],
           cat: null
@@ -11025,7 +11024,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           : '';
 
         binderGroupsHtml += `
-          <div style="margin-bottom:10px; padding:8px; background:rgba(15,23,42,0.35); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="margin-bottom:8px; padding:8px; background:rgba(15,23,42,0.35); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
             <div style="font-size:10.5px; font-weight:bold; color:#e2e8f0; margin-bottom:6px;">${grp.title}</div>
             ${rowCardsHtml}
             ${pickerHtml}
@@ -11051,8 +11050,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           customCardsGridHtml += `
             <div onclick="toggleDeckSlotEditor('custom', ${i})" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 4px; border-radius:8px; background:${isEd ? 'rgba(245,158,11,0.18)' : 'rgba(15,23,42,0.4)'}; border:1.5px dashed ${isEd ? '#f59e0b' : 'rgba(56,189,248,0.45)'}; min-height:84px; cursor:pointer;">
               <i class="ph-bold ph-plus-circle" style="font-size:18px; color:${isEd ? '#fde047' : '#38bdf8'}; margin-bottom:3px;"></i>
-              <div style="font-size:9.5px; font-weight:bold; color:${isEd ? '#fde047' : '#bae6fd'};">追加枠${i + 1}</div>
-              <div style="font-size:8px; color:#64748b;">タップで追加</div>
+              <div style="font-size:9.5px; font-weight:bold; color:${isEd ? '#fde047' : '#bae6fd'};">＋ 追加</div>
             </div>
           `;
         }
@@ -11087,9 +11085,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
                   <span style="font-size:9px; padding:1px 5px; border-radius:4px; background:rgba(59,130,246,0.18); color:#93c5fd; border:1px solid rgba(59,130,246,0.3);">${catNameMap[p.cat] || ''}・${cells}マス</span>
                 </div>
                 <div style="font-size:10px; color:var(--c-emerald); font-weight:bold; margin-top:2px;">
-                  建築原価: ${p.cost.toFixed(1)}万 <span style="color:#38bdf8;">（1マスあたり ${perCell}万）</span>
+                  原価 ${p.cost.toFixed(1)}万 <span style="color:#38bdf8; font-weight:normal;">(${perCell}万/マス)</span>
                 </div>
-                <div style="font-size:9.5px; color:var(--c-text2); margin-top:2px; line-height:1.35;">${p.desc || ''}</div>
               </div>
             </div>
             <div style="flex-shrink:0;">${actionBtn}</div>
@@ -11099,45 +11096,37 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
       deckContent.innerHTML = `
         <!-- 現在の山札デッキヘッダー -->
-        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:9px 12px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <div>
-              <div style="font-size:10px; color:var(--c-text2);">現在の山札デッキ（🔒固定11枚 ＋ 🔄入替9枚 ＋ ➕追加${customAddedCount}枚）</div>
-              <div style="font-size:16px; font-weight:900; color:var(--c-amber-lt);">
-                デッキ合計 ${totalCards} 枚
-              </div>
+            <div style="display:flex; align-items:baseline; gap:8px;">
+              <span style="font-size:11px; color:var(--c-text2); font-weight:bold;">山札構成</span>
+              <span style="font-size:15px; font-weight:900; color:var(--c-amber-lt);">計 ${totalCards} 枚</span>
             </div>
-            <button class="btn btn-slate" onclick="resetDeckToDefault()" style="padding:5px 8px; font-size:10px; cursor:pointer;">
-              <i class="ph-bold ph-arrow-counter-clockwise"></i> 初期に戻す
+            <button class="btn btn-slate" onclick="resetDeckToDefault()" style="padding:4px 8px; font-size:10px; cursor:pointer;">
+              <i class="ph-bold ph-arrow-counter-clockwise"></i> リセット
             </button>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:5px; font-size:10px;">
-            <span style="padding:2px 6px; border-radius:4px; background:rgba(59,130,246,0.18); color:#93c5fd;">居室 ${catCounts[T.ROOM]}枚</span>
-            <span style="padding:2px 6px; border-radius:4px; background:rgba(148,163,184,0.2); color:#cbd5e1;">廊下 ${catCounts[T.CORRIDOR]}枚</span>
-            <span style="padding:2px 6px; border-radius:4px; background:rgba(245,158,11,0.18); color:#fcd34d;">LDK ${catCounts[T.LDK]}枚</span>
-            <span style="padding:2px 6px; border-radius:4px; background:rgba(16,185,129,0.18); color:#6ee7b7;">水回り ${catCounts.wet}枚</span>
-            <span style="padding:2px 6px; border-radius:4px; background:rgba(168,85,247,0.18); color:#d8b4fe;">収納 ${catCounts[T.CLOSET]}枚</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(59,130,246,0.18); color:#93c5fd;">居室 ${catCounts[T.ROOM]}</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(148,163,184,0.2); color:#cbd5e1;">廊下 ${catCounts[T.CORRIDOR]}</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(245,158,11,0.18); color:#fcd34d;">LDK ${catCounts[T.LDK]}</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(16,185,129,0.18); color:#6ee7b7;">水回り ${catCounts.wet}</span>
+            <span style="padding:2px 6px; border-radius:4px; background:rgba(168,85,247,0.18); color:#d8b4fe;">収納 ${catCounts[T.CLOSET]}</span>
           </div>
         </div>
 
         <!-- ビジュアル・カードバインダー（基本20枚） -->
-        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 10px 4px; margin-bottom:10px;">
-          <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:3px; display:flex; align-items:center; justify-content:space-between;">
-            <span><i class="ph-bold ph-cards"></i> 基本デッキ20枚（青枠のカードをタップで入替）</span>
-          </div>
-          <div style="font-size:9.5px; color:var(--c-text2); margin-bottom:8px;">
-            🔒<strong>固定</strong>は必須インフラのため変更不可。🔄<strong>入替可</strong>をタップすると開発済みカードと交換できます。
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 10px 2px; margin-bottom:10px;">
+          <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+            <i class="ph-bold ph-cards"></i> 基本デッキ (20枚)
           </div>
           ${binderGroupsHtml}
         </div>
 
         <!-- 自由追加カード枠（最大 +4枚） -->
         <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px; margin-bottom:12px;">
-          <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:3px; display:flex; align-items:center; gap:5px;">
-            <i class="ph-bold ph-plus-square"></i> 自由追加カード枠（最大 +4枚）
-          </div>
-          <div style="font-size:9.5px; color:var(--c-text2); margin-bottom:8px;">
-            案件の要望に合わせて、好きなカテゴリの解放済みカードを最大4枚まで山札にプラスできます。
+          <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+            <i class="ph-bold ph-plus-square"></i> 追加枠（最大 +4枚）
           </div>
           ${customCardsGridHtml}
           ${customPickerHtml}
@@ -11145,14 +11134,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
         <!-- 新規ピース技術開発 (R&D 10種) -->
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:11px 12px; margin-bottom:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div style="font-size:12.5px; font-weight:bold; color:var(--c-emerald); display:flex; align-items:center; gap:5px;">
-              <i class="ph-bold ph-flask"></i> 新規ピース技術開発（R&D）
+              <i class="ph-bold ph-flask"></i> ピース開発
             </div>
-            <span style="font-size:10px; font-weight:bold; color:#6ee7b7;">解放済: ${unlockedRdCount}/${rdPieces.length}種</span>
-          </div>
-          <div style="font-size:10px; color:var(--c-text2); margin-bottom:8px; line-height:1.4;">
-            大型ピースは<strong>1マスあたりの建築原価が割安</strong>になり、少ない手数と低コストで高査定の間取りを作れます。
+            <span style="font-size:10px; font-weight:bold; color:#6ee7b7;">${unlockedRdCount} / ${rdPieces.length}</span>
           </div>
           ${rdListHtml}
         </div>
