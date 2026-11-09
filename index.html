@@ -3301,8 +3301,9 @@
     if (GameState.stats.lifetimeBadCombos < currentBadCombos) {
       GameState.stats.lifetimeBadCombos = currentBadCombos;
     }
-    if (GameState.stats.lifetimeClearedMissions < (GameState.level || 0)) {
-      GameState.stats.lifetimeClearedMissions = GameState.level || 0;
+    const builtCount = Array.isArray(GameState.properties) ? GameState.properties.length : 0;
+    if (GameState.stats.lifetimeClearedMissions < builtCount) {
+      GameState.stats.lifetimeClearedMissions = builtCount;
     }
 
     const netCombos = (GameState.stats.lifetimeGoodCombos || 0) - (GameState.stats.lifetimeBadCombos || 0);
@@ -9175,7 +9176,6 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       month: GameState.month - 1,
       ...result,
       onConfirm: () => {
-        GameState.level++;
         GameState.attempts = getMaxAttempts();
         GameState.currentMission = null;
         clearActiveBuild();
