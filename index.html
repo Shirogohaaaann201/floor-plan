@@ -7779,8 +7779,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (buildWallRemoveCost > 0) extraItems.push(`壁撤去+${buildWallRemoveCost.toFixed(1)}万`);
       if (buildEncroachCost > 0) extraItems.push(`造成+${buildEncroachCost.toFixed(1)}万`);
       const extraPart = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
-      const discPart = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
-      fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 / ${extraPart}${discPart}`;
+      const discPart = discountSaved > 0 ? ` ・ 割引 -${discountSaved.toFixed(1)}万` : '';
+      fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 ・ ${extraPart}${discPart}`;
     }
     if (fRoiEl) {
       const netMonthly = Math.round((rent - stats.maintCost) * 10) / 10;
@@ -9805,7 +9805,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const effectiveBaseVal = Math.round(stats.baseCostVal * (stats.satBaseFactor || 1) * 10) / 10;
 
       if (isBaseDiscounted) {
-        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>建物原価 (原価${stats.baseCostVal.toFixed(1)}万 / 満足度不足 -${baseDiscountPct}%):</span><strong>${effectiveBaseVal.toFixed(1)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>建物原価 (定価${stats.baseCostVal.toFixed(1)}万・満足度不足で -${baseDiscountPct}%):</span><strong>${effectiveBaseVal.toFixed(1)}万</strong></div>`);
       } else {
         rows.push(`<div style="display:flex; justify-content:space-between;"><span>建物原価 (ピース定価):</span><strong>${stats.baseCostVal.toFixed(1)}万</strong></div>`);
       }
@@ -9814,14 +9814,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const cPrem = stats.comboPremiumVal || 0;
       if (diff > 0.01) {
         if (stats.satisfaction >= 100) {
-          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (+${diff.toFixed(1)}万/月 × 12ヶ月):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 12ヶ月):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
         } else if (stats.satisfaction >= 80) {
-          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (+${diff.toFixed(1)}万/月 × 12ヶ月 × 満足度反映${stats.satPremiumRate}%):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 12ヶ月 × 反映${stats.satPremiumRate}%):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
         } else {
           rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ設計価値 (満足度80%未満のため査定除外):</span><span>0.0万</span></div>`);
         }
       } else if (diff < -0.01) {
-        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>間取り欠陥ペナルティ (${diff.toFixed(1)}万/月 × 12ヶ月):</span><strong>${cPrem.toFixed(1)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>間取り欠陥ペナルティ (家賃減 ${Math.abs(diff).toFixed(1)}万/月 × 12ヶ月):</span><strong>-${Math.abs(cPrem).toFixed(1)}万</strong></div>`);
       } else {
         rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ付加価値:</span><span>なし (0.0万)</span></div>`);
       }
@@ -9829,7 +9829,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (stats.buildingAge > 0) {
         const agePenaltyPct = Math.round((1 - (stats.ageValFactor || 1)) * 100);
         const agePenaltyVal = Math.round((stats.initialValuation - parseFloat(stats.standardResaleValue)) * 10) / 10;
-        rows.push(`<div style="display:flex; justify-content:space-between; color:#64748b;"><span>経年減価 (築${stats.buildingAge}ヶ月 / -${agePenaltyPct}%):</span><strong style="color:#e11d48;">-${agePenaltyVal.toFixed(1)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#64748b;"><span>経年減価 (築${stats.buildingAge}ヶ月で -${agePenaltyPct}%):</span><strong style="color:#e11d48;">-${agePenaltyVal.toFixed(1)}万</strong></div>`);
       }
 
       if (stats.isVacant) {
@@ -9840,33 +9840,41 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (p.earnedRent !== undefined) {
         const earned = Math.round((p.earnedRent || 0) * 10) / 10;
         const net = Math.round((earned + parseFloat(stats.resaleValue) - totalCost) * 10) / 10;
-        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>累計手残り (家賃+${earned.toFixed(1)}万＋査定${stats.resaleValue}万−建築費${totalCost.toFixed(1)}万):</span><strong style="color:${net >= 0 ? '#16a34a' : '#e11d48'};">${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>累計手残り (家賃 ${earned.toFixed(1)}万 ＋ 査定 ${stats.resaleValue}万 − 建築費 ${totalCost.toFixed(1)}万):</span><strong style="color:${net >= 0 ? '#16a34a' : '#e11d48'};">${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
       }
 
       return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🏷️ 査定額の内訳（${stats.resaleValue}万）</div>` + rows.join('');
     }
 
     if (key === 'maint') {
-      const boxStr = stats.bbox ? `${stats.bbox.w}×${stats.bbox.h}枠 / ` : '';
+      const boxInfo = stats.bbox ? `（占有${stats.occupiedArea}マス・${stats.bbox.w}×${stats.bbox.h}枠）` : `（占有${stats.occupiedArea}マス）`;
       const rows = [];
-      rows.push(`<div style="display:flex; justify-content:space-between;"><span>延床面積 (${stats.floorCells}ﾏｽ × 0.04万):</span><strong>-${stats.floorMaint.toFixed(2)}万</strong></div>`);
-      rows.push(`<div style="display:flex; justify-content:space-between;"><span>占有内の余白庭 (${stats.marginGardenCells}ﾏｽ × 0.06万):</span><strong>-${stats.gardenMaint.toFixed(2)}万</strong></div>`);
+      rows.push(`<div style="display:flex; justify-content:space-between;"><span>延床面積 (${stats.floorCells}マス × 0.04万):</span><strong>-${stats.floorMaint.toFixed(2)}万</strong></div>`);
+      if (stats.marginGardenCells > 0) {
+        rows.push(`<div style="display:flex; justify-content:space-between;"><span>占有内の余白庭 (${stats.marginGardenCells}マス × 0.06万):</span><strong>-${stats.gardenMaint.toFixed(2)}万</strong></div>`);
+      }
       if (stats.encroachedCells > 0) {
-        rows.push(`<div style="display:flex; justify-content:space-between; color:#d97706;"><span>造成区画ペナルティ (${stats.encroachedCells}ﾏｽ × 0.20万):</span><strong>-${stats.encroachMaint.toFixed(2)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#d97706;"><span>造成区画ペナルティ (${stats.encroachedCells}マス × 0.20万):</span><strong>-${stats.encroachMaint.toFixed(2)}万</strong></div>`);
       }
       if (stats.buildingAge > 0) {
-        rows.push(`<div style="display:flex; justify-content:space-between;"><span>経年劣化 (築${stats.buildingAge}ヶ月 / ×${stats.ageMaintMult.toFixed(2)}):</span><strong>-${stats.maintCost.toFixed(1)}万/月</strong></div>`);
+        const ageExtra = Math.round((stats.maintCost - stats.baseMaintCost) * 10) / 10;
+        const agePct = Math.round((stats.ageMaintMult - 1) * 100);
+        if (ageExtra > 0) {
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>経年劣化割増 (築${stats.buildingAge}ヶ月で +${agePct}%):</span><strong>-${ageExtra.toFixed(1)}万</strong></div>`);
+        } else {
+          rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>経年劣化割増 (築${stats.buildingAge}ヶ月で +${agePct}%):</span><span>0.0万</span></div>`);
+        }
       }
-      return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🧹 維持費の内訳（${boxStr}占有${stats.occupiedArea}ﾏｽ）</div>` + rows.join('');
+      return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🧹 維持費の内訳（計 -${stats.maintCost.toFixed(1)}万/月 ${boxInfo}）</div>` + rows.join('');
     }
 
     if (key === 'roi') {
       const rentVal = stats.isVacant ? 0 : stats.currentRent;
       const netMonthly = Math.round((rentVal - stats.maintCost) * 10) / 10;
-      const monthsStr = netMonthly > 0 ? `約${Math.ceil(totalCost / netMonthly)}ヶ月 (${(totalCost / netMonthly).toFixed(1)}ヶ月)` : '回収不可（赤字）';
+      const monthsStr = netMonthly > 0 ? `約${(totalCost / netMonthly).toFixed(1)}ヶ月` : '回収不可（赤字）';
       return `
         <div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">⏱️ 回収目安の算出根拠</div>
-        <div style="display:flex; justify-content:space-between;"><span>実質月収 (家賃${rentVal.toFixed(1)}万 − 維持費${stats.maintCost.toFixed(1)}万):</span><strong>${netMonthly >= 0 ? '+' : ''}${netMonthly.toFixed(1)}万/月</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>実質月収 (家賃 ${rentVal.toFixed(1)}万 − 維持費 ${stats.maintCost.toFixed(1)}万):</span><strong>${netMonthly >= 0 ? '+' : ''}${netMonthly.toFixed(1)}万/月</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>建築費 ${totalCost.toFixed(1)}万 ÷ 実質月収:</span><strong>${monthsStr}</strong></div>
       `;
     }
@@ -9976,13 +9984,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     else if (stats.satisfaction >= 60) bar.style.background = 'var(--c-amber)';
     else bar.style.background = 'var(--c-rose)';
     
-    const optStr = stats.optBonus > 0 ? ` / 任意 +${stats.optBonus}%` : '';
-    const conciergeStr = stats.conciergeBonus > 0 ? ` / 接客 +${stats.conciergeBonus}%` : '';
-    const amenityStr = stats.amenityPenalty > 0 ? ` / 設備欠陥 -${stats.amenityPenalty}%` : '';
+    const optStr = stats.optBonus > 0 ? ` ＋ 任意 ${stats.optBonus}%` : '';
+    const conciergeStr = stats.conciergeBonus > 0 ? ` ＋ 接客 ${stats.conciergeBonus}%` : '';
+    const amenityStr = stats.amenityPenalty > 0 ? ` − 設備欠陥 ${stats.amenityPenalty}%` : '';
+    const comboOp = (stats.comboBonus >= 0) ? `＋ コンボ ${stats.comboBonus}%` : `− コンボ ${Math.abs(stats.comboBonus)}%`;
     if (stats.isOriginal) {
-      document.getElementById('pd-sat-breakdown').textContent = `内訳: 家賃 ${stats.rentBonus}% / 依頼 ${stats.reqBonus}% / コンボ ${stats.comboBonus >= 0 ? '+' : ''}${stats.comboBonus}%${optStr}${conciergeStr}${amenityStr}`;
+      document.getElementById('pd-sat-breakdown').textContent = `満足度内訳: 家賃 ${stats.rentBonus}% ＋ 依頼 ${stats.reqBonus}% ${comboOp}${optStr}${conciergeStr}${amenityStr} ＝ ${stats.satisfaction}%`;
     } else {
-      document.getElementById('pd-sat-breakdown').textContent = `内訳: 適正家賃 ${stats.rentBonus}% / 標準仕様 ${stats.reqBonus}% / コンボ ${stats.comboBonus >= 0 ? '+' : ''}${stats.comboBonus}%${conciergeStr}${amenityStr}`;
+      document.getElementById('pd-sat-breakdown').textContent = `満足度内訳: 適正家賃 ${stats.rentBonus}% ＋ 標準仕様 ${stats.reqBonus}% ${comboOp}${conciergeStr}${amenityStr} ＝ ${stats.satisfaction}%`;
     }
 
     // 建築コスト・投資回収パネルの更新
@@ -10018,8 +10027,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (wallRemoveCost > 0) extraItems.push(`壁撤去+${wallRemoveCost.toFixed(1)}万`);
         if (encroachCost > 0) extraItems.push(`造成+${encroachCost.toFixed(1)}万`);
         const extraLabel = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
-        const discStr = discountSaved > 0 ? ` / 割引 -${discountSaved.toFixed(1)}万` : '';
-        elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 / ${extraLabel}${discStr})`;
+        const discStr = discountSaved > 0 ? ` ・ 割引 -${discountSaved.toFixed(1)}万` : '';
+        elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 ・ ${extraLabel}${discStr})`;
       }
     }
 
