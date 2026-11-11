@@ -1850,12 +1850,12 @@
       fn: counts => (counts.maxClosetSize >= 4) || ((counts.closetCells || 0) >= 4)
     },
     garden_small: {
-      id: 'garden_small', icon: 'ph-plant', color: '#16a34a', text: '専用庭あり (庭3マス以上)',
-      fn: counts => (counts.marginGardenCells || 0) >= 3
+      id: 'garden_small', icon: 'ph-plant', color: '#16a34a', text: '専用庭あり (庭3マス以上の塊)',
+      fn: counts => (counts.maxGardenCluster || 0) >= 3
     },
     garden_large: {
-      id: 'garden_large', icon: 'ph-tree', color: '#15803d', text: '広々庭園 (庭6マス以上)',
-      fn: counts => (counts.marginGardenCells || 0) >= 6
+      id: 'garden_large', icon: 'ph-tree', color: '#15803d', text: '広々庭園 (庭6マス以上の塊)',
+      fn: counts => (counts.maxGardenCluster || 0) >= 6
     },
     compact_living: {
       id: 'compact_living', icon: 'ph-arrows-in', color: '#0284c7', text: '省スペース設計 (延床12マス以下)',
@@ -1918,12 +1918,12 @@
       fn: (counts, bfs) => hasLongCorridor(bfs)
     },
     'opt-garden': {
-      id: 'opt-garden', icon: 'ph-plant', color: '#16a34a', text: '専用庭あり (庭3マス以上)', tier: 'standard',
-      fn: counts => (counts.marginGardenCells || 0) >= 3
+      id: 'opt-garden', icon: 'ph-plant', color: '#16a34a', text: '専用庭あり (庭3マス以上の塊)', tier: 'standard',
+      fn: counts => (counts.maxGardenCluster || 0) >= 3
     },
     'opt-garden-large': {
-      id: 'opt-garden-large', icon: 'ph-tree', color: '#15803d', text: '広々庭園 (庭6マス以上)', tier: 'expert',
-      fn: counts => (counts.marginGardenCells || 0) >= 6
+      id: 'opt-garden-large', icon: 'ph-tree', color: '#15803d', text: '広々庭園 (庭6マス以上の塊)', tier: 'expert',
+      fn: counts => (counts.maxGardenCluster || 0) >= 6
     },
     'opt-washitsu': {
       id: 'opt-washitsu', icon: 'ph-house-line', color: '#059669', text: '和の趣 (和室1室以上)', tier: 'standard',
@@ -3292,7 +3292,8 @@
     '究極のオープン':     { deg: 0.2, fill: -5  },
     'ガラス張りハウス':   { deg: 0.4, fill: -10 },
     '要塞化':             { deg: 0.5, fill: -20 },
-    '封印されし闇':       { deg: 0.5, fill: -20 }
+    '封印されし闇':       { deg: 0.5, fill: -20 },
+    'もはや公園':         { deg: 0.4, fill: -10 }
   };
 
   function calcFillChance(p) {
@@ -3909,7 +3910,7 @@
   // 間取りの最小包含長方形（占有土地面積）・延床面積・余白庭面積・造成マス数を算出
   function calcFootprintStats(targetGrid, fallbackEncroachCount = 0) {
     if (!targetGrid || !Array.isArray(targetGrid)) {
-      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: fallbackEncroachCount || 0, bbox: null, hasPlacedPiece: false };
+      return { floorCells: 0, marginGardenCells: 0, maxGardenCluster: 0, occupiedArea: 0, encroachedCells: fallbackEncroachCount || 0, bbox: null, hasPlacedPiece: false };
     }
     const gSize = targetGrid.length || GRID;
     let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
@@ -3948,11 +3949,12 @@
     }
 
     if (minR === Infinity) {
-      return { floorCells: 0, marginGardenCells: 0, occupiedArea: 0, encroachedCells: Math.max(encroached, fallbackEncroachCount || 0), bbox: null, hasPlacedPiece: false };
+      return { floorCells: 0, marginGardenCells: 0, maxGardenCluster: 0, occupiedArea: 0, encroachedCells: Math.max(encroached, fallbackEncroachCount || 0), bbox: null, hasPlacedPiece: false };
     }
 
     let floorCells = 0;
     let marginGardenCells = 0;
+    const gardenCellsSet = new Set();
 
     // 2. 最小長方形の枠内・枠外を走査（未開発の✕マスは計算から完全除外）
     for (let r = 0; r < gSize; r++) {
@@ -3969,6 +3971,7 @@
           } else {
             // 長方形の枠内にある空き地・庭は余白庭面積としてカウント
             marginGardenCells++;
+            gardenCellsSet.add(`${r},${c}`);
           }
         } else {
           // 長方形の枠外に玄関だけが1マス出っ張っている場合は、枠を広げず延床面積にのみ加算
@@ -3979,10 +3982,38 @@
       }
     }
 
+    // 3. 庭の最大連結クラスター（塊）のマス数をBFSで算出
+    let maxGardenCluster = 0;
+    const visitedGarden = new Set();
+    const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+    for (const key of gardenCellsSet) {
+      if (visitedGarden.has(key)) continue;
+      let clusterSize = 0;
+      const q = [key];
+      visitedGarden.add(key);
+      while (q.length > 0) {
+        const cur = q.shift();
+        clusterSize++;
+        const [cr, cc] = cur.split(',').map(Number);
+        for (const {dr, dc} of dirs) {
+          const nr = cr + dr, nc = cc + dc;
+          const nKey = `${nr},${nc}`;
+          if (gardenCellsSet.has(nKey) && !visitedGarden.has(nKey)) {
+            visitedGarden.add(nKey);
+            q.push(nKey);
+          }
+        }
+      }
+      if (clusterSize > maxGardenCluster) {
+        maxGardenCluster = clusterSize;
+      }
+    }
+
     const finalEncroached = Math.max(encroached, fallbackEncroachCount || 0);
     return {
       floorCells,
       marginGardenCells,
+      maxGardenCluster,
       occupiedArea: floorCells + marginGardenCells,
       encroachedCells: finalEncroached,
       bbox: { minR, maxR, minC, maxC, w: maxC - minC + 1, h: maxR - minR + 1 },
@@ -4169,6 +4200,7 @@
     // 占有面積（最小長方形）・延床面積・余白庭・造成マス数と月次維持管理費の計算
     let floorCells = p.floorCells;
     let marginGardenCells = p.marginGardenCells;
+    let maxGardenCluster = p.maxGardenCluster;
     let encroachedCells = p.encroachCount || 0;
     let bbox = p.bbox || null;
     const targetG = p.propertyGrid || ((typeof grid !== 'undefined' && p === window.currentPropertyData) ? grid : null);
@@ -4176,11 +4208,13 @@
       const fp = calcFootprintStats(targetG, encroachedCells);
       if (floorCells === undefined) floorCells = fp.floorCells;
       if (marginGardenCells === undefined) marginGardenCells = fp.marginGardenCells;
+      if (maxGardenCluster === undefined) maxGardenCluster = fp.maxGardenCluster;
       encroachedCells = Math.max(encroachedCells, fp.encroachedCells);
       if (!bbox) bbox = fp.bbox;
     } else if (floorCells === undefined || marginGardenCells === undefined) {
       floorCells = Math.max(8, Math.round((baseRent || 3) * 4));
       marginGardenCells = 0;
+      maxGardenCluster = 0;
     }
     const occupiedArea = floorCells + marginGardenCells;
     const floorMaint = Math.round(floorCells * 0.04 * 100) / 100;
@@ -4233,6 +4267,7 @@
       isOriginal: isOriginal,
       floorCells: floorCells,
       marginGardenCells: marginGardenCells,
+      maxGardenCluster: maxGardenCluster || 0,
       occupiedArea: occupiedArea,
       encroachedCells: encroachedCells,
       bbox: bbox,
@@ -6254,6 +6289,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const fp = calcFootprintStats(grid, (typeof encroachCount !== 'undefined') ? encroachCount : 0);
     counts.floorCells = fp.floorCells;
     counts.marginGardenCells = fp.marginGardenCells;
+    counts.maxGardenCluster = fp.maxGardenCluster;
     counts.occupiedArea = fp.occupiedArea;
     counts.encroachedCells = fp.encroachedCells;
 
@@ -6516,8 +6552,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' },
     { id: 25, name: '大ホワイエ',       category: '王道',     bonus: '+2〜4万', icon: 'ph-columns',        hint: '玄関を入った先に、広間のようなゆったりとした廊下（2×3以上）を設けると…？', desc: '玄関から広がるエントランスホール（2×3で+2.0万 / 特大で+4.0万）' },
     { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（7マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線7マス以上の連続廊下）' },
-    { id: 27, name: '箱庭のある暮らし', category: '王道',     bonus: '+2.0万', icon: 'ph-plant',            hint: '建物に囲まれた憩いのプライベートガーデンを設けると…？',                     desc: '占有枠内の余白庭が4マス以上' },
-    { id: 28, name: '広大なる庭園',     category: '王道',     bonus: '+3.5万', icon: 'ph-tree',             hint: '四季を愛でる贅沢なガーデンスペースを確保すると…？',                         desc: '占有枠内の余白庭が8マス以上' }
+    { id: 27, name: '箱庭のある暮らし', category: '王道',     bonus: '+0.3万', icon: 'ph-plant',            hint: '建物に囲まれた憩いのプライベートガーデン（4マス以上連結）を設けると…？', desc: '占有枠内に4マス以上連結した庭' },
+    { id: 28, name: '広大なる庭園',     category: '王道',     bonus: '+0.6万', icon: 'ph-tree',             hint: '四季を愛でる贅沢なガーデンスペース（8マス以上連結）を確保すると…？',     desc: '占有枠内に8マス以上連結した庭' },
+    { id: 29, name: 'もはや公園',       category: '珍間取り', bonus: '+1.2万', icon: 'ph-tree',             hint: '家よりも広大な敷地を庭にしてしまうと…？',                                 desc: '占有枠内の庭が12マス以上連結、または延床面積以上' }
   ];
 
   function recordDiscoveredCombos(combos) {
@@ -6763,13 +6800,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:'【珍間取り】ロングコリドー — 視線がすっと抜ける7マス以上の長廊下 (+2.5万)' });
     }
 
-    // 庭園コンボ（余白庭の積極活用）
-    if ((counts.marginGardenCells || 0) >= 8) {
-      combos.push({ name:'広大なる庭園', bonus:3.5, icon:'ph-tree text-emerald-600', type:'good',
-        text:`【王道】広大なる庭園 (${counts.marginGardenCells}マス) — 四季を愛でる贅沢なガーデンスペース (+3.5万)` });
-    } else if ((counts.marginGardenCells || 0) >= 4) {
-      combos.push({ name:'箱庭のある暮らし', bonus:2.0, icon:'ph-plant text-emerald-600', type:'good',
-        text:`【王道】箱庭のある暮らし (${counts.marginGardenCells}マス) — 建物に囲まれた憩いのプライベートガーデン (+2.0万)` });
+    // 庭園コンボ（余白庭の積極活用 & 珍間取り）
+    const maxGardenBlock = counts.maxGardenCluster || 0;
+    const totalGarden = counts.marginGardenCells || 0;
+    const flCells = counts.floorCells || 0;
+
+    if (maxGardenBlock >= 12 || (totalGarden >= 12 && totalGarden >= flCells)) {
+      combos.push({ name:'もはや公園', bonus:1.2, icon:'ph-tree text-emerald-700', type:'funny',
+        text:`【珍間取り】もはや公園 — 庭が${totalGarden}マス(最大${maxGardenBlock}マス塊)。住まいというより広場、草むしりが追いつかない (+1.2万)` });
+    } else if (maxGardenBlock >= 8) {
+      combos.push({ name:'広大なる庭園', bonus:0.6, icon:'ph-tree text-emerald-600', type:'good',
+        text:`【王道】広大なる庭園 (${maxGardenBlock}マス連節) — 四季を愛でる贅沢なガーデンスペース (+0.6万)` });
+    } else if (maxGardenBlock >= 4) {
+      combos.push({ name:'箱庭のある暮らし', bonus:0.3, icon:'ph-plant text-emerald-600', type:'good',
+        text:`【王道】箱庭のある暮らし (${maxGardenBlock}マス連節) — 建物に囲まれた憩いのプライベートガーデン (+0.3万)` });
     }
 
     return combos;
@@ -7335,6 +7379,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   ============================================================ */
   function genCatchphrase(counts, combos, optSatisfiedCount) {
     const funnyNames = combos.filter(c=>c.type==='funny').map(c=>c.name);
+    if (funnyNames.includes('もはや公園') || combos.some(c=>c.name==='もはや公園'))
+      return { main:'「ここは家か、それとも緑地広場か。見渡す限りの芝生と吹き抜ける風」', sub:'【公園物件】' };
     if (combos.some(c=>c.name==='ガラス張りハウス'))
       return { main:'「空と光に溶け込むパノラマビュー。全面ガラス張りの圧倒的開放感」', sub:'【ガラス張り物件】' };
     if (combos.some(c=>c.name==='陽だまりの家'))
@@ -7379,6 +7425,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
     // 2. ユニークコンボ・特殊設計へのリアクション
+    if (combos.some(c=>c.name==='もはや公園'))
+      return '庭が広すぎて…これ、家というより近所の児童公園じゃないですか！？草むしりだけで一日が終わっちゃいそうです！';
     if (combos.some(c=>c.name==='ガラス張りハウス'))
       return '部屋中が窓だらけでまるで温室かパノラマラウンジですね…！外からの視線と日差しがちょっと気になりますがすごい迫力です！';
     if (combos.some(c=>c.name==='陽だまりの家'))
@@ -7830,6 +7878,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       encroachCount: fp.encroachedCells,
       floorCells: fp.floorCells,
       marginGardenCells: fp.marginGardenCells,
+      maxGardenCluster: fp.maxGardenCluster,
       occupiedArea: fp.occupiedArea,
       totalCost: totalSpentCost,
       discountSaved: discountSaved,
@@ -9434,6 +9483,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       encroachCount: p.encroachCount || 0,
       floorCells: p.floorCells,
       marginGardenCells: p.marginGardenCells,
+      maxGardenCluster: p.maxGardenCluster || 0,
       occupiedArea: p.occupiedArea,
       totalCost: p.totalCost !== undefined ? p.totalCost : 0,
       earnedRent: 0,
