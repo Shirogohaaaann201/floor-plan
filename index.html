@@ -1849,6 +1849,18 @@
       id: 'closet4', icon: 'ph-package', color: '#f59e0b', text: '大型収納 (4マス以上)',
       fn: counts => (counts.maxClosetSize >= 4) || ((counts.closetCells || 0) >= 4)
     },
+    garden_small: {
+      id: 'garden_small', icon: 'ph-plant', color: '#16a34a', text: '専用庭あり (庭3マス以上)',
+      fn: counts => (counts.marginGardenCells || 0) >= 3
+    },
+    garden_large: {
+      id: 'garden_large', icon: 'ph-tree', color: '#15803d', text: '広々庭園 (庭6マス以上)',
+      fn: counts => (counts.marginGardenCells || 0) >= 6
+    },
+    compact_living: {
+      id: 'compact_living', icon: 'ph-arrows-in', color: '#0284c7', text: '省スペース設計 (延床12マス以下)',
+      fn: counts => (counts.floorCells || 0) <= 12 && counts.floorCells > 0
+    },
     'opt-closet': {
       id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり', tier: 'light',
       fn: counts => (counts.maxClosetSize >= 1) || ((counts.closetCells || 0) >= 1)
@@ -1904,6 +1916,14 @@
     'opt-corridor': {
       id: 'opt-corridor', icon: 'ph-arrows-left-right', color: '#0284c7', text: 'ロングコリドー (一直線の長廊下7マス以上)', tier: 'expert',
       fn: (counts, bfs) => hasLongCorridor(bfs)
+    },
+    'opt-garden': {
+      id: 'opt-garden', icon: 'ph-plant', color: '#16a34a', text: '専用庭あり (庭3マス以上)', tier: 'standard',
+      fn: counts => (counts.marginGardenCells || 0) >= 3
+    },
+    'opt-garden-large': {
+      id: 'opt-garden-large', icon: 'ph-tree', color: '#15803d', text: '広々庭園 (庭6マス以上)', tier: 'expert',
+      fn: counts => (counts.marginGardenCells || 0) >= 6
     },
     'opt-washitsu': {
       id: 'opt-washitsu', icon: 'ph-house-line', color: '#059669', text: '和の趣 (和室1室以上)', tier: 'standard',
@@ -2012,6 +2032,39 @@
       obstacles: [
         { r: 0, c: 0, w: 12, h: 1 },
         { r: 1, c: 0, w: 1, h: 11 }
+      ]
+    },
+    micro_pencil: {
+      name: 'ペンシル極小地 (4×6)',
+      minR: 3, maxR: 8, minC: 4, maxC: 7,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 3 },
+        { r: 9, c: 0, w: 12, h: 3 },
+        { r: 3, c: 0, w: 4, h: 6 },
+        { r: 3, c: 8, w: 4, h: 6 }
+      ]
+    },
+    flag_lot: {
+      name: '旗竿敷地 (路地通路付き)',
+      minR: 1, maxR: 10, minC: 2, maxC: 9,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 2, h: 10 },
+        { r: 1, c: 10, w: 2, h: 10 },
+        { r: 7, c: 2, w: 3, h: 4 },
+        { r: 7, c: 7, w: 3, h: 4 }
+      ]
+    },
+    corner_cut: {
+      name: '隅切り変形角地',
+      minR: 2, maxR: 9, minC: 2, maxC: 9,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 2 },
+        { r: 10, c: 0, w: 12, h: 2 },
+        { r: 2, c: 0, w: 2, h: 8 },
+        { r: 2, c: 10, w: 2, h: 8 },
+        { r: 2, c: 7, w: 3, h: 3 }
       ]
     }
   };
@@ -2561,10 +2614,10 @@
     let allowWide = false;
 
     const pickFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const pickSingleLot = () => pickFrom(['tiny_square', 'tiny_square', 'narrow_strip', 'compact_rect', 'compact_square']);
-    const pickDinksLot = () => pickFrom(['narrow_strip', 'compact_square', 'standard', 'l_shape', 'u_shape']);
-    const pickFamilyLot = () => pickFrom(['standard', 'l_shape', 'u_shape', 'courtyard', 'mansion']);
-    const pickMansionLot = () => pickFrom(['mansion', 'mansion', 'mansion', 'courtyard', 'u_shape']);
+    const pickSingleLot = () => pickFrom(['micro_pencil', 'tiny_square', 'narrow_strip', 'compact_rect', 'compact_square']);
+    const pickDinksLot = () => pickFrom(['narrow_strip', 'flag_lot', 'corner_cut', 'compact_square', 'standard', 'l_shape', 'u_shape']);
+    const pickFamilyLot = () => pickFrom(['standard', 'corner_cut', 'l_shape', 'u_shape', 'courtyard', 'mansion']);
+    const pickMansionLot = () => pickFrom(['mansion', 'mansion', 'courtyard', 'u_shape', 'corner_cut']);
 
     if (overrideType) {
       clientType = overrideType;
@@ -2627,8 +2680,28 @@
 
     if (clientType === 'single') {
       const subRoll = Math.random();
-      if (subRoll < 0.35) {
-        // 新社会人・学生 (基本1K)
+      if (subRoll < 0.28) {
+        // ミニマリスト・苦学生 (3点ユニットバス歓迎・省スペース極小住宅)
+        const names = ['草野 陸', '菅原 仁', '成田 陽葵', '西山 蓮'];
+        const quotes = [
+          '「家賃を極力抑えたいので、3点ユニットバスでも全然OK！小さくても生活できる部屋を！」',
+          '「物を持たないミニマリストです。極小サイズでいいので無駄のない空間をお願いします！」',
+          '「家賃最優先です！お風呂とトイレが一緒（UB）でも全く気にしません！」'
+        ];
+        const avatars = ['🎒', '📦', '🚲', '📖'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: 'ミニマリスト・苦学生'
+        };
+        reqKeys = ['reach']; // 風呂トイレ別(btsep)を要求しない！UBで格安クリア可能
+        optKeys = ['opt-closet'];
+        initialBudget = 850.0 + Math.floor(Math.random() * 4) * 50;
+        targetRent = 2.8 + Math.floor(Math.random() * 4) * 0.3; // 2.8〜3.7万
+        maxTurns = 8;
+      } else if (subRoll < 0.52) {
+        // 新社会人・学生 (基本1K・BT別)
         const names = ['佐藤 翼', '鈴木 蓮', '高橋 葵', '田中 陽菜'];
         const quotes = [
           '「初めての一人暮らし！風呂とトイレは絶対別で頼みます！」',
@@ -2645,43 +2718,31 @@
         reqKeys = ['btsep', 'reach'];
         optKeys = ['opt-closet'];
         initialBudget = 1000.0 + Math.floor(Math.random() * 5) * 100;
-        targetRent = 4.8 + Math.floor(Math.random() * 4) * 0.4;
-      } else if (subRoll < 0.60) {
-        // おしゃれ単身 (衣装・収納充実)
-        const names = ['伊藤 健太', '渡辺 陸', '早川 玲奈', '三浦 翔'];
-        const quotes = [
+        targetRent = 4.4 + Math.floor(Math.random() * 4) * 0.3; // 4.4〜5.3万
+        maxTurns = 10;
+      } else if (subRoll < 0.76) {
+        // おしゃれ単身 / 在宅ワーカー (収納 or 独立洗面台)
+        const isWorker = Math.random() < 0.5;
+        const names = isWorker ? ['森下 悠真', '藤原 さくら', '佐々木 凛', '内田 隼人'] : ['伊藤 健太', '渡辺 陸', '早川 玲奈', '三浦 翔'];
+        const quotes = isWorker ? [
+          '「家でリモートワークをするので、独立洗面台と落ち着ける居室が希望です。」',
+          '「生活リズムを整えたいので、洗面所が独立している間取りをお願いします。」'
+        ] : [
           '「服や靴がとにかく多いので、収納スペース（2マス以上）は絶対欲しいです！」',
           '「洋服の整理がしやすいように、しっかりした収納を頼みます！」'
         ];
-        const avatars = ['👠', '🧥', '🕶️', '👗'];
+        const avatars = isWorker ? ['🧑‍💻', '👩‍💻', '🎧', '💻'] : ['👠', '🧥', '🕶️', '👗'];
         clientData = {
           name: names[Math.floor(Math.random() * names.length)],
           avatar: avatars[Math.floor(Math.random() * avatars.length)],
           quote: quotes[Math.floor(Math.random() * quotes.length)],
-          typeBadge: 'おしゃれ単身'
+          typeBadge: isWorker ? '在宅ワーカー' : 'おしゃれ単身'
         };
-        reqKeys = ['btsep', 'closet2', 'reach'];
-        optKeys = ['opt-wash'];
-        initialBudget = 1200.0 + Math.floor(Math.random() * 5) * 100;
-        targetRent = 5.4 + Math.floor(Math.random() * 4) * 0.4;
-      } else if (subRoll < 0.85) {
-        // 在宅ワーカー (独立洗面台)
-        const names = ['森下 悠真', '藤原 さくら', '佐々木 凛', '内田 隼人'];
-        const quotes = [
-          '「家でリモートワークをするので、独立洗面台と落ち着ける居室が希望です。」',
-          '「生活リズムを整えたいので、洗面所が独立している間取りをお願いします。」'
-        ];
-        const avatars = ['🧑‍💻', '👩‍💻', '🎧', '💻'];
-        clientData = {
-          name: names[Math.floor(Math.random() * names.length)],
-          avatar: avatars[Math.floor(Math.random() * avatars.length)],
-          quote: quotes[Math.floor(Math.random() * quotes.length)],
-          typeBadge: '在宅ワーカー'
-        };
-        reqKeys = ['btsep', 'wash', 'reach'];
-        optKeys = ['opt-closet2'];
-        initialBudget = 1300.0 + Math.floor(Math.random() * 5) * 100;
-        targetRent = 5.8 + Math.floor(Math.random() * 4) * 0.4;
+        reqKeys = isWorker ? ['btsep', 'wash', 'reach'] : ['btsep', 'closet2', 'reach'];
+        optKeys = isWorker ? ['opt-closet2'] : ['opt-wash'];
+        initialBudget = 1250.0 + Math.floor(Math.random() * 5) * 100;
+        targetRent = 5.6 + Math.floor(Math.random() * 4) * 0.4;
+        maxTurns = 11;
       } else {
         // 陽だまりカフェ風単身 (南向き採光)
         const names = ['松岡 楓', '杉山 晴斗', '原田 陽向'];
@@ -2698,10 +2759,10 @@
         };
         reqKeys = ['btsep', 'reach'];
         optKeys = ['opt-south', 'opt-closet'];
-        initialBudget = 1250.0 + Math.floor(Math.random() * 5) * 100;
-        targetRent = 5.6 + Math.floor(Math.random() * 4) * 0.4;
+        initialBudget = 1200.0 + Math.floor(Math.random() * 5) * 100;
+        targetRent = 5.4 + Math.floor(Math.random() * 4) * 0.4;
+        maxTurns = 10;
       }
-      maxTurns = 10;
     } else if (clientType === 'dinks') {
       const subRoll = Math.random();
       if (subRoll < 0.25) {
@@ -2798,7 +2859,7 @@
       maxTurns = 15;
     } else if (clientType === 'family') {
       const subRoll = Math.random();
-      if (subRoll < 0.25) {
+      if (subRoll < 0.20) {
         // 子育てファミリー標準
         const names = ['吉田 夫婦', '松本 浩二', '井上 恵美'];
         const quotes = [
@@ -2816,7 +2877,7 @@
         optKeys = ['opt-bath', 'opt-circulation'];
         initialBudget = 3800.0 + Math.floor(Math.random() * 10) * 100;
         targetRent = 12.0 + Math.floor(Math.random() * 6) * 0.5;
-      } else if (subRoll < 0.45) {
+      } else if (subRoll < 0.40) {
         // 大家族・トイレ渋滞対策
         const names = ['木村 達也', '清水 健一', '長谷川 誠'];
         const quotes = [
@@ -2834,7 +2895,25 @@
         optKeys = ['opt-closet2', 'opt-soundproof'];
         initialBudget = 3900.0 + Math.floor(Math.random() * 10) * 100;
         targetRent = 12.8 + Math.floor(Math.random() * 6) * 0.5;
-      } else if (subRoll < 0.65) {
+      } else if (subRoll < 0.60) {
+        // 庭付き郊外ファミリー (専用庭3マス以上)
+        const names = ['小川 健司', '森下 浩平', '望月 さやか'];
+        const quotes = [
+          '「子どもが庭でプール遊びや家庭菜園ができるように、3マス以上の専用庭を作ってください！」',
+          '「外の風を感じられる暮らしを。敷地内に専用の庭スペース（3マス以上）を確保してください。」'
+        ];
+        const avatars = ['🏡', '🌱', '🎈'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: '庭付き郊外ファミリー'
+        };
+        reqKeys = ['ldk1_room2', 'garden_small', 'wash', 'reach'];
+        optKeys = ['opt-bath', 'opt-garden'];
+        initialBudget = 4000.0 + Math.floor(Math.random() * 10) * 100;
+        targetRent = 13.0 + Math.floor(Math.random() * 6) * 0.5;
+      } else if (subRoll < 0.80) {
         // 陽だまり育児ハウス (南向きリビング & 窓多数)
         const names = ['坂本 裕樹', '安藤 舞子', '西田 翔太'];
         const quotes = [
@@ -2852,42 +2931,28 @@
         optKeys = ['opt-south', 'opt-sunlight'];
         initialBudget = 4000.0 + Math.floor(Math.random() * 10) * 100;
         targetRent = 13.5 + Math.floor(Math.random() * 6) * 0.5;
-      } else if (subRoll < 0.85) {
-        // 二世帯同居・和モダンファミリー
-        const names = ['杉本 宗治', '藤木 泰造', '原田 雅江'];
-        const quotes = [
+      } else {
+        // 二世帯同居・和モダン / ゆとりファミリー
+        const isWashitsu = Math.random() < 0.5;
+        const names = isWashitsu ? ['杉本 宗治', '藤木 泰造', '原田 雅江'] : ['野村 拓也', '浅野 智子', '大橋 慶介'];
+        const quotes = isWashitsu ? [
           '「親世代との同居なので、落ち着ける和室と足を伸ばせる大きなお風呂を作ってください！」',
           '「世代を超えて快適に住める家を。落ち着く和室とゆとりある水回りを頼みます。」'
-        ];
-        const avatars = ['👴', '👵', '🍵'];
-        clientData = {
-          name: names[Math.floor(Math.random() * names.length)],
-          avatar: avatars[Math.floor(Math.random() * avatars.length)],
-          quote: quotes[Math.floor(Math.random() * quotes.length)],
-          typeBadge: '二世帯和風ファミリー'
-        };
-        reqKeys = ['ldk2', 'toilet2', 'reach'];
-        optKeys = ['opt-washitsu', 'opt-bath'];
-        initialBudget = 4200.0 + Math.floor(Math.random() * 10) * 100;
-        targetRent = 14.5 + Math.floor(Math.random() * 6) * 0.5;
-      } else {
-        // 収納充実・ゆとりファミリー
-        const names = ['野村 拓也', '浅野 智子', '大橋 慶介'];
-        const quotes = [
+        ] : [
           '「成長とともに増える荷物をすっきりしまえる大収納と、配管がまとまった水回りを！」',
           '「片付けやすく家事もしやすい、機能美あふれる広々LDKの家を。」'
         ];
-        const avatars = ['📦', '🧰', '🛋️'];
+        const avatars = isWashitsu ? ['👴', '👵', '🍵'] : ['📦', '🧰', '🛋️'];
         clientData = {
           name: names[Math.floor(Math.random() * names.length)],
           avatar: avatars[Math.floor(Math.random() * avatars.length)],
           quote: quotes[Math.floor(Math.random() * quotes.length)],
-          typeBadge: '収納充実ファミリー'
+          typeBadge: isWashitsu ? '二世帯和風ファミリー' : '収納充実ファミリー'
         };
-        reqKeys = ['ldk2', 'closet2', 'wash', 'reach'];
-        optKeys = ['opt-plumbing', 'opt-ldk8'];
-        initialBudget = 4100.0 + Math.floor(Math.random() * 10) * 100;
-        targetRent = 14.0 + Math.floor(Math.random() * 6) * 0.5;
+        reqKeys = isWashitsu ? ['ldk2', 'toilet2', 'reach'] : ['ldk2', 'closet2', 'wash', 'reach'];
+        optKeys = isWashitsu ? ['opt-washitsu', 'opt-bath'] : ['opt-plumbing', 'opt-ldk8'];
+        initialBudget = 4200.0 + Math.floor(Math.random() * 10) * 100;
+        targetRent = 14.2 + Math.floor(Math.random() * 6) * 0.5;
       }
       maxTurns = 18;
     } else { // mansion
@@ -2912,22 +2977,22 @@
         targetRent = 19.5 + Math.floor(Math.random() * 8) * 0.6;
         maxTurns = 24;
       } else if (subRoll < 0.44) {
-        // 2. 数寄屋風豪邸 (和モダン・窓多数)
+        // 2. 庭園邸宅レジデンス (大庭園6マス以上 & 和モダン)
         const names = ['藤堂 隆成', '白川 宗憲', '鷹司 雅之'];
         const quotes = [
-          '「来客をもてなす優雅な和室と、庭園の四季を愛でる光あふれる窓辺を所望する。」',
-          '「日本の伝統美を宿した現代の名邸を。落ち着いた和の佇まいを期待している。」'
+          '「四季の移ろいを愛でる庭園（6マス以上）と、庭園を望む格式ある和室を所望する。」',
+          '「日本の自然美を邸内に宿す名邸を。広大な庭園と落ち着いた和の佇まいを期待している。」'
         ];
-        const avatars = ['🎍', '🏯', '🍵'];
+        const avatars = ['🌲', '🏯', '🍵'];
         clientData = {
           name: names[Math.floor(Math.random() * names.length)],
           avatar: avatars[Math.floor(Math.random() * avatars.length)],
           quote: quotes[Math.floor(Math.random() * quotes.length)],
-          typeBadge: '数寄屋風豪邸'
+          typeBadge: '庭園邸宅レジデンス'
         };
-        reqKeys = ['ldk1_room2', 'closet2', 'wash', 'reach'];
-        optKeys = ['opt-washitsu', 'opt-sunlight'];
-        initialBudget = 6200.0 + Math.floor(Math.random() * 15) * 100;
+        reqKeys = ['ldk2', 'garden_large', 'reach'];
+        optKeys = ['opt-washitsu', 'opt-garden-large'];
+        initialBudget = 6300.0 + Math.floor(Math.random() * 15) * 100;
         targetRent = 21.5 + Math.floor(Math.random() * 8) * 0.6;
         maxTurns = 24;
       } else if (subRoll < 0.66) {
@@ -3232,7 +3297,20 @@
 
   function calcFillChance(p) {
     if (!p) return 40;
-    let chance = 40; // 基礎入居決定率 40%
+    const rent = (p.rent || p.targetRent || 5);
+    // 家賃帯による基礎需要層の違い（安物件は高需要・高額物件はニッチ層）
+    let chance = 40;
+    if (rent <= 4.0) {
+      chance = 75; // 格安・極小単身: 需要が圧倒的（ほぼ即時入居）
+    } else if (rent <= 6.0) {
+      chance = 60; // 一般単身: 旺盛な需要
+    } else if (rent <= 10.0) {
+      chance = 45; // DINKS・標準ファミリー: 標準需要
+    } else if (rent <= 15.0) {
+      chance = 32; // 大型ファミリー: ターゲット層が絞られる
+    } else {
+      chance = 22; // 高級豪邸: 富裕層限定（空室リスク大）
+    }
 
     // 1. 間取り魅力度 (+3% 〜 +15%)
     const goodCombos = (p.goodCombos !== undefined) ? p.goodCombos : (p.combosList || []).filter(c => c && c.bonus > 0).length;
@@ -4021,11 +4099,16 @@
 
     // 退去率計算
     let evictRateVal = 0;
+    let barrierMonths = 0;
     if (isVacant) {
       evictRateVal = 0; // 空室中は退去判定なし（再入居待ち）
     } else if (isOriginal) {
       if (satisfaction > 100) {
-        const barrierMonths = satisfaction - 100;
+        const rawSurplus = satisfaction - 100;
+        // 120%までは1%=1ヶ月、それ以上は2%=1ヶ月（ソフトキャップ）
+        barrierMonths = rawSurplus <= 20 
+          ? rawSurplus 
+          : Math.round(20 + (rawSurplus - 20) * 0.5);
         if (tenantTenure <= barrierMonths) {
           evictRateVal = 0;
         } else {
@@ -4055,7 +4138,7 @@
     const baseCost = p.baseCost || (baseRent * 20) || 0;
     const effectiveRent = (p.isOriginalTenant !== false) ? (p.rent || baseRent) : calcMarketRent(p, GameState.month);
     const comboRentDiff = effectiveRent - baseRent;
-    const rawComboPremium = comboRentDiff * 12;
+    const rawComboPremium = comboRentDiff * 6; // 6ヶ月分に是正（フリップ即時大儲けを抑制）
     let comboPremium = 0;
     let satPremiumRate = 1.0;
     if (rawComboPremium > 0) {
@@ -4066,7 +4149,7 @@
       } else {
         satPremiumRate = 0;
       }
-      comboPremium = rawComboPremium * satPremiumRate;
+      comboPremium = Math.min(baseCost * 0.5, rawComboPremium * satPremiumRate);
     } else {
       // マイナスコンボ（構造的欠陥）は常に100%減額
       comboPremium = rawComboPremium;
@@ -4114,6 +4197,7 @@
 
     return {
       satisfaction: satisfaction,
+      barrierMonths: barrierMonths,
       degRate: degRate.toFixed(1),
       baseDegRate: baseDegRate.toFixed(1),
       evictRate: evictRate,
@@ -6166,6 +6250,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     counts.hasBath = counts.bath > 0;
     counts.hasToilet = counts.toilet > 0;
     counts.isBtSeparated = (counts.separateBathCount > 0 && counts.separateToiletCount > 0);
+
+    const fp = calcFootprintStats(grid, (typeof encroachCount !== 'undefined') ? encroachCount : 0);
+    counts.floorCells = fp.floorCells;
+    counts.marginGardenCells = fp.marginGardenCells;
+    counts.occupiedArea = fp.occupiedArea;
+    counts.encroachedCells = fp.encroachedCells;
+
     return counts;
   }
 
@@ -6424,7 +6515,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     { id: 23, name: 'プライバシーゼロ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
     { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' },
     { id: 25, name: '大ホワイエ',       category: '王道',     bonus: '+2〜4万', icon: 'ph-columns',        hint: '玄関を入った先に、広間のようなゆったりとした廊下（2×3以上）を設けると…？', desc: '玄関から広がるエントランスホール（2×3で+2.0万 / 特大で+4.0万）' },
-    { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（7マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線7マス以上の連続廊下）' }
+    { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（7マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線7マス以上の連続廊下）' },
+    { id: 27, name: '箱庭のある暮らし', category: '王道',     bonus: '+2.0万', icon: 'ph-plant',            hint: '建物に囲まれた憩いのプライベートガーデンを設けると…？',                     desc: '占有枠内の余白庭が4マス以上' },
+    { id: 28, name: '広大なる庭園',     category: '王道',     bonus: '+3.5万', icon: 'ph-tree',             hint: '四季を愛でる贅沢なガーデンスペースを確保すると…？',                         desc: '占有枠内の余白庭が8マス以上' }
   ];
 
   function recordDiscoveredCombos(combos) {
@@ -6668,6 +6761,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (hasLongCorridor(visited)) {
       combos.push({ name:'ロングコリドー', bonus:2.5, icon:'ph-arrows-left-right text-teal-600', type:'funny',
         text:'【珍間取り】ロングコリドー — 視線がすっと抜ける7マス以上の長廊下 (+2.5万)' });
+    }
+
+    // 庭園コンボ（余白庭の積極活用）
+    if ((counts.marginGardenCells || 0) >= 8) {
+      combos.push({ name:'広大なる庭園', bonus:3.5, icon:'ph-tree text-emerald-600', type:'good',
+        text:`【王道】広大なる庭園 (${counts.marginGardenCells}マス) — 四季を愛でる贅沢なガーデンスペース (+3.5万)` });
+    } else if ((counts.marginGardenCells || 0) >= 4) {
+      combos.push({ name:'箱庭のある暮らし', bonus:2.0, icon:'ph-plant text-emerald-600', type:'good',
+        text:`【王道】箱庭のある暮らし (${counts.marginGardenCells}マス) — 建物に囲まれた憩いのプライベートガーデン (+2.0万)` });
     }
 
     return combos;
@@ -9810,18 +9912,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         rows.push(`<div style="display:flex; justify-content:space-between;"><span>建物原価 (ピース定価):</span><strong>${stats.baseCostVal.toFixed(1)}万</strong></div>`);
       }
 
-      const diff = (stats.comboRentDiff !== undefined) ? stats.comboRentDiff : (Math.round(((stats.comboPremiumVal || 0) / 12) * 10) / 10);
+      const diff = (stats.comboRentDiff !== undefined) ? stats.comboRentDiff : (Math.round(((stats.comboPremiumVal || 0) / 6) * 10) / 10);
       const cPrem = stats.comboPremiumVal || 0;
       if (diff > 0.01) {
         if (stats.satisfaction >= 100) {
-          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 12ヶ月):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 6ヶ月):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
         } else if (stats.satisfaction >= 80) {
-          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 12ヶ月 × 反映${stats.satPremiumRate}%):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 6ヶ月 × 反映${stats.satPremiumRate}%):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
         } else {
           rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ設計価値 (満足度80%未満のため査定除外):</span><span>0.0万</span></div>`);
         }
       } else if (diff < -0.01) {
-        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>間取り欠陥ペナルティ (家賃減 ${Math.abs(diff).toFixed(1)}万/月 × 12ヶ月):</span><strong>-${Math.abs(cPrem).toFixed(1)}万</strong></div>`);
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>間取り欠陥ペナルティ (家賃減 ${Math.abs(diff).toFixed(1)}万/月 × 6ヶ月):</span><strong>-${Math.abs(cPrem).toFixed(1)}万</strong></div>`);
       } else {
         rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ付加価値:</span><span>なし (0.0万)</span></div>`);
       }
@@ -9945,7 +10047,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (stats.isVacant) {
       tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#ffe4e6; color:#be123c; border-radius:4px; margin-left:6px; font-weight:bold;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率 ${stats.fillChance}%)</span>`;
     } else if (stats.isOriginal) {
-      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'})</span>`;
+      const remBarrier = Math.max(0, (stats.barrierMonths || 0) - stats.tenantTenure);
+      const barrierText = remBarrier > 0 ? ` / バリア残${remBarrier}ヶ月` : ` / 居住${stats.tenantTenure}ヶ月目`;
+      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'}${barrierText})</span>`;
     } else {
       tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#eff6ff; color:#1d4ed8; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 2代目以降入居中 (居住${stats.tenantTenure}ヶ月目)</span>`;
     }
