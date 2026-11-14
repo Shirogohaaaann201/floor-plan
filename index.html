@@ -796,8 +796,12 @@
         <i class="ph-bold ph-fast-forward" style="margin-right:8px;"></i>月を進める
       </button>
       
-      <div style="text-align:center; margin-top:16px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        Floor Plan v1.18
+      <div style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:11px; color:#94a3b8; font-weight:bold;">
+        <span>Floor Plan v1.18</span>
+        <span aria-hidden="true">｜</span>
+        <button id="btn-open-reset-confirm" type="button" style="background:none; border:none; padding:4px 6px; color:#94a3b8; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:3px; text-decoration:underline; text-underline-offset:2px;">
+          <i class="ph-bold ph-trash"></i> データ初期化
+        </button>
       </div>
     </div>
   </section>
@@ -1225,6 +1229,24 @@
         <button id="btn-gameover-reset" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px; font-weight:bold; cursor:pointer; background:linear-gradient(135deg, #f43f5e, #e11d48); border:none; color:#fff; justify-content:center; gap:6px;">
           <i class="ph-bold ph-arrows-clockwise"></i> 新会社を設立して再挑戦
         </button>
+      </div>
+    </div>
+
+    <!-- データ初期化確認モーダル -->
+    <div id="reset-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:310; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:left; border:1.5px solid rgba(244,63,94,0.45); box-shadow:0 12px 35px rgba(0,0,0,0.5);">
+        <button id="btn-close-reset-confirm" type="button" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" style="color:var(--c-rose); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+          <i class="ph-bold ph-warning-octagon"></i> データ初期化
+        </div>
+        <div style="background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.28); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:#fecdd3; line-height:1.55;">
+          資金・所有物件・オフィス・記録帳を含むすべてのデータを削除し、最初からやり直します。<br>
+          <strong>この操作は取り消せません。</strong>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-reset-cancel" type="button" class="btn btn-slate" style="flex:1; padding:10px; font-size:13px; cursor:pointer; justify-content:center;">キャンセル</button>
+          <button id="btn-reset-execute" type="button" class="btn btn-primary" style="flex:1.2; padding:10px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center; background:linear-gradient(135deg, #f43f5e, #e11d48); border:none; color:#fff;">初期化する</button>
+        </div>
       </div>
     </div>
 
@@ -11962,6 +11984,20 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     modal.style.display = 'flex';
   }
 
+  function openResetConfirmModal() {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('reset-confirm-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeResetConfirmModal() {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('reset-confirm-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
   function resetGameFull() {
     initAudio();
     try {
@@ -11977,6 +12013,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     GameState.level = 0;
     GameState.attempts = 2;
     GameState.currentMission = null;
+    GameState.activeBuild = null;
     GameState.properties = [];
     GameState.discovered = { combos: [] };
     GameState.company = {
@@ -11987,7 +12024,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       capacityLevel: 0,
       debt: 0,
       emergencyDebt: 0,
-      features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0 },
+      features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0, handSize: 0 },
       hiredStaff: [],
       recruitment: { status: 'none', candidates: [] },
       unlockedPieces: [...STARTER_UNLOCKED_IDS],
@@ -11999,11 +12036,40 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       lifetimeGoodCombos: 0,
       lifetimeBadCombos: 0
     };
+    STAGE = null;
+    currentLevelIdx = 0;
+    window.pendingSalaryNegMonth = null;
+    window.dismissConfirmingStaffId = null;
+    window.replacingCandidateId = null;
+    window.activeDeckEditingSlot = null;
+    window.activeFlyerBreakdownKey = null;
+    window.activePdBreakdownKey = null;
+    window.currentDetailProp = null;
+    window.currentViewerProp = null;
+
+    ensureDeckState();
+    ensureGameState();
     GameState.availableMissions = generateMissionPool(0);
     saveGame();
-    const modal = document.getElementById('gameover-modal');
-    if (modal) modal.style.display = 'none';
+
+    [
+      'gameover-modal',
+      'reset-confirm-modal',
+      'company-upgrade-modal',
+      'modal-records',
+      'modal-ending',
+      'prop-detail-modal',
+      'plan-viewer-modal',
+      'capacity-alert-modal',
+      'month-end-modal',
+      'emergency-loan-modal'
+    ].forEach(id => {
+      const m = document.getElementById(id);
+      if (m) m.style.display = 'none';
+    });
+
     playSound('clear');
+    updateCompanyUI();
     updateHomeUI();
     showScreen('home');
     openCompanyNameModal(true);
@@ -12415,6 +12481,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     switchUpgradeTab('bank');
   });
   document.getElementById('btn-gameover-reset')?.addEventListener('click', resetGameFull);
+  document.getElementById('btn-open-reset-confirm')?.addEventListener('click', openResetConfirmModal);
+  document.getElementById('btn-close-reset-confirm')?.addEventListener('click', closeResetConfirmModal);
+  document.getElementById('btn-reset-cancel')?.addEventListener('click', closeResetConfirmModal);
+  document.getElementById('btn-reset-execute')?.addEventListener('click', resetGameFull);
+  document.getElementById('reset-confirm-modal')?.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'reset-confirm-modal') closeResetConfirmModal();
+  });
 
 function updateHomeUI() {
     ensureDeckState();
