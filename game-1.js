@@ -1,6 +1,44 @@
 
   'use strict';
   /* ============================================================
+     PLATFORM / OVERLAY DETECTION
+  ============================================================ */
+  function isPlicyEnvironment() {
+    try {
+      const host = (window.location && window.location.hostname) || '';
+      if (/(^|\.)plicy\.net$/i.test(host)) return true;
+      if (document.referrer) {
+        const refHost = new URL(document.referrer).hostname || '';
+        if (/(^|\.)plicy\.net$/i.test(refHost)) return true;
+      }
+      if (window.location && window.location.ancestorOrigins) {
+        for (const origin of window.location.ancestorOrigins) {
+          const originHost = new URL(origin).hostname || '';
+          if (/(^|\.)plicy\.net$/i.test(originHost)) return true;
+        }
+      }
+      if (new URLSearchParams(window.location.search).get('plicy') === '1') return true;
+    } catch (e) {}
+    return false;
+  }
+  if (isPlicyEnvironment()) {
+    document.body.classList.add('is-plicy');
+  }
+
+  function syncPlicyHeaderActions() {
+    if (!document.body.classList.contains('is-plicy')) return;
+    const actions = document.querySelector('.game-header-actions');
+    const header = document.querySelector('.game-header');
+    const canvasArea = document.querySelector('.canvas-area');
+    if (!actions || !header || !canvasArea) return;
+    const targetParent = window.innerWidth <= 768 ? canvasArea : header;
+    if (actions.parentElement !== targetParent) {
+      targetParent.appendChild(actions);
+    }
+  }
+  syncPlicyHeaderActions();
+
+  /* ============================================================
      CONSTANTS
   ============================================================ */
   const GRID = 12;
@@ -2652,6 +2690,9 @@
     Object.entries(screens).forEach(([k, el]) => {
       if (el) el.classList.toggle('active', k === name);
     });
+    if (name === 'game' && typeof syncPlicyHeaderActions === 'function') {
+      syncPlicyHeaderActions();
+    }
   }
 
   /* ============================================================
@@ -3198,7 +3239,7 @@
       const bgCol = pCycle >= 3 ? '#e11d48' : '#d97706';
       cycleBadgeHtml = `<span style="position:absolute; top:2px; right:3px; font-size:8px; font-weight:800; color:#fff; background:${bgCol}; padding:0px 3.5px; border-radius:4px; line-height:1.25; z-index:2; pointer-events:none;">${pCycle}周+${pct}%</span>`;
     }
-    let miniHtml = `${cycleBadgeHtml}<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols},14px);">`;
+    let miniHtml = `${cycleBadgeHtml}<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols}, var(--mini-cell-size, 13px));">`;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const filled = shape[r][c] === 1;
@@ -3274,29 +3315,28 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           updatePieceLabel();
           drawPlan();
         });
-        wrap.appendChild(card);
-        
+        if (keepStates[idx]) card.classList.add('is-kept');
+
         const keepBtn = document.createElement('button');
-        keepBtn.className = 'btn btn-slate';
-        keepBtn.style.padding = '4px';
-        keepBtn.style.fontSize = '10px';
-        keepBtn.style.border = '1px solid var(--c-border)';
+        keepBtn.type = 'button';
+        keepBtn.className = 'card-keep-btn' + (keepStates[idx] ? ' kept' : '');
         const kCost = getKeepCost(keepCounts[idx]);
-        const kText = kCost > 0 ? ` (維持-${kCost}万)` : '';
-        keepBtn.textContent = keepStates[idx] ? `🔒 KEEP${kText}` : '🔓 keep';
-        if (keepStates[idx]) {
-          keepBtn.style.background = 'var(--c-amber)';
-          keepBtn.style.color = '#fff';
-          if (kCost > 0) keepBtn.style.border = '1px solid var(--c-rose)';
-        }
-        keepBtn.onclick = () => {
+        keepBtn.title = kCost > 0 ? `ロック維持 (更新時 -${kCost}万)` : 'ロック維持 (更新で残す)';
+        keepBtn.textContent = keepStates[idx] ? (kCost > 0 ? `🔒-${kCost}万` : '🔒KEEP') : '🔓keep';
+        keepBtn.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+        });
+        keepBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
           initAudio();
+          playSound('tap');
           cancelRerollConfirm();
           keepStates[idx] = !keepStates[idx];
           renderDraftUI();
           saveActiveBuild('game');
-        };
-        wrap.appendChild(keepBtn);
+        });
+        card.appendChild(keepBtn);
+        wrap.appendChild(card);
       } else {
         const emptyCard = document.createElement('div');
         emptyCard.className = 'draft-card';
@@ -3520,9 +3560,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function resizeCanvas() {
     const parent = document.querySelector('.canvas-area');
-    const pw = parent.clientWidth - 16;
-    const ph = parent.clientHeight - 16;
-    const dim = Math.min(pw, ph, 520);
+    const cs = window.getComputedStyle(parent);
+    const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const pw = parent.clientWidth - padX - 4;
+    const ph = parent.clientHeight - padY - 4;
+    const dim = Math.max(GRID * 8, Math.min(pw, ph, 520));
     cellSize = Math.floor(dim / GRID);
     const total = cellSize * GRID;
 

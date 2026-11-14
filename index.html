@@ -25,7 +25,7 @@
        SCREEN 0: HOME
   ============================== -->
   <section id="screen-home" class="screen active blueprint-bg" style="display: block !important; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 40px; height: 100vh;">
-    <div style="position:absolute; top:10px; right:16px; z-index:10; display:flex; align-items:center; gap:8px;">
+    <div class="home-top-actions" style="position:absolute; top:10px; right:16px; z-index:10; display:flex; align-items:center; gap:8px;">
       <button id="btn-help-home" class="btn btn-slate" type="button" title="遊び方" style="padding:0; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
         <i class="ph-bold ph-question" style="font-size:18px;"></i>
       </button>
@@ -34,7 +34,7 @@
       </button>
     </div>
     <div class="mission-container" style="width:92%; max-width:600px; box-sizing:border-box; margin:48px auto 24px; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
-      <div style="margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #e2e8f0;">
+      <div class="home-co-header" style="margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #e2e8f0;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <button id="btn-edit-co-name" type="button" style="background:none; border:none; padding:2px 4px; margin:-2px -4px; border-radius:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-align:left;" title="会社名を変更する">
             <i class="ph-bold ph-buildings" style="font-size:18px; color:var(--c-blue);"></i>
@@ -739,7 +739,7 @@
     <div style="padding:16px 12px; width:100%; max-width:480px; margin:0 auto; box-sizing:border-box;">
       
       <!-- Top Bar -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:rgba(30,41,59,0.7); padding:10px 14px; border-radius:8px; border:1px solid #334155; backdrop-filter:blur(4px);">
+      <div class="mission-select-topbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:rgba(30,41,59,0.7); padding:10px 14px; border-radius:8px; border:1px solid #334155; backdrop-filter:blur(4px);">
         <div>
           <h2 style="margin:0; font-size:16px; color:var(--c-amber-lt); display:flex; align-items:center; gap:6px;">
             <i class="ph-bold ph-newspaper" style="font-size:18px;"></i> 今月の依頼案件
@@ -855,7 +855,7 @@
           <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+      <div class="game-header-actions" style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
         <button id="btn-help-game" class="btn-icon btn" type="button" title="遊び方" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
           <i class="ph-bold ph-question" style="font-size:15px;"></i>
         </button>
@@ -916,7 +916,7 @@
 
       <!-- Draft tray -->
       <div id="draft-area" style="display:flex; width:100%; min-width:0;">
-        <div style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%; min-width:0;">
+        <div class="draft-area-inner" style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%; min-width:0;">
           <div id="reroll-info" style="display:none;"></div>
           <div id="draft-container" style="display:flex; gap:8px;"></div>
           <div class="action-btn-row" style="display:flex; gap:6px; width:100%;">

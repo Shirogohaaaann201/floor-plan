@@ -407,6 +407,8 @@
 
     /* Canvas area */
     .canvas-area {
+      position: relative;
+      isolation: isolate;
       flex: 1; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
       padding: 8px;
@@ -492,35 +494,97 @@
       background: var(--c-surface2);
       border: 2px solid var(--c-border);
       border-radius: var(--r-md);
-      padding: 6px 4px 6px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      padding: 20px 4px 5px;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 2px;
       cursor: pointer;
-      min-height: 86px;
-      height: 86px;
+      min-height: 84px;
+      height: 84px;
       transition: border-color 0.15s, background 0.15s, transform 0.1s;
     }
     .draft-card:active { transform: scale(0.96); }
+    .draft-card.is-kept {
+      border-color: rgba(245, 158, 11, 0.55);
+    }
     .draft-card.selected {
       border-color: var(--c-amber);
       background: #2d1f06;
       box-shadow: 0 0 0 3px rgba(245,158,11,0.2);
+    }
+    .card-keep-btn {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      z-index: 3;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid var(--c-border2);
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--c-text2);
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 8.5px;
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .card-keep-btn.kept {
+      background: var(--c-amber);
+      border-color: var(--c-amber-lt);
+      color: #0f172a;
     }
     .draft-card-name {
       font-size: 10px; font-weight: 700; color: var(--c-text);
       text-align: center; line-height: 1.2;
     }
     .draft-card-preview {
-      width: 52px; height: 52px;
+      width: 100%; flex: 1; min-height: 0;
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
     }
     .mini-grid {
       display: grid; gap: 2px;
-      padding: 4px; border-radius: 4px;
+      padding: 3px; border-radius: 4px;
       background: rgba(0,0,0,0.25);
     }
     .mini-cell {
-      width: 14px; height: 14px; border-radius: 2px;
+      width: var(--mini-cell-size, 13px); height: var(--mini-cell-size, 13px); border-radius: 2px;
+    }
+
+    @media (max-width: 768px) {
+      :root { --mini-cell-size: 10px; }
+      .canvas-area { padding: 2px 4px; }
+      .game-footer {
+        padding: 5px 8px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+        gap: 5px;
+      }
+      .game-footer #btn-finish {
+        padding: 4px 10px !important;
+      }
+      .draft-area-inner {
+        gap: 5px !important;
+      }
+      .draft-card {
+        height: 74px;
+        min-height: 74px;
+        padding: 17px 3px 3px;
+      }
+      .mini-grid {
+        gap: 1.5px;
+        padding: 2px;
+      }
+      .draft-card-name {
+        font-size: 9.5px;
+        line-height: 1.15;
+      }
+      .action-btn-row .btn {
+        min-height: 32px !important;
+        padding: 3px 4px !important;
+        line-height: 1.15;
+      }
     }
 
     /* ========================================
@@ -707,4 +771,111 @@
     @keyframes badgePulse {
       0%, 100% { transform: scale(1); box-shadow: 0 1px 3px rgba(245,158,11,0.35); }
       50%       { transform: scale(1.05); box-shadow: 0 0 10px rgba(245,158,11,0.65); }
+    }
+
+    /* ===== PLiCy OVERLAY SAFE LAYOUT ===== */
+    body.is-plicy .home-top-actions {
+      left: 16px !important;
+      right: auto !important;
+    }
+    body.is-plicy .flyer-head {
+      justify-content: flex-start;
+      gap: 8px;
+    }
+    body.is-plicy .flyer-head-left,
+    body.is-plicy .flyer-badge {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    @media (min-width: 769px) {
+      body.is-plicy .game-header {
+        padding-right: 140px;
+      }
+      body.is-plicy .game-header-actions {
+        order: -1;
+        margin-right: 4px;
+      }
+      body.is-plicy .mission-banner {
+        padding-right: 140px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body.is-plicy .game-header {
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        padding-top: max(6px, calc(env(safe-area-inset-top, 0px) + 4px));
+        padding-bottom: 5px;
+        padding-right: 78px;
+      }
+      body.is-plicy .canvas-area > .game-header-actions {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        z-index: 5;
+        display: flex;
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+      body.is-plicy .canvas-area > .game-header-actions .btn-icon {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 50%;
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+      body.is-plicy .mission-banner {
+        padding: 4px 80px 4px 10px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body.is-plicy .home-co-header {
+        padding-right: 76px;
+      }
+    }
+
+    @media (max-width: 780px) {
+      body.is-plicy .mission-select-topbar {
+        padding-right: 84px;
+        justify-content: flex-start !important;
+        gap: 10px;
+      }
+      body.is-plicy .mission-select-topbar > div {
+        flex: 1;
+        min-width: 0;
+      }
+      body.is-plicy #btn-back-to-home {
+        order: -1;
+        flex-shrink: 0;
+      }
+      body.is-plicy #screen-mission .mission-card:first-of-type .client-block {
+        padding-right: 72px;
+      }
+      body.is-plicy .flyer-head {
+        padding: 10px 12px;
+        gap: 6px;
+      }
+      body.is-plicy [id$="-modal"],
+      body.is-plicy #modal-ending,
+      body.is-plicy #modal-records,
+      body.is-plicy #modal-help {
+        padding-top: 102px !important;
+        padding-bottom: 14px !important;
+      }
+      body.is-plicy [id$="-modal"] > div,
+      body.is-plicy #modal-ending > .mission-card,
+      body.is-plicy #modal-records > .mission-card,
+      body.is-plicy #modal-help > .mission-card {
+        max-height: calc(100vh - 118px) !important;
+      }
+      body.is-plicy #gameover-modal > .mission-card,
+      body.is-plicy #plan-viewer-modal > .mission-card,
+      body.is-plicy #month-end-modal > .mission-card {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     }

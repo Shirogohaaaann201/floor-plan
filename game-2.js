@@ -2062,6 +2062,12 @@
     initAudio();
     closeCapacityAlertModal();
   });
+  document.getElementById('capacity-alert-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target && e.target.id === 'capacity-alert-modal') {
+      initAudio();
+      closeCapacityAlertModal();
+    }
+  });
 
   document.getElementById('btn-cap-to-upgrade')?.addEventListener('click', () => {
     initAudio();
@@ -3219,21 +3225,21 @@
     });
   }
 
+  function closeSkipModal() {
+    initAudio();
+    const skipModal = document.getElementById('confirm-skip-modal');
+    if (skipModal) skipModal.style.display = 'none';
+  }
+
   document.getElementById('btn-skip-month')?.addEventListener('click', () => {
     initAudio();
     openSkipModal();
   });
 
-  document.getElementById('btn-skip-cancel')?.addEventListener('click', () => {
-    initAudio();
-    const skipModal = document.getElementById('confirm-skip-modal');
-    if (skipModal) skipModal.style.display = 'none';
-  });
-
-  document.getElementById('btn-skip-close')?.addEventListener('click', () => {
-    initAudio();
-    const skipModal = document.getElementById('confirm-skip-modal');
-    if (skipModal) skipModal.style.display = 'none';
+  document.getElementById('btn-skip-cancel')?.addEventListener('click', closeSkipModal);
+  document.getElementById('btn-skip-close')?.addEventListener('click', closeSkipModal);
+  document.getElementById('confirm-skip-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target && e.target.id === 'confirm-skip-modal') closeSkipModal();
   });
 
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
@@ -3341,6 +3347,7 @@
 
 
   window.addEventListener('resize', () => {
+    if (typeof syncPlicyHeaderActions === 'function') syncPlicyHeaderActions();
     if (screens.game.classList.contains('active')) resizeCanvas();
   });
 
@@ -4197,9 +4204,14 @@
   }
   
   // モーダル閉じる
-  document.getElementById('btn-close-prop-detail')?.addEventListener('click', () => {
+  function closePropDetailModal() {
     initAudio();
-    document.getElementById('prop-detail-modal').style.display = 'none';
+    const modal = document.getElementById('prop-detail-modal');
+    if (modal) modal.style.display = 'none';
+  }
+  document.getElementById('btn-close-prop-detail')?.addEventListener('click', closePropDetailModal);
+  document.getElementById('prop-detail-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target && e.target.id === 'prop-detail-modal') closePropDetailModal();
   });
 
   // 間取り図タップで拡大モーダルを開く
