@@ -803,77 +803,120 @@
   </section>
 
     <!-- 物件詳細モーダル -->
-    <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
-      <div class="mission-card" style="position:relative; width:100%; max-width:340px; max-height:90vh; overflow-y:auto; text-align:left;">
-        <button id="btn-close-prop-detail" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
-        <div class="mission-card-title"><i class="ph-fill ph-house"></i> 物件詳細</div>
+    <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:12px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:360px; max-height:92vh; overflow-y:auto; text-align:left; padding:14px;">
+        <button id="btn-close-prop-detail" style="position:absolute; top:10px; right:10px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" style="margin-bottom:8px;"><i class="ph-fill ph-house"></i> 物件詳細</div>
         
-        <div style="background:var(--c-surface2); padding:12px; border-radius:6px; margin-bottom:10px;">
-          <div style="text-align:center; margin-bottom:12px;">
-            <div id="pd-canvas-wrapper" style="position:relative; display:inline-block; cursor:pointer;" title="タップで拡大表示">
-              <canvas id="pd-canvas" width="140" height="140" style="background:#1e293b; border-radius:6px; margin:0 auto; display:block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);"></canvas>
-              <div style="position:absolute; bottom:4px; right:4px; background:rgba(15,23,42,0.85); color:#cbd5e1; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px; pointer-events:none; display:flex; align-items:center; gap:3px; border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(2px);">
+        <!-- 1. ヘッダー + 月次収支 + 満足度 -->
+        <div style="background:var(--c-surface2); padding:10px 12px; border-radius:8px; margin-bottom:10px;">
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
+            <div id="pd-canvas-wrapper" style="position:relative; flex-shrink:0; cursor:pointer;" title="タップで拡大表示">
+              <canvas id="pd-canvas" width="104" height="104" style="background:#1e293b; border-radius:6px; display:block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);"></canvas>
+              <div style="position:absolute; bottom:3px; right:3px; background:rgba(15,23,42,0.85); color:#cbd5e1; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:4px; pointer-events:none; display:flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,0.2);">
                 <i class="ph-bold ph-magnifying-glass-plus"></i> 拡大
               </div>
             </div>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span style="font-weight:bold; color:var(--c-text);" id="pd-name">物件No.1</span>
-            <span style="font-size:12px; color:var(--c-text2);" id="pd-age">築1ヶ月</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:8px;">
-            <span style="font-size:12px; color:var(--c-text2);">家賃</span>
-            <span style="font-weight:900; color:var(--c-emerald); font-size:16px;" id="pd-rent">4.5<span style="font-size:10px;font-weight:normal;">万/月</span></span>
-          </div>
-          <div onclick="togglePdBreakdown('sat')" style="cursor:pointer;" title="タップで満足度の内訳を表示">
-            <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px; display:flex; align-items:center; gap:4px;">満足度 <i class="ph-bold ph-info" style="font-size:11px; color:#94a3b8;"></i><span id="pd-initial-evict" style="display:none;">0</span></div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <div style="flex:1; height:8px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
-                <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:3px;">
+                <span style="font-weight:900; font-size:15px; color:var(--c-text);" id="pd-name">物件 No.1</span>
+                <span id="pd-rank-badge" style="font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px;">Rank S</span>
               </div>
-              <div style="font-weight:bold; color:var(--c-text);" id="pd-sat-val">80%</div>
+              <div style="font-size:11px; color:var(--c-text2); margin-bottom:5px;" id="pd-age">築1ヶ月</div>
+              <div id="pd-tenant-badge" style="font-size:10.5px; line-height:1.35;"></div>
             </div>
           </div>
-          <div style="display:none; font-size:10px; color:#cbd5e1; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.1); border-radius:5px; padding:6px 8px; margin-top:6px; line-height:1.4;" id="pd-sat-breakdown"></div>
+
+          <!-- 月次キャッシュフロー -->
+          <div style="border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); padding:8px 0; margin-bottom:8px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center;">
+              <div style="background:rgba(15,23,42,0.45); padding:5px 4px; border-radius:5px;">
+                <div style="font-size:9.5px; color:var(--c-text2);">家賃</div>
+                <div style="font-weight:bold; font-size:13px; color:var(--c-emerald);" id="pd-rent">0.0万</div>
+              </div>
+              <div onclick="togglePdBreakdown('maint')" style="background:rgba(15,23,42,0.45); padding:5px 4px; border-radius:5px; cursor:pointer;" title="タップで維持費の内訳を表示">
+                <div style="font-size:9.5px; color:var(--c-text2); display:flex; align-items:center; justify-content:center; gap:2px;">維持費 <i class="ph-bold ph-info" style="font-size:9.5px; color:#94a3b8;"></i></div>
+                <div style="font-weight:bold; font-size:13px; color:var(--c-rose);" id="pd-maint">-0.0万</div>
+              </div>
+              <div style="background:rgba(15,23,42,0.45); padding:5px 4px; border-radius:5px;">
+                <div style="font-size:9.5px; color:var(--c-text2);">実質月収</div>
+                <div style="font-weight:900; font-size:13px;" id="pd-monthly-net">+0.0万</div>
+              </div>
+            </div>
+            <div id="pd-next-rent-row" style="display:none; font-size:10.5px; color:#38bdf8; font-weight:bold; text-align:center; margin-top:5px;"></div>
+            <div id="pd-maint-breakdown" style="display:none; font-size:10.5px; color:#e2e8f0; background:rgba(15,23,42,0.75); border:1px solid rgba(248,113,113,0.35); border-radius:6px; padding:6px 8px; margin-top:6px; line-height:1.45;"></div>
+          </div>
+
+          <!-- 満足度 -->
+          <div onclick="togglePdBreakdown('sat')" style="cursor:pointer;" title="タップで満足度の内訳を表示">
+            <div style="font-size:10.5px; color:var(--c-text2); margin-bottom:4px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="display:inline-flex; align-items:center; gap:4px;">満足度 <i class="ph-bold ph-info" style="font-size:11px; color:#94a3b8;"></i></span>
+              <span id="pd-sat-sub" style="font-size:10px; color:#94a3b8;"></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="flex:1; height:7px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
+                <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
+              </div>
+              <div style="font-weight:bold; font-size:13px; color:var(--c-text);" id="pd-sat-val">80%</div>
+            </div>
+          </div>
+          <div style="display:none; font-size:10px; color:#cbd5e1; background:rgba(15,23,42,0.75); border:1px solid rgba(255,255,255,0.12); border-radius:5px; padding:6px 8px; margin-top:6px; line-height:1.4;" id="pd-sat-breakdown"></div>
         </div>
 
-        <!-- 建築コスト・投資回収パネル (売却判断用) -->
-        <div id="pd-cost-roi-box" style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.22); padding:10px 12px; border-radius:6px; margin-bottom:10px; font-size:11px;">
+        <!-- 2. 通算収支・売却査定パネル -->
+        <div id="pd-cost-roi-box" style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.22); padding:10px 12px; border-radius:8px; margin-bottom:10px; font-size:11px;">
           <div style="font-weight:bold; color:#93c5fd; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-            <span>📊 収支 <span style="font-size:9.5px; font-weight:normal; color:var(--c-text2);">(項目タップで内訳)</span></span>
-            <span id="pd-roi-badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8;">回収 0%</span>
+            <span>📊 通算収支 <span style="font-size:9.5px; font-weight:normal; color:var(--c-text2);">(項目タップで内訳)</span></span>
+            <span id="pd-roi-badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8;">実質回収 0%</span>
           </div>
-          <div onclick="togglePdBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; cursor:pointer; padding:2px 4px; border-radius:4px;" title="タップで建築費の内訳を表示">
+          <div onclick="togglePdBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; cursor:pointer; padding:2px 4px; border-radius:4px;" title="タップで建築費の内訳を表示">
             <span style="color:var(--c-text2); display:inline-flex; align-items:center; gap:3px;">建築費 <i class="ph-bold ph-info" style="font-size:11px; color:#64748b;"></i></span>
-            <strong id="pd-total-cost" class="font-num" style="color:var(--c-text); font-size:13px;">0.0万</strong>
+            <strong id="pd-total-cost" class="font-num" style="color:var(--c-text); font-size:12.5px;">0.0万</strong>
           </div>
-          <div id="pd-cost-breakdown" style="display:none;"></div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:1px dashed rgba(255,255,255,0.1); padding:6px 4px 4px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; padding:2px 4px;">
             <span style="color:var(--c-text2);">家賃累計</span>
-            <strong id="pd-earned-rent" class="font-num" style="color:var(--c-emerald); font-size:13px;">+0.0万</strong>
+            <strong id="pd-earned-rent" class="font-num" style="color:var(--c-emerald); font-size:12.5px;">+0.0万</strong>
           </div>
-          <div onclick="togglePdBreakdown('val')" style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.5); padding:5px 8px; border-radius:4px; margin-top:4px; cursor:pointer;" title="タップで査定額・売却損益の内訳を表示">
-            <span style="color:#cbd5e1; font-size:10px; display:inline-flex; align-items:center; gap:3px;">売却損益 (査定内訳) <i class="ph-bold ph-info" style="font-size:11px; color:#38bdf8;"></i></span>
-            <strong id="pd-net-profit" class="font-num" style="font-size:12px; color:var(--c-emerald);">+0.0万</strong>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; padding:2px 4px;">
+            <span style="color:var(--c-text2);">維持費累計</span>
+            <strong id="pd-paid-maint" class="font-num" style="color:var(--c-rose); font-size:12.5px;">-0.0万</strong>
+          </div>
+          <div onclick="togglePdBreakdown('val')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; padding:3px 4px; border-top:1px dashed rgba(255,255,255,0.1); cursor:pointer; border-radius:4px;" title="タップで査定額の内訳を表示">
+            <span style="color:var(--c-text2); display:inline-flex; align-items:center; gap:3px;">現在売価 <span id="pd-val-tag" style="font-size:9.5px;"></span> <i class="ph-bold ph-info" style="font-size:11px; color:#38bdf8;"></i></span>
+            <strong id="pd-cur-resale" class="font-num" style="color:#fbbf24; font-size:12.5px;">0.0万</strong>
+          </div>
+          <div onclick="togglePdBreakdown('val')" style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.55); padding:5px 8px; border-radius:5px; cursor:pointer;" title="タップで売却損益の内訳を表示">
+            <span style="color:#cbd5e1; font-size:10.5px; font-weight:bold;">売却時 通算損益</span>
+            <strong id="pd-net-profit" class="font-num" style="font-size:13px; color:var(--c-emerald);">+0.0万</strong>
           </div>
           <div id="pd-breakdown-drawer" style="display:none; margin-top:6px; padding:7px 9px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.35); border-radius:6px; font-size:10.5px; color:#e2e8f0; line-height:1.5;"></div>
         </div>
 
-        <div style="display:flex; gap:8px; margin-bottom:10px;">
-          <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);" id="pd-risk-label">退去率</div>
-            <div style="font-weight:bold; color:var(--c-rose); font-size:14px;" id="pd-current-evict">5.5%</div>
+        <!-- 3. リスク・劣化・担保評価 -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+          <div style="background:var(--c-surface2); padding:7px 4px; border-radius:6px; text-align:center;">
+            <div style="font-size:9.5px; color:var(--c-text2);" id="pd-risk-label">退去率</div>
+            <div style="font-weight:bold; color:var(--c-rose); font-size:13.5px; margin-top:1px;" id="pd-current-evict">0.0%</div>
+            <div style="font-size:9px; color:#94a3b8; margin-top:1px;" id="pd-risk-sub"></div>
           </div>
-          <div style="flex:1; background:var(--c-surface2); padding:8px; border-radius:6px; text-align:center;">
-            <div style="font-size:10px; color:var(--c-text2);">ランク</div>
-            <div style="font-weight:bold; color:var(--c-amber); font-size:14px;" id="pd-deg-rate">S</div>
+          <div style="background:var(--c-surface2); padding:7px 4px; border-radius:6px; text-align:center;">
+            <div style="font-size:9.5px; color:var(--c-text2);">劣化速度</div>
+            <div style="font-weight:bold; color:var(--c-amber); font-size:13.5px; margin-top:1px;" id="pd-deg-rate">0.5%/月</div>
+            <div style="font-size:9px; color:#94a3b8; margin-top:1px;" id="pd-deg-sub">Rank S</div>
+          </div>
+          <div style="background:var(--c-surface2); padding:7px 4px; border-radius:6px; text-align:center;">
+            <div style="font-size:9.5px; color:var(--c-text2);">融資担保</div>
+            <div style="font-weight:bold; color:#38bdf8; font-size:13.5px; margin-top:1px;" id="pd-collateral">+0.0万</div>
+            <div style="font-size:9px; color:#94a3b8; margin-top:1px;" id="pd-collateral-sub">売価×2.0</div>
           </div>
         </div>
 
-        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 12px; border-radius:6px; margin-bottom:14px; display:none;" id="pd-combos">
+        <!-- 4. コンボ一覧 -->
+        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 10px; border-radius:6px; margin-bottom:12px; display:none;" id="pd-combos">
         </div>
 
-        <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:12px; font-size:14px; border-color:var(--c-border); color:var(--c-amber-lt);">
+        <!-- 5. 売却アクション -->
+        <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:11px; font-size:13.5px; border-color:var(--c-border); color:var(--c-amber-lt);">
           <i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">0.0</span>万)
         </button>
       </div>
@@ -9488,6 +9531,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       occupiedArea: p.occupiedArea,
       totalCost: p.totalCost !== undefined ? p.totalCost : 0,
       earnedRent: 0,
+      paidMaint: 0,
       isClear: p.isClear || false,
       satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
       totalRequests: p.totalRequests || 1,
@@ -9992,8 +10036,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
       if (p.earnedRent !== undefined) {
         const earned = Math.round((p.earnedRent || 0) * 10) / 10;
-        const net = Math.round((earned + parseFloat(stats.resaleValue) - totalCost) * 10) / 10;
-        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>累計手残り (家賃 ${earned.toFixed(1)}万 ＋ 査定 ${stats.resaleValue}万 − 建築費 ${totalCost.toFixed(1)}万):</span><strong style="color:${net >= 0 ? '#16a34a' : '#e11d48'};">${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
+        const paidMaint = Math.round((p.paidMaint || 0) * 10) / 10;
+        const net = Math.round((earned - paidMaint + parseFloat(stats.resaleValue) - totalCost) * 10) / 10;
+        const maintStr = paidMaint > 0 ? ` − 維持費 ${paidMaint.toFixed(1)}万` : '';
+        rows.push(`<div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(148,163,184,0.35); margin-top:3px; padding-top:2px;"><span>売却時通算 (家賃 ${earned.toFixed(1)}万${maintStr} ＋ 査定 ${stats.resaleValue}万 − 建築費 ${totalCost.toFixed(1)}万):</span><strong style="color:${net >= 0 ? '#16a34a' : '#e11d48'};">${net >= 0 ? '+' : ''}${net.toFixed(1)}万</strong></div>`);
       }
 
       return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">🏷️ 査定額の内訳（${stats.resaleValue}万）</div>` + rows.join('');
@@ -10070,6 +10116,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       if (satEl) satEl.style.display = (satEl.style.display === 'none') ? 'block' : 'none';
       return;
     }
+    if (key === 'maint') {
+      const maintEl = document.getElementById('pd-maint-breakdown');
+      if (!maintEl) return;
+      if (maintEl.style.display !== 'none') {
+        maintEl.style.display = 'none';
+      } else {
+        const stats = calcPropertyStats(p);
+        maintEl.innerHTML = getPropertyBreakdownHtml(p, stats, 'maint');
+        maintEl.style.display = 'block';
+      }
+      return;
+    }
     const drawer = document.getElementById('pd-breakdown-drawer');
     if (!drawer) return;
     if (window.activePdBreakdownKey === key && drawer.style.display !== 'none') {
@@ -10091,53 +10149,93 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (pdDrawer) pdDrawer.style.display = 'none';
     const pdSatBreak = document.getElementById('pd-sat-breakdown');
     if (pdSatBreak) pdSatBreak.style.display = 'none';
+    const pdMaintBreak = document.getElementById('pd-maint-breakdown');
+    if (pdMaintBreak) pdMaintBreak.style.display = 'none';
 
     const stats = calcPropertyStats(p);
-    
+    const rank = getPropertyRank(stats.degRate);
+    const rankStyle = getRankBadgeStyle(rank);
+    const propNo = p.propertyNo || (p.level !== undefined ? p.level + 1 : 1);
+
+    // 1. ヘッダー + 状態バッジ
+    document.getElementById('pd-name').textContent = `物件 No.${propNo}`;
+    const rankBadgeEl = document.getElementById('pd-rank-badge');
+    if (rankBadgeEl) {
+      rankBadgeEl.textContent = `Rank ${rank}`;
+      rankBadgeEl.setAttribute('style', `font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px; ${rankStyle}`);
+    }
+    document.getElementById('pd-age').textContent = stats.isVacant
+      ? `築${stats.buildingAge}ヶ月 (空室中)`
+      : `築${stats.buildingAge}ヶ月 (現入居${stats.tenantTenure}ヶ月目)`;
+
     let tenantBadge = '';
     if (stats.isVacant) {
-      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#ffe4e6; color:#be123c; border-radius:4px; margin-left:6px; font-weight:bold;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率 ${stats.fillChance}%)</span>`;
+      tenantBadge = `<span style="display:inline-block; padding:2px 7px; background:rgba(244,63,94,0.2); color:#fda4af; border:1px solid rgba(244,63,94,0.35); border-radius:4px; font-weight:bold;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目</span>`;
     } else if (stats.isOriginal) {
-      const remBarrier = Math.max(0, (stats.barrierMonths || 0) - stats.tenantTenure);
-      const barrierText = remBarrier > 0 ? ` / バリア残${remBarrier}ヶ月` : ` / 居住${stats.tenantTenure}ヶ月目`;
-      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#fef3c7; color:#b45309; border-radius:4px; margin-left:6px; font-weight:normal;">👤 初代入居中 (${p.clientName || '特注主'}${barrierText})</span>`;
+      tenantBadge = `<span style="display:inline-block; padding:2px 7px; background:rgba(245,158,11,0.18); color:#fcd34d; border:1px solid rgba(245,158,11,0.35); border-radius:4px;">👤 初代 (${p.clientName || '特注主'})</span>`;
     } else {
-      tenantBadge = `<span style="font-size:10px; padding:2px 6px; background:#eff6ff; color:#1d4ed8; border-radius:4px; margin-left:6px; font-weight:normal;">🌐 2代目以降入居中 (居住${stats.tenantTenure}ヶ月目)</span>`;
+      tenantBadge = `<span style="display:inline-block; padding:2px 7px; background:rgba(56,189,248,0.18); color:#93c5fd; border:1px solid rgba(56,189,248,0.35); border-radius:4px;">🌐 2代目以降 (一般入居)</span>`;
     }
-    document.getElementById('pd-name').innerHTML = `物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)} ${tenantBadge}`;
+    const tenantBadgeEl = document.getElementById('pd-tenant-badge');
+    if (tenantBadgeEl) tenantBadgeEl.innerHTML = tenantBadge;
     
-    // 図面の描画 (140px サムネイル・略称ラベル付き)
+    // 図面の描画 (104px サムネイル・略称ラベル付き)
     const canvas = document.getElementById('pd-canvas');
-    renderPropertyPlanToCanvas(canvas, p, 140, true);
+    renderPropertyPlanToCanvas(canvas, p, 104, true);
 
-    document.getElementById('pd-age').textContent = `築${stats.buildingAge}ヶ月${stats.isVacant ? ' (空室中)' : ` (入居${stats.tenantTenure}ヶ月)`}`;
-    
+    // 月次キャッシュフロー
     const rentEl = document.getElementById('pd-rent');
-    const maintHtml = `<div onclick="togglePdBreakdown('maint')" style="font-size:10.5px; color:#f87171; font-weight:bold; margin-top:2px; text-align:right; cursor:pointer;" title="タップで維持費の内訳を表示">
-      維持費: -${stats.maintCost.toFixed(1)}万/月 <i class="ph-bold ph-info" style="font-size:10px;"></i>
-    </div>`;
-    if (stats.isVacant) {
-      const discountPct = Math.min(40, Math.round((stats.buildingAge / 12) * 8));
-      rentEl.innerHTML = `<div style="text-align:right;">
-        <span style="color:var(--c-rose);">0.0<span style="font-size:10px;font-weight:normal;">万/月 (空室中)</span></span>
-        <div style="font-size:11px; color:#38bdf8; font-weight:bold; margin-top:2px;">
-          次回募集: ${stats.nextRecruitRent.toFixed(1)}万/月 (相場-${discountPct}%)
-        </div>
-        ${maintHtml}
-      </div>`;
-    } else {
-      rentEl.innerHTML = `<div style="text-align:right;">
-        ${stats.currentRent.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
-        ${maintHtml}
-      </div>`;
+    const maintEl = document.getElementById('pd-maint');
+    const netMonthlyEl = document.getElementById('pd-monthly-net');
+    const nextRentRow = document.getElementById('pd-next-rent-row');
+
+    if (rentEl) {
+      rentEl.textContent = stats.isVacant ? '0.0万' : `+${stats.currentRent.toFixed(1)}万`;
+      rentEl.style.color = stats.isVacant ? '#94a3b8' : 'var(--c-emerald)';
+    }
+    if (maintEl) {
+      maintEl.textContent = `-${stats.maintCost.toFixed(1)}万`;
+    }
+    if (netMonthlyEl) {
+      const mNet = stats.netMonthlyProfit;
+      netMonthlyEl.textContent = `${mNet >= 0 ? '+' : ''}${mNet.toFixed(1)}万`;
+      netMonthlyEl.style.color = mNet >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
+    }
+    if (nextRentRow) {
+      if (stats.isVacant) {
+        const discountPct = Math.min(40, Math.round((stats.buildingAge / 12) * 8));
+        nextRentRow.textContent = `次回募集想定: ${stats.nextRecruitRent.toFixed(1)}万/月 (築年相場 -${discountPct}%)`;
+        nextRentRow.style.display = 'block';
+      } else {
+        nextRentRow.style.display = 'none';
+      }
     }
     
+    // 満足度
     document.getElementById('pd-sat-val').textContent = `${stats.satisfaction}%`;
     const bar = document.getElementById('pd-sat-bar');
     bar.style.width = `${Math.min(100, Math.max(0, stats.satisfaction))}%`;
     if (stats.satisfaction >= 100) bar.style.background = 'var(--c-emerald)';
     else if (stats.satisfaction >= 60) bar.style.background = 'var(--c-amber)';
     else bar.style.background = 'var(--c-rose)';
+
+    const satSubEl = document.getElementById('pd-sat-sub');
+    const remBarrier = Math.max(0, (stats.barrierMonths || 0) - stats.tenantTenure);
+    if (satSubEl) {
+      if (stats.isVacant) {
+        satSubEl.textContent = '空室中（募集待ち）';
+        satSubEl.style.color = '#fda4af';
+      } else if (stats.isOriginal && remBarrier > 0) {
+        satSubEl.textContent = `🛡️ 退去保証 残${remBarrier}ヶ月`;
+        satSubEl.style.color = '#34d399';
+      } else if (!stats.isOriginal && stats.tenantTenure <= 3) {
+        satSubEl.textContent = `🛡️ 初期定着 残${Math.max(1, 4 - stats.tenantTenure)}ヶ月`;
+        satSubEl.style.color = '#38bdf8';
+      } else {
+        satSubEl.textContent = stats.isOriginal ? '保証終了・通常判定' : '一般市場基準';
+        satSubEl.style.color = '#94a3b8';
+      }
+    }
     
     const optStr = stats.optBonus > 0 ? ` ＋ 任意 ${stats.optBonus}%` : '';
     const conciergeStr = stats.conciergeBonus > 0 ? ` ＋ 接客 ${stats.conciergeBonus}%` : '';
@@ -10149,57 +10247,53 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       document.getElementById('pd-sat-breakdown').textContent = `満足度内訳: 適正家賃 ${stats.rentBonus}% ＋ 標準仕様 ${stats.reqBonus}% ${comboOp}${conciergeStr}${amenityStr} ＝ ${stats.satisfaction}%`;
     }
 
-    // 建築コスト・投資回収パネルの更新
+    // 2. 通算収支・投資回収パネルの更新 (維持費累計 paidMaint を反映)
     const estBaseCost = Math.round(((p.baseRent || 0) * 20) * 10) / 10;
     const isLegacyCost = (p.totalCost === undefined);
     const totalCost = !isLegacyCost ? p.totalCost : estBaseCost;
-    const baseCost = (p.baseCost !== undefined) ? p.baseCost : estBaseCost;
-    const mirrorCost = p.mirrorCost || 0;
-    const cycleExtraCost = p.cycleExtraCost || 0;
-    const rerollCost = p.rerollCost || 0;
-    const wallRemoveCost = p.wallRemoveCost || 0;
-    const encroachCost = p.encroachCost || 0;
-    const extraCost = Math.round((mirrorCost + cycleExtraCost + rerollCost + wallRemoveCost + encroachCost) * 10) / 10;
-    const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
-    const discountSaved = Math.max(0, Math.round((baseCost - (piecePaidCost - mirrorCost - cycleExtraCost)) * 10) / 10);
     const earnedRent = Math.round((p.earnedRent || 0) * 10) / 10;
+    const paidMaint = Math.round((p.paidMaint || 0) * 10) / 10;
+    const cumCashProfit = Math.round((earnedRent - paidMaint) * 10) / 10;
     const resaleNum = parseFloat(stats.resaleValue) || 0;
-    const netIfSold = Math.round((earnedRent + resaleNum - totalCost) * 10) / 10;
-    const rentRecPct = totalCost > 0 ? Math.floor((earnedRent / totalCost) * 100) : 100;
+    const netIfSold = Math.round((cumCashProfit + resaleNum - totalCost) * 10) / 10;
+    const cashRecPct = totalCost > 0 ? Math.floor((cumCashProfit / totalCost) * 100) : 100;
 
     const elTotalCost = document.getElementById('pd-total-cost');
-    if (elTotalCost) elTotalCost.textContent = `${totalCost.toFixed(1)}万${isLegacyCost ? ' (推定)' : ''}`;
-
-    const elCostBreak = document.getElementById('pd-cost-breakdown');
-    if (elCostBreak) {
-      if (isLegacyCost) {
-        elCostBreak.textContent = `(旧セーブ推定原価 ${baseCost.toFixed(1)}万)`;
-      } else {
-        const extraItems = [];
-        if (cycleExtraCost > 0) extraItems.push(`追加発注+${cycleExtraCost.toFixed(1)}万`);
-        if (mirrorCost > 0) extraItems.push(`反転+${mirrorCost.toFixed(1)}万`);
-        if (rerollCost > 0) extraItems.push(`更新+${rerollCost.toFixed(1)}万`);
-        if (wallRemoveCost > 0) extraItems.push(`壁撤去+${wallRemoveCost.toFixed(1)}万`);
-        if (encroachCost > 0) extraItems.push(`造成+${encroachCost.toFixed(1)}万`);
-        const extraLabel = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
-        const discStr = discountSaved > 0 ? ` ・ 割引 -${discountSaved.toFixed(1)}万` : '';
-        elCostBreak.textContent = `(ピース原価 ${baseCost.toFixed(1)}万 ・ ${extraLabel}${discStr})`;
-      }
-    }
+    if (elTotalCost) elTotalCost.textContent = `-${totalCost.toFixed(1)}万${isLegacyCost ? ' (推定)' : ''}`;
 
     const elEarned = document.getElementById('pd-earned-rent');
     if (elEarned) elEarned.textContent = `+${earnedRent.toFixed(1)}万`;
 
+    const elPaidMaint = document.getElementById('pd-paid-maint');
+    if (elPaidMaint) elPaidMaint.textContent = `-${paidMaint.toFixed(1)}万`;
+
+    const elValTag = document.getElementById('pd-val-tag');
+    if (elValTag) {
+      if (!stats.canSell) {
+        elValTag.textContent = `(🔒残${stats.sellLockRemain}ヶ月)`;
+        elValTag.style.color = '#94a3b8';
+      } else if (stats.isVacant) {
+        elValTag.textContent = `(空室20%引)`;
+        elValTag.style.color = '#fda4af';
+      } else {
+        elValTag.textContent = `(満額)`;
+        elValTag.style.color = '#34d399';
+      }
+    }
+
+    const elCurResale = document.getElementById('pd-cur-resale');
+    if (elCurResale) elCurResale.textContent = `${stats.resaleValue}万`;
+
     const elRoiBadge = document.getElementById('pd-roi-badge');
     if (elRoiBadge) {
-      if (earnedRent >= totalCost) {
-        elRoiBadge.textContent = `🎉 元本回収済 (${rentRecPct}%)`;
+      if (cumCashProfit >= totalCost) {
+        elRoiBadge.textContent = `🎉 実質回収済 (${cashRecPct}%)`;
         elRoiBadge.style.background = 'rgba(16,185,129,0.2)';
         elRoiBadge.style.color = '#34d399';
       } else {
-        elRoiBadge.textContent = `家賃回収 ${rentRecPct}%`;
-        elRoiBadge.style.background = 'rgba(56,189,248,0.15)';
-        elRoiBadge.style.color = '#38bdf8';
+        elRoiBadge.textContent = `実質回収 ${cashRecPct}%`;
+        elRoiBadge.style.background = cumCashProfit < 0 ? 'rgba(244,63,94,0.18)' : 'rgba(56,189,248,0.15)';
+        elRoiBadge.style.color = cumCashProfit < 0 ? '#fda4af' : '#38bdf8';
       }
     }
 
@@ -10209,23 +10303,41 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       elNetProfit.style.color = netIfSold >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
     }
     
+    // 3. リスク・劣化速度・担保評価カード
     const riskLabelEl = document.getElementById('pd-risk-label');
     const evictEl = document.getElementById('pd-current-evict');
+    const riskSubEl = document.getElementById('pd-risk-sub');
     if (stats.isVacant) {
-      if (riskLabelEl) riskLabelEl.textContent = '入居率';
+      if (riskLabelEl) riskLabelEl.textContent = '来月入居率';
       if (evictEl) {
         evictEl.textContent = `${stats.fillChance}%`;
         evictEl.style.color = 'var(--c-emerald)';
       }
+      if (riskSubEl) riskSubEl.textContent = `空室${stats.vacantMonths || 1}ヶ月目`;
     } else {
       if (riskLabelEl) riskLabelEl.textContent = '退去率';
       if (evictEl) {
         evictEl.textContent = `${stats.evictRate}%`;
-        evictEl.style.color = 'var(--c-rose)';
+        evictEl.style.color = parseFloat(stats.evictRate) >= 15 ? 'var(--c-rose)' : (parseFloat(stats.evictRate) === 0 ? 'var(--c-emerald)' : 'var(--c-amber)');
+      }
+      if (riskSubEl) {
+        riskSubEl.textContent = (stats.isOriginal && remBarrier > 0) ? `保証残${remBarrier}ヶ月` : `入居${stats.tenantTenure}ヶ月目`;
       }
     }
-    document.getElementById('pd-deg-rate').textContent = `Rank ${getPropertyRank(stats.degRate)}`;
+
+    const degRateEl = document.getElementById('pd-deg-rate');
+    const degSubEl = document.getElementById('pd-deg-sub');
+    if (degRateEl) degRateEl.textContent = `+${stats.degRate}%/月`;
+    if (degSubEl) degSubEl.textContent = `品質 Rank ${rank}`;
+
+    const colMult = stats.isVacant ? 0.5 : 2.0;
+    const colVal = Math.round(resaleNum * colMult * 10) / 10;
+    const colEl = document.getElementById('pd-collateral');
+    const colSubEl = document.getElementById('pd-collateral-sub');
+    if (colEl) colEl.textContent = `+${colVal.toFixed(1)}万`;
+    if (colSubEl) colSubEl.textContent = `売価×${colMult.toFixed(1)}倍`;
     
+    // 4. コンボ一覧（珍間取り・悪コンボのペナルティ付記）
     const combosEl = document.getElementById('pd-combos');
     if (combosEl) {
       if (p.combosList && p.combosList.length > 0) {
@@ -10241,9 +10353,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
               if (p.customCombo.isNegativeInversion) isNegative = true;
             }
           }
-          const badgeColor = isNegative ? 'var(--c-rose)' : 'var(--c-emerald)';
-          const icon = isNegative ? '🚨' : '👍';
-          return `<div style="margin-bottom:4px;"><span style="font-size:10px; padding:2px 4px; border-radius:4px; margin-right:4px; color:#fff; background:${badgeColor};">${icon}</span> ${c.name} (${bonusText})</div>`;
+          const funnyProp = (typeof FUNNY_LAYOUT_PROPS !== 'undefined' && FUNNY_LAYOUT_PROPS[c.name]) ? FUNNY_LAYOUT_PROPS[c.name] : null;
+          let effectNote = '';
+          if (funnyProp) {
+            effectNote = ` <span style="font-size:9.5px; color:#fca5a5;">(劣化+${funnyProp.deg}% / 入居${funnyProp.fill}%)</span>`;
+          } else if (isNegative) {
+            effectNote = ` <span style="font-size:9.5px; color:#fca5a5;">(満足-20% / 劣化+0.5%)</span>`;
+          }
+          const badgeColor = isNegative ? 'var(--c-rose)' : (funnyProp ? '#a855f7' : 'var(--c-emerald)');
+          const icon = isNegative ? '🚨' : (funnyProp ? '🤪' : '👍');
+          return `<div style="margin-bottom:3px; line-height:1.4;"><span style="font-size:9.5px; padding:1px 4px; border-radius:4px; margin-right:4px; color:#fff; background:${badgeColor};">${icon}</span><strong>${c.name}</strong> (${bonusText})${effectNote}</div>`;
         }).join('');
         combosEl.innerHTML = comboHtml;
         combosEl.style.display = 'block';
@@ -12399,11 +12518,9 @@ function updateHomeUI() {
 
         const stats = calcPropertyStats(p);
         totalMaint += stats.maintCost;
-        
-        let statusHtml = '';
+
         let rentDisplay = p.rent;
         if (stats.isVacant) {
-          statusHtml = `<div style="color:var(--c-rose); font-size:11px; font-weight:bold; margin-top:2px;">⚠️ 空室 ${stats.vacantMonths || 1}ヶ月目 (来月入居率: ${stats.fillChance}% / 維持費 -${stats.maintCost.toFixed(1)}万)</div>`;
           rentDisplay = 0;
         } else {
           totalRent += p.rent;
@@ -12412,33 +12529,38 @@ function updateHomeUI() {
         const rank = getPropertyRank(stats.degRate);
         const rankStyle = getRankBadgeStyle(rank);
         const color = p.isClear ? 'var(--c-emerald)' : 'var(--c-amber)';
-        
-        // プロパティ詳細を開くための data-id
-        const resaleNum = parseFloat(stats.resaleValue) || 0;
-        const estCost = p.totalCost !== undefined ? p.totalCost : Math.round(((p.baseRent || 0) * 20) * 10) / 10;
-        const earned = p.earnedRent || 0;
-        const netNow = Math.round((earned + resaleNum - estCost) * 10) / 10;
-        const netColor = netNow >= 0 ? '#059669' : '#e11d48';
+        const propNo = p.propertyNo || (p.level !== undefined ? p.level + 1 : idx + 1);
+        const statusBadge = stats.isVacant
+          ? `<span style="font-size:10px; background:#ffe4e6; color:#e11d48; padding:2px 6px; border-radius:4px; font-weight:700;">⚠️ 空室${stats.vacantMonths || 1}ヶ月目</span>`
+          : (!stats.canSell
+            ? `<span style="font-size:10px; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:4px; font-weight:700;">🔒売ロック${stats.sellLockRemain}ヶ月</span>`
+            : '');
+        const thirdMetricHtml = stats.isVacant
+          ? `<span style="color:#2563eb; font-weight:700;">入居率 ${stats.fillChance}%</span>`
+          : (stats.isOriginal && (stats.barrierMonths || 0) > stats.tenantTenure
+            ? `<span style="color:#059669; font-weight:600;">🛡️ 保証残${stats.barrierMonths - stats.tenantTenure}ヶ月</span>`
+            : `<span style="color:${parseFloat(stats.evictRate) >= 15 ? '#e11d48' : '#64748b'}; font-weight:${parseFloat(stats.evictRate) >= 15 ? '700' : 'normal'};">退去 ${stats.evictRate}%</span>`);
+        const netMonthlyColor = stats.netMonthlyProfit >= 0 ? '#059669' : '#e11d48';
+
         listEl.innerHTML += `
-          <div class="prop-list-item" data-id="${p.id}" style="padding:12px; border-bottom:1px dashed #cbd5e1; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition: background 0.2s;">
-            <div>
-              <div style="font-weight:bold; color:#1e293b; font-size:14px;"><span style="display:inline-block; padding:2px 6px; ${rankStyle} border-radius:4px; font-size:11px; font-weight:bold; margin-right:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">Rank ${rank}</span> 物件 No.${p.propertyNo || (p.level !== undefined ? p.level + 1 : idx + 1)}</div>
-              <div style="font-size:11px; color:var(--c-text2); margin-top:4px; display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="prop-list-item" data-id="${p.id}" style="padding:12px; border-bottom:1px dashed #cbd5e1; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:12px; transition: background 0.2s;">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:bold; color:#1e293b; font-size:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="display:inline-block; padding:2px 6px; ${rankStyle} border-radius:4px; font-size:11px; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.1);">Rank ${rank}</span>
+                <span>物件 No.${propNo}</span>
+                ${statusBadge}
+              </div>
+              <div style="font-size:11px; color:#64748b; margin-top:5px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                 <span>築${stats.buildingAge}ヶ月</span>
-                <span style="color:#e11d48;">維持費: -${stats.maintCost.toFixed(1)}万</span>
-                ${stats.isVacant 
-                  ? `<span style="color:#2563eb; font-weight:bold;">入居率: ${stats.fillChance}%</span>` 
-                  : `<span>退去リスク: ${stats.evictRate}%</span>`}
-                <span>売価: ${stats.resaleValue}万${!stats.canSell ? `<span style="font-size:10px; color:#64748b; font-weight:bold;">(🔒あと${stats.sellLockRemain}ヶ月)</span>` : (stats.isVacant ? '<span style="font-size:10px; color:#e11d48; font-weight:bold;">(空室20%引)</span>' : '<span style="font-size:10px; color:#059669;">(満額)</span>')}</span>
-                <span style="color:${netColor}; font-weight:bold;">売却通算: ${netNow >= 0 ? '+' : ''}${netNow.toFixed(1)}万</span>
+                <span style="color:#e11d48;">維持費 -${stats.maintCost.toFixed(1)}万</span>
+                ${thirdMetricHtml}
               </div>
-              ${statusHtml}
             </div>
-            <div style="text-align:right;">
+            <div style="flex-shrink:0; text-align:right; white-space:nowrap;">
               <div style="font-weight:900; color:${stats.isVacant ? '#94a3b8' : color}; font-size:16px;">
-                ${stats.isVacant ? '0.0' : rentDisplay.toFixed(1)}<span style="font-size:10px;font-weight:normal;">万/月</span>
+                ${stats.isVacant ? '0.0' : rentDisplay.toFixed(1)}<span style="font-size:10px; font-weight:normal;">万/月</span>
               </div>
-              ${stats.isVacant ? '<div style="font-size:10px; color:var(--c-rose); font-weight:bold;">空室中</div>' : `<div style="font-size:10px; color:#64748b; margin-top:2px;">実質 ${stats.netMonthlyProfit >= 0 ? '+' : ''}${stats.netMonthlyProfit.toFixed(1)}万</div>`}
+              <div style="font-size:10.5px; font-weight:700; color:${netMonthlyColor}; margin-top:2px;">実質 ${stats.netMonthlyProfit >= 0 ? '+' : ''}${stats.netMonthlyProfit.toFixed(1)}万</div>
             </div>
           </div>
         `;
