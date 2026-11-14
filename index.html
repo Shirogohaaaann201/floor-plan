@@ -6587,11 +6587,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     { id: 16, name: '水門',           category: '珍間取り', bonus: '+1.5万', icon: 'ph-waves',            hint: '玄関から水回りにしか行けない構造',         desc: '玄関隣接が水回りのみ' },
     { id: 17, name: '秘密のトイレ',   category: '珍間取り', bonus: '+1.0万', icon: 'ph-lock-key',         hint: 'クローゼットの奥に潜む便器',               desc: '収納経由でのみ入れるトイレ' },
     { id: 18, name: '隠し部屋',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-door',             hint: '収納の奥に広がるプライベート空間',         desc: '収納経由でのみ入れる居室' },
-    { id: 19, name: 'トイレビュッフェ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-toilet',         hint: '廊下にずらりと並ぶ便器',                   desc: '1つの廊下にトイレ3つ以上隣接' },
-    { id: 20, name: 'スケルトンバス', category: '珍間取り', bonus: '-1.0万', icon: 'ph-shower',           hint: '玄関正面に浴室の扉が見える',               desc: '玄関正面直線上に浴室ドア' },
+    { id: 19, name: 'トイレビュッフェ', category: 'NG',       bonus: '-1.5万', icon: 'ph-toilet',         hint: '廊下にずらりと並ぶ便器',                   desc: '1つの廊下にトイレ3つ以上隣接' },
+    { id: 20, name: 'スケルトンバス', category: 'NG',       bonus: '-1.0万', icon: 'ph-shower',           hint: '玄関正面に浴室の扉が見える',               desc: '玄関正面直線上に浴室ドア' },
     { id: 21, name: '無限回廊',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-arrows-clockwise', hint: '廊下がぐるりと一周ループ',                 desc: '廊下が環状に連結' },
-    { id: 22, name: 'マトリョーシカ', category: '珍間取り', bonus: '-1.0万', icon: 'ph-tree-structure',   hint: '部屋の奥に部屋、その奥にさらに部屋',       desc: '居室を3室以上連続で通り抜け' },
-    { id: 23, name: 'プライバシーゼロ', category: '珍間取り', bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
+    { id: 22, name: 'マトリョーシカ', category: 'NG',       bonus: '-1.0万', icon: 'ph-tree-structure',   hint: '部屋の奥に部屋、その奥にさらに部屋',       desc: '居室を3室以上連続で通り抜け' },
+    { id: 23, name: 'プライバシーゼロ', category: 'NG',     bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
     { id: 24, name: 'ガラス張りハウス', category: '珍間取り', bonus: '+3.0万', icon: 'ph-sparkle',        hint: '壁一面が窓だらけのパノラマ住宅',           desc: '建物全体の窓が15箇所以上' },
     { id: 25, name: '大ホワイエ',       category: '王道',     bonus: '+2〜4万', icon: 'ph-columns',        hint: '玄関を入った先に、広間のようなゆったりとした廊下（2×3以上）を設けると…？', desc: '玄関から広がるエントランスホール（2×3で+2.0万 / 特大で+4.0万）' },
     { id: 26, name: 'ロングコリドー',   category: '珍間取り', bonus: '+2.5万', icon: 'ph-arrows-left-right', hint: '縦または横に、一直線に伸びる長い廊下（7マス以上）を作ると…？',             desc: '視線がすっと抜ける一本の長廊下（直線7マス以上の連続廊下）' },
@@ -6627,48 +6627,48 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function detectCombos(counts, visited) {
     const combos = [];
     
-    // NG隣接コンボ
+    // NGコンボ（生活導線・衛生上の問題）
     if (hasDirectConnection(grid, T.LDK, T.TOILET)) {
       combos.push({ name:'食欲減退', bonus:-3.0, icon:'ph-warning text-red-600', type:'funny',
-        text:'【NG隣接】食事の場とトイレが直結 — においと音が直撃 (-3.0万)' });
+        text:'【NG】食欲減退 — 食事の場とトイレが直結、においと音が直撃 (-3.0万)' });
     }
     if (hasDirectConnection(grid, T.ENTRANCE, T.BATH)) {
       combos.push({ name:'玄関直風呂', bonus:-2.0, icon:'ph-warning text-red-600', type:'funny',
-        text:'【NG隣接】玄関あけたらすぐ風呂 — 宅配便が来たら大惨事 (-2.0万)' });
+        text:'【NG】玄関直風呂 — 玄関あけたらすぐ風呂、宅配便が来たら大惨事 (-2.0万)' });
     }
 
     // 統合サイズコンボ（同種ピース統合で生まれた大きな水回り・収納）
-    // トイレ: 4マス以上でネタ / 浴室: 4マス以上で豪華、8マス以上で銭湯 / 収納: 4マス以上で豪華、8マス以上でやり過ぎ
+    // トイレ: 4マス以上で珍間取り / 浴室: 4マス以上で王道、8マス以上で珍間取り / 収納: 4マス以上で王道、8マス以上で珍間取り
     if (counts.maxToiletSize >= 4) {
       combos.push({ name:'バカデカトイレ', bonus:2.5, icon:'ph-toilet text-purple-600', type:'funny',
-        text:`【珍間取り】トイレが${counts.maxToiletSize}マス連結 — 何を目指しているのか (+2.5万)` });
+        text:`【珍間取り】バカデカトイレ — トイレが${counts.maxToiletSize}マス連結、何を目指しているのか (+2.5万)` });
     }
     if (counts.maxBathSize >= 8) {
       combos.push({ name:'もはや銭湯', bonus:4.0, icon:'ph-shower text-cyan-600', type:'funny',
-        text:`【珍間取り】浴室が${counts.maxBathSize}マス連結 — 住居より風呂が主役 (+4.0万)` });
+        text:`【珍間取り】もはや銭湯 — 浴室が${counts.maxBathSize}マス連結、住居より風呂が主役 (+4.0万)` });
     } else if (counts.maxBathSize >= 4) {
       combos.push({ name:'セレブ浴室', bonus:4.0, icon:'ph-bathtub text-cyan-600', type:'good',
-        text:`【王道】浴室が${counts.maxBathSize}マス連結 — 足を伸ばして入れる贅沢 (+4.0万)` });
+        text:`【王道】セレブ浴室 — 浴室が${counts.maxBathSize}マス連結、足を伸ばして入れる贅沢 (+4.0万)` });
     }
     if (counts.maxClosetSize >= 8) {
       combos.push({ name:'収納が本体', bonus:2.5, icon:'ph-package text-amber-600', type:'funny',
-        text:`【珍間取り】収納が${counts.maxClosetSize}マス連結 — もはや倉庫に住んでいる (+2.5万)` });
+        text:`【珍間取り】収納が本体 — 収納が${counts.maxClosetSize}マス連結、もはや倉庫に住んでいる (+2.5万)` });
     } else if (counts.maxClosetSize >= 4) {
       combos.push({ name:'倉庫付き物件', bonus:3.0, icon:'ph-package text-amber-600', type:'good',
-        text:`【王道】収納が${counts.maxClosetSize}マス連結 — 荷物が多くても安心 (+3.0万)` });
+        text:`【王道】倉庫付き物件 — 収納が${counts.maxClosetSize}マス連結、荷物が多くても安心 (+3.0万)` });
     }
 
     // 新コンボ1: 古き良き日本家屋（田の字プラン）
     if (hasTanojiWashitsu(visited)) {
       combos.push({ name:'古き良き日本家屋', bonus:5.0, icon:'ph-house-line text-emerald-600', type:'good',
-        text:'【王道】田の字プラン — 和室4部屋が田の字に直結する伝統的構造 (+5.0万)' });
+        text:'【王道】古き良き日本家屋 — 和室4部屋が田の字に直結する伝統的構造 (+5.0万)' });
     }
 
     // 新コンボ2: 究極のオープン（全室オープン構造）
     const livingRooms = counts.ldkRooms + counts.bedRooms;
     if (counts.corridor === 0 && livingRooms >= 4) {
       combos.push({ name:'究極のオープン', bonus:3.5, icon:'ph-door text-teal-600', type:'funny',
-        text:'【珍間取り】全室オープン構造 — 廊下ゼロで部屋が直結 (+3.5万)' });
+        text:'【珍間取り】究極のオープン — 廊下ゼロで居室が直結 (+3.5万)' });
     }
     // 新コンボ2: 封印されし闇（到達不能かつ窓なしの部屋）
     if (counts.unreachable > 0) {
@@ -6696,7 +6696,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
       if (sealed) {
         combos.push({ name:'封印されし闇', bonus:5.0, icon:'ph-ghost text-purple-600', type:'funny',
-          text:'【オカルト】封印されし闇 — 窓もない絶対到達不能部屋 (+5.0万)' });
+          text:'【珍間取り】封印されし闇 — 窓もない絶対到達不能部屋 (+5.0万)' });
       }
     }
     // 新コンボ3: 水門（玄関の周囲が水回りのみ）
@@ -6766,39 +6766,39 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const b = 2.0 + extraBonus;
       const bDesc = plumbLv > 0 ? ` (+${b.toFixed(1)}万 配管バフLv${plumbLv})` : ' (+2.0万)';
       combos.push({ name:'水回り集約', bonus:b, icon:'ph-drop text-blue-600', type:'good',
-        text:`【王道コンボ】水回り集約（全集約） — 風呂・トイレ・洗面が集中${bDesc}` });
+        text:`【王道】水回り集約（全集約） — 風呂・トイレ・洗面が集中${bDesc}` });
     } else if (wetTier === 1) {
       const plumbLv = getStaffSkillLevel('plumber');
       const extraBonus = plumbLv > 0 ? ([0, 0.1, 0.2, 0.4][plumbLv] || 0.1) : 0;
       const b = 0.8 + extraBonus;
       const bDesc = plumbLv > 0 ? ` (+${b.toFixed(1)}万 配管バフLv${plumbLv})` : ' (+0.8万)';
       combos.push({ name:'水回り集約', bonus:b, icon:'ph-drop text-blue-600', type:'good',
-        text:`【王道コンボ】水回り集約（部分） — 2箇所の水回りが隣接${bDesc}` });
+        text:`【王道】水回り集約（部分） — 2箇所の水回りが隣接${bDesc}` });
     }
     // 2. 家事ラク動線: LDKと洗面所が直通接続
     if (hasDirectConnection(grid, T.LDK, T.WASHROOM)) {
       combos.push({ name:'家事ラク動線', bonus:1.0, icon:'ph-washing-machine text-teal-600', type:'good',
-        text:'【王道コンボ】家事ラク動線 — キッチン↔洗面直通 (+1.0万)' });
+        text:'【王道】家事ラク動線 — キッチン↔洗面直通 (+1.0万)' });
     }
     // 3. 日当たり良好: LDKが敷地南側（下辺）外壁に面する
     if (ldkFacesSouth()) {
       combos.push({ name:'日当たり良好', bonus:1.5, icon:'ph-sun text-amber-500', type:'good',
-        text:'【王道コンボ】日当たり良好 — 南向きLDK (+1.5万)' });
+        text:'【王道】日当たり良好 — 南向きLDK (+1.5万)' });
     }
-    // 4. 完全防音プライバシー: トイレが廊下を挟んで居室に繋がる
+    // 4. 完全防音: トイレが廊下を挟んで居室に繋がる
     if (toiletHasCorridor()) {
       combos.push({ name:'完全防音', bonus:1.0, icon:'ph-ear-slash text-slate-600', type:'good',
-        text:'【王道コンボ】完全防音プライバシー — トイレ廊下隔離 (+1.0万)' });
+        text:'【王道】完全防音 — トイレ廊下隔離でプライバシー保護 (+1.0万)' });
     }
     // 5. トイレビュッフェ: 1廊下に3トイレ以上
     if (toiletBuffet()) {
       combos.push({ name:'トイレビュッフェ', bonus:-1.5, icon:'ph-toilet text-purple-600', type:'funny',
-        text:'【大惨事】トイレビュッフェ — 廊下に便器が並ぶ異常事態 (-1.5万)' });
+        text:'【NG】トイレビュッフェ — 廊下に便器が並ぶ異常事態 (-1.5万)' });
     }
     // 6. スケルトンバス: 玄関正面直線上に浴室ドア
     if (skeletonBath()) {
       combos.push({ name:'スケルトンバス', bonus:-1.0, icon:'ph-shower text-cyan-600', type:'funny',
-        text:'【大惨事】スケルトンバス — 玄関開けたら風呂丸見え (-1.0万)' });
+        text:'【NG】スケルトンバス — 玄関開けたら風呂丸見え (-1.0万)' });
     }
     // 7. 無限回廊: 廊下ループ検出
     if (infiniteLoop(visited)) {
@@ -6808,12 +6808,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     // 8. マトリョーシカ: 3室以上通り抜け
     if (matroshka(visited)) {
       combos.push({ name:'マトリョーシカ', bonus:-1.0, icon:'ph-tree-structure text-rose-600', type:'funny',
-        text:'【大惨事】マトリョーシカ — 部屋の中に部屋がある迷宮 (-1.0万)' });
+        text:'【NG】マトリョーシカ — 部屋の中に部屋がある迷宮 (-1.0万)' });
     }
     // 9. プライバシーゼロ: トイレ・風呂の通り抜け
     if (walkthroughWater()) {
       combos.push({ name:'プライバシーゼロ', bonus:-1.5, icon:'ph-eye text-red-600', type:'funny',
-        text:'【大惨事】プライバシーゼロ — トイレ・風呂が通り抜け動線 (-1.5万)' });
+        text:'【NG】プライバシーゼロ — トイレ・風呂が通り抜け動線 (-1.5万)' });
     }
 
     // 10. 窓関連コンボ（窓の数による王道・珍間取り判定）
@@ -6854,10 +6854,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         text:`【珍間取り】もはや公園 — 庭が${totalGarden}マス(最大${maxGardenBlock}マス塊)。住まいというより広場、草むしりが追いつかない (+1.2万)` });
     } else if (maxGardenBlock >= 8) {
       combos.push({ name:'広大なる庭園', bonus:0.6, icon:'ph-tree text-emerald-600', type:'good',
-        text:`【王道】広大なる庭園 (${maxGardenBlock}マス連節) — 四季を愛でる贅沢なガーデンスペース (+0.6万)` });
+        text:`【王道】広大なる庭園 (${maxGardenBlock}マス連結) — 四季を愛でる贅沢なガーデンスペース (+0.6万)` });
     } else if (maxGardenBlock >= 4) {
       combos.push({ name:'箱庭のある暮らし', bonus:0.3, icon:'ph-plant text-emerald-600', type:'good',
-        text:`【王道】箱庭のある暮らし (${maxGardenBlock}マス連節) — 建物に囲まれた憩いのプライベートガーデン (+0.3万)` });
+        text:`【王道】箱庭のある暮らし (${maxGardenBlock}マス連結) — 建物に囲まれた憩いのプライベートガーデン (+0.3万)` });
     }
 
     return combos;
