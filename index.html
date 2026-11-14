@@ -736,12 +736,15 @@
        SCREEN 0: HOME
   ============================== -->
   <section id="screen-home" class="screen active blueprint-bg" style="display: block !important; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 40px; height: 100vh;">
-    <div style="position:absolute; top:16px; right:16px; z-index:10;">
-      <button id="btn-sound-mission" class="btn btn-slate" style="padding:8px; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:36px; height:36px; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:10px; right:16px; z-index:10; display:flex; align-items:center; gap:8px;">
+      <button id="btn-help-home" class="btn btn-slate" type="button" title="遊び方" style="padding:0; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+        <i class="ph-bold ph-question" style="font-size:18px;"></i>
+      </button>
+      <button id="btn-sound-mission" class="btn btn-slate" style="padding:0; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
         <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:18px;"></i>
       </button>
     </div>
-    <div class="mission-container" style="width:92%; max-width:600px; box-sizing:border-box; margin:24px auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
+    <div class="mission-container" style="width:92%; max-width:600px; box-sizing:border-box; margin:48px auto 24px; padding:20px; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.05);">
       <div style="margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #e2e8f0;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
           <button id="btn-edit-co-name" type="button" style="background:none; border:none; padding:2px 4px; margin:-2px -4px; border-radius:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-align:left;" title="会社名を変更する">
@@ -1331,6 +1334,64 @@
       </div>
     </div>
 
+    <!-- 遊び方ガイドモーダル -->
+    <div id="modal-help" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:315; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:420px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(56,189,248,0.4); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:12px;">
+          <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ph-question" style="color:#38bdf8;"></i> 遊び方ガイド
+          </div>
+          <button id="btn-close-help" type="button" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <div style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:2px;">
+          <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px;">
+            <div style="font-size:12.5px; font-weight:bold; color:#34d399; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="ph-bold ph-door"></i> 部屋とドア
+            </div>
+            <div style="font-size:11.5px; color:var(--c-text); line-height:1.55;">
+              異なる部屋が隣り合うと自動でドアができます。<br>
+              同じ種類の部屋を並べて置くと1つの部屋に合体します（※和室のみ個別の部屋）。
+            </div>
+          </div>
+
+          <div style="background:var(--c-surface2); border:1px solid rgba(244,63,94,0.28); border-radius:8px; padding:10px 12px;">
+            <div style="font-size:12.5px; font-weight:bold; color:#fb7185; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="ph-bold ph-prohibit"></i> 赤い壁（耐力壁）と撤去
+            </div>
+            <div style="font-size:11.5px; color:var(--c-text); line-height:1.55;">
+              <strong>赤い斜線の辺は確定の壁</strong>で、ドアが開かず合体もしません。<br>
+              ピース未選択状態で赤い壁をタップすると、費用を払って撤去できます。
+            </div>
+          </div>
+
+          <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px;">
+            <div style="font-size:12.5px; font-weight:bold; color:#fbbf24; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="ph-bold ph-plant"></i> 動線と庭
+            </div>
+            <div style="font-size:11.5px; color:var(--c-text); line-height:1.55;">
+              玄関から辿れない部屋があると評価が下がります。<br>
+              建物を囲う最小の長方形の内側にある空きマスは「庭」として評価されます。
+            </div>
+          </div>
+
+          <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.28); border-radius:8px; padding:10px 12px;">
+            <div style="font-size:12.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="ph-bold ph-buildings"></i> 経営と目標
+            </div>
+            <div style="font-size:11.5px; color:var(--c-text); line-height:1.55;">
+              完成した物件は毎月家賃を生みます（築6ヶ月から売却可能）。<br>
+              稼いだ資金でオフィスを移転し、<strong>Rank 5「本社自社ビル」</strong>到達を目指しましょう！
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">
+          <button id="btn-close-help-bottom" type="button" class="btn btn-slate" style="width:100%; padding:10px; font-size:13px; cursor:pointer; justify-content:center;">閉じる</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 間取り図 画像保存・共有プレビューモーダル（iPhone/スマホ長押し保存＆共有シート対応） -->
     <div id="image-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.94); z-index:350; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:400px; max-height:90vh; overflow-y:auto; text-align:center; border:1.5px solid rgba(56,189,248,0.45); box-shadow:0 15px 40px rgba(0,0,0,0.65); padding:16px; box-sizing:border-box;">
@@ -1505,9 +1566,14 @@
           <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
         </div>
       </div>
-      <button id="btn-sound-game" class="btn-icon btn" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-        <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
-      </button>
+      <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+        <button id="btn-help-game" class="btn-icon btn" type="button" title="遊び方" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i class="ph-bold ph-question" style="font-size:15px;"></i>
+        </button>
+        <button id="btn-sound-game" class="btn-icon btn" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
+        </button>
+      </div>
     </header>
 
 
@@ -12055,6 +12121,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     [
       'gameover-modal',
       'reset-confirm-modal',
+      'modal-help',
       'company-upgrade-modal',
       'modal-records',
       'modal-ending',
@@ -12988,6 +13055,28 @@ function updateHomeUI() {
   document.getElementById('btn-close-records-bottom')?.addEventListener('click', closeRecordsModal);
   document.getElementById('modal-records')?.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'modal-records') closeRecordsModal();
+  });
+
+  function openHelpModal() {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('modal-help');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeHelpModal() {
+    initAudio();
+    playSound('tap');
+    const modal = document.getElementById('modal-help');
+    if (modal) modal.style.display = 'none';
+  }
+
+  document.getElementById('btn-help-home')?.addEventListener('click', openHelpModal);
+  document.getElementById('btn-help-game')?.addEventListener('click', openHelpModal);
+  document.getElementById('btn-close-help')?.addEventListener('click', closeHelpModal);
+  document.getElementById('btn-close-help-bottom')?.addEventListener('click', closeHelpModal);
+  document.getElementById('modal-help')?.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'modal-help') closeHelpModal();
   });
 
   document.getElementById('btn-ending-continue')?.addEventListener('click', () => {
