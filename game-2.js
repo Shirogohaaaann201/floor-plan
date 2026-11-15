@@ -2129,25 +2129,49 @@
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
   document.getElementById('btn-sound-game')?.addEventListener('click', toggleSound);
 
-  document.getElementById('btn-rotate').addEventListener('click', () => {
-    initAudio();
-    cancelRerollConfirm();
-    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
-    selectedRot = (selectedRot + 1) % 4;
-    playSound('rotate');
-    renderDraftUI();
-    updatePieceLabel();
-    drawPlan();
-  });
-  document.getElementById('btn-mirror').addEventListener('click', () => {
-    initAudio();
-    cancelRerollConfirm();
-    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
-    isMirrored = !isMirrored;
-    playSound('rotate');
-    renderDraftUI();
-    updatePieceLabel();
-    drawPlan();
+  document.getElementById('btn-rotate')?.addEventListener('click', rotateSelectedPiece);
+  document.getElementById('btn-confirm-rotate')?.addEventListener('click', rotateSelectedPiece);
+  document.getElementById('btn-mirror')?.addEventListener('click', toggleMirrorSelectedPiece);
+  document.getElementById('btn-confirm-mirror')?.addEventListener('click', toggleMirrorSelectedPiece);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    const gameScreen = document.getElementById('screen-game');
+    if (!gameScreen || !gameScreen.classList.contains('active')) return;
+    const anyModalOpen = Array.from(document.querySelectorAll('[id$="-modal"], #modal-ending, #modal-records, #modal-help'))
+      .some(m => getComputedStyle(m).display !== 'none');
+    if (anyModalOpen) return;
+
+    const k = e.key.toLowerCase();
+    if (k === 'r') {
+      e.preventDefault();
+      rotateSelectedPiece();
+    } else if (k === 'f') {
+      e.preventDefault();
+      toggleMirrorSelectedPiece();
+    } else if (e.key === 'Enter' && tag !== 'BUTTON' && document.activeElement?.id !== 'mission-banner') {
+      if (selectedWallTarget || (previewMode && hoverCell)) {
+        e.preventDefault();
+        confirmSelectedAction();
+      }
+    } else if (e.key === 'Escape') {
+      if (selectedWallTarget || previewMode) {
+        selectedWallTarget = null;
+        previewMode = false;
+        showConfirmUI(false);
+        drawPlan();
+      } else if (selectedSlot !== null) {
+        selectedSlot = null;
+        selectedRot = 0;
+        isMirrored = false;
+        hoverCell = null;
+        renderDraftUI();
+        updatePieceLabel();
+        drawPlan();
+      }
+    }
   });
 
   document.getElementById('btn-reroll')?.addEventListener('click', (e) => {
@@ -6745,9 +6769,27 @@ function updateHomeUI() {
     if (e.target && e.target.id === 'modal-records') closeRecordsModal();
   });
 
-  function openHelpModal() {
+  function switchHelpTab(tabKey, playTapSound = true) {
+    if (playTapSound) {
+      initAudio();
+      playSound('tap');
+    }
+    const keys = ['basic', 'lot', 'deck', 'biz', 'company'];
+    const target = keys.includes(tabKey) ? tabKey : 'basic';
+    keys.forEach(k => {
+      const btn = document.getElementById(`tab-help-${k}`);
+      const pane = document.getElementById(`help-view-${k}`);
+      if (btn) btn.classList.toggle('active', k === target);
+      if (pane) pane.style.display = (k === target) ? 'flex' : 'none';
+    });
+    const scrollEl = document.getElementById('help-scroll-content');
+    if (scrollEl) scrollEl.scrollTop = 0;
+  }
+
+  function openHelpModal(initialTab = 'basic') {
     initAudio();
     playSound('tap');
+    switchHelpTab(initialTab, false);
     const modal = document.getElementById('modal-help');
     if (modal) modal.style.display = 'flex';
   }
@@ -6759,8 +6801,11 @@ function updateHomeUI() {
     if (modal) modal.style.display = 'none';
   }
 
-  document.getElementById('btn-help-home')?.addEventListener('click', openHelpModal);
-  document.getElementById('btn-help-game')?.addEventListener('click', openHelpModal);
+  document.getElementById('btn-help-home')?.addEventListener('click', () => openHelpModal('basic'));
+  document.getElementById('btn-help-game')?.addEventListener('click', () => openHelpModal('basic'));
+  document.querySelectorAll('.help-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchHelpTab(btn.dataset.helpTab, true));
+  });
   document.getElementById('btn-close-help')?.addEventListener('click', closeHelpModal);
   document.getElementById('btn-close-help-bottom')?.addEventListener('click', closeHelpModal);
   document.getElementById('modal-help')?.addEventListener('click', (e) => {

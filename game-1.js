@@ -3408,30 +3408,44 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       btn.innerHTML = `<i class="ph-bold ph-arrows-clockwise" style="color:var(--c-text3);"></i> 更新不可`;
     } else {
       const costs = getRerollCost();
+      const recLv = getStaffSkillLevel('recycle');
+      const freeLimit = 5 + getFeatureLevel('extraRerolls') + recLv;
+      const freeRemain = Math.max(0, freeLimit - discardCount);
+      const overRate = getDiscardCostForNext(Math.max(discardCount, freeLimit));
       btn.disabled = false;
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
-      const costText = costs.total === 0 ? '無料' : `-${costs.total.toFixed(1)}万`;
-      let nextCost = getDiscardCostForNext(discardCount);
-      let subText = `破棄${discardCount} (次${nextCost.toFixed(1)}万)`;
-      if (costs.keep > 0) subText += ` ＋ 維持:${costs.keep.toFixed(1)}万`;
+      const costText = costs.total === 0 ? `無料残${freeRemain}枚` : `-${costs.total.toFixed(1)}万`;
+      const nextCost = getDiscardCostForNext(discardCount);
+      let subText = '';
+      if (costs.total === 0) {
+        subText = `無料枠 ${discardCount}/${freeLimit} (外+${overRate.toFixed(1)}万/枚)`;
+      } else {
+        subText = freeRemain > 0
+          ? `無料残${freeRemain}＋超過+${costs.discard.toFixed(1)}万`
+          : `破棄${discardCount} (次+${nextCost.toFixed(1)}万/枚)`;
+        if (costs.keep > 0) subText += ` +維持${costs.keep.toFixed(1)}万`;
+      }
 
       if (isRerollConfirming) {
-        btn.style.background = '#78350f';
-        btn.style.borderColor = '#f59e0b';
-        btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.45)';
-        btn.style.color = '#fef08a';
+        btn.style.background = costs.total > 0 ? '#7f1d1d' : '#78350f';
+        btn.style.borderColor = costs.total > 0 ? '#f87171' : '#f59e0b';
+        btn.style.boxShadow = costs.total > 0 ? '0 0 12px rgba(248, 113, 113, 0.5)' : '0 0 10px rgba(245, 158, 11, 0.45)';
+        btn.style.color = costs.total > 0 ? '#fecdd3' : '#fef08a';
+        const confirmHead = costs.total > 0 ? `⚠️ -${costs.total.toFixed(1)}万で更新` : '再タップで更新';
+        const confirmSub = costs.total > 0 ? '再タップで実行 (資金消費)' : `無料枠から消費 (残${freeRemain}枚)`;
         btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
-          <div style="font-weight:bold; font-size:10px;"><i class="ph-bold ph-warning-circle" style="color:#fde047;"></i> 再タップで実行</div>
-          <div style="font-size:8px; color:#fde68a; margin-top:1px;">${costText}</div>
+          <div style="font-weight:bold; font-size:10px;"><i class="ph-bold ph-warning-circle" style="color:${costs.total > 0 ? '#fca5a5' : '#fde047'};"></i> ${confirmHead}</div>
+          <div style="font-size:8px; color:${costs.total > 0 ? '#fda4af' : '#fde68a'}; margin-top:1px;">${confirmSub}</div>
         </div>`;
       } else {
         btn.style.background = '';
-        btn.style.borderColor = '';
+        btn.style.borderColor = costs.total > 0 ? 'rgba(251, 191, 36, 0.45)' : '';
         btn.style.boxShadow = '';
         btn.style.color = '';
+        const labelColor = costs.total > 0 ? '#fbbf24' : 'inherit';
         btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
-          <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue);"></i> 更新 (${costText})</div>
+          <div style="color:${labelColor};"><i class="ph-bold ph-arrows-clockwise" style="color:${costs.total > 0 ? '#fbbf24' : 'var(--c-blue)'};"></i> 更新 (${costText})</div>
           <div style="font-size:8px; color:var(--c-text3); margin-top:1px;">${subText}</div>
         </div>`;
       }
@@ -3516,17 +3530,25 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function updateMirrorButton() {
     const sub = document.getElementById('btn-mirror-sub');
-    if (!sub) return;
     const mult = getMirrorCostMultiplier();
-    if (mult <= 1.0) {
-      sub.textContent = '無料';
-      sub.style.color = isMirrored ? '#047857' : 'var(--c-emerald)';
-      sub.style.fontWeight = 'bold';
-    } else {
-      const pct = Math.round((mult - 1) * 100);
-      sub.textContent = `+${pct}%`;
-      sub.style.color = isMirrored ? '#4338ca' : 'var(--c-text2)';
-      sub.style.fontWeight = 'normal';
+    const pct = Math.round((mult - 1) * 100);
+    if (sub) {
+      if (mult <= 1.0) {
+        sub.textContent = '無料';
+        sub.style.color = isMirrored ? '#047857' : 'var(--c-emerald)';
+        sub.style.fontWeight = 'bold';
+      } else {
+        sub.textContent = `+${pct}%`;
+        sub.style.color = isMirrored ? '#4338ca' : 'var(--c-text2)';
+        sub.style.fontWeight = 'normal';
+      }
+    }
+    const cmBtn = document.getElementById('btn-confirm-mirror');
+    const cmLbl = document.getElementById('btn-confirm-mirror-label');
+    if (cmBtn) cmBtn.classList.toggle('is-mirrored', !!isMirrored);
+    if (cmLbl) {
+      if (mult <= 1.0) cmLbl.textContent = isMirrored ? '反転中' : '反転';
+      else cmLbl.textContent = `反転+${pct}%`;
     }
   }
 
@@ -4438,110 +4460,33 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return true;
   }
 
-  function showConfirmUI(show) {
-    const co = document.getElementById('confirm-overlay');
-    const btn = document.getElementById('btn-confirm-place');
-    co.style.display = show ? 'flex' : 'none';
-    
-    if (show && selectedWallTarget) {
-      const wCost = getWallRemoveCost().toFixed(1);
-      if (btn) {
-        btn.innerHTML = `<i class="ph-bold ph-hammer"></i> 壁撤去 (-${wCost}万)`;
-        btn.style.background = '#e11d48';
-      }
-      const canvasWidth = GRID * cellSize;
-      let targetX = selectedWallTarget.mx + 12;
-      let targetY = Math.max(4, selectedWallTarget.my - 18);
-      if (targetX + 125 > canvasWidth) {
-        targetX = Math.max(4, selectedWallTarget.mx - 135);
-      }
-      co.style.left = `${targetX}px`;
-      co.style.top = `${targetY}px`;
-    } else if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
-      const piece = draftSlots[selectedSlot];
-      const shape = getShape(piece, selectedRot, isMirrored);
-      const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
-      if (btn) {
-        if (enc.count > 0) {
-          btn.innerHTML = `<i class="ph-bold ph-pickaxe"></i> 確定 (+造成${enc.cost.toFixed(1)}万)`;
-          btn.style.background = '#f59e0b';
-        } else {
-          btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
-          btn.style.background = '';
-        }
-      }
-      const w = shape[0].length * cellSize;
-      
-      // 親要素(canvas-container)からの相対座標
-      let targetX = hoverCell.c * cellSize + w + 10;
-      let targetY = hoverCell.r * cellSize;
-      
-      const canvasWidth = GRID * cellSize;
-      const btnWidthEst = enc.count > 0 ? 150 : 80;
-      if (targetX + btnWidthEst > canvasWidth) {
-        targetX = Math.max(4, hoverCell.c * cellSize - (btnWidthEst + 10)); // 左側に出す
-      }
-      
-      co.style.left = `${targetX}px`;
-      co.style.top = `${targetY}px`;
-    }
-    
-    const hint = document.getElementById('hint-overlay');
-    if (hint) {
-      // パズル開始時のみ表示し、一度でも盤面操作や配置を行ったらそのパズル中は非表示を維持する
-      hint.style.opacity = (show || hintDismissedForBuild) ? '0' : '1';
-    }
-  }
+  let confirmOverlayShownAt = 0;
 
-  canvas.addEventListener('pointerdown', e => {
+  function rotateSelectedPiece() {
     initAudio();
     cancelRerollConfirm();
-    hintDismissedForBuild = true;
-    if (selectedSlot === null || !draftSlots[selectedSlot]) {
-      // ピース未選択時は赤壁（耐力壁）のタップ判定を行い、ヒットすれば有料撤去ボタンを表示する
-      const wallHit = findSolidWallNearPointer(e);
-      if (wallHit) {
-        selectedWallTarget = wallHit;
-        playSound('tap');
-        showConfirmUI(true);
-      } else {
-        selectedWallTarget = null;
-        showConfirmUI(false);
-      }
-      drawPlan();
-      return;
-    }
-    selectedWallTarget = null;
-    const pos = getCellFromPointer(e);
-    if (pos) {
-      hoverCell = pos;
-      previewMode = true;
-      showConfirmUI(true);
-      drawPlan();
-    }
-  });
-  
-  canvas.addEventListener('pointermove', e => {
     if (selectedSlot === null || !draftSlots[selectedSlot]) return;
-    if (previewMode) {
-      const isDragging = (e.pointerType === 'mouse' && e.buttons > 0) || (e.pointerType !== 'mouse');
-      if (!isDragging) return; 
-    }
-    const pos = getCellFromPointer(e);
-    if (pos && (!hoverCell || hoverCell.r !== pos.r || hoverCell.c !== pos.c)) {
-      hoverCell = pos;
-      if (previewMode) showConfirmUI(true);
-      drawPlan();
-    }
-  });
-  
-  canvas.addEventListener('pointerleave', () => { 
-    if (!previewMode && !selectedWallTarget) {
-      hoverCell = null; drawPlan(); 
-    }
-  });
+    selectedRot = (selectedRot + 1) % 4;
+    playSound('rotate');
+    renderDraftUI();
+    updatePieceLabel();
+    if (previewMode && hoverCell) showConfirmUI(true);
+    drawPlan();
+  }
 
-  document.getElementById('btn-confirm-place').addEventListener('click', () => {
+  function toggleMirrorSelectedPiece() {
+    initAudio();
+    cancelRerollConfirm();
+    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
+    isMirrored = !isMirrored;
+    playSound('rotate');
+    renderDraftUI();
+    updatePieceLabel();
+    if (previewMode && hoverCell) showConfirmUI(true);
+    drawPlan();
+  }
+
+  function confirmSelectedAction() {
     initAudio();
     if (selectedWallTarget) {
       const ok = removeSolidWall(selectedWallTarget);
@@ -4559,6 +4504,132 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         showConfirmUI(false);
       }
     }
+  }
+
+  function showConfirmUI(show) {
+    const co = document.getElementById('confirm-overlay');
+    const btn = document.getElementById('btn-confirm-place');
+    const pcTools = document.getElementById('confirm-pc-tools');
+    if (co) co.style.display = show ? 'flex' : 'none';
+
+    if (show && selectedWallTarget) {
+      if (pcTools) pcTools.style.display = 'none';
+      const wCost = getWallRemoveCost().toFixed(1);
+      if (btn) {
+        btn.innerHTML = `<i class="ph-bold ph-hammer"></i> 壁撤去 (-${wCost}万)`;
+        btn.style.background = '#e11d48';
+      }
+      const canvasWidth = GRID * cellSize;
+      const canvasHeight = GRID * cellSize;
+      const overlayW = (co && co.offsetWidth) || 125;
+      const overlayH = (co && co.offsetHeight) || 40;
+      let targetX = selectedWallTarget.mx + 12;
+      let targetY = Math.max(4, selectedWallTarget.my - 18);
+      if (targetX + overlayW > canvasWidth - 4) {
+        targetX = selectedWallTarget.mx - overlayW - 12;
+      }
+      if (co) {
+        co.style.left = `${Math.max(4, Math.min(targetX, canvasWidth - overlayW - 4))}px`;
+        co.style.top = `${Math.max(4, Math.min(targetY, canvasHeight - overlayH - 4))}px`;
+      }
+    } else if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
+      if (pcTools) pcTools.style.display = '';
+      updateMirrorButton();
+      const piece = draftSlots[selectedSlot];
+      const shape = getShape(piece, selectedRot, isMirrored);
+      const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
+      if (btn) {
+        if (enc.count > 0) {
+          btn.innerHTML = `<i class="ph-bold ph-pickaxe"></i> 確定 (+造成${enc.cost.toFixed(1)}万)`;
+          btn.style.background = '#f59e0b';
+        } else {
+          btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
+          btn.style.background = '';
+        }
+      }
+      const w = shape[0].length * cellSize;
+      const canvasWidth = GRID * cellSize;
+      const canvasHeight = GRID * cellSize;
+      const overlayW = (co && co.offsetWidth) || (window.innerWidth >= 769 ? (enc.count > 0 ? 275 : 210) : (enc.count > 0 ? 150 : 80));
+      const overlayH = (co && co.offsetHeight) || 40;
+
+      // 親要素(canvas-container)からの相対座標
+      let targetX = hoverCell.c * cellSize + w + 10;
+      let targetY = hoverCell.r * cellSize;
+
+      if (targetX + overlayW > canvasWidth - 4) {
+        targetX = hoverCell.c * cellSize - overlayW - 10; // 左側に出す
+      }
+      if (co) {
+        co.style.left = `${Math.max(4, Math.min(targetX, canvasWidth - overlayW - 4))}px`;
+        co.style.top = `${Math.max(4, Math.min(targetY, canvasHeight - overlayH - 4))}px`;
+      }
+    }
+
+    const hint = document.getElementById('hint-overlay');
+    if (hint) {
+      // パズル開始時のみ表示し、一度でも盤面操作や配置を行ったらそのパズル中は非表示を維持する
+      hint.style.opacity = (show || hintDismissedForBuild) ? '0' : '1';
+    }
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    initAudio();
+    cancelRerollConfirm();
+    hintDismissedForBuild = true;
+    if (selectedSlot === null || !draftSlots[selectedSlot]) {
+      // ピース未選択時は赤壁（耐力壁）のタップ判定を行い、ヒットすれば有料撤去ボタンを表示する
+      const wallHit = findSolidWallNearPointer(e);
+      if (wallHit) {
+        selectedWallTarget = wallHit;
+        playSound('tap');
+        confirmOverlayShownAt = Date.now();
+        showConfirmUI(true);
+      } else {
+        selectedWallTarget = null;
+        showConfirmUI(false);
+      }
+      drawPlan();
+      return;
+    }
+    selectedWallTarget = null;
+    const pos = getCellFromPointer(e);
+    if (pos) {
+      hoverCell = pos;
+      previewMode = true;
+      confirmOverlayShownAt = Date.now();
+      showConfirmUI(true);
+      drawPlan();
+    }
+  });
+  
+  canvas.addEventListener('pointermove', e => {
+    if (selectedSlot === null || !draftSlots[selectedSlot]) return;
+    if (previewMode) {
+      const isDragging = (e.pointerType === 'mouse' && e.buttons > 0) || (e.pointerType !== 'mouse');
+      if (!isDragging) return; 
+    }
+    const pos = getCellFromPointer(e);
+    if (pos && (!hoverCell || hoverCell.r !== pos.r || hoverCell.c !== pos.c)) {
+      hoverCell = pos;
+      if (previewMode) {
+        confirmOverlayShownAt = Date.now();
+        showConfirmUI(true);
+      }
+      drawPlan();
+    }
+  });
+  
+  canvas.addEventListener('pointerleave', () => { 
+    if (!previewMode && !selectedWallTarget) {
+      hoverCell = null; drawPlan(); 
+    }
+  });
+
+  document.getElementById('btn-confirm-place').addEventListener('click', () => {
+    // 盤面タップ／ドラッグ直後に指の下へボタンが出現して即確定する事故を防止
+    if (Date.now() - confirmOverlayShownAt < 220) return;
+    confirmSelectedAction();
   });
 
 
