@@ -4306,6 +4306,21 @@
     if (viewDk) viewDk.style.display = tab === 'deck' ? 'block' : 'none';
     viewSt.style.display = tab === 'staff'   ? 'block' : 'none';
     if (viewBk) viewBk.style.display = tab === 'bank' ? 'block' : 'none';
+
+    const helpUpgBtn = document.getElementById('btn-help-upgrade');
+    const helpUpgLbl = document.getElementById('btn-help-upgrade-label');
+    if (helpUpgBtn && helpUpgLbl) {
+      const map = {
+        company: { tab: 'company', card: 'wiki-card-office', label: '強化・設備の仕様' },
+        deck:    { tab: 'deck',    card: 'wiki-card-deck-struct', label: 'デッキ・手札の仕様' },
+        staff:   { tab: 'company', card: 'wiki-card-staff',  label: '人事・採用の仕様' },
+        bank:    { tab: 'company', card: 'wiki-card-bank',   label: '融資・返済の仕様' }
+      };
+      const cfg = map[tab] || map.company;
+      helpUpgBtn.dataset.helpTab = cfg.tab;
+      helpUpgBtn.dataset.helpCard = cfg.card;
+      helpUpgLbl.textContent = cfg.label;
+    }
   }
 
   function openCompanyUpgradeModal(initialTab = 'company') {
@@ -6786,12 +6801,25 @@ function updateHomeUI() {
     if (scrollEl) scrollEl.scrollTop = 0;
   }
 
-  function openHelpModal(initialTab = 'basic') {
+  function openHelpModal(initialTab = 'basic', targetCardId = null) {
     initAudio();
     playSound('tap');
     switchHelpTab(initialTab, false);
     const modal = document.getElementById('modal-help');
     if (modal) modal.style.display = 'flex';
+    const scrollEl = document.getElementById('help-scroll-content');
+    if (scrollEl) {
+      if (targetCardId) {
+        const cardEl = document.getElementById(targetCardId);
+        if (cardEl) {
+          requestAnimationFrame(() => {
+            scrollEl.scrollTop = Math.max(0, cardEl.offsetTop - scrollEl.offsetTop - 4);
+          });
+        }
+      } else {
+        scrollEl.scrollTop = 0;
+      }
+    }
   }
 
   function closeHelpModal() {
@@ -6802,7 +6830,19 @@ function updateHomeUI() {
   }
 
   document.getElementById('btn-help-home')?.addEventListener('click', () => openHelpModal('basic'));
+  document.getElementById('btn-open-help-card')?.addEventListener('click', () => openHelpModal('basic'));
   document.getElementById('btn-help-game')?.addEventListener('click', () => openHelpModal('basic'));
+  document.getElementById('btn-help-upgrade')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    openHelpModal(btn?.dataset?.helpTab || 'company', btn?.dataset?.helpCard || null);
+  });
+  document.getElementById('btn-help-prop-detail')?.addEventListener('click', () => openHelpModal('biz', 'wiki-card-sell'));
+  document.getElementById('btn-help-records')?.addEventListener('click', () => openHelpModal('biz', 'wiki-card-combo'));
+  document.getElementById('btn-help-deck-peek')?.addEventListener('click', () => openHelpModal('deck', 'wiki-card-reroll'));
+  document.getElementById('btn-help-mission-req')?.addEventListener('click', () => openHelpModal('basic', 'wiki-card-merge'));
+  document.getElementById('btn-help-mission-lot')?.addEventListener('click', () => openHelpModal('lot', 'wiki-card-site'));
+  document.getElementById('btn-help-mission-modal')?.addEventListener('click', () => openHelpModal('lot', 'wiki-card-window'));
+  document.getElementById('btn-help-result')?.addEventListener('click', () => openHelpModal('biz', 'wiki-card-cost'));
   document.querySelectorAll('.help-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchHelpTab(btn.dataset.helpTab, true));
   });

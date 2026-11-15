@@ -78,7 +78,7 @@
         </button>
         <button id="btn-open-records" class="btn btn-secondary" style="flex:1; padding:13px 10px; font-size:13.5px; font-weight:bold; cursor:pointer; background:#fffbeb; color:#92400e; border:1.5px solid #fde68a; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
           <i class="ph-fill ph-trophy" style="font-size:17px; color:#d97706;"></i><span>記録帳</span>
-          <span id="home-records-badge" style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fcd34d; padding:1px 6px; border-radius:10px; font-weight:800;">0/26</span>
+          <span id="home-records-badge" style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fcd34d; padding:1px 6px; border-radius:10px; font-weight:800;">0/30</span>
         </button>
       </div>
       <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:10px; cursor:pointer;">
@@ -86,6 +86,11 @@
       </button>
       <button id="btn-skip-month" class="btn btn-slate" style="width:100%; padding:12px; font-size:14px; cursor:pointer;">
         <i class="ph-bold ph-fast-forward" style="margin-right:8px;"></i>月を進める
+      </button>
+      <button id="btn-open-help-card" type="button" class="btn btn-secondary" style="width:100%; margin-top:8px; padding:11px 12px; font-size:13px; font-weight:bold; cursor:pointer; background:#f0f9ff; color:#0369a1; border:1.5px solid #bae6fd; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 4px rgba(2,132,199,0.06);">
+        <i class="ph-bold ph-book-open-text" style="font-size:16px; color:#0284c7;"></i>
+        <span>遊び方・攻略Wiki</span>
+        <span style="font-size:10px; background:#e0f2fe; color:#0284c7; border:1px solid #7dd3fc; padding:1px 6px; border-radius:10px; font-weight:800;">ルール・仕様</span>
       </button>
       
       <div style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:11px; color:#94a3b8; font-weight:bold;">
@@ -102,7 +107,12 @@
     <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:12px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:360px; max-height:92vh; overflow-y:auto; text-align:left; padding:14px;">
         <button id="btn-close-prop-detail" style="position:absolute; top:10px; right:10px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
-        <div class="mission-card-title" style="margin-bottom:8px;"><i class="ph-fill ph-house"></i> 物件詳細</div>
+        <div class="mission-card-title" style="margin-bottom:8px; padding-right:28px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span><i class="ph-fill ph-house"></i> 物件詳細</span>
+          <button id="btn-help-prop-detail" type="button" class="wiki-jump-pill">
+            <i class="ph-bold ph-book-open-text"></i> 売却・維持費の仕様
+          </button>
+        </div>
         
         <!-- 1. ヘッダー + 月次収支 + 満足度 -->
         <div style="background:var(--c-surface2); padding:10px 12px; border-radius:8px; margin-bottom:10px;">
@@ -247,8 +257,12 @@
         <!-- Header -->
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
           <div>
-            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-              <i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> オフィス
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> オフィス</span>
+              <button id="btn-help-upgrade" type="button" class="wiki-jump-pill" data-help-tab="company" data-help-card="wiki-card-office">
+                <i class="ph-bold ph-book-open-text"></i>
+                <span id="btn-help-upgrade-label">強化・設備の仕様</span>
+              </button>
             </div>
             <div style="font-size:11px; color:var(--c-text2); margin-top:2px; display:flex; gap:10px; align-items:center;">
               <span>資金: <strong id="upg-current-funds" style="color:var(--c-emerald); font-size:13px;">0.0万</strong></span>
@@ -578,7 +592,7 @@
           </div>
           <div style="display:flex; justify-content:space-between;">
             <span style="color:var(--c-text2);">発見コンボ・珍間取り数:</span>
-            <strong id="ending-combos" style="color:#fbbf24;">0 / 26 種</strong>
+            <strong id="ending-combos" style="color:#fbbf24;">0 / 30 種</strong>
           </div>
         </div>
 
@@ -593,16 +607,19 @@
       </div>
     </div>
 
-    <!-- 実績・記録帳（コンボ・珍間取り全26種図鑑）モーダル -->
+    <!-- 実績・記録帳（コンボ・珍間取り全30種図鑑）モーダル -->
     <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:16px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
           <div>
-            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-              <i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・記録帳（間取りコンボ図鑑）
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・記録帳</span>
+              <button id="btn-help-records" type="button" class="wiki-jump-pill">
+                <i class="ph-bold ph-book-open-text"></i> コンボ・記録の仕様
+              </button>
             </div>
             <div id="records-progress-text" style="font-size:11.5px; color:#fde047; font-weight:bold; margin-top:3px;">
-              図鑑収集率: 0 / 26 (0%)
+              図鑑収集率: 0 / 30 (0%)
             </div>
           </div>
           <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -613,7 +630,7 @@
         </div>
 
         <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
-          <!-- JSで全26種のカードを生成 -->
+          <!-- JSで全30種のカードを生成 -->
         </div>
 
         <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
@@ -631,7 +648,7 @@
             <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
               <i class="ph-bold ph-book-open-text" style="color:#38bdf8;"></i> 遊び方・攻略Wiki
             </div>
-            <div style="font-size:10.5px; color:var(--c-text2); margin-top:2px;">操作・窓/敷地・更新コスト・売却/融資の仕様まとめ</div>
+            <div style="font-size:10.5px; color:var(--c-text2); margin-top:2px;">操作・窓/敷地・デッキ/更新・査定/売却・会社/融資の仕様まとめ</div>
           </div>
           <button id="btn-close-help" type="button" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
         </div>
@@ -640,7 +657,7 @@
         <div class="help-tabs-row">
           <button id="tab-help-basic" type="button" class="btn help-tab-btn active" data-help-tab="basic">基本・操作</button>
           <button id="tab-help-lot" type="button" class="btn help-tab-btn" data-help-tab="lot">敷地・窓・庭</button>
-          <button id="tab-help-deck" type="button" class="btn help-tab-btn" data-help-tab="deck">手札・更新</button>
+          <button id="tab-help-deck" type="button" class="btn help-tab-btn" data-help-tab="deck">デッキ・手札</button>
           <button id="tab-help-biz" type="button" class="btn help-tab-btn" data-help-tab="biz">経営・売却</button>
           <button id="tab-help-company" type="button" class="btn help-tab-btn" data-help-tab="company">会社・Q&A</button>
         </div>
@@ -649,50 +666,50 @@
 
           <!-- TAB 1: 基本・操作 -->
           <div id="help-view-basic" class="help-tab-pane">
-            <div class="help-wiki-card highlight-sky">
+            <div id="wiki-card-step" class="help-wiki-card highlight-sky">
               <div class="help-wiki-title" style="color:#38bdf8;">
                 <i class="ph-bold ph-cursor-click"></i> 建築の基本ステップ（回転・反転）
               </div>
               <div class="help-wiki-body">
                 <strong>①カードを選択 → ②「回転 / 反転」で向きを調整 → ③敷地をタップして「確定」</strong>で配置します。<br>
-                ・<strong>反転（鏡写し）</strong>：左右反転した特殊加工は通常<strong>建築費 +20%</strong>かかります（オフィス設備で軽減・無料化可）。<br>
-                ・<strong>PC便利操作</strong>：盤面タップ時の「確定」ボタン横にも回転・反転が出ます（キーボード <code>R</code> 回転 / <code>F</code> 反転 / <code>Enter</code> 確定にも対応）。
+                ・<strong>反転（鏡写し）</strong>：左右反転した特殊加工は通常<strong>建築費 +20%</strong>かかります（オフィス設備で +10% → 無料化可）。<br>
+                ・<strong>PC便利操作</strong>：盤面タップ時の「確定」ボタン横にも回転・反転が出ます（キーボード <code>R</code> 回転 / <code>F</code> 反転 / <code>Enter</code> 確定 / <code>Esc</code> 解除に対応）。
               </div>
             </div>
 
-            <div class="help-wiki-card highlight-emerald">
+            <div id="wiki-card-merge" class="help-wiki-card highlight-emerald">
               <div class="help-wiki-title" style="color:#34d399;">
-                <i class="ph-bold ph-door"></i> 部屋の合体と自動ドア
+                <i class="ph-bold ph-door"></i> 部屋の合体・LDK表記・自動ドア
               </div>
               <div class="help-wiki-body">
-                ・<strong>合体</strong>：同じ種類の部屋を隣り合わせて置くと、壁が消えて<strong>1つの広い部屋</strong>に合体します（※<strong>和室だけは合体せず</strong>、襖で繋がる独立した続き間になります / ユニットバスも通常浴室とは別扱い）。<br>
-                ・<strong>ドア</strong>：異なる部屋同士が接すると、間に<strong>自動でドア</strong>が開きます。
+                ・<strong>合体と表記</strong>：同じ種類の部屋を隣り合わせて置くと壁が消えて1つの広い部屋に合体し、<strong>LDKは合計マス数に応じて「K(1) / DK(2〜4) / LDK(5+)」へ自動変化</strong>します（※<strong>和室だけは合体せず</strong>襖で繋がる独立部屋扱い／UBも通常浴室とは別扱い）。<br>
+                ・<strong>通路とドア</strong>：<strong>廊下同士・玄関↔廊下</strong>は赤い壁がない限り全辺オープンに繋がります。異なる部屋同士が接すると、<strong>1ペアにつき1箇所だけ自動でドア</strong>が開きます。
               </div>
             </div>
 
-            <div class="help-wiki-card highlight-rose">
+            <div id="wiki-card-wall" class="help-wiki-card highlight-rose">
               <div class="help-wiki-title" style="color:#fb7185;">
                 <i class="ph-bold ph-prohibit"></i> 赤い壁（耐力壁）と有料撤去
               </div>
               <div class="help-wiki-body">
-                ・<strong>赤い斜線の辺は確定の壁</strong>で、ドアが開かず合体もしません（外周にあれば窓も塞がります）。<br>
-                ・<strong>カード未選択の状態</strong>（選択中カードをもう一度押すと解除）で赤い壁をタップすると、費用（5万 → 10万 → 20万 → 40万）を払って<strong>壁撤去</strong>できます。
+                ・<strong>赤い斜線の辺は確定の壁</strong>で、ドアが開かず合体もしません（外周にあれば窓も塞がります。なお、合体で内部に取り込まれた赤い壁は無効化され撤去対象外です）。<br>
+                ・<strong>カード未選択の状態</strong>（選択中カードをもう一度押すと解除）で赤い壁をタップすると、費用（5万 → 10万 → 20万 → <strong>40万［上限］</strong>）を払って<strong>壁撤去</strong>できます。
               </div>
             </div>
 
-            <div class="help-wiki-card">
+            <div id="wiki-card-path" class="help-wiki-card">
               <div class="help-wiki-title" style="color:#fbbf24;">
-                <i class="ph-bold ph-path"></i> 動線（到達不能ペナルティ）
+                <i class="ph-bold ph-path"></i> 動線（到達不能のダブルペナルティ）
               </div>
               <div class="help-wiki-body">
-                玄関からドア・廊下を通って辿り着けない部屋（「到達不能」）が残ると、<strong>査定家賃が大きく下がり（1箇所につき大幅減額）</strong>、評価も悪化します。
+                玄関からドア・廊下を通って辿り着けない部屋（「到達不能」）が残ると、<strong>1箇所につき基本家賃が大きく低下（-30%／下限10%）</strong>するうえ、<strong>NGコンボ1つ分の悪評（満足度-20%・劣化速度+0.5%/月）</strong>も受けます。
               </div>
             </div>
           </div>
 
           <!-- TAB 2: 敷地・窓・庭 -->
           <div id="help-view-lot" class="help-tab-pane" style="display:none;">
-            <div class="help-wiki-card highlight-sky">
+            <div id="wiki-card-window" class="help-wiki-card highlight-sky">
               <div class="help-wiki-title" style="color:#38bdf8;">
                 <i class="ph-bold ph-sun"></i> 窓ができる条件（・南向きLDK）
               </div>
@@ -703,7 +720,7 @@
               </div>
             </div>
 
-            <div class="help-wiki-card highlight-amber">
+            <div id="wiki-card-site" class="help-wiki-card highlight-amber">
               <div class="help-wiki-title" style="color:#fbbf24;">
                 <i class="ph-bold ph-map-pin"></i> 敷地のルール（白マス・✕マス・隣接）
               </div>
@@ -714,7 +731,7 @@
               </div>
             </div>
 
-            <div class="help-wiki-card highlight-emerald">
+            <div id="wiki-card-garden" class="help-wiki-card highlight-emerald">
               <div class="help-wiki-title" style="color:#34d399;">
                 <i class="ph-bold ph-plant"></i> 「庭」の自動判定ルール
               </div>
@@ -725,112 +742,148 @@
             </div>
           </div>
 
-          <!-- TAB 3: 手札・更新 -->
+          <!-- TAB 3: デッキ・手札 -->
           <div id="help-view-deck" class="help-tab-pane" style="display:none;">
-            <div class="help-wiki-card highlight-amber">
-              <div class="help-wiki-title" style="color:#fbbf24;">
-                <i class="ph-bold ph-arrows-clockwise"></i> 更新（リロール）は「無料枠5枚」を超えると有料！
-              </div>
-              <div class="help-wiki-body">
-                更新コストはボタン回数ではなく、<strong>「KEEPせずに捨てたピースの累計枚数」</strong>で計算されます。<br>
-                ・<strong>初期無料枠：累計5枚まで 0万（無料）</strong><br>
-                ・<strong>超過 +1〜5枚目</strong>：1枚あたり <strong>+2.0万</strong><br>
-                ・<strong>超過 +6〜10枚目</strong>：1枚あたり <strong>+4.0万</strong><br>
-                ・<strong>それ以降</strong>：1枚あたり <strong>+8.0万</strong><br>
-                ※ 手札3枚をそのまま全部更新すると、<strong>1回で3枚消費→2回目から有料</strong>になります！設備「無料破棄枠」やスタッフスキル「リユース」で軽減できます。
-              </div>
-            </div>
-
-            <div class="help-wiki-card">
-              <div class="help-wiki-title" style="color:#fcd34d;">
-                <i class="ph-bold ph-lock-key"></i> KEEP（ロック）と維持コスト
-              </div>
-              <div class="help-wiki-body">
-                カード左上の <code>🔓keep</code> を押すと、次の更新でも手札に残せます。<br>
-                <strong>初回キープは無料</strong>ですが、ロックしたまま更新を跨ぐごとに維持費が<strong>1万 → 2万 → 4万 → 8万…</strong>（2の累乗）で倍増するため、使いすぎにご注意ください。
-              </div>
-            </div>
-
-            <div class="help-wiki-card highlight-sky">
+            <div id="wiki-card-deck-struct" class="help-wiki-card highlight-sky">
               <div class="help-wiki-title" style="color:#38bdf8;">
-                <i class="ph-bold ph-cards"></i> 山札の周回割増・やり直し・要望確認
+                <i class="ph-bold ph-stack"></i> デッキの3層構造（20〜24枚）と技術開発
               </div>
               <div class="help-wiki-body">
-                ・<strong>山札の2周目以降</strong>：山札を引き切って捨て札を戻すと、全ピースの建築費が<strong>2周目 +25% / 3周目以降 +50%</strong>になります（左上の「山札」ボタンで残り中身を確認可能）。<br>
-                ・<strong>もう一度設計（やり直し）</strong>：査定結果画面から通常<strong>2回まで</strong>着工前の資金に戻してやり直せます（設備「再設計保険」で回数追加）。<br>
-                ・<strong>依頼詳細・コンボ確認</strong>：画面上の要望バー（「詳細」）をタップすると、達成状況と現在発生中のコンボを確認できます。
+                山札はホーム「オフィス ＞ デッキ」または案件画面「デッキ編成」から組み替えできます。<br>
+                ・<strong>固定枠（11枚）</strong>：生活インフラの基礎ピース（事故防止のため変更不可）。<br>
+                ・<strong>同カテゴリ入替枠（9枠）</strong>：開発した同カテゴリの上位ピースへ差し替え可能。<br>
+                ・<strong>自由追加枠（最大 +4枚）</strong>：解放済みの全カテゴリから自由に追加（空枠も可）。<br>
+                ・<strong>技術開発（10種・80〜300万）</strong>：和室・大型LDK・WIC・長3/T/Z廊下などを永久解放。<br>
+                ※建築途中でオフィスから変えても<strong>今の山札には反映されず、次の「設計開始」（またはやり直し）から反映</strong>されます（案件確認画面からは即反映）。
+              </div>
+            </div>
+
+            <div id="wiki-card-reroll" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-arrows-clockwise"></i> 更新（リロール）の無料枠と手札補充ルール
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>手札補充</strong>：手札（標準3枚、設備「設計テーブル拡張」で4→5枚）は1枚置くごとではなく、<strong>手札をすべて使い切った時に一括補充</strong>されます。<br>
+                ・<strong>更新コスト</strong>：「KEEPせずに捨てた累計枚数」で決まります：初期無料枠<strong>5枚まで 0万</strong>、超過 +1〜5枚目は <strong>+2.0万/枚</strong>、+6〜10枚目は <strong>+4.0万/枚</strong>、以降 <strong>+8.0万/枚</strong>（※空枠の補充は 0万）。<br>
+                ・<strong>軽減と引直</strong>：設備「無料破棄枠」やスタッフスキル<strong>「中古調達」</strong>（無料枠増加＆超過費用割引）で軽減できます。また、スキル「戦術手札」の<strong>「引直」ボタン</strong>は手札を山札に戻して混ぜ直すため、<strong>無料破棄枠も山札周回も消費しません</strong>（KEEPは解除）。
+              </div>
+            </div>
+
+            <div id="wiki-card-keep" class="help-wiki-card">
+              <div class="help-wiki-title" style="color:#fcd34d;">
+                <i class="ph-bold ph-lock-key"></i> KEEP（ロック）の維持コスト
+              </div>
+              <div class="help-wiki-body">
+                カード左上の <code>🔓keep</code> を押すと次の更新でも手札に残せます。<br>
+                ロックして<strong>1回目の更新を跨ぐ時は 0万（無料）</strong>ですが、ロックしたまま<strong>2回目以降の更新を跨ぐごとに 1万 → 2万 → 4万 → 8万…</strong>（2の累乗）で倍増します。
+              </div>
+            </div>
+
+            <div id="wiki-card-cycle" class="help-wiki-card highlight-emerald">
+              <div class="help-wiki-title" style="color:#34d399;">
+                <i class="ph-bold ph-cards"></i> 山札の周回割増・やり直し・諦める
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>山札の2周目以降</strong>：山札を引き切って捨て札を戻すと、建築費が<strong>2周目 +25% / 3周目以降 +50%</strong>になります（割増率は<strong>引いた時点</strong>で固定／左上の「山札」ボタンで残り内訳を確認可能）。<br>
+                ・<strong>もう一度設計／諦める</strong>：結果画面の「もう一度設計」は着工前の資金に戻して再設計（通常2回、設備「再設計保険」で最大4回）。<strong>「諦める」</strong>も建築費は戻りますが、<strong>1ヶ月が経過</strong>（月次収支・給与・返済が発生）し依頼一覧3件が入れ替わります。<br>
+                ・<strong>依頼詳細・コンボ確認</strong>：画面上の要望バー（「詳細」）タップで達成状況と発生コンボを確認できます。
               </div>
             </div>
           </div>
 
           <!-- TAB 4: 経営・売却 -->
           <div id="help-view-biz" class="help-tab-pane" style="display:none;">
-            <div class="help-wiki-card highlight-rose">
-              <div class="help-wiki-title" style="color:#fb7185;">
-                <i class="ph-bold ph-hourglass-medium"></i> 売却は「築6ヶ月（半年）」から！
+            <div id="wiki-card-cost" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-calculator"></i> 「原価」と「諸経費」・引き渡し条件
               </div>
               <div class="help-wiki-body">
-                建てたばかりの物件には<strong>6ヶ月間の売却ロック（🔒売ロック表示）</strong>がかかります。最低半年間は維持費を負担しながら保有する必要があります。<br>
+                ・<strong>原価 vs 諸経費</strong>：家賃や売却査定額の基準になるのはピースの<strong>定価「原価」のみ</strong>です。反転加工費・山札周回割増・更新費・壁撤去費・造成費などの<strong>「諸経費」</strong>は物件価値を上げない純粋なコストになります（逆にスタッフの資材割引は物件価値を下げずに支払額だけお得です）。<br>
+                ・<strong>引き渡し条件</strong>：設計完了時の足切りはなく、目標未達や建築途中でも「設計完了」→物件を引き渡すこと自体は可能です。
+              </div>
+            </div>
+
+            <div id="wiki-card-sell" class="help-wiki-card highlight-rose">
+              <div class="help-wiki-title" style="color:#fb7185;">
+                <i class="ph-bold ph-hourglass-medium"></i> 売却は「築6ヶ月（半年）」から＆経年減価
+              </div>
+              <div class="help-wiki-body">
+                建てたばかりの物件には<strong>6ヶ月間の売却ロック（🔒売ロック表示）</strong>がかかります。<br>
                 ・<strong>オーナーチェンジ売却（入居中）</strong>：査定売価の<strong>満額</strong>で売却可能。<br>
                 ・<strong>空室売却（空室中）</strong>：査定売価の<strong>20%引き</strong>になります。<br>
-                ・築年数が経つほど売却査定額も少しずつ下がります（最低30%）。
+                ・<strong>査定と減価</strong>：満足度80%未満だと基礎評価が減額され（コンボ加算も80〜100%で段階反映、上限+50%）、さらに<strong>築1ヶ月ごとに -2%ずつ減価</strong>（下限30%）します。
               </div>
             </div>
 
-            <div class="help-wiki-card highlight-amber">
+            <div id="wiki-card-combo" class="help-wiki-card highlight-amber">
               <div class="help-wiki-title" style="color:#fbbf24;">
-                <i class="ph-bold ph-crown"></i> 満足度・保証バリア・特注の一般化
+                <i class="ph-bold ph-trophy"></i> コンボ（全30種）・記録帳と「珍間取り」の特性
               </div>
               <div class="help-wiki-body">
-                ・<strong>生活設備ペナルティ</strong>：トイレ未設置（満足度-25%）・浴室未設置（-15%）があると大きく減点されます。<br>
-                ・<strong>退去ゼロ保証バリア</strong>：初代入居者で満足度が<strong>100%を超えた分</strong>（例：110%なら10ヶ月間）は退去率0%の保証期間が付きます（120%超からは2%=1ヶ月）。<br>
-                ・<strong>特注と一般化</strong>：依頼主固有の「特注コンボ」は初代入居者限定のプレミアム家賃であり、退去後の<strong>2代目以降（一般市場）</strong>は通常の家賃評価になります。
+                ・<strong>コンボ評価</strong>：<strong>王道（11種）・珍間取り（13種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（6種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
+                ・<strong>珍間取りの隠れ特性</strong>：「ロングコリドー」以外の珍間取り12種には<strong>「飽きられやすい（劣化速度 +0.2〜+0.5%/月・空室時の再入居率 -5〜-20%）」</strong>というデメリットがあります。<br>
+                ・<strong>記録帳</strong>：「設計完了（査定時）」に発生していたコンボが図鑑へ自動登録されます。
               </div>
             </div>
 
-            <div class="help-wiki-card">
+            <div id="wiki-card-maint" class="help-wiki-card">
               <div class="help-wiki-title" style="color:#94a3b8;">
-                <i class="ph-bold ph-coins"></i> 毎月の維持費と老朽化
+                <i class="ph-bold ph-crown"></i> 満足度バリア・2代目以降の市場家賃・維持費
               </div>
               <div class="help-wiki-body">
-                毎月<strong>「延床 0.04万/マス ＋ 庭 0.06万/マス ＋ 造成区画 0.20万/マス」</strong>（最低0.2万）の基礎維持費がかかり、さらに<strong>築1ヶ月ごとに +4%</strong>ずつ修繕維持費が増加します。空室中は家賃0で維持費のみ発生するため、不採算物件の持ちすぎに注意しましょう。
+                ・<strong>生活設備と保証</strong>：トイレ未設置（満足度-25%）・浴室未設置（-15%）は大減点。入居初月は退去判定なし。初代で満足度100%超の分は退去率0%保証期間（120%超は2%=1ヶ月）になり、<strong>2代目以降（一般市場）は最初の3ヶ月間が退去率0%保証</strong>＆特注プレミアムが外れて<strong>市場家賃（年-8%、下限60%）</strong>になります。<br>
+                ・<strong>毎月の維持費</strong>：「延床 0.04万/マス ＋ 庭 0.06万/マス ＋ 造成区画 0.20万/マス」（最低0.2万）＋<strong>築1ヶ月ごとに +4%</strong>ずつ増加します（空室中は家賃0で維持費のみ発生）。
               </div>
             </div>
           </div>
 
-          <!-- TAB 5: 会社・銀行・Q&A -->
+          <!-- TAB 5: 会社・Q&A -->
           <div id="help-view-company" class="help-tab-pane" style="display:none;">
-            <div class="help-wiki-card highlight-sky">
+            <div id="wiki-card-office" class="help-wiki-card highlight-sky">
               <div class="help-wiki-title" style="color:#38bdf8;">
-                <i class="ph-bold ph-buildings"></i> 会社の目標・オフィス強化・人事
+                <i class="ph-bold ph-buildings"></i> オフィス移転割引と営業・ブランド・設備投資
               </div>
               <div class="help-wiki-body">
-                ・<strong>ゲーム目標</strong>：稼いだ資金でオフィスを移転し、<strong>Rank 5「本社自社ビル」到達</strong>を目指します（到達後もエンドレス継続可能）。施工実績・設計品質・累計家賃の条件を満たすと移転費が大幅割引されます。<br>
-                ・<strong>オフィスタブ</strong>：「強化（管理棟数・設備投資・営業/ブランド）」「デッキ編成」「人事」「銀行」を利用できます。<br>
-                ・<strong>年末の昇給交渉</strong>：毎年12月終了時にスタッフの契約更改が発生。承認で成長・新スキル開眼のチャンスがある一方、据え置き（拒否）すると<strong>40%（連続拒否で80%）の確率で退職</strong>します。
+                ・<strong>ゲーム目標</strong>：オフィスを移転し、<strong>Rank 5「本社自社ビル」到達</strong>を目指します（到達後もエンドレス継続可）。「施工実績・設計品質（累計良コンボ−悪コンボ）・累計家賃」の達成で移転費が大幅割引され、管理棟数・デスク数・各設備の上限が解放されます。<br>
+                ・<strong>営業力（Lv1〜5）</strong>：依頼の予算・目標家賃が <strong>+15%/Lv（最大1.6倍）</strong> 上昇＋空室再入居率 <strong>+2%/Lv</strong>。<br>
+                ・<strong>ブランド（Lv1〜5）</strong>：富裕層・豪邸案件の出現率UP＋<strong>銀行融資枠 +200万/Lv</strong>＋空室再入居率 <strong>+3%/Lv</strong>。
               </div>
             </div>
 
-            <div class="help-wiki-card highlight-rose">
+            <div id="wiki-card-staff" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-users-three"></i> スタッフ採用の維持費・スキル重複・昇給交渉
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>同スキルは最大Lvのみ適用</strong>：複数人が同じスキルを持っていても合算されず、最高Lvのみ有効です（満席時の入替雇用・解雇の退職金は0円）。<br>
+                ・<strong>求人広告の維持費に注意</strong>：広告掲載の翌月から候補が3名並びますが、<strong>募集中（アクティブ）の間は毎月 15.0万 の広告維持費</strong>がかかり続けます（即時スカウト後も枠が残っていれば継続）。見送る時は必ず「掲載停止」を押してください。<br>
+                ・<strong>年末の昇給交渉（毎年12月）</strong>：承認で給与 <strong>+15%（最低+0.3万/月）</strong>＋成長抽選（<strong>5%で新スキル開眼［3個未満時］／10%で既存スキルLvUP</strong>）。拒否すると <strong>40%（連続拒否で80%）</strong> の確率で退職します。
+              </div>
+            </div>
+
+            <div id="wiki-card-bank" class="help-wiki-card highlight-rose">
               <div class="help-wiki-title" style="color:#fb7185;">
-                <i class="ph-bold ph-bank"></i> 銀行融資・街金・倒産条件
+                <i class="ph-bold ph-bank"></i> 銀行・街金の返済ルールと2つの倒産条件
               </div>
               <div class="help-wiki-body">
-                ・<strong>銀行融資</strong>：ブランド知名度と所有物件の担保（入居中：<strong>売価×2.0</strong> / 空室中：<strong>売価×0.5</strong>）を上限に借入可能（基本月利 1.5%）。<br>
-                ・<strong>当座貸越と街金</strong>：月送り等で資金不足になると銀行から自動融資、さらに枠を超えると<strong>街金（手数料10%＋月利10%）</strong>が発動します。<strong>街金の残債がある間は銀行の新規融資が全面停止</strong>するため最優先で返済してください。<br>
-                ・<strong>倒産条件</strong>：所有物件0棟の状態で、所持金＋銀行融資余力＋街金残枠が最低建築資金を下回ると経営破綻となります。
+                ・<strong>最低着工資金</strong>：所持金 <strong>15.0万未満</strong> では新規設計を開始できません。<br>
+                ・<strong>担保と毎月自動返済</strong>：銀行融資枠は「基礎100万＋ブランド加算＋物件担保（入居中：<strong>売価×2.0</strong> / 空室：<strong>売価×0.5</strong>）」。毎月、銀行は「残債5%（最低10万）＋月利1.5%（最低0.2万、金利交渉で軽減）」、街金（上限50万）は「残債5%（最低1万）＋月利10%」が自動返済されます。<br>
+                ・<strong>街金の注意点</strong>：手動借入時は<strong>即時手数料 +10%</strong> が残債に加算され、<strong>建築中に借りた街金残債は「もう一度設計」「諦める」で資金を戻しても消えません</strong>。街金残債がある間は銀行の新規借入が停止します。<br>
+                ・<strong>2つの倒産条件</strong>：①所有物件0棟で「所持金＋融資余力」が15万未満になった時、②<strong>物件を所有していても、月送りの赤字が「銀行融資余力＋街金残枠（上限50万）」を超えた時</strong>に経営破綻となります。
               </div>
             </div>
 
-            <div class="help-wiki-card">
+            <div id="wiki-card-qa" class="help-wiki-card highlight-emerald">
               <div class="help-wiki-title" style="color:#34d399;">
-                <i class="ph-bold ph-chats-circle"></i> よくある質問（Q&A）
+                <i class="ph-bold ph-chats-circle"></i> よくある質問（Q&A・月送りスキップ）
               </div>
               <div class="help-wiki-body">
                 <strong>Q. 赤い壁を消したい！</strong><br>
                 → 選択中のカードを再タップして「未選択」状態にし、赤い壁を直接タップします。<br>
                 <strong>Q. 詳しい内訳を見たい</strong><br>
-                → 物件結果シートの「建築費」「査定額」「維持費」や、物件詳細の各項目をタップすると内訳が開きます。
+                → 物件結果シートの「建築費」「査定額」「維持費」や、物件詳細の各項目をタップすると内訳が開きます。<br>
+                <strong>Q. 複数月スキップはどこまで進む？</strong><br>
+                → スキップ中に<strong>退去・再入居・資金不足（当座貸越）・倒産</strong>が発生した月、および<strong>12月（昇給交渉）</strong>の手前で自動的に停止します。
               </div>
             </div>
           </div>
@@ -881,8 +934,11 @@
       <div class="mission-card" style="position:relative; width:100%; max-width:420px; max-height:86vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); padding:16px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
           <div>
-            <div style="font-size:15px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
-              <i class="ph-fill ph-cards" style="color:var(--c-amber);"></i> 山札・捨て札確認
+            <div style="font-size:15px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-cards" style="color:var(--c-amber);"></i> 山札・捨て札確認</span>
+              <button id="btn-help-deck-peek" type="button" class="wiki-jump-pill">
+                <i class="ph-bold ph-book-open-text"></i> 山札・更新の仕様
+              </button>
             </div>
             <div id="deck-peek-subtitle" style="font-size:11px; color:var(--c-text2); margin-top:2px;">
               山札残り 0枚 / 捨て札・配置済 0枚
@@ -945,16 +1001,22 @@
 
     <!-- Requirements -->
     <div class="mission-card">
-      <div class="mission-card-title">
-        <i class="ph-bold ph-list-checks"></i> 要望
+      <div class="mission-card-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-bold ph-list-checks"></i> 要望</span>
+        <button id="btn-help-mission-req" type="button" class="wiki-jump-pill">
+          <i class="ph-bold ph-book-open-text"></i> 合体・LDK表記の仕様
+        </button>
       </div>
       <div class="req-list" id="req-list"></div>
     </div>
 
     <!-- Site preview -->
     <div class="mission-card">
-      <div class="mission-card-title">
-        <i class="ph-bold ph-map-pin"></i> 敷地
+      <div class="mission-card-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-bold ph-map-pin"></i> 敷地</span>
+        <button id="btn-help-mission-lot" type="button" class="wiki-jump-pill">
+          <i class="ph-bold ph-book-open-text"></i> 敷地・窓・庭の仕様
+        </button>
       </div>
       <div class="site-preview-wrap">
         <canvas id="site-preview-canvas"></canvas>
@@ -1111,7 +1173,12 @@
     <div id="mission-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:340px; max-height:82vh; display:flex; flex-direction:column; overflow:hidden;" id="mission-modal-card">
         <div style="flex-shrink:0; position:relative; padding-right:28px; margin-bottom:8px;">
-          <div class="mission-card-title" style="margin-bottom:0;"><i class="ph-fill ph-clipboard-text"></i> クライアントの要望</div>
+          <div class="mission-card-title" style="margin-bottom:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-clipboard-text"></i> クライアントの要望</span>
+            <button id="btn-help-mission-modal" type="button" class="wiki-jump-pill">
+              <i class="ph-bold ph-book-open-text"></i> 窓・コンボの仕様
+            </button>
+          </div>
           <button id="btn-close-mission" style="position:absolute; top:-6px; right:-6px; padding:6px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; line-height:1;"><i class="ph-bold ph-x"></i></button>
         </div>
         <div style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; padding-right:2px;">
@@ -1224,9 +1291,14 @@
 
         <!-- Report list -->
         <div class="flyer-report-section">
-          <div class="flyer-report-title">
-            <i class="ph-bold ph-chart-polar" style="color:#3b82f6;font-size:13px;"></i>
-            診断
+          <div class="flyer-report-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span style="display:inline-flex; align-items:center; gap:5px;">
+              <i class="ph-bold ph-chart-polar" style="color:#3b82f6;font-size:13px;"></i>
+              診断
+            </span>
+            <button id="btn-help-result" type="button" class="wiki-jump-pill wiki-jump-pill-light">
+              <i class="ph-bold ph-book-open-text"></i> 査定・引き渡し仕様
+            </button>
           </div>
           <div class="report-list" id="report-list"></div>
         </div>
