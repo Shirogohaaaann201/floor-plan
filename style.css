@@ -599,30 +599,41 @@
     }
 
     .flyer-wrap {
-      width: 100%; max-width: 400px;
+      width: 100%; max-width: 410px;
       max-height: 96vh;
       display: flex; flex-direction: column;
       overflow: hidden;
       border-radius: var(--r-xl);
-      border: 3px solid var(--c-amber);
+      border: 2.5px solid #0f172a;
       box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(245,158,11,0.15);
     }
 
     /* Flyer header */
     .flyer-head {
-      background: var(--c-amber);
+      background: #0f172a;
+      border-bottom: 3px solid var(--c-amber);
       padding: 10px 14px;
       display: flex; align-items: center; justify-content: space-between;
-      color: #0f172a; flex-shrink: 0;
+      gap: 8px; flex-wrap: wrap;
+      color: #f8fafc; flex-shrink: 0;
     }
-    .flyer-head-left { display: flex; align-items: center; gap: 6px; }
-    .flyer-head-title { font-size: 11px; font-weight: 900; letter-spacing: 0.08em; }
-    .flyer-badge {
-      font-size: 10px; font-weight: 900;
-      padding: 3px 10px; border-radius: 100px;
+    .flyer-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+    .flyer-head-pill {
+      background: var(--c-amber); color: #0f172a;
+      font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 4px;
+      letter-spacing: 0.04em; white-space: nowrap;
     }
-    .flyer-badge.clear { background: #0f172a; color: var(--c-amber-lt); }
-    .flyer-badge.fail  { background: #0f172a; color: #fda4af; }
+    .flyer-head-title { font-size: 12px; font-weight: 800; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .flyer-head-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .flyer-head-status {
+      background: #0284c7; color: #ffffff;
+      font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+    }
+    .flyer-head-rank {
+      background: #64748b; color: #ffffff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10.5px; font-weight: 900; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+    }
 
     /* Flyer body */
     .flyer-body {
@@ -633,52 +644,118 @@
       display: flex; flex-direction: column; gap: 12px;
     }
 
-    /* Catchphrase */
+    /* Headline + Stamp */
+    .flyer-headline-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 0 3px 10px 0;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .flyer-headline-text { flex: 1; min-width: 0; text-align: left; }
     .flyer-catch-sub {
-      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
-      color: #64748b; text-align: center;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      color: #2563eb; margin-bottom: 3px;
     }
     .flyer-catch-main {
-      font-size: 14px; font-weight: 900; line-height: 1.5;
-      color: #0f172a; text-align: center;
+      font-size: clamp(12.5px, 3.4vw, 17px);
+      font-weight: 900; line-height: 1.42;
+      color: #0f172a; text-align: left;
+      white-space: pre-line;
+      word-break: break-word;
+    }
+    .flyer-stamp {
+      width: 68px; height: 68px; border-radius: 50%;
+      border: 2.5px solid #e11d48;
+      box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 3px #e11d48;
+      background: rgba(255, 255, 255, 0.96);
+      color: #e11d48;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex-shrink: 0; transform: rotate(-8deg);
+      line-height: 1.1; user-select: none;
+    }
+    .flyer-stamp-top { font-size: 8px; font-weight: 800; }
+    .flyer-stamp-val { font-size: 16px; font-weight: 900; margin: 1px 0; }
+    .flyer-stamp-sub { font-size: 8.5px; font-weight: 800; }
+
+    /* Hero 1-col / 2-col */
+    .flyer-hero-grid {
+      display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start;
+    }
+    .flyer-hero-right {
+      display: flex; flex-direction: column; gap: 9px; min-width: 0;
     }
 
     /* Rent */
     .flyer-rent-box {
-      background: #f8fafc;
-      border: 2px solid #0f172a;
+      background: #fffbeb;
+      border: 1.5px solid #f59e0b;
+      border-left: 5px solid #f59e0b;
       border-radius: var(--r-md);
-      padding: 12px; text-align: center;
+      padding: 10px 12px; text-align: left;
     }
     .flyer-rent-label {
-      font-size: 9px; font-weight: 700; color: #64748b; letter-spacing: 0.08em;
+      font-size: 10.5px; font-weight: 800; color: #92400e; letter-spacing: 0.04em;
     }
     .flyer-rent-row {
-      display: flex; align-items: baseline; justify-content: center; gap: 4px;
-      margin-top: 4px;
+      display: flex; align-items: baseline; justify-content: flex-start; gap: 4px;
+      margin-top: 2px;
     }
     .flyer-rent-val {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 36px; font-weight: 700; color: #1d4ed8; line-height: 1;
+      font-size: 32px; font-weight: 700; color: #0f172a; line-height: 1;
     }
-    .flyer-rent-unit { font-size: 14px; font-weight: 700; }
-    .flyer-rent-diff { font-size: 11px; font-weight: 700; margin-left: 4px; }
+    .flyer-rent-unit { font-size: 13px; font-weight: 700; color: #475569; }
+    .flyer-rent-diff { font-size: 10.5px; font-weight: 700; }
     .flyer-rent-diff.clear { color: #059669; }
     .flyer-rent-diff.fail  { color: #e11d48; }
-    .flyer-rent-note { font-size: 9px; color: #94a3b8; margin-top: 4px; }
+    .flyer-rent-note { font-size: 9.5px; color: #78716c; margin-top: 3px; }
+
+    /* Spec Strip */
+    .flyer-spec-box {
+      background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;
+      padding: 7px 10px; display: flex; flex-direction: column; gap: 4px;
+      font-size: 11px; color: #0f172a;
+    }
+    .flyer-spec-row { display: flex; align-items: baseline; gap: 8px; line-height: 1.35; }
+    .flyer-spec-k { color: #64748b; font-weight: 700; flex-shrink: 0; min-width: 36px; font-size: 10.5px; }
+    .flyer-spec-v { font-weight: 700; color: #0f172a; min-width: 0; word-break: break-word; }
+
+    /* Combo Feature Pills */
+    .flyer-combo-heading { font-size: 10.5px; font-weight: 700; color: #475569; margin-bottom: 5px; }
+    .flyer-combo-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+    .flyer-combo-chip {
+      font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+      border: 1px solid; line-height: 1.35; white-space: nowrap;
+    }
+
+    /* Cost & ROI secondary section */
+    .flyer-cost-section {
+      background: #f1f5f9; border: 1px solid #cbd5e1;
+      border-radius: var(--r-md); padding: 9px 12px;
+      font-size: 11px; color: #334155;
+    }
 
     /* Thumbnail */
     .flyer-thumbnail {
       display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .flyer-thumbnail-label {
-      font-size: 10px; font-weight: 700; color: #64748b;
+      font-size: 10.5px; font-weight: 700; color: #475569;
       align-self: flex-start; display: flex; align-items: center; gap: 4px;
     }
+    .flyer-canvas-frame {
+      background: #ffffff; border: 1.5px solid #94a3b8; border-radius: 4px;
+      padding: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      max-width: 100%;
+    }
     #result-canvas {
-      border-radius: var(--r-sm);
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: block;
+      max-width: 100%; height: auto;
+      border-radius: 2px;
+    }
+
+    @media (min-width: 580px) {
+      .flyer-wrap { max-width: 590px; }
+      .flyer-hero-grid { grid-template-columns: 264px minmax(0, 1fr); gap: 14px; }
     }
 
     /* Hidden request reveal */
@@ -717,15 +794,16 @@
 
     /* Architect comment */
     .flyer-comment-box {
-      background: #fffbeb; border: 1px solid #fde68a;
+      background: #f8fafc; border: 1px solid #cbd5e1;
+      border-left: 4px solid #3b82f6;
       border-radius: var(--r-md); padding: 10px 12px;
     }
     .flyer-comment-title {
-      font-size: 10px; font-weight: 700; color: #92400e;
+      font-size: 10.5px; font-weight: 700; color: #1d4ed8;
       display: flex; align-items: center; gap: 4px; margin-bottom: 4px;
     }
     .flyer-comment-text {
-      font-size: 11px; color: #78350f; line-height: 1.6;
+      font-size: 11.5px; color: #1e293b; line-height: 1.55;
     }
 
     /* Flyer footer */
@@ -936,9 +1014,10 @@
     body.is-plicy .flyer-head {
       justify-content: flex-start;
       gap: 8px;
+      padding-right: 84px;
     }
     body.is-plicy .flyer-head-left,
-    body.is-plicy .flyer-badge {
+    body.is-plicy .flyer-head-right {
       flex-shrink: 0;
       white-space: nowrap;
     }

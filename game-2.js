@@ -1185,33 +1185,38 @@
   /* ============================================================
      CATCHPHRASE & COMMENT GENERATOR
   ============================================================ */
-  function genCatchphrase(counts, combos, optSatisfiedCount) {
+  function genCatchphrase(counts, combos, optSatisfiedCount, targetGrid = grid) {
     const funnyNames = combos.filter(c=>c.type==='funny').map(c=>c.name);
     if (funnyNames.includes('もはや公園') || combos.some(c=>c.name==='もはや公園'))
-      return { main:'「ここは家か、それとも緑地広場か。見渡す限りの芝生と吹き抜ける風」', sub:'【公園物件】' };
+      return { main:'ここは家か、それとも緑地広場か。\n見渡す限りの芝生と吹き抜ける風', sub:'【公園物件】' };
     if (combos.some(c=>c.name==='ガラス張りハウス'))
-      return { main:'「空と光に溶け込むパノラマビュー。全面ガラス張りの圧倒的開放感」', sub:'【ガラス張り物件】' };
+      return { main:'空と光に溶け込むパノラマビュー。\n全面ガラス張りの圧倒的開放感', sub:'【ガラス張り物件】' };
     if (combos.some(c=>c.name==='陽だまりの家'))
-      return { main:'「光と風が家中を駆け巡る。窓辺にぬくもり溢れる陽だまり邸」', sub:'【採光特選物件】' };
+      return { main:'光と風が家中を駆け巡る。\n窓辺にぬくもり溢れる陽だまり邸', sub:'【採光特選物件】' };
     if (combos.some(c=>c.name==='要塞化'))
-      return { main:'「光なき城。外界を完全に遮断した静寂の要塞邸宅」', sub:'【要塞物件】' };
+      return { main:'光なき城。\n外界を完全に遮断した静寂の要塞邸宅', sub:'【要塞物件】' };
     if (combos.some(c=>c.name==='日当たり良好'))
-      return { main:'「太陽が注ぐ特選邸宅。心地よい南向きの光に包まれる暮らし」', sub:'【陽光物件】' };
+      return { main:'太陽が注ぐ特選邸宅。\n心地よい南向きの光に包まれる暮らし', sub:'【陽光物件】' };
     if (funnyNames.includes('トイレビュッフェ'))
-      return { main:'「急な腹痛も安心！トイレ直通パラダイスハウス」', sub:'【ユニーク物件】' };
+      return { main:'急な腹痛も安心！\nトイレ直通パラダイスハウス', sub:'【ユニーク物件】' };
     if (funnyNames.includes('無限回廊'))
-      return { main:'「帰れない…廊下が私を呼んでいる。無限回廊エンドレスハウス」', sub:'【哲学的物件】' };
+      return { main:'帰れない…廊下が私を呼んでいる。\n無限回廊エンドレスハウス', sub:'【哲学的物件】' };
     if (funnyNames.includes('マトリョーシカ'))
-      return { main:'「辿り着けない最奥の部屋。謎と神秘のマトリョーシカ邸」', sub:'【謎多き物件】' };
+      return { main:'辿り着けない最奥の部屋。\n謎と神秘のマトリョーシカ邸', sub:'【謎多き物件】' };
     if (funnyNames.includes('隠し部屋'))
-      return { main:'「扉の向こうに広がる別世界。男のロマンを叶える秘密基地邸」', sub:'【秘密物件】' };
+      return { main:'扉の向こうに広がる別世界。\n男のロマンを叶える秘密基地邸', sub:'【秘密物件】' };
     if (funnyNames.includes('スケルトンバス'))
-      return { main:'「玄関を開けたら浴室が見える。オープンな暮らしを体現した家」', sub:'【開放的物件】' };
+      return { main:'玄関を開けたら浴室が見える。\nオープンな暮らしを体現した家', sub:'【開放的物件】' };
     if (counts.unreachable > 0)
-      return { main:'「封印されし部屋を抱えるミステリー邸。謎解き好きにどうぞ」', sub:'【ミステリー物件】' };
-    if (counts.ldkRooms >= 1 && counts.bedRooms >= 2)
-      return { main:'「理想の2LDKが完成！生活動線も完璧な快適スマート邸宅」', sub:'【特選・最新物件】' };
-    return { main:'「ユニークな間取りが生み出す、他にはない暮らし方」', sub:'【特選物件】' };
+      return { main:'封印されし部屋を抱えるミステリー邸。\n謎解き好きにどうぞ', sub:'【ミステリー物件】' };
+    if (counts.ldkRooms >= 1 && counts.bedRooms >= 2) {
+      const madori = (typeof computeFloorplanNotation === 'function' && targetGrid)
+        ? computeFloorplanNotation(targetGrid)
+        : '';
+      const madoriLabel = (madori && madori !== '—') ? madori : `${counts.bedRooms}LDK`;
+      return { main:`理想の${madoriLabel}が完成！\n生活動線も完璧な快適スマート邸宅`, sub:'【特選・最新物件】' };
+    }
+    return { main:'ユニークな間取りが生み出す、\n他にはない暮らし方', sub:'【特選物件】' };
   }
 
   function genComment(counts, combos, optSatisfiedCount, satisfaction, satisfiedReqs, unmetReqs, STAGE) {
@@ -1711,12 +1716,62 @@
     const stats = calcPropertyStats(window.currentPropertyData);
     const sat = stats.satisfaction;
 
-    const catch_ = genCatchphrase(counts, combos, optSatisfiedCount);
+    const catch_ = genCatchphrase(counts, combos, optSatisfiedCount, grid);
     const comment = genComment(counts, combos, optSatisfiedCount, sat, satisfiedReqs, unmetReqs, STAGE);
 
+    window.currentPropertyData.subCatch = catch_.sub;
+    window.currentPropertyData.mainCatch = catch_.main;
+    window.currentPropertyData.clientComment = comment;
+    window.currentPropertyData.lotName = (STAGE && STAGE.lotName) ? STAGE.lotName : '';
+    window.currentPropertyData.entranceFacing = (STAGE && STAGE.entranceFacing) ? STAGE.entranceFacing : 'bottom';
+    window.currentPropertyData.isWideEntrance = !!(STAGE && STAGE.entranceCells && STAGE.entranceCells.length >= 2);
+
+    const nextNo = (GameState.properties && GameState.properties.length > 0)
+      ? Math.max(...GameState.properties.map(x => x.propertyNo || 0)) + 1
+      : 1;
+    const flyerMeta = buildFlyerSharePayload(window.currentPropertyData, true, nextNo);
+
+    // Populate result flyer header, specs & combo pills
+    const headMetaEl = document.getElementById('flyer-head-meta');
+    if (headMetaEl) headMetaEl.textContent = `${flyerMeta.companyName} ｜ 物件 No.${flyerMeta.propNo}`;
+    const headStatusEl = document.getElementById('flyer-head-status');
+    if (headStatusEl) headStatusEl.textContent = flyerMeta.statusLabel;
+    const headRankEl = document.getElementById('flyer-head-rank');
+    if (headRankEl) {
+      const rk = getFlyerRankColors(flyerMeta.rank);
+      headRankEl.textContent = `Rank ${flyerMeta.rank}`;
+      headRankEl.style.background = rk.bg;
+      headRankEl.style.color = rk.fg;
+    }
+
+    const specRowsEl = document.getElementById('flyer-spec-rows');
+    if (specRowsEl) {
+      const gardenTxt = flyerMeta.gardenCells > 0 ? ` / 庭${flyerMeta.gardenCells}ﾏｽ` : '';
+      const lotStr = flyerMeta.lotName
+        ? `${flyerMeta.lotName} (${flyerMeta.facingText}${flyerMeta.isWideEnt ? '2ﾏｽ' : ''})`
+        : `${flyerMeta.facingText}玄関${flyerMeta.isWideEnt ? ' (2ﾏｽ)' : ''}`;
+      specRowsEl.innerHTML = `
+        <div class="flyer-spec-row"><span class="flyer-spec-k">間取り</span><span class="flyer-spec-v">${flyerMeta.madori}（延床${flyerMeta.floorCells}ﾏｽ${gardenTxt}）</span></div>
+        <div class="flyer-spec-row"><span class="flyer-spec-k">敷地</span><span class="flyer-spec-v">${lotStr}</span></div>
+        <div class="flyer-spec-row"><span class="flyer-spec-k">築年数</span><span class="flyer-spec-v">${flyerMeta.ageLabel} ・ 品質Rank ${flyerMeta.rank}</span></div>
+      `;
+    }
+
+    const comboPillsEl = document.getElementById('flyer-combo-pills');
+    if (comboPillsEl) {
+      if (flyerMeta.combos && flyerMeta.combos.length > 0) {
+        comboPillsEl.innerHTML = flyerMeta.combos.map(c => {
+          const st = getFlyerComboBadgeStyle(c, window.currentPropertyData);
+          return `<span class="flyer-combo-chip" style="background:${st.bg}; border-color:${st.border}; color:${st.fg};">${st.prefix} ${c.name}</span>`;
+        }).join('');
+      } else {
+        comboPillsEl.innerHTML = '<span class="flyer-combo-chip" style="background:#f1f5f9; border-color:#cbd5e1; color:#475569;">シンプル標準仕様</span>';
+      }
+    }
+
     // Populate result UI
-    document.getElementById('flyer-sub-catch').textContent = catch_.sub;
-    document.getElementById('flyer-main-catch').textContent = catch_.main;
+    document.getElementById('flyer-sub-catch').textContent = flyerMeta.subCatch;
+    document.getElementById('flyer-main-catch').textContent = flyerMeta.mainCatch;
     document.getElementById('flyer-rent').textContent = rent.toFixed(1);
 
     // Populate flyer construction cost & ROI summary
@@ -1764,29 +1819,15 @@
     btnNext.innerHTML = '<i class="ph-bold ph-key" style="font-size:13px; margin-right:4px;"></i>物件を引き渡す';
     if (btnGiveup) btnGiveup.style.display = 'block';
     
-    // 満足度バッジ (100%〜: 大満足, 90〜: 満足, 75〜: 納得, 50〜: 妥協, 50未満: 不満)
-    let badgeText = '';
-    let badgeColor = '#ffffff';
-    if (sat >= 100) {
-      badgeText = `大満足 ❤️ ${sat}%`;
-      badgeColor = '#fb7185';
-    } else if (sat >= 90) {
-      badgeText = `満足 😊 ${sat}%`;
-      badgeColor = '#34d399';
-    } else if (sat >= 75) {
-      badgeText = `納得 😐 ${sat}%`;
-      badgeColor = '#38bdf8';
-    } else if (sat >= 50) {
-      badgeText = `妥協 💦 ${sat}%`;
-      badgeColor = '#fbbf24';
-    } else {
-      badgeText = `不満 😣 ${sat}%`;
-      badgeColor = '#f87171';
+    // 満足度スタンプ (100%〜: 大満足, 90〜: 満足, 75〜: 納得, 50〜: 妥協, 50未満: 不満)
+    const stampMeta = getFlyerStampMeta(sat);
+    if (badge) {
+      badge.className = 'flyer-stamp';
+      badge.style.borderColor = stampMeta.color;
+      badge.style.color = stampMeta.color;
+      badge.style.boxShadow = `inset 0 0 0 2px #ffffff, inset 0 0 0 3px ${stampMeta.color}`;
+      badge.innerHTML = `<span class="flyer-stamp-top">満足度</span><span class="flyer-stamp-val font-num">${stampMeta.val}%</span><span class="flyer-stamp-sub">${stampMeta.sub}</span>`;
     }
-    badge.textContent = badgeText;
-    badge.className = 'flyer-badge';
-    badge.style.background = '#0f172a';
-    badge.style.color = badgeColor;
 
     if (!isRestoring) {
       if (sat >= 75) {
@@ -3343,6 +3384,12 @@
       isOriginalTenant: true,
       hasStorage: !!(p.hasStorage || (p.closetCells && p.closetCells > 0) || (p.combosList && p.combosList.some(c => c.name && c.name.includes('収納')))),
       clientName: p.clientName || (STAGE && STAGE.client ? STAGE.client.name : '入居者'),
+      subCatch: p.subCatch || '',
+      mainCatch: p.mainCatch || '',
+      clientComment: p.clientComment || '',
+      lotName: p.lotName || (STAGE && STAGE.lotName ? STAGE.lotName : ''),
+      entranceFacing: p.entranceFacing || (STAGE && STAGE.entranceFacing ? STAGE.entranceFacing : 'bottom'),
+      isWideEntrance: p.isWideEntrance !== undefined ? !!p.isWideEntrance : !!(STAGE && STAGE.entranceCells && STAGE.entranceCells.length >= 2),
       customCombo: p.customCombo || null
     });
     
@@ -3635,7 +3682,7 @@
     pvTitle.innerHTML = `<i class="ph-fill ph-blueprint"></i> 物件 No.${pNum} 間取り図面`;
     
     const stats = calcPropertyStats(p);
-    pvSubinfo.textContent = `築${stats.age}ヶ月 ｜ 家賃 ${stats.currentRent.toFixed(1)}万/月 ｜ Rank ${getPropertyRank(stats.degRate)}`;
+    pvSubinfo.textContent = `${formatBuildingAge(stats.buildingAge)} ｜ 家賃 ${stats.currentRent.toFixed(1)}万/月 ｜ Rank ${getPropertyRank(stats.degRate)}`;
 
     renderPropertyPlanToCanvas(pvCanvas, p, 280, false);
     pvModal.style.display = 'flex';
@@ -3650,10 +3697,625 @@
   let currentSaveImageDataUrl = null;
   let currentSaveImageFilename = 'madori.png';
   let currentSaveImageBlob = null;
+  let currentSaveVariants = null;
+  let currentSaveMode = 'flyer';
+
+  function formatBuildingAge(months) {
+    const mTotal = Math.max(0, Math.floor(months || 0));
+    if (mTotal === 0) return '新築';
+    if (mTotal < 12) return `築${mTotal}ヶ月`;
+    const years = Math.floor(mTotal / 12);
+    const rem = mTotal % 12;
+    return rem > 0 ? `築${years}年${rem}ヶ月` : `築${years}年`;
+  }
+
+  function computeFloorplanNotation(targetGrid) {
+    if (!targetGrid || !Array.isArray(targetGrid)) return '—';
+    const rooms = extractRoomsFromProperty(targetGrid);
+    const bedRooms = rooms.filter(r => r.type === T.ROOM).length;
+    const ldkRooms = rooms.filter(r => r.type === T.LDK);
+    let ldkCells = 0;
+    let hasLdk = false;
+    let hasDk = false;
+    let closetCells = 0;
+    for (let r = 0; r < targetGrid.length; r++) {
+      for (let c = 0; c < (targetGrid[r] ? targetGrid[r].length : 0); c++) {
+        const cell = targetGrid[r][c];
+        if (!cell) continue;
+        if (cell.type === T.LDK) {
+          ldkCells++;
+          if (cell.label === 'LDK') hasLdk = true;
+          else if (cell.label === 'DK') hasDk = true;
+        } else if (cell.type === T.CLOSET) {
+          closetCells++;
+        }
+      }
+    }
+    let suffix = '';
+    if (hasLdk || ldkCells >= 5) suffix = 'LDK';
+    else if (hasDk || ldkCells >= 2) suffix = 'DK';
+    else if (ldkCells >= 1) suffix = 'K';
+
+    let base = 'ワンルーム';
+    if (bedRooms >= 1) {
+      base = suffix ? `${bedRooms}${suffix}` : `${bedRooms}部屋`;
+    } else if (ldkRooms.length > 0 && ldkCells < 4) {
+      base = '1K';
+    }
+    return closetCells >= 2 ? `${base}+S` : base;
+  }
+
+  function drawRoundedRectPath(ctx, x, y, w, h, r) {
+    const rad = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.lineTo(x + w - rad, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+    ctx.lineTo(x + w, y + h - rad);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+    ctx.lineTo(x + rad, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+    ctx.lineTo(x, y + rad);
+    ctx.quadraticCurveTo(x, y, x + rad, y);
+    ctx.closePath();
+  }
+
+  function normalizeCatchphraseText(text) {
+    let s = String(text || '').trim();
+    if (s.startsWith('「') && s.endsWith('」') && s.length >= 2) {
+      s = s.slice(1, -1).trim();
+    }
+    if (!s.includes('\n')) {
+      // 句点・感嘆符（または最後の読点）で読みやすく2行分割する
+      const match = s.match(/^(.+?[。！])(.+)$/) || s.match(/^(.+?、)(.+)$/);
+      if (match) {
+        s = `${match[1]}\n${match[2].trimStart()}`;
+      }
+    }
+    return s;
+  }
+
+  function getFlyerStampMeta(satisfaction) {
+    const val = Math.round(satisfaction || 0);
+    const color = val >= 90 ? '#e11d48' : (val >= 75 ? '#d97706' : '#64748b');
+    const sub = val >= 100 ? '大満足 ♥' : (val >= 90 ? '満足 😊' : (val >= 75 ? '納得' : (val >= 50 ? '妥協 💦' : '不満')));
+    return { val, color, sub };
+  }
+
+  function wrapCanvasText(ctx, text, maxWidth, maxLines = 3) {
+    const paragraphs = String(text || '').split(/\r?\n/);
+    const noLineStart = new Set(['。', '、', '．', '，', '！', '？', ')', '）', '」', '』', 'ー', '〜', '…']);
+    const lines = [];
+    let truncated = false;
+
+    for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
+      const para = paragraphs[pIdx].trim();
+      if (!para) continue;
+      const chars = Array.from(para);
+      let current = '';
+      let i = 0;
+      while (i < chars.length) {
+        const ch = chars[i];
+        const next = current + ch;
+        if (ctx.measureText(next).width > maxWidth && current.length > 0) {
+          if (noLineStart.has(ch) && current.length > 1) {
+            const carried = current.slice(-1);
+            lines.push(current.slice(0, -1));
+            current = carried + ch;
+          } else {
+            lines.push(current);
+            current = ch;
+          }
+          i++;
+          if (lines.length >= maxLines) {
+            truncated = true;
+            break;
+          }
+        } else {
+          current = next;
+          i++;
+        }
+      }
+      if (truncated) break;
+      if (current) {
+        if (lines.length < maxLines) {
+          lines.push(current);
+          if (lines.length >= maxLines && pIdx < paragraphs.length - 1) {
+            truncated = true;
+            break;
+          }
+        } else {
+          truncated = true;
+          break;
+        }
+      }
+    }
+
+    if (truncated && lines.length > 0) {
+      let last = lines[lines.length - 1];
+      while (last.length > 1 && ctx.measureText(last + '…').width > maxWidth) {
+        last = last.slice(0, -1);
+      }
+      lines[lines.length - 1] = last + '…';
+    }
+    return lines;
+  }
+
+  function fitCanvasText(ctx, text, maxWidth) {
+    let s = String(text || '');
+    if (ctx.measureText(s).width <= maxWidth) return s;
+    while (s.length > 1 && ctx.measureText(s + '…').width > maxWidth) {
+      s = s.slice(0, -1);
+    }
+    return s + '…';
+  }
+
+  function getFlyerRankColors(rank) {
+    switch (rank) {
+      case 'S': return { bg: '#f59e0b', fg: '#ffffff' };
+      case 'A': return { bg: '#10b981', fg: '#ffffff' };
+      case 'B': return { bg: '#3b82f6', fg: '#ffffff' };
+      case 'C': return { bg: '#64748b', fg: '#ffffff' };
+      default:  return { bg: '#94a3b8', fg: '#ffffff' };
+    }
+  }
+
+  function getFlyerComboBadgeStyle(combo, prop) {
+    const isCustom = !!(prop && prop.customCombo && prop.customCombo.name === combo.name);
+    const isOriginal = prop ? (prop.isOriginalTenant !== false) : true;
+    if (isCustom && isOriginal) {
+      return { prefix: '👑', bg: '#fef3c7', border: '#f59e0b', fg: '#b45309' };
+    }
+    const isNeg = (combo.bonus < 0) || (isCustom && !isOriginal && prop.customCombo.isNegativeInversion);
+    if (isNeg) {
+      return { prefix: '🚨', bg: '#fff1f2', border: '#fda4af', fg: '#be123c' };
+    }
+    const master = (typeof COMBO_MASTER_LIST !== 'undefined') ? COMBO_MASTER_LIST.find(x => x.name === combo.name) : null;
+    const isFunny = !!(FUNNY_LAYOUT_PROPS && FUNNY_LAYOUT_PROPS[combo.name]) || (master && master.category === '珍間取り');
+    if (isFunny) {
+      return { prefix: '🤪', bg: '#f5f3ff', border: '#c4b5fd', fg: '#6d28d9' };
+    }
+    return { prefix: '👍', bg: '#ecfdf5', border: '#6ee7b7', fg: '#047857' };
+  }
+
+  function buildLegacySynthMeta(p, targetGrid, satisfaction) {
+    const rooms = targetGrid ? extractRoomsFromProperty(targetGrid) : [];
+    let hasToilet = false;
+    let hasBath = false;
+    if (targetGrid) {
+      for (let r = 0; r < targetGrid.length; r++) {
+        for (let c = 0; c < (targetGrid[r] ? targetGrid[r].length : 0); c++) {
+          const cell = targetGrid[r][c];
+          if (!cell) continue;
+          if (cell.type === T.TOILET) hasToilet = true;
+          if (cell.type === T.BATH) {
+            hasBath = true;
+            if (cell.label === 'UB' || cell.pieceLibId === 'unit-bath') hasToilet = true;
+          }
+        }
+      }
+    }
+    const synthCounts = {
+      unreachable: 0,
+      ldkRooms: rooms.filter(r => r.type === T.LDK).length,
+      bedRooms: rooms.filter(r => r.type === T.ROOM).length,
+      hasToilet: targetGrid ? hasToilet : true,
+      hasBath: targetGrid ? hasBath : true,
+      isBtSeparated: true,
+      unitBathCount: 0
+    };
+    const synthCombos = (p.combosList || []).map(c => {
+      const master = (typeof COMBO_MASTER_LIST !== 'undefined') ? COMBO_MASTER_LIST.find(x => x.name === c.name) : null;
+      const isFunnyOrNeg = (c.bonus < 0) || !!(master && (master.category === '珍間取り' || master.category === 'NG'));
+      return { ...c, type: isFunnyOrNeg ? 'funny' : 'good' };
+    });
+    const catch_ = genCatchphrase(synthCounts, synthCombos, p.optionalSatisfied || 0, targetGrid);
+    const comment = genComment(synthCounts, synthCombos, p.optionalSatisfied || 0, satisfaction, [], [], null);
+    return { subCatch: catch_.sub, mainCatch: catch_.main, comment };
+  }
+
+  function buildFlyerSharePayload(p, isResultPreview, propNo) {
+    const stats = calcPropertyStats(p);
+    const targetGrid = isResultPreview ? grid : (p.propertyGrid || null);
+    const facingMap = { bottom: '南向き', top: '北向き', left: '西向き', right: '東向き' };
+    const facingDir = p.entranceFacing || (targetGrid ? getEntranceFacing(isResultPreview ? STAGE : null, targetGrid).dir : 'bottom');
+    const facingText = facingMap[facingDir] || '南向き';
+    const isWideEnt = p.isWideEntrance !== undefined
+      ? !!p.isWideEntrance
+      : !!(isResultPreview && STAGE && STAGE.entranceCells && STAGE.entranceCells.length >= 2);
+    const ageLabel = isResultPreview ? '新築' : formatBuildingAge(stats.buildingAge);
+
+    let subCatch = p.subCatch || '';
+    let mainCatch = p.mainCatch || '';
+    let comment = p.clientComment || '';
+    if (isResultPreview) {
+      subCatch = subCatch || (document.getElementById('flyer-sub-catch')?.textContent || '【特選物件】');
+      mainCatch = mainCatch || (document.getElementById('flyer-main-catch')?.textContent || '');
+      comment = comment || (document.getElementById('flyer-comment')?.textContent || '');
+    } else if (!mainCatch || !comment) {
+      const synth = buildLegacySynthMeta(p, targetGrid, stats.satisfaction);
+      if (!subCatch) subCatch = synth.subCatch;
+      if (!mainCatch) mainCatch = synth.mainCatch;
+      if (!comment) comment = synth.comment;
+    }
+    mainCatch = normalizeCatchphraseText(mainCatch || '個性あふれる間取り設計の注目物件');
+
+    const clientName = p.clientName || (isResultPreview && STAGE && STAGE.client ? STAGE.client.name : '入居者');
+    const commentLabel = isResultPreview
+      ? `${clientName} 様の感想`
+      : (stats.isVacant
+        ? '物件アピール・当時の感想'
+        : (stats.isOriginal ? `${clientName} 様の感想` : '入居者レビュー・特徴'));
+
+    const createdMonth = p.createdMonth || GameState.month || 1;
+    const statusLabel = isResultPreview ? '新築物件' : (stats.isVacant ? '空室募集中' : '入居中');
+    const rentVal = (!isResultPreview && stats.isVacant) ? stats.nextRecruitRent : stats.currentRent;
+
+    return {
+      companyName: GameState.companyName || '焼飯不動産',
+      propNo: propNo || p.propertyNo || 1,
+      subCatch: subCatch || '【特選物件】',
+      mainCatch: mainCatch || '「個性あふれる間取り設計の注目物件」',
+      rent: rentVal,
+      isVacant: !isResultPreview && stats.isVacant,
+      satisfaction: Math.round(stats.satisfaction || 0),
+      ageLabel,
+      statusLabel,
+      isResultPreview,
+      createdLabel: isResultPreview ? `${formatYearMonth(createdMonth)} 竣工予定` : `${formatYearMonth(createdMonth)} 竣工`,
+      rank: getPropertyRank(stats.degRate),
+      madori: computeFloorplanNotation(targetGrid),
+      floorCells: stats.floorCells || 0,
+      gardenCells: stats.marginGardenCells || 0,
+      lotName: p.lotName || '',
+      facingText,
+      isWideEnt,
+      combos: p.combosList || [],
+      prop: p,
+      commentLabel,
+      comment: comment || '住む人のライフスタイルに寄り添うユニークな間取りです。'
+    };
+  }
+
+  function renderFlyerShareCanvas(planCanvas, data) {
+    const W = 600;
+    const scale = 2;
+    const sheetX = 12, sheetY = 12, sheetW = W - 24;
+    const innerX = 28, innerW = W - 56;
+    const fontSans = '"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';
+    const fontNum = '"Space Grotesk", "Zen Kaku Gothic New", sans-serif';
+
+    // Measure dynamic text blocks first
+    const mCanvas = document.createElement('canvas');
+    mCanvas.width = W;
+    mCanvas.height = 100;
+    const mCtx = mCanvas.getContext('2d');
+
+    mCtx.font = `bold 19px ${fontSans}`;
+    const mainLines = wrapCanvasText(mCtx, data.mainCatch, innerW - 108, 2);
+
+    mCtx.font = `12.5px ${fontSans}`;
+    const commentLines = wrapCanvasText(mCtx, data.comment, innerW - 28, 3);
+
+    // Measure combo pills wrapping inside right column (width 248)
+    const planSize = 278;
+    const colGap = 18;
+    const rightX = innerX + planSize + colGap;
+    const rightW = innerX + innerW - rightX; // 248
+
+    const visibleCombos = [];
+    let overflowCount = 0;
+    const maxComboPills = 8;
+    for (let i = 0; i < data.combos.length; i++) {
+      if (i < maxComboPills) visibleCombos.push(data.combos[i]);
+      else overflowCount++;
+    }
+
+    mCtx.font = `bold 10.5px ${fontSans}`;
+    let simX = 0;
+    let comboRows = 1;
+    const chipItems = visibleCombos.map(c => {
+      const st = getFlyerComboBadgeStyle(c, data.prop);
+      const label = `${st.prefix} ${c.name}`;
+      const w = Math.min(rightW, Math.ceil(mCtx.measureText(label).width) + 14);
+      return { label, w, st };
+    });
+    if (overflowCount > 0) {
+      const moreLbl = `+他${overflowCount}件`;
+      chipItems.push({ label: moreLbl, w: Math.ceil(mCtx.measureText(moreLbl).width) + 14, st: { bg: '#f1f5f9', border: '#cbd5e1', fg: '#475569' } });
+    }
+    if (chipItems.length === 0) {
+      chipItems.push({ label: 'シンプル標準仕様', w: Math.ceil(mCtx.measureText('シンプル標準仕様').width) + 14, st: { bg: '#f1f5f9', border: '#cbd5e1', fg: '#475569' } });
+    }
+    chipItems.forEach(item => {
+      if (simX > 0 && simX + item.w > rightW) {
+        comboRows++;
+        simX = 0;
+      }
+      simX += item.w + 5;
+    });
+    const cappedComboRows = comboRows;
+
+    // Compute exact vertical coordinates
+    const headerY = sheetY;
+    const headerH = 52;
+    const catchY = headerY + headerH + 16;
+    const catchTextH = 20 + mainLines.length * 26;
+    const stampH = 82;
+    const headlineBottom = Math.max(catchY + catchTextH, catchY + stampH - 4);
+    const heroY = headlineBottom + 16;
+
+    const rentBoxH = 82;
+    const specRowCount = 3;
+    const specBoxH = 14 + specRowCount * 20;
+    const combosHeaderY = heroY + rentBoxH + 10 + specBoxH + 10;
+    const combosTotalH = 16 + cappedComboRows * 25;
+    const rightBottom = combosHeaderY + combosTotalH;
+    const heroBottom = Math.max(heroY + planSize, rightBottom);
+
+    const commentY = heroBottom + 16;
+    const commentBoxH = 34 + Math.max(1, commentLines.length) * 19;
+    const footerY = commentY + commentBoxH + 12;
+    const totalH = footerY + 26 + 14;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W * scale;
+    canvas.height = totalH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // Outer light background & flyer sheet border
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(0, 0, W, totalH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(sheetX, sheetY, sheetW, totalH - 24);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(sheetX, sheetY, sheetW, totalH - 24);
+
+    // 1. Header Band
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(sheetX, headerY, sheetW, headerH);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(sheetX, headerY + headerH - 3, sheetW, 3);
+
+    // Gold tag pill
+    drawRoundedRectPath(ctx, innerX, headerY + 13, 92, 24, 4);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = `900 11px ${fontSans}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('特選物件チラシ', innerX + 46, headerY + 25.5);
+
+    // Company & No.
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = `bold 13.5px ${fontSans}`;
+    ctx.textAlign = 'left';
+    const titleText = fitCanvasText(ctx, `${data.companyName} ｜ 物件 No.${data.propNo}`, 275);
+    ctx.fillText(titleText, innerX + 102, headerY + 25.5);
+
+    // Right status & Rank badges
+    const rk = getFlyerRankColors(data.rank);
+    const rankW = 54;
+    const rankX = innerX + innerW - rankW;
+    drawRoundedRectPath(ctx, rankX, headerY + 13, rankW, 24, 4);
+    ctx.fillStyle = rk.bg;
+    ctx.fill();
+    ctx.fillStyle = rk.fg;
+    ctx.font = `900 11.5px ${fontNum}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`Rank ${data.rank}`, rankX + rankW / 2, headerY + 25.5);
+
+    const statusBg = data.isVacant ? '#e11d48' : (data.isResultPreview ? '#0284c7' : '#059669');
+    const statusW = data.isVacant ? 74 : 58;
+    const statusX = rankX - statusW - 6;
+    drawRoundedRectPath(ctx, statusX, headerY + 13, statusW, 24, 4);
+    ctx.fillStyle = statusBg;
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold 11px ${fontSans}`;
+    ctx.fillText(data.statusLabel, statusX + statusW / 2, headerY + 25.5);
+
+    // 2. Headline & Satisfaction Stamp
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = `bold 12px ${fontSans}`;
+    ctx.fillStyle = '#2563eb';
+    ctx.fillText(data.subCatch, innerX, catchY);
+
+    // Main catchphrase lines
+    ctx.fillStyle = '#0f172a';
+    ctx.font = `900 19px ${fontSans}`;
+    ctx.textBaseline = 'top';
+    mainLines.forEach((line, idx) => {
+      ctx.fillText(line, innerX, catchY + 22 + idx * 26);
+    });
+
+    // Satisfaction Japanese Seal Stamp (top-right)
+    const stampMeta = getFlyerStampMeta(data.satisfaction);
+    const satVal = stampMeta.val;
+    const stampColor = stampMeta.color;
+    const stampSub = stampMeta.sub;
+    const scx = innerX + innerW - 44;
+    const scy = catchY + 38;
+    ctx.save();
+    ctx.translate(scx, scy);
+    ctx.rotate(-0.14);
+    ctx.beginPath();
+    ctx.arc(0, 0, 40, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    ctx.fill();
+    ctx.strokeStyle = stampColor;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 35, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = stampColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold 10px ${fontSans}`;
+    ctx.fillText('満足度', 0, -18);
+    ctx.font = `900 19px ${fontNum}`;
+    ctx.fillText(`${satVal}%`, 0, 1);
+    ctx.font = `bold 10.5px ${fontSans}`;
+    ctx.fillText(stampSub, 0, 19);
+    ctx.restore();
+
+    // Divider below headline
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(innerX, heroY - 9);
+    ctx.lineTo(innerX + innerW, heroY - 9);
+    ctx.stroke();
+
+    // 3. Main 2-Column Hero
+    // Left: Floor plan canvas frame
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(innerX - 2, heroY - 2, planSize + 4, planSize + 4);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(innerX - 2, heroY - 2, planSize + 4, planSize + 4);
+    if (planCanvas) {
+      ctx.drawImage(planCanvas, innerX, heroY, planSize, planSize);
+    }
+
+    // Right A: Rent Highlight Box
+    drawRoundedRectPath(ctx, rightX, heroY, rightW, rentBoxH, 7);
+    ctx.fillStyle = '#fffbeb';
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Left gold bar accent
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(rightX, heroY + 4, 5, rentBoxH - 8);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#92400e';
+    ctx.font = `bold 11px ${fontSans}`;
+    ctx.fillText(data.isVacant ? '募集家賃（現在空室）' : '月額家賃', rightX + 14, heroY + 9);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = `900 34px ${fontNum}`;
+    const rentStr = data.rent.toFixed(1);
+    ctx.fillText(rentStr, rightX + 14, heroY + 25);
+    const rentW = ctx.measureText(rentStr).width;
+    ctx.fillStyle = '#475569';
+    ctx.font = `bold 14px ${fontSans}`;
+    ctx.fillText('万円 / 月', rightX + 19 + rentW, heroY + 41);
+
+    ctx.fillStyle = '#78716c';
+    ctx.font = `10px ${fontSans}`;
+    ctx.fillText('敷金0・礼金0 / 仲介手数料無料', rightX + 14, heroY + 64);
+
+    // Right B: Property Spec Box
+    const specY = heroY + rentBoxH + 10;
+    drawRoundedRectPath(ctx, rightX, specY, rightW, specBoxH, 6);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fill();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const gardenTxt = data.gardenCells > 0 ? ` / 庭${data.gardenCells}ﾏｽ` : '';
+    const lotStr = data.lotName
+      ? `${data.lotName} (${data.facingText}${data.isWideEnt ? '2ﾏｽ' : ''})`
+      : `${data.facingText}玄関${data.isWideEnt ? ' (2ﾏｽ)' : ''}`;
+    const specRows = [
+      { k: '間取り', v: `${data.madori}（延床${data.floorCells}ﾏｽ${gardenTxt}）` },
+      { k: '敷地',   v: lotStr },
+      { k: '築年数', v: `${data.ageLabel} ・ 品質Rank ${data.rank}` }
+    ];
+    specRows.forEach((row, idx) => {
+      const ry = specY + 8 + idx * 20;
+      ctx.fillStyle = '#64748b';
+      ctx.font = `bold 10.5px ${fontSans}`;
+      ctx.fillText(row.k, rightX + 10, ry);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `bold 11px ${fontSans}`;
+      ctx.fillText(fitCanvasText(ctx, row.v, rightW - 60), rightX + 52, ry);
+    });
+
+    // Right C: Combo Feature Pills
+    ctx.fillStyle = '#475569';
+    ctx.font = `bold 10.5px ${fontSans}`;
+    ctx.fillText('■ 物件の特徴・コンボ', rightX, combosHeaderY);
+
+    let px = rightX;
+    let py = combosHeaderY + 17;
+    let curRow = 1;
+    ctx.font = `bold 10.5px ${fontSans}`;
+    for (const item of chipItems) {
+      if (px > rightX && px + item.w > rightX + rightW) {
+        curRow++;
+        if (curRow > cappedComboRows) break;
+        px = rightX;
+        py += 25;
+      }
+      drawRoundedRectPath(ctx, px, py, item.w, 20, 4);
+      ctx.fillStyle = item.st.bg;
+      ctx.fill();
+      ctx.strokeStyle = item.st.border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = item.st.fg;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fitCanvasText(ctx, item.label, item.w - 10), px + 7, py + 10.5);
+      px += item.w + 5;
+    }
+
+    // 4. Bottom Comment Box
+    drawRoundedRectPath(ctx, innerX, commentY, innerW, commentBoxH, 7);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fill();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(innerX, commentY + 4, 4, commentBoxH - 8);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#1d4ed8';
+    ctx.font = `bold 11px ${fontSans}`;
+    ctx.fillText(`💬 ${data.commentLabel}`, innerX + 13, commentY + 9);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = `12.5px ${fontSans}`;
+    commentLines.forEach((line, idx) => {
+      ctx.fillText(line, innerX + 13, commentY + 27 + idx * 19);
+    });
+
+    // 5. Footer Credit
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(innerX, footerY);
+    ctx.lineTo(innerX + innerW, footerY);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = `bold 10.5px ${fontSans}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('間取り図パズル — Floor Plan', innerX, footerY + 14);
+    ctx.textAlign = 'right';
+    ctx.font = `10.5px ${fontSans}`;
+    ctx.fillText(`${data.companyName} ｜ ${data.createdLabel}`, innerX + innerW, footerY + 14);
+
+    return canvas;
+  }
 
   function dataUrlToBlob(dataUrl) {
     const parts = dataUrl.split(',');
-    const mime = parts[0].match(/:(.*?);/)[1] || 'image/png';
+    const mime = (parts[0] && parts[0].match(/:(.*?);/)) ? parts[0].match(/:(.*?);/)[1] : 'image/png';
     const bstr = atob(parts[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
@@ -3661,6 +4323,64 @@
       u8arr[n] = bstr.charCodeAt(n);
     }
     return new Blob([u8arr], { type: mime });
+  }
+
+  function applyImageSaveVariant(mode) {
+    if (!currentSaveVariants) return;
+    const chosen = (mode === 'plan' && currentSaveVariants.plan)
+      ? currentSaveVariants.plan
+      : (currentSaveVariants.flyer || currentSaveVariants.plan);
+    if (!chosen) return;
+
+    currentSaveMode = (mode === 'plan' && currentSaveVariants.plan) ? 'plan' : 'flyer';
+    currentSaveImageDataUrl = chosen.dataUrl;
+    currentSaveImageFilename = chosen.filename;
+    currentSaveImageBlob = dataUrlToBlob(chosen.dataUrl);
+
+    const previewImg = document.getElementById('image-save-preview');
+    if (previewImg) {
+      previewImg.src = chosen.dataUrl;
+    }
+
+    const flyerBtn = document.getElementById('btn-img-mode-flyer');
+    const planBtn = document.getElementById('btn-img-mode-plan');
+    if (flyerBtn && planBtn) {
+      const activeStyle = 'background:#0284c7; color:#ffffff; border:1px solid #38bdf8;';
+      const idleStyle = 'background:transparent; color:#94a3b8; border:1px solid transparent;';
+      flyerBtn.style.cssText = `flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center; ${currentSaveMode === 'flyer' ? activeStyle : idleStyle}`;
+      planBtn.style.cssText = `flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center; ${currentSaveMode === 'plan' ? activeStyle : idleStyle}`;
+    }
+
+    const shareBtn = document.getElementById('btn-image-native-share');
+    if (shareBtn) {
+      let canShareFile = false;
+      try {
+        if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
+          const testFile = new File([currentSaveImageBlob], chosen.filename, { type: 'image/png' });
+          canShareFile = navigator.canShare({ files: [testFile] });
+        }
+      } catch (_) {
+        canShareFile = false;
+      }
+      shareBtn.style.display = canShareFile ? 'inline-flex' : 'none';
+    }
+  }
+
+  function openImageSaveModal(variants, defaultMode = 'flyer') {
+    initAudio();
+    playSound('tap');
+    currentSaveVariants = variants;
+
+    const tabsEl = document.getElementById('image-save-mode-tabs');
+    if (tabsEl) {
+      tabsEl.style.display = (variants.flyer && variants.plan) ? 'flex' : 'none';
+    }
+    applyImageSaveVariant(defaultMode);
+
+    const modal = document.getElementById('image-save-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
   }
 
   function closeImageSaveModal() {
@@ -3672,42 +4392,24 @@
 
   function downloadCanvasAsPng(canvasEl, filename = 'madori.png', btnEl = null) {
     if (!canvasEl) return;
-    initAudio();
-    playSound('tap');
     try {
       const dataUrl = canvasEl.toDataURL('image/png');
-      currentSaveImageDataUrl = dataUrl;
-      currentSaveImageFilename = filename;
-      currentSaveImageBlob = dataUrlToBlob(dataUrl);
-
-      const previewImg = document.getElementById('image-save-preview');
-      if (previewImg) {
-        previewImg.src = dataUrl;
-      }
-
-      const shareBtn = document.getElementById('btn-image-native-share');
-      if (shareBtn) {
-        let canShareFile = false;
-        try {
-          if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
-            const testFile = new File([currentSaveImageBlob], filename, { type: 'image/png' });
-            canShareFile = navigator.canShare({ files: [testFile] });
-          }
-        } catch (_) {
-          canShareFile = false;
-        }
-        shareBtn.style.display = canShareFile ? 'inline-flex' : 'none';
-      }
-
-      const modal = document.getElementById('image-save-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-      }
+      openImageSaveModal({ plan: { dataUrl, filename } }, 'plan');
     } catch (e) {
       console.error('Failed to save PNG:', e);
     }
   }
 
+  document.getElementById('btn-img-mode-flyer')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    applyImageSaveVariant('flyer');
+  });
+  document.getElementById('btn-img-mode-plan')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    applyImageSaveVariant('plan');
+  });
   document.getElementById('btn-close-image-save')?.addEventListener('click', closeImageSaveModal);
   document.getElementById('btn-close-image-save-bottom')?.addEventListener('click', closeImageSaveModal);
   document.getElementById('image-save-modal')?.addEventListener('click', (e) => {
@@ -3720,11 +4422,14 @@
     if (!currentSaveImageBlob) return;
     try {
       const file = new File([currentSaveImageBlob], currentSaveImageFilename, { type: 'image/png' });
+      const coName = GameState.companyName || '焼飯不動産';
+      const shareTitle = currentSaveMode === 'flyer' ? '物件チラシ' : '間取り図';
+      const shareText = currentSaveMode === 'flyer' ? `${coName}の物件チラシ` : `${coName}の間取り図`;
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
         await navigator.share({
           files: [file],
-          title: '間取り図',
-          text: `${GameState.companyName || '焼飯不動産'}の間取り図`
+          title: shareTitle,
+          text: shareText
         });
       }
     } catch (err) {
@@ -4251,18 +4956,37 @@
   document.getElementById('plan-viewer-modal')?.addEventListener('pointerdown', (e) => {
     if (e.target.id === 'plan-viewer-modal') closePlanViewer();
   });
+  function openPropertyShareModal(planCanvas, propObj, isResultPreview, propNo) {
+    if (!planCanvas) return;
+    try {
+      const planUrl = planCanvas.toDataURL('image/png');
+      let flyerUrl = null;
+      if (propObj) {
+        const payload = buildFlyerSharePayload(propObj, isResultPreview, propNo);
+        const flyerCanvas = renderFlyerShareCanvas(planCanvas, payload);
+        flyerUrl = flyerCanvas.toDataURL('image/png');
+      }
+      openImageSaveModal({
+        flyer: flyerUrl ? { dataUrl: flyerUrl, filename: `madori_flyer_No${propNo}.png` } : null,
+        plan:  { dataUrl: planUrl, filename: `madori_No${propNo}.png` }
+      }, flyerUrl ? 'flyer' : 'plan');
+    } catch (e) {
+      console.error('Failed to prepare share image:', e);
+    }
+  }
+
   document.getElementById('btn-save-pv-png')?.addEventListener('click', function() {
     const p = window.currentViewerProp || window.currentDetailProp;
     const pNum = p ? (p.propertyNo || (p.level !== undefined ? p.level + 1 : 1)) : 1;
     const pvCanvas = document.getElementById('pv-canvas');
-    downloadCanvasAsPng(pvCanvas, `madori_No${pNum}.png`, this);
+    openPropertyShareModal(pvCanvas, p, false, pNum);
   });
   document.getElementById('btn-save-result-png')?.addEventListener('click', function() {
     const nextNo = (GameState.properties && GameState.properties.length > 0)
       ? Math.max(...GameState.properties.map(x => x.propertyNo || 0)) + 1
       : 1;
     const rc = document.getElementById('result-canvas');
-    downloadCanvasAsPng(rc, `madori_No${nextNo}.png`, this);
+    openPropertyShareModal(rc, window.currentPropertyData, true, nextNo);
   });
 
   /* ============================================================
