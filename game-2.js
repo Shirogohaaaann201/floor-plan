@@ -4305,7 +4305,7 @@
     ctx.font = `bold 10.5px ${fontSans}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('間取り図パズル — Floor Plan', innerX, footerY + 14);
+    ctx.fillText('マドリビルダー 〜間取り図パズル〜', innerX, footerY + 14);
     ctx.textAlign = 'right';
     ctx.font = `10.5px ${fontSans}`;
     ctx.fillText(`${data.companyName} ｜ ${data.createdLabel}`, innerX + innerW, footerY + 14);
