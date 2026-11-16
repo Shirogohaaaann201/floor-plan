@@ -1909,7 +1909,7 @@
     const facingText = facingMap[STAGE.entranceFacing] || '南向き';
     const entSizeText = (STAGE.entranceCells && STAGE.entranceCells.length > 1) ? '（2マス玄関）' : '玄関';
     const lotNameEl = document.getElementById('stat-lot-name');
-    if (lotNameEl) lotNameEl.textContent = STAGE.lotName || '標準敷地';
+    if (lotNameEl) lotNameEl.textContent = STAGE.lotName || 'スクエアL';
     const entFacingEl = document.getElementById('stat-entrance-facing');
     if (entFacingEl) entFacingEl.textContent = `${facingText}${entSizeText}`;
 

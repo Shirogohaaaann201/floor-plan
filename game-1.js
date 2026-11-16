@@ -305,11 +305,12 @@
   };
 
   // ============================================================
-  // LOT DEFINITIONS
+  // LOT DEFINITIONS (全18種)
   // ============================================================
   const LOT_DEFINITIONS = {
-    tiny_square: {
-      name: '極小5×5敷地',
+    // --- スクエア5段階 (25 / 36 / 64 / 100 / 121) ---
+    square_xs: {
+      name: 'スクエアXS',
       minR: 3, maxR: 7, minC: 3, maxC: 7,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 3 },
@@ -318,18 +319,18 @@
         { r: 3, c: 8, w: 4, h: 5 }
       ]
     },
-    narrow_strip: {
-      name: 'うなぎの寝床',
-      minR: 1, maxR: 10, minC: 3, maxC: 7,
+    square_s: {
+      name: 'スクエアS',
+      minR: 3, maxR: 8, minC: 3, maxC: 8,
       obstacles: [
-        { r: 0, c: 0, w: 12, h: 1 },
-        { r: 11, c: 0, w: 12, h: 1 },
-        { r: 1, c: 0, w: 3, h: 10 },
-        { r: 1, c: 8, w: 4, h: 10 }
+        { r: 0, c: 0, w: 12, h: 3 },
+        { r: 9, c: 0, w: 12, h: 3 },
+        { r: 3, c: 0, w: 3, h: 6 },
+        { r: 3, c: 9, w: 3, h: 6 }
       ]
     },
-    compact_square: {
-      name: 'コンパクト正方形',
+    square_m: {
+      name: 'スクエアM',
       minR: 2, maxR: 9, minC: 2, maxC: 9,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 2 },
@@ -338,18 +339,8 @@
         { r: 2, c: 10, w: 2, h: 8 }
       ]
     },
-    compact_rect: {
-      name: 'コンパクト長方形',
-      minR: 3, maxR: 8, minC: 1, maxC: 9,
-      obstacles: [
-        { r: 0, c: 0, w: 12, h: 3 },
-        { r: 9, c: 0, w: 12, h: 3 },
-        { r: 3, c: 0, w: 1, h: 6 },
-        { r: 3, c: 10, w: 2, h: 6 }
-      ]
-    },
-    standard: {
-      name: '標準中型敷地',
+    square_l: {
+      name: 'スクエアL',
       minR: 1, maxR: 10, minC: 1, maxC: 10,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 1 },
@@ -358,60 +349,89 @@
         { r: 1, c: 11, w: 1, h: 10 }
       ]
     },
-    l_shape: {
-      name: '変形L字敷地',
-      minR: 1, maxR: 10, minC: 1, maxC: 10,
-      obstacles: [
-        { r: 0, c: 0, w: 12, h: 1 },
-        { r: 11, c: 0, w: 12, h: 1 },
-        { r: 1, c: 0, w: 1, h: 10 },
-        { r: 1, c: 11, w: 1, h: 10 },
-        { r: 1, c: 7, w: 4, h: 4 }
-      ]
-    },
-    u_shape: {
-      name: 'コの字変形敷地',
-      minR: 1, maxR: 10, minC: 1, maxC: 10,
-      obstacles: [
-        { r: 0, c: 0, w: 12, h: 1 },
-        { r: 11, c: 0, w: 12, h: 1 },
-        { r: 1, c: 0, w: 1, h: 10 },
-        { r: 1, c: 11, w: 1, h: 10 },
-        { r: 1, c: 4, w: 4, h: 4 }
-      ]
-    },
-    courtyard: {
-      name: '中庭シンボル敷地',
-      minR: 1, maxR: 10, minC: 1, maxC: 10,
-      obstacles: [
-        { r: 0, c: 0, w: 12, h: 1 },
-        { r: 11, c: 0, w: 12, h: 1 },
-        { r: 1, c: 0, w: 1, h: 10 },
-        { r: 1, c: 11, w: 1, h: 10 },
-        { r: 5, c: 5, w: 2, h: 2 }
-      ]
-    },
-    mansion: {
-      name: 'ワイド大型敷地',
+    square_xl: {
+      name: 'スクエアXL',
       minR: 1, maxR: 11, minC: 1, maxC: 11,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 1 },
         { r: 1, c: 0, w: 1, h: 11 }
       ]
     },
+
+    // --- 縦長・横長・細長 ---
     micro_pencil: {
-      name: 'ペンシル極小地 (4×6)',
-      minR: 3, maxR: 8, minC: 4, maxC: 7,
+      name: 'ペンシル地',
+      minR: 1, maxR: 9, minC: 4, maxC: 6,
+      entranceSides: ['bottom', 'top'],
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 10, c: 0, w: 12, h: 2 },
+        { r: 1, c: 0, w: 4, h: 9 },
+        { r: 1, c: 7, w: 5, h: 9 }
+      ]
+    },
+    wide_rect: {
+      name: '横長区画',
+      minR: 3, maxR: 7, minC: 2, maxC: 9,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 3 },
+        { r: 8, c: 0, w: 12, h: 4 },
+        { r: 3, c: 0, w: 2, h: 5 },
+        { r: 3, c: 10, w: 2, h: 5 }
+      ]
+    },
+    narrow_strip: {
+      name: 'うなぎの寝床',
+      minR: 1, maxR: 10, minC: 4, maxC: 7,
+      entranceSides: ['bottom', 'top'],
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 4, h: 10 },
+        { r: 1, c: 8, w: 4, h: 10 }
+      ]
+    },
+
+    // --- 変形地 (小〜大) ---
+    mini_l: {
+      name: '片欠け区画',
+      minR: 3, maxR: 8, minC: 3, maxC: 8,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 3 },
         { r: 9, c: 0, w: 12, h: 3 },
-        { r: 3, c: 0, w: 4, h: 6 },
-        { r: 3, c: 8, w: 4, h: 6 }
+        { r: 3, c: 0, w: 3, h: 6 },
+        { r: 3, c: 9, w: 3, h: 6 },
+        { r: 3, c: 7, w: 2, h: 2 }
+      ]
+    },
+    convex_t: {
+      name: '凸型区画',
+      minR: 2, maxR: 8, minC: 2, maxC: 9,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 2 },
+        { r: 9, c: 0, w: 12, h: 3 },
+        { r: 2, c: 0, w: 2, h: 7 },
+        { r: 2, c: 10, w: 2, h: 7 },
+        { r: 2, c: 2, w: 2, h: 3 },
+        { r: 2, c: 8, w: 2, h: 3 }
+      ]
+    },
+    crank: {
+      name: 'クランク区画',
+      minR: 2, maxR: 9, minC: 1, maxC: 9,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 2 },
+        { r: 10, c: 0, w: 12, h: 2 },
+        { r: 2, c: 0, w: 1, h: 8 },
+        { r: 2, c: 10, w: 2, h: 8 },
+        { r: 2, c: 1, w: 3, h: 3 },
+        { r: 7, c: 7, w: 3, h: 3 }
       ]
     },
     flag_lot: {
-      name: '旗竿敷地 (路地通路付き)',
+      name: '旗竿地',
       minR: 1, maxR: 10, minC: 2, maxC: 9,
+      entranceSides: ['bottom'],
       obstacles: [
         { r: 0, c: 0, w: 12, h: 1 },
         { r: 11, c: 0, w: 12, h: 1 },
@@ -422,18 +442,81 @@
       ]
     },
     corner_cut: {
-      name: '隅切り変形角地',
+      name: '隅切り角地',
       minR: 2, maxR: 9, minC: 2, maxC: 9,
       obstacles: [
         { r: 0, c: 0, w: 12, h: 2 },
         { r: 10, c: 0, w: 12, h: 2 },
         { r: 2, c: 0, w: 2, h: 8 },
         { r: 2, c: 10, w: 2, h: 8 },
-        { r: 2, c: 7, w: 3, h: 3 }
+        { r: 2, c: 7, w: 3, h: 1 },
+        { r: 3, c: 8, w: 2, h: 1 },
+        { r: 4, c: 9, w: 1, h: 1 }
+      ]
+    },
+    l_shape: {
+      name: 'L字区画',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 1, c: 7, w: 4, h: 4 }
+      ]
+    },
+    u_shape: {
+      name: 'コの字区画',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 1, c: 4, w: 4, h: 4 }
+      ]
+    },
+    hourglass: {
+      name: 'くびれ区画',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 5, c: 1, w: 3, h: 2 },
+        { r: 5, c: 8, w: 3, h: 2 }
+      ]
+    },
+    courtyard: {
+      name: 'ロの字敷地',
+      minR: 1, maxR: 10, minC: 1, maxC: 10,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 11, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 10 },
+        { r: 1, c: 11, w: 1, h: 10 },
+        { r: 5, c: 5, w: 2, h: 2 }
+      ]
+    },
+    grand_step: {
+      name: '雁行区画',
+      minR: 1, maxR: 11, minC: 1, maxC: 11,
+      obstacles: [
+        { r: 0, c: 0, w: 12, h: 1 },
+        { r: 1, c: 0, w: 1, h: 11 },
+        { r: 1, c: 1, w: 3, h: 3 },
+        { r: 9, c: 9, w: 3, h: 3 }
       ]
     }
   };
-  LOT_DEFINITIONS.compact = LOT_DEFINITIONS.compact_square;
+  // 旧キー互換エイリアス
+  LOT_DEFINITIONS.tiny_square = LOT_DEFINITIONS.square_xs;
+  LOT_DEFINITIONS.compact_square = LOT_DEFINITIONS.square_s;
+  LOT_DEFINITIONS.compact_rect = LOT_DEFINITIONS.wide_rect;
+  LOT_DEFINITIONS.standard = LOT_DEFINITIONS.square_l;
+  LOT_DEFINITIONS.mansion = LOT_DEFINITIONS.square_xl;
+  LOT_DEFINITIONS.compact = LOT_DEFINITIONS.square_s;
 
   function pickEntranceForLot(lot, allowWide = false) {
     const isObstacle = (r, c) => {
@@ -445,12 +528,22 @@
       return false;
     };
 
-    const sideRoll = Math.random();
     let preferredSides = ['bottom'];
-    if (sideRoll < 0.70) preferredSides = ['bottom'];
-    else if (sideRoll < 0.80) preferredSides = ['top', 'bottom'];
-    else if (sideRoll < 0.90) preferredSides = ['left', 'bottom'];
-    else preferredSides = ['right', 'bottom'];
+    if (Array.isArray(lot.entranceSides) && lot.entranceSides.length > 0) {
+      if (lot.entranceSides.length === 1) {
+        preferredSides = [...lot.entranceSides];
+      } else {
+        const primary = lot.entranceSides[0];
+        const alt = lot.entranceSides[1 + Math.floor(Math.random() * (lot.entranceSides.length - 1))];
+        preferredSides = Math.random() < 0.85 ? [primary, alt] : [alt, primary];
+      }
+    } else {
+      const sideRoll = Math.random();
+      if (sideRoll < 0.70) preferredSides = ['bottom'];
+      else if (sideRoll < 0.80) preferredSides = ['top', 'bottom'];
+      else if (sideRoll < 0.90) preferredSides = ['left', 'bottom'];
+      else preferredSides = ['right', 'bottom'];
+    }
 
     for (const side of preferredSides) {
       const candidates = [];
@@ -975,14 +1068,14 @@
 
   function generateStage(level = 0, overrideType = null) {
     let clientType = 'single';
-    let lotKey = 'compact';
+    let lotKey = 'square_s';
     let allowWide = false;
 
     const pickFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const pickSingleLot = () => pickFrom(['micro_pencil', 'tiny_square', 'narrow_strip', 'compact_rect', 'compact_square']);
-    const pickDinksLot = () => pickFrom(['narrow_strip', 'flag_lot', 'corner_cut', 'compact_square', 'standard', 'l_shape', 'u_shape']);
-    const pickFamilyLot = () => pickFrom(['standard', 'corner_cut', 'l_shape', 'u_shape', 'courtyard', 'mansion']);
-    const pickMansionLot = () => pickFrom(['mansion', 'mansion', 'courtyard', 'u_shape', 'corner_cut']);
+    const pickSingleLot = () => pickFrom(['square_xs', 'square_s', 'micro_pencil', 'mini_l', 'wide_rect', 'narrow_strip', 'convex_t']);
+    const pickDinksLot = () => pickFrom(['square_s', 'square_m', 'narrow_strip', 'wide_rect', 'convex_t', 'crank', 'corner_cut', 'flag_lot', 'square_l', 'l_shape', 'u_shape']);
+    const pickFamilyLot = () => pickFrom(['square_m', 'square_l', 'corner_cut', 'crank', 'l_shape', 'u_shape', 'hourglass', 'courtyard', 'square_xl']);
+    const pickMansionLot = () => pickFrom(['square_xl', 'grand_step', 'courtyard', 'hourglass', 'u_shape', 'l_shape']);
 
     if (overrideType) {
       clientType = overrideType;
@@ -994,18 +1087,18 @@
         allowWide = false;
       } else if (clientType === 'family') {
         lotKey = pickFamilyLot();
-        allowWide = (lotKey === 'mansion' && Math.random() < 0.5);
+        allowWide = (lotKey === 'square_xl' && Math.random() < 0.5);
       } else { // mansion
         lotKey = pickMansionLot();
         allowWide = true;
       }
     } else if (level === 0) {
       clientType = 'single';
-      lotKey = Math.random() < 0.5 ? 'tiny_square' : 'compact_square';
+      lotKey = Math.random() < 0.5 ? 'square_xs' : 'square_s';
       allowWide = false;
     } else if (level === 1) {
       clientType = 'dinks';
-      lotKey = 'standard';
+      lotKey = 'square_m';
       allowWide = false;
     } else if (level === 2) {
       clientType = 'family';
@@ -1023,7 +1116,7 @@
       } else if (roll < 0.55 + (1 - 0.55 - mansionChance)) {
         clientType = 'family';
         lotKey = pickFamilyLot();
-        allowWide = (lotKey === 'mansion' && Math.random() < 0.5);
+        allowWide = (lotKey === 'square_xl' && Math.random() < 0.5);
       } else {
         clientType = 'mansion';
         lotKey = pickMansionLot();
