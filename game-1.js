@@ -3691,6 +3691,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.resetTransform();
     ctx.scale(devicePixelRatio, devicePixelRatio);
     drawPlan();
+    if ((previewMode && hoverCell) || selectedWallTarget) {
+      showConfirmUI(true);
+    }
   }
 
   function drawPlan() {
@@ -4599,63 +4602,240 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
+  function getRectOverlapArea(a, b) {
+    const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+    const iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    return ix * iy;
+  }
+
+  function getRectGapDist(a, b) {
+    const dx = Math.max(0, a.left - b.right, b.left - a.right);
+    const dy = Math.max(0, a.top - b.bottom, b.top - a.bottom);
+    return Math.hypot(dx, dy);
+  }
+
+  function getConfirmCanvasMetrics(area) {
+    const areaRect = area.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const originX = canvasRect.left - areaRect.left - (area.clientLeft || 0);
+    const originY = canvasRect.top - areaRect.top - (area.clientTop || 0);
+    const canvasSize = GRID * cellSize;
+    const boardRect = {
+      left: originX,
+      top: originY,
+      right: originX + canvasSize,
+      bottom: originY + canvasSize
+    };
+    const uiAvoidRects = [];
+    const actionsEl = area.querySelector(':scope > .game-header-actions');
+    if (actionsEl && getComputedStyle(actionsEl).display !== 'none') {
+      const ar = actionsEl.getBoundingClientRect();
+      if (ar.width > 0 && ar.height > 0) {
+        uiAvoidRects.push({
+          left: ar.left - areaRect.left - (area.clientLeft || 0) - 4,
+          top: ar.top - areaRect.top - (area.clientTop || 0) - 4,
+          right: ar.right - areaRect.left - (area.clientLeft || 0) + 4,
+          bottom: ar.bottom - areaRect.top - (area.clientTop || 0) + 4
+        });
+      }
+    }
+    return {
+      areaW: area.clientWidth,
+      areaH: area.clientHeight,
+      originX,
+      originY,
+      boardRect,
+      uiAvoidRects
+    };
+  }
+
+  function buildTargetBoundsFromShape(metrics, shape, hover) {
+    const cellRects = [];
+    let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity;
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape[0].length; c++) {
+        if (shape[r][c] !== 1) continue;
+        const left = metrics.originX + (hover.c + c) * cellSize;
+        const top = metrics.originY + (hover.r + r) * cellSize;
+        const right = left + cellSize;
+        const bottom = top + cellSize;
+        cellRects.push({ left, top, right, bottom });
+        if (left < minL) minL = left;
+        if (top < minT) minT = top;
+        if (right > maxR) maxR = right;
+        if (bottom > maxB) maxB = bottom;
+      }
+    }
+    if (!cellRects.length) {
+      const left = metrics.originX + hover.c * cellSize;
+      const top = metrics.originY + hover.r * cellSize;
+      const right = left + shape[0].length * cellSize;
+      const bottom = top + shape.length * cellSize;
+      return { targetBBox: { left, top, right, bottom }, cellRects: [{ left, top, right, bottom }] };
+    }
+    return { targetBBox: { left: minL, top: minT, right: maxR, bottom: maxB }, cellRects };
+  }
+
+  function findBestOverlayCandidate(ow, oh, targetBBox, cellRects, metrics) {
+    const gap = 10;
+    const margin = 6;
+    const { areaW, areaH, boardRect, uiAvoidRects } = metrics;
+    const maxX = Math.max(2, areaW - ow - margin);
+    const minX = Math.min(margin, maxX);
+    const maxY = Math.max(2, areaH - oh - margin);
+    const minY = Math.min(margin, maxY);
+
+    const tcx = (targetBBox.left + targetBBox.right) / 2;
+    const tcy = (targetBBox.top + targetBBox.bottom) / 2;
+    const xCentered = tcx - ow / 2;
+    const yOptionsSide = [targetBBox.top, tcy - oh / 2, targetBBox.bottom - oh];
+    const xOptionsVert = [xCentered, targetBBox.left, targetBBox.right - ow];
+
+    const rawCandidates = [];
+    // 右 → 左 → 下 → 上（ピースすぐ横・上下）
+    yOptionsSide.forEach(y => rawCandidates.push({ x: targetBBox.right + gap, y, dirRank: 0 }));
+    yOptionsSide.forEach(y => rawCandidates.push({ x: targetBBox.left - gap - ow, y, dirRank: 1 }));
+    xOptionsVert.forEach(x => rawCandidates.push({ x, y: targetBBox.bottom + gap, dirRank: 2 }));
+    xOptionsVert.forEach(x => rawCandidates.push({ x, y: targetBBox.top - gap - oh, dirRank: 3 }));
+    // 盤面外の余白やコーナーへの退避候補（大型ピース・極狭環境向け）
+    rawCandidates.push(
+      { x: boardRect.right + gap, y: tcy - oh / 2, dirRank: 4 },
+      { x: boardRect.left - gap - ow, y: tcy - oh / 2, dirRank: 4 },
+      { x: xCentered, y: boardRect.bottom + gap, dirRank: 5 },
+      { x: xCentered, y: boardRect.top - gap - oh, dirRank: 5 },
+      { x: minX, y: maxY, dirRank: 6 },
+      { x: maxX, y: maxY, dirRank: 6 },
+      { x: minX, y: minY, dirRank: 6 },
+      { x: maxX, y: minY, dirRank: 6 }
+    );
+
+    const paddedCells = cellRects.map(c => ({
+      left: c.left - 6, top: c.top - 6, right: c.right + 6, bottom: c.bottom + 6
+    }));
+
+    let best = null;
+    for (const cand of rawCandidates) {
+      const left = Math.round(Math.max(minX, Math.min(cand.x, maxX)));
+      const top = Math.round(Math.max(minY, Math.min(cand.y, maxY)));
+      const box = { left, top, right: left + ow, bottom: top + oh };
+
+      const clipOverflow =
+        Math.max(0, -box.left) + Math.max(0, box.right - areaW) +
+        Math.max(0, -box.top) + Math.max(0, box.bottom - areaH);
+
+      let pieceOverlap = 0;
+      for (const c of cellRects) pieceOverlap += getRectOverlapArea(box, c);
+
+      let uiOverlap = 0;
+      for (const u of uiAvoidRects) uiOverlap += getRectOverlapArea(box, u);
+
+      const bboxOverlap = getRectOverlapArea(box, targetBBox);
+
+      let paddedOverlap = 0;
+      for (const pc of paddedCells) paddedOverlap += getRectOverlapArea(box, pc);
+
+      const boardOverlap = getRectOverlapArea(box, boardRect);
+      const edgeDist = getRectGapDist(box, targetBBox);
+      const metric = {
+        left,
+        top,
+        clipOverflow,
+        pieceOverlap,
+        uiOverlap,
+        bboxOverlap,
+        paddedOverlap,
+        tieScore: Math.round(edgeDist * 200 + boardOverlap + cand.dirRank * 150)
+      };
+
+      if (!best || compareOverlayCandidate(metric, best) < 0) {
+        best = metric;
+      }
+    }
+    return best;
+  }
+
+  function compareOverlayCandidate(a, b) {
+    if (a.clipOverflow !== b.clipOverflow) return a.clipOverflow - b.clipOverflow;
+    if (a.pieceOverlap !== b.pieceOverlap) return a.pieceOverlap - b.pieceOverlap;
+    if (a.uiOverlap !== b.uiOverlap) return a.uiOverlap - b.uiOverlap;
+    if (a.bboxOverlap !== b.bboxOverlap) return a.bboxOverlap - b.bboxOverlap;
+    if (a.paddedOverlap !== b.paddedOverlap) return a.paddedOverlap - b.paddedOverlap;
+    return a.tieScore - b.tieScore;
+  }
+
+  function placeConfirmOverlaySafely(co, targetBBox, cellRects, allowStack) {
+    const area = document.querySelector('.canvas-area');
+    if (!co || !area) return;
+    const metrics = getConfirmCanvasMetrics(area);
+    co.classList.remove('is-stacked');
+    co.style.left = '0px';
+    co.style.top = '0px';
+
+    const ow1 = co.offsetWidth || 125;
+    const oh1 = co.offsetHeight || 40;
+    let chosen = findBestOverlayCandidate(ow1, oh1, targetBBox, cellRects, metrics);
+
+    if (allowStack && chosen && (chosen.clipOverflow > 0 || chosen.pieceOverlap > 0 || chosen.uiOverlap > 0 || chosen.bboxOverlap > 0)) {
+      co.classList.add('is-stacked');
+      const ow2 = co.offsetWidth || ow1;
+      const oh2 = co.offsetHeight || oh1;
+      const stackedCand = findBestOverlayCandidate(ow2, oh2, targetBBox, cellRects, metrics);
+      if (stackedCand && compareOverlayCandidate(stackedCand, chosen) < 0) {
+        chosen = stackedCand;
+      } else {
+        co.classList.remove('is-stacked');
+      }
+    }
+
+    if (chosen) {
+      co.style.left = `${chosen.left}px`;
+      co.style.top = `${chosen.top}px`;
+    }
+  }
+
   function showConfirmUI(show) {
     const co = document.getElementById('confirm-overlay');
     const btn = document.getElementById('btn-confirm-place');
     const pcTools = document.getElementById('confirm-pc-tools');
-    if (co) co.style.display = show ? 'flex' : 'none';
+    if (!co) return;
 
-    if (show && selectedWallTarget) {
-      if (pcTools) pcTools.style.display = 'none';
-      const wCost = getWallRemoveCost().toFixed(1);
-      if (btn) {
-        btn.innerHTML = `<i class="ph-bold ph-hammer"></i> 壁撤去 (-${wCost}万)`;
-        btn.style.background = '#e11d48';
-      }
-      const canvasWidth = GRID * cellSize;
-      const canvasHeight = GRID * cellSize;
-      const overlayW = (co && co.offsetWidth) || 125;
-      const overlayH = (co && co.offsetHeight) || 40;
-      let targetX = selectedWallTarget.mx + 12;
-      let targetY = Math.max(4, selectedWallTarget.my - 18);
-      if (targetX + overlayW > canvasWidth - 4) {
-        targetX = selectedWallTarget.mx - overlayW - 12;
-      }
-      if (co) {
-        co.style.left = `${Math.max(4, Math.min(targetX, canvasWidth - overlayW - 4))}px`;
-        co.style.top = `${Math.max(4, Math.min(targetY, canvasHeight - overlayH - 4))}px`;
-      }
-    } else if (show && hoverCell && selectedSlot !== null && draftSlots[selectedSlot]) {
-      if (pcTools) pcTools.style.display = '';
-      updateMirrorButton();
-      const piece = draftSlots[selectedSlot];
-      const shape = getShape(piece, selectedRot, isMirrored);
-      const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
-      if (btn) {
-        if (enc.count > 0) {
-          btn.innerHTML = `<i class="ph-bold ph-pickaxe"></i> 確定 (+造成${enc.cost.toFixed(1)}万)`;
-          btn.style.background = '#f59e0b';
-        } else {
-          btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
-          btn.style.background = '';
+    if (!show) {
+      co.style.display = 'none';
+      co.classList.remove('is-stacked');
+    } else {
+      co.style.display = 'flex';
+      const area = document.querySelector('.canvas-area');
+      const metrics = area ? getConfirmCanvasMetrics(area) : null;
+
+      if (selectedWallTarget && metrics) {
+        if (pcTools) pcTools.style.display = 'none';
+        const wCost = getWallRemoveCost().toFixed(1);
+        if (btn) {
+          btn.innerHTML = `<i class="ph-bold ph-hammer"></i> 壁撤去 (-${wCost}万)`;
+          btn.style.background = '#e11d48';
         }
-      }
-      const w = shape[0].length * cellSize;
-      const canvasWidth = GRID * cellSize;
-      const canvasHeight = GRID * cellSize;
-      const overlayW = (co && co.offsetWidth) || (window.innerWidth >= 769 ? (enc.count > 0 ? 275 : 210) : (enc.count > 0 ? 150 : 80));
-      const overlayH = (co && co.offsetHeight) || 40;
-
-      // 親要素(canvas-container)からの相対座標
-      let targetX = hoverCell.c * cellSize + w + 10;
-      let targetY = hoverCell.r * cellSize;
-
-      if (targetX + overlayW > canvasWidth - 4) {
-        targetX = hoverCell.c * cellSize - overlayW - 10; // 左側に出す
-      }
-      if (co) {
-        co.style.left = `${Math.max(4, Math.min(targetX, canvasWidth - overlayW - 4))}px`;
-        co.style.top = `${Math.max(4, Math.min(targetY, canvasHeight - overlayH - 4))}px`;
+        const cx = metrics.originX + selectedWallTarget.mx;
+        const cy = metrics.originY + selectedWallTarget.my;
+        const wallBox = { left: cx - 14, top: cy - 14, right: cx + 14, bottom: cy + 14 };
+        placeConfirmOverlaySafely(co, wallBox, [wallBox], false);
+      } else if (hoverCell && selectedSlot !== null && draftSlots[selectedSlot] && metrics) {
+        if (pcTools) pcTools.style.display = '';
+        updateMirrorButton();
+        const piece = draftSlots[selectedSlot];
+        const shape = getShape(piece, selectedRot, isMirrored);
+        const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
+        if (btn) {
+          if (enc.count > 0) {
+            btn.innerHTML = `<i class="ph-bold ph-pickaxe"></i> 確定 (+造成${enc.cost.toFixed(1)}万)`;
+            btn.style.background = '#f59e0b';
+          } else {
+            btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
+            btn.style.background = '';
+          }
+        }
+        const { targetBBox, cellRects } = buildTargetBoundsFromShape(metrics, shape, hoverCell);
+        const pcToolsVisible = pcTools && getComputedStyle(pcTools).display !== 'none';
+        placeConfirmOverlaySafely(co, targetBBox, cellRects, pcToolsVisible);
       }
     }
 

@@ -2175,24 +2175,30 @@
   document.getElementById('btn-mirror')?.addEventListener('click', toggleMirrorSelectedPiece);
   document.getElementById('btn-confirm-mirror')?.addEventListener('click', toggleMirrorSelectedPiece);
 
+  function isGameShortcutBlockedByModal() {
+    // 子要素(btn-help-mission-modal等)の誤一致を防ぎ、実際に表示中のモーダル本体だけを判定する
+    const modals = document.querySelectorAll('div[id$="-modal"], #modal-ending, #modal-records, #modal-help');
+    return Array.from(modals).some(m => getComputedStyle(m).display !== 'none' && m.getClientRects().length > 0);
+  }
+
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const tag = document.activeElement?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    const active = document.activeElement;
+    const tag = active?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active?.isContentEditable) return;
     const gameScreen = document.getElementById('screen-game');
     if (!gameScreen || !gameScreen.classList.contains('active')) return;
-    const anyModalOpen = Array.from(document.querySelectorAll('[id$="-modal"], #modal-ending, #modal-records, #modal-help'))
-      .some(m => getComputedStyle(m).display !== 'none');
-    if (anyModalOpen) return;
+    if (isGameShortcutBlockedByModal()) return;
 
-    const k = e.key.toLowerCase();
-    if (k === 'r') {
+    const k = (e.key || '').toLowerCase();
+    const code = e.code || '';
+    if (k === 'r' || code === 'KeyR') {
       e.preventDefault();
       rotateSelectedPiece();
-    } else if (k === 'f') {
+    } else if (k === 'f' || code === 'KeyF') {
       e.preventDefault();
       toggleMirrorSelectedPiece();
-    } else if (e.key === 'Enter' && tag !== 'BUTTON' && document.activeElement?.id !== 'mission-banner') {
+    } else if (e.key === 'Enter' && !e.repeat && tag !== 'BUTTON' && active?.id !== 'mission-banner') {
       if (selectedWallTarget || (previewMode && hoverCell)) {
         e.preventDefault();
         confirmSelectedAction();

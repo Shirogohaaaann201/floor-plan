@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.20</title>
+  <title>間取り図パズル — Floor Plan v1.21</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -94,7 +94,7 @@
       </button>
       
       <div style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        <span>Floor Plan v1.20</span>
+        <span>Floor Plan v1.21</span>
         <span aria-hidden="true">｜</span>
         <button id="btn-open-reset-confirm" type="button" style="background:none; border:none; padding:4px 6px; color:#94a3b8; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:3px; text-decoration:underline; text-underline-offset:2px;">
           <i class="ph-bold ph-trash"></i> データ初期化
@@ -1115,18 +1115,18 @@
             ピースを選んで敷地をタップ
           </div>
         </div>
-        <div id="confirm-overlay" style="display:none; position:absolute; z-index:100; align-items:center; gap:5px; width:max-content; pointer-events:none;">
-          <button id="btn-confirm-place" class="btn btn-amber" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:14px; color:#0f172a; font-weight:bold; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 確定</button>
-          <div id="confirm-pc-tools" class="confirm-pc-tools">
-            <button id="btn-confirm-rotate" type="button" class="confirm-mini-btn" title="回転 (Rキー)">
-              <i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber-lt);"></i>
-              <span>回転</span>
-            </button>
-            <button id="btn-confirm-mirror" type="button" class="confirm-mini-btn" title="左右反転 (Fキー)">
-              <i class="ph-bold ph-arrows-left-right" style="color:#a5b4fc;"></i>
-              <span id="btn-confirm-mirror-label">反転</span>
-            </button>
-          </div>
+      </div>
+      <div id="confirm-overlay" style="display:none; position:absolute; z-index:100; align-items:center; gap:5px; width:max-content; pointer-events:none;">
+        <button id="btn-confirm-place" class="btn btn-amber" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:14px; color:#0f172a; font-weight:bold; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 確定</button>
+        <div id="confirm-pc-tools" class="confirm-pc-tools">
+          <button id="btn-confirm-rotate" type="button" class="confirm-mini-btn" title="回転 (Rキー)">
+            <i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber-lt);"></i>
+            <span>回転</span>
+          </button>
+          <button id="btn-confirm-mirror" type="button" class="confirm-mini-btn" title="左右反転 (Fキー)">
+            <i class="ph-bold ph-arrows-left-right" style="color:#a5b4fc;"></i>
+            <span id="btn-confirm-mirror-label">反転</span>
+          </button>
         </div>
       </div>
     </main>
