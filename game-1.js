@@ -1739,35 +1739,35 @@
     const kF = isDesktop ? '[F]' : '';
 
     if (step.id === 'place_corr') {
-      if (!isTutorialOrientationMatch(step)) return `まず「回転」${kR}で廊下を縦向きにしよう`;
-      return atTarget ? '「確定」で廊下を配置しよう' : '隣に置くと繋がる！玄関の上の光る枠をタップ';
+      if (!isTutorialOrientationMatch(step)) return `「回転」${kR}で廊下を縦向きに`;
+      return atTarget ? '「確定」で廊下を配置' : '隣で接続！玄関の上の光る枠へ';
     }
     if (step.id === 'place_room') {
-      return atTarget ? '「確定」で洋室を配置しよう' : '洋室も隣り合う光る枠へ（隣に置くとドアが付く）';
+      return atTarget ? '「確定」で洋室を配置' : '光る枠に洋室を置こう（ドア接続）';
     }
     if (step.id === 'reroll_hand') {
       return isRerollConfirming
-        ? 'もう一度「更新」をタップして手札を引こう'
-        : '不要なDKが残った！「更新(無料)」で手札を入れ替えよう';
+        ? 'もう一度「更新」で引き直そう'
+        : 'DK不要！「更新(無料)」で入替';
     }
     if (step.id === 'place_bath') {
-      if (normRot === 0 || normRot === 2) return `「回転」${kR}で浴室を縦向きにしよう`;
+      if (normRot === 0 || normRot === 2) return `「回転」${kR}で浴室を縦向きに`;
       if (!isMirrored) {
         return normRot === 1
-          ? `赤い線は通れない壁！「反転」${kF}で壁を左へ逃がそう`
-          : `赤い壁が塞ぐ！「回転」で戻して「反転」${kF}しよう`;
+          ? `赤線は壁！「反転」${kF}で左へ逃がそう`
+          : `壁が邪魔！「回転」後に「反転」${kF}`;
       }
-      if (normRot !== 1) return `壁が廊下側！あと2回「回転」${kR}で逆向きにしよう`;
-      return atTarget ? '赤い壁を避けて繋がった！「確定」で配置（反転+20%）' : '壁が左に避けた！廊下の左の光る枠をタップ';
+      if (normRot !== 1) return `壁が廊下側！「回転」${kR}2回で逆に`;
+      return atTarget ? '壁回避！「確定」で配置（反転+20%）' : '壁を回避！廊下の左の光る枠へ';
     }
     if (step.id === 'place_toilet') {
-      return atTarget ? '「確定」でトイレを配置しよう' : '浴室の赤い壁があるから隣でも繋がらない！廊下の左へ';
+      return atTarget ? '「確定」でトイレを配置' : '赤壁の隣は不可！廊下の左へ';
     }
     if (step.id === 'place_kitchen') {
-      return atTarget ? '「確定」でキッチンを配置しよう' : 'キッチンを南向きの光る枠に置こう';
+      return atTarget ? '「確定」でキッチンを配置' : '南向きの光る枠にキッチンを';
     }
     if (step.id === 'finish_build') {
-      return '基本の1K完成！「設計完了」をタップしよう';
+      return '1K完成！「設計完了」をタップ';
     }
     return '';
   }
