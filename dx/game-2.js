@@ -3696,6 +3696,7 @@
 
 
   window.addEventListener('resize', () => {
+    if (typeof syncAppViewport === 'function') syncAppViewport();
     if (typeof syncPlicyHeaderActions === 'function') syncPlicyHeaderActions();
     if (screens.game.classList.contains('active')) resizeCanvas();
   });
@@ -7791,6 +7792,7 @@ function updateHomeUI() {
     initAudio();
     const input = document.getElementById('input-co-name');
     const raw = input ? input.value.trim() : '';
+    if (input && typeof input.blur === 'function') input.blur();
     GameState.companyName = raw ? raw.slice(0, 16) : '焼飯不動産';
     GameState.hasNamedCompany = true;
     saveGame();
@@ -7798,6 +7800,10 @@ function updateHomeUI() {
     updateCompanyUI();
     const modal = document.getElementById('company-name-modal');
     if (modal) modal.style.display = 'none';
+    if (typeof syncAppViewport === 'function') {
+      syncAppViewport();
+      setTimeout(syncAppViewport, 120);
+    }
     playSound('tap');
   }
 

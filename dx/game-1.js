@@ -3232,17 +3232,45 @@
     game:          document.getElementById('screen-game'),
     result:        document.getElementById('screen-result'),
   };
+  function syncAppViewport() {
+    try {
+      const vv = window.visualViewport;
+      const vh = vv ? vv.height : window.innerHeight;
+      if (vh > 0) {
+        document.documentElement.style.setProperty('--app-height', `${Math.round(vh)}px`);
+      }
+      if (window.scrollY !== 0 || window.scrollX !== 0) {
+        window.scrollTo(0, 0);
+      }
+      if (document.documentElement && document.documentElement.scrollTop !== 0) {
+        document.documentElement.scrollTop = 0;
+      }
+      if (document.body && document.body.scrollTop !== 0) {
+        document.body.scrollTop = 0;
+      }
+    } catch (e) {}
+  }
+
   function showScreen(name) {
+    syncAppViewport();
     Object.entries(screens).forEach(([k, el]) => {
       if (el) el.classList.toggle('active', k === name);
     });
+    if (name === 'mission' && screens.mission) {
+      screens.mission.scrollTop = 0;
+    }
     if (name !== 'home') {
       const propModal = document.getElementById('office-properties-modal');
       if (propModal) propModal.style.display = 'none';
     }
     if (name === 'game') {
       if (typeof syncPlicyHeaderActions === 'function') syncPlicyHeaderActions();
-      if (typeof resizeCanvas === 'function') requestAnimationFrame(() => resizeCanvas());
+      if (typeof resizeCanvas === 'function') {
+        requestAnimationFrame(() => {
+          syncAppViewport();
+          resizeCanvas();
+        });
+      }
     }
     if (window.PixelOffice) {
       if (name === 'home') window.PixelOffice.refresh();
@@ -3255,6 +3283,21 @@
         window.PixelRenderer.stopMissionIdle();
       }
     }
+  }
+
+  if (typeof window !== 'undefined') {
+    syncAppViewport();
+    const onViewportChange = () => {
+      syncAppViewport();
+      if (screens.game && screens.game.classList.contains('active') && typeof resizeCanvas === 'function') {
+        requestAnimationFrame(() => resizeCanvas());
+      }
+    };
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onViewportChange);
+      window.visualViewport.addEventListener('scroll', syncAppViewport);
+    }
+    window.addEventListener('orientationchange', () => setTimeout(onViewportChange, 120));
   }
 
   /* ============================================================
@@ -4216,6 +4259,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     canvas.style.height = `${total}px`;
     ctx.resetTransform();
     ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.imageSmoothingEnabled = false;
     drawPlan();
     if ((previewMode && hoverCell) || selectedWallTarget) {
       showConfirmUI(true);

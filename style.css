@@ -43,9 +43,21 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
+    html {
       height: 100%;
+      height: var(--app-height, 100dvh);
       overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: var(--app-height, 100dvh);
+      overflow: hidden;
+      overscroll-behavior: none;
       font-family: 'Zen Kaku Gothic New', sans-serif;
       background: var(--c-bg);
       color: var(--c-text);
@@ -262,11 +274,16 @@
       background: var(--c-surface);
       border-bottom: 1px solid var(--c-border);
       padding: 6px 8px;
-      padding-top: max(30px, calc(env(safe-area-inset-top, 0px) + 6px));
+      padding-top: max(6px, calc(env(safe-area-inset-top, 0px) + 6px));
       padding-left: max(8px, env(safe-area-inset-left, 0px));
       padding-right: max(8px, env(safe-area-inset-right, 0px));
       display: flex; align-items: center; justify-content: space-between;
       gap: 6px;
+    }
+    @media (max-width: 768px) and (display-mode: standalone) {
+      .game-header {
+        padding-top: max(26px, calc(env(safe-area-inset-top, 0px) + 6px));
+      }
     }
     @media (min-width: 769px) {
       .game-header {
@@ -638,7 +655,7 @@
 
     .flyer-wrap {
       width: 100%; max-width: 410px;
-      max-height: 96vh;
+      max-height: 96%;
       display: flex; flex-direction: column;
       overflow: hidden;
       border-radius: var(--r-xl);
@@ -1457,7 +1474,7 @@
       body.is-plicy #modal-ending > .mission-card,
       body.is-plicy #modal-records > .mission-card,
       body.is-plicy #modal-help > .mission-card {
-        max-height: calc(100vh - 118px) !important;
+        max-height: calc(var(--app-height, 100dvh) - 118px) !important;
       }
       body.is-plicy #gameover-modal > .mission-card,
       body.is-plicy #plan-viewer-modal > .mission-card,
