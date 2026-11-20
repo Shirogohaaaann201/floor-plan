@@ -607,7 +607,7 @@
     office: [
       {
         level: 0,
-        name: '一人親方',
+        name: '個人事務所',
         basePrice: 0,
         minPrice: 0,
         maxDesks: 0,
@@ -1611,13 +1611,260 @@
   }
 
   /* ============================================================
+     FIRST-TIME ESCORTED TUTORIAL BLUEPRINT (案A: 最小構成1K・BT別)
+  ============================================================ */
+  const TUTORIAL_DECK_IDS = ['corr-i2', 'room-22', 'dk-22', 'bath', 'toilet', 'k-1'];
+  const TUTORIAL_BATH_WALLS = [
+    { r: 0, c: 0, dir: 'top' },
+    { r: 0, c: 1, dir: 'top' },
+    { r: 0, c: 0, dir: 'bottom' },
+    { r: 0, c: 1, dir: 'right' }
+  ];
+  const TUTORIAL_STEPS = [
+    { id: 'place_corr',    slot: 0, targetR: 5, targetC: 5, targetW: 1, targetH: 2, allowedRots: [1, 3],       allowRotate: true,  allowMirror: false, reqMirror: false },
+    { id: 'place_room',    slot: 1, targetR: 4, targetC: 6, targetW: 2, targetH: 2, allowedRots: [0, 1, 2, 3], allowRotate: false, allowMirror: false, reqMirror: false },
+    { id: 'reroll_hand',   slot: null, isReroll: true,  allowRotate: false, allowMirror: false },
+    { id: 'place_bath',    slot: 0, targetR: 4, targetC: 4, targetW: 1, targetH: 2, allowedRots: [1],          allowRotate: true,  allowMirror: true,  reqMirror: true },
+    { id: 'place_toilet',  slot: 1, targetR: 6, targetC: 4, targetW: 1, targetH: 1, allowedRots: [0, 1, 2, 3], allowRotate: false, allowMirror: false, reqMirror: false },
+    { id: 'place_kitchen', slot: 2, targetR: 6, targetC: 6, targetW: 1, targetH: 1, allowedRots: [0, 1, 2, 3], allowRotate: false, allowMirror: false, reqMirror: false },
+    { id: 'finish_build',  slot: null, isFinish: true,  allowRotate: false, allowMirror: false }
+  ];
+  let tutorialBuildStep = 0;
+  let isTutorialPracticeMode = false;
+  let tutorialPracticeSnapshot = null;
+
+  function createTutorialStage() {
+    const lotDef = LOT_DEFINITIONS.square_xs;
+    const reqKeys = ['btsep', 'reach'];
+    const optKeys = ['opt-kitchen'];
+    return {
+      id: 1,
+      isTutorial: true,
+      name: '佐藤 翼 様の依頼',
+      lotName: lotDef.name,
+      lotType: 'square_xs',
+      client: {
+        name: '佐藤 翼',
+        avatar: '👨‍🎓',
+        quote: '「初めての一人暮らし！風呂・トイレ別で、全部屋にきちんと行ける1Kをお願いします！」',
+        typeBadge: '初回モデル案件'
+      },
+      initialBudget: 100.0,
+      targetRent: 5.5,
+      maxTurns: 10,
+      entranceRow: 7,
+      entranceCol: 5,
+      entranceCells: [{ r: 7, c: 5 }],
+      entranceFacing: 'bottom',
+      obstacles: lotDef.obstacles,
+      requests: reqKeys.map(k => ({ ...REQUEST_REGISTRY[k] })),
+      optionalRequests: optKeys.map(k => ({ ...REQUEST_REGISTRY[k] })).filter(Boolean),
+      customCombo: null
+    };
+  }
+
+  function makeTutorialPiece(pieceId, withBathWalls = false) {
+    const base = PIECE_MAP[pieceId] || PIECE_LIB[0];
+    const p = JSON.parse(JSON.stringify(base));
+    p.walls = withBathWalls ? JSON.parse(JSON.stringify(TUTORIAL_BATH_WALLS)) : [];
+    p.deckCycle = 1;
+    return p;
+  }
+
+  function isTutorialPhaseActive() {
+    return !!((GameState && GameState.tutorialPhase && GameState.tutorialPhase !== 'done') || isTutorialPracticeMode);
+  }
+
+  function isTutorialPuzzleActive() {
+    return !!(STAGE && STAGE.isTutorial && isTutorialPhaseActive());
+  }
+
+  function getCurrentTutorialStep() {
+    if (!isTutorialPuzzleActive()) return null;
+    const idx = Math.max(0, Math.min(tutorialBuildStep || 0, TUTORIAL_STEPS.length - 1));
+    return TUTORIAL_STEPS[idx];
+  }
+
+  function isTutorialHoverAtTarget(step, gr, gc) {
+    if (!step || step.targetR === undefined) return false;
+    return gr === step.targetR && gc === step.targetC;
+  }
+
+  function isTutorialPointInsideTarget(step, cellR, cellC) {
+    if (!step || step.targetR === undefined) return false;
+    return (
+      cellR >= step.targetR &&
+      cellR < step.targetR + step.targetH &&
+      cellC >= step.targetC &&
+      cellC < step.targetC + step.targetW
+    );
+  }
+
+  function isTutorialOrientationMatch(step, rot = selectedRot, mirrored = isMirrored) {
+    if (!step) return true;
+    const normRot = ((rot % 4) + 4) % 4;
+    if (Array.isArray(step.allowedRots) && !step.allowedRots.includes(normRot)) return false;
+    if (step.reqMirror !== undefined && !!mirrored !== !!step.reqMirror) return false;
+    return true;
+  }
+
+  function isTutorialConfirmAllowed() {
+    const step = getCurrentTutorialStep();
+    if (!step) return true;
+    if (step.isReroll || step.isFinish || step.targetR === undefined) return false;
+    if (!hoverCell) return false;
+    return isTutorialHoverAtTarget(step, hoverCell.r, hoverCell.c) && isTutorialOrientationMatch(step);
+  }
+
+  function getTutorialActionNotice(step) {
+    if (!step) return '';
+    const normRot = ((selectedRot % 4) + 4) % 4;
+    if (step.id === 'place_corr') {
+      if (!isTutorialOrientationMatch(step)) return '「回転」で縦向きにしよう';
+    } else if (step.id === 'place_bath') {
+      if (normRot === 0 || normRot === 2) return '「回転」で縦向きにしよう';
+      if (!isMirrored) return '「反転」で壁を左にしよう';
+      if (normRot !== 1) return '「回転」で壁の向きを変えよう';
+    }
+    return '';
+  }
+
+  function getTutorialHintText() {
+    const step = getCurrentTutorialStep();
+    if (!step) return '';
+    const normRot = ((selectedRot % 4) + 4) % 4;
+    const atTarget = !!(previewMode && hoverCell && isTutorialHoverAtTarget(step, hoverCell.r, hoverCell.c));
+    const isDesktop = (typeof window !== 'undefined' && window.matchMedia) ? window.matchMedia('(min-width: 769px)').matches : false;
+    const kR = isDesktop ? '[R]' : '';
+    const kF = isDesktop ? '[F]' : '';
+
+    if (step.id === 'place_corr') {
+      if (!isTutorialOrientationMatch(step)) return `まず「回転」${kR}で廊下を縦向きにしよう`;
+      return atTarget ? '「確定」で廊下を配置しよう' : '隣に置くと繋がる！玄関の上の光る枠をタップ';
+    }
+    if (step.id === 'place_room') {
+      return atTarget ? '「確定」で洋室を配置しよう' : '洋室も隣り合う光る枠へ（隣に置くとドアが付く）';
+    }
+    if (step.id === 'reroll_hand') {
+      return isRerollConfirming
+        ? 'もう一度「更新」をタップして手札を引こう'
+        : '不要なDKが残った！「更新(無料)」で手札を入れ替えよう';
+    }
+    if (step.id === 'place_bath') {
+      if (normRot === 0 || normRot === 2) return `「回転」${kR}で浴室を縦向きにしよう`;
+      if (!isMirrored) {
+        return normRot === 1
+          ? `赤い線は通れない壁！「反転」${kF}で壁を左へ逃がそう`
+          : `赤い壁が塞ぐ！「回転」で戻して「反転」${kF}しよう`;
+      }
+      if (normRot !== 1) return `壁が廊下側！あと2回「回転」${kR}で逆向きにしよう`;
+      return atTarget ? '赤い壁を避けて繋がった！「確定」で配置（反転+20%）' : '壁が左に避けた！廊下の左の光る枠をタップ';
+    }
+    if (step.id === 'place_toilet') {
+      return atTarget ? '「確定」でトイレを配置しよう' : '浴室の赤い壁があるから隣でも繋がらない！廊下の左へ';
+    }
+    if (step.id === 'place_kitchen') {
+      return atTarget ? '「確定」でキッチンを配置しよう' : 'キッチンを南向きの光る枠に置こう';
+    }
+    if (step.id === 'finish_build') {
+      return '基本の1K完成！「設計完了」をタップしよう';
+    }
+    return '';
+  }
+
+  function setElemSpotlight(el, active) {
+    if (!el) return;
+    el.classList.toggle('tutorial-spotlight', !!active);
+  }
+
+  function setElemLocked(el, locked) {
+    if (!el) return;
+    el.classList.toggle('tutorial-locked', !!locked);
+    if ('disabled' in el) {
+      el.disabled = !!locked;
+    }
+  }
+
+  function syncTutorialPuzzleUI() {
+    const active = isTutorialPuzzleActive();
+    const btnRotate = document.getElementById('btn-rotate');
+    const btnMirror = document.getElementById('btn-mirror');
+    const btnReroll = document.getElementById('btn-reroll');
+    const btnFinish = document.getElementById('btn-finish');
+    const btnRefresh = document.getElementById('btn-hand-refresh');
+    const btnConfirmRotate = document.getElementById('btn-confirm-rotate');
+    const btnConfirmMirror = document.getElementById('btn-confirm-mirror');
+    const btnConfirmPlace = document.getElementById('btn-confirm-place');
+    const pcTools = document.getElementById('confirm-pc-tools');
+
+    if (!active) {
+      [btnRotate, btnMirror, btnReroll, btnFinish, btnRefresh, btnConfirmRotate, btnConfirmMirror, btnConfirmPlace].forEach(el => {
+        if (el) {
+          el.classList.remove('tutorial-spotlight', 'tutorial-locked');
+        }
+      });
+      if (pcTools) pcTools.style.display = '';
+      if (btnConfirmRotate) btnConfirmRotate.style.display = '';
+      if (btnConfirmMirror) btnConfirmMirror.style.display = '';
+      return;
+    }
+
+    const step = getCurrentTutorialStep();
+    if (!step) return;
+
+    if (step.slot !== null && step.slot !== undefined && draftSlots[step.slot]) {
+      selectedSlot = step.slot;
+    } else {
+      selectedSlot = null;
+    }
+
+    const normRot = ((selectedRot % 4) + 4) % 4;
+    const isStepReady = (step.targetR !== undefined) && isTutorialOrientationMatch(step);
+    const needRotate = !!(step.allowRotate && (
+      (step.id === 'place_corr' && !isTutorialOrientationMatch(step)) ||
+      (step.id === 'place_bath' && (normRot === 0 || normRot === 2 || (!isMirrored && normRot === 3) || (isMirrored && normRot !== 1)))
+    ));
+    const needMirror = !!(step.allowMirror && step.id === 'place_bath' && normRot === 1 && !isMirrored);
+
+    setElemLocked(btnRefresh, true);
+    setElemLocked(btnReroll, !step.isReroll);
+    setElemSpotlight(btnReroll, !!step.isReroll);
+
+    setElemLocked(btnFinish, !step.isFinish);
+    setElemSpotlight(btnFinish, !!step.isFinish);
+
+    const hasSel = (selectedSlot !== null && !!draftSlots[selectedSlot]);
+    setElemLocked(btnRotate, !hasSel || !step.allowRotate);
+    setElemSpotlight(btnRotate, needRotate);
+
+    setElemLocked(btnMirror, !hasSel || !step.allowMirror);
+    setElemSpotlight(btnMirror, needMirror);
+
+    if (btnConfirmRotate) {
+      btnConfirmRotate.style.display = step.allowRotate ? '' : 'none';
+      setElemSpotlight(btnConfirmRotate, needRotate);
+    }
+    if (btnConfirmMirror) {
+      btnConfirmMirror.style.display = step.allowMirror ? '' : 'none';
+      setElemSpotlight(btnConfirmMirror, needMirror);
+    }
+    if (pcTools) {
+      pcTools.style.display = (step.allowRotate || step.allowMirror) ? '' : 'none';
+    }
+    setElemSpotlight(btnConfirmPlace, !!(previewMode && hoverCell && isTutorialConfirmAllowed()));
+    if (typeof syncHintOverlay === 'function') syncHintOverlay(false);
+  }
+
+  /* ============================================================
      COMPANY STATE (Save Data)
   ============================================================ */
   const SAVE_KEY = 'floorplan_save_v1';
   const GameState = {
     companyName: '焼飯不動産',
+    tutorialPhase: 'start_home',
     hasCleared: false,
     clearedMonth: null,
+    clearedSnapshot: null,
     funds: 100.0,
     month: 1,
     level: 0,
@@ -1706,6 +1953,9 @@
   }
 
   function getActiveDeckPieceIds() {
+    if (typeof isTutorialPuzzleActive === 'function' && isTutorialPuzzleActive()) {
+      return [...TUTORIAL_DECK_IDS];
+    }
     ensureDeckState();
     const co = GameState.company;
     const ids = [...FIXED_BASE_DECK];
@@ -1960,15 +2210,31 @@
     return { principal, interest, total };
   }
 
+  function calcMonthlyEmergencyPayment(emergDebtVal) {
+    const ed = emergDebtVal !== undefined ? emergDebtVal : ((GameState && GameState.company && GameState.company.emergencyDebt) || 0);
+    if (!ed || ed <= 0) return { principal: 0, interest: 0, total: 0 };
+    const interest = Math.round(ed * 0.10 * 10) / 10;
+    const principal = Math.min(ed, Math.max(1.0, Math.round(ed * 0.05 * 10) / 10));
+    const total = Math.round((principal + interest) * 10) / 10;
+    return { principal, interest, total };
+  }
+
   function checkDeadEndBankruptcy() {
     const funds = (GameState && GameState.funds) || 0;
     const propCount = (GameState && GameState.properties) ? GameState.properties.length : 0;
     const remCap = getRemainingLoanCapacity();
-    const remEmerg = Math.max(0, 50.0 - (((GameState && GameState.company && GameState.company.emergencyDebt) || 0)));
-    if (propCount === 0 && (funds + remCap + remEmerg) < MIN_BUILD_FUNDS) {
+    const emergDebt = (GameState && GameState.company && GameState.company.emergencyDebt) || 0;
+    // ホーム画面で実際に調達可能な最大着工資金（街金残債がある間は完済しない限り銀行新規融資が凍結される）
+    const reachableFunds = emergDebt > 0
+      ? (funds >= emergDebt ? Math.round((funds - emergDebt + remCap) * 10) / 10 : funds)
+      : Math.round((funds + remCap) * 10) / 10;
+    if (propCount === 0 && reachableFunds < MIN_BUILD_FUNDS) {
+      const freezeNote = (emergDebt > 0 && funds < emergDebt)
+        ? `街金残債（${emergDebt.toFixed(1)}万）により銀行の新規融資が凍結されており、`
+        : '';
       return {
         isBankrupt: true,
-        reason: `所有物件が0棟の状態で、所持資金（${funds.toFixed(1)}万）、銀行融資余力（${remCap.toFixed(1)}万）、街金枠（${remEmerg.toFixed(1)}万）の合計が最低建築資金（${MIN_BUILD_FUNDS.toFixed(0)}万円）を下回り、事業継続が不可能となりました。`
+        reason: `所有物件が0棟の状態で、${freezeNote}所持資金（${funds.toFixed(1)}万）と利用可能な銀行融資余力（${(emergDebt > 0 && funds < emergDebt ? 0 : remCap).toFixed(1)}万）で最低建築資金（${MIN_BUILD_FUNDS.toFixed(0)}万円）を調達できず、事業継続が不可能となりました。`
       };
     }
     return { isBankrupt: false, reason: '' };
@@ -1995,13 +2261,12 @@
     const currentDebt = (GameState && GameState.company && GameState.company.debt) || 0;
     const loanPay = calcMonthlyLoanPayment(currentDebt);
     const emergDebt = (GameState && GameState.company && GameState.company.emergencyDebt) || 0;
-    const emergPayTotal = emergDebt > 0 ? Math.round((emergDebt * 0.10 + Math.min(emergDebt, Math.max(1.0, emergDebt * 0.05))) * 10) / 10 : 0;
-    const net = income - maint - salaries - recMaint - loanPay.total - emergPayTotal;
+    const emergPay = calcMonthlyEmergencyPayment(emergDebt);
+    const net = income - maint - salaries - recMaint - loanPay.total - emergPay.total;
     return Math.round(net * 10) / 10;
   }
 
   function processMonthEnd() {
-    GameState.month += 1;
     let totalIncome = 0;
     let totalMaintCost = 0;
     let evictedList = [];
@@ -2046,8 +2311,8 @@
         // 入居中: 退去判定
         const tenantTenure = Math.max(0, GameState.month - (p.moveInMonth || p.createdMonth || GameState.month));
 
-        // 入居直後（1ヶ月目）は退去判定をスキップ
-        if (tenantTenure <= 1) {
+        // 引き渡し当月（入居0ヶ月目）は退去判定をスキップ
+        if (tenantTenure <= 0) {
           totalIncome += p.rent;
           p.earnedRent = Math.round(((p.earnedRent || 0) + p.rent) * 10) / 10;
           continue;
@@ -2069,6 +2334,8 @@
         }
       }
     }
+
+    GameState.month += 1;
 
     if (totalIncome > 0) {
       if (!GameState.stats) getLifetimeStats();
@@ -2111,14 +2378,9 @@
 
     // 街金（緊急融資）の月次返済（元本5%＋月利10%）
     const curEmergDebt = (GameState.company && GameState.company.emergencyDebt) || 0;
-    let emergPay = { principal: 0, interest: 0, total: 0 };
-    if (curEmergDebt > 0) {
-      const emergInterest = Math.round(curEmergDebt * 0.10 * 10) / 10;
-      const emergPrinc = Math.min(curEmergDebt, Math.max(1.0, Math.round(curEmergDebt * 0.05 * 10) / 10));
-      emergPay = { principal: emergPrinc, interest: emergInterest, total: Math.round((emergPrinc + emergInterest) * 10) / 10 };
-      if (GameState.company) {
-        GameState.company.emergencyDebt = Math.max(0, Math.round((curEmergDebt - emergPrinc) * 10) / 10);
-      }
+    const emergPay = calcMonthlyEmergencyPayment(curEmergDebt);
+    if (emergPay.principal > 0 && GameState.company) {
+      GameState.company.emergencyDebt = Math.max(0, Math.round((curEmergDebt - emergPay.principal) * 10) / 10);
     }
 
     const netIncome = Math.round((totalIncome - totalMaintCost - totalSalaries - loanPay.total - emergPay.total) * 10) / 10;
@@ -2166,14 +2428,18 @@
     }
 
     saveGame();
+    const remBankDebt = (GameState.company && GameState.company.debt) || 0;
+    const remEmergDebt = (GameState.company && GameState.company.emergencyDebt) || 0;
     return {
       income: totalIncome,
       maintCost: totalMaintCost,
       salaries: totalSalaries,
-      loanPayment: loanPay.total,
-      loanPrincipal: loanPay.principal,
-      loanInterest: loanPay.interest,
-      remainingDebt: (GameState.company && GameState.company.debt) || 0,
+      loanPayment: Math.round((loanPay.total + emergPay.total) * 10) / 10,
+      loanPrincipal: Math.round((loanPay.principal + emergPay.principal) * 10) / 10,
+      loanInterest: Math.round((loanPay.interest + emergPay.interest) * 10) / 10,
+      remainingDebt: Math.round((remBankDebt + remEmergDebt) * 10) / 10,
+      remainingBankDebt: remBankDebt,
+      remainingEmergDebt: remEmergDebt,
       netIncome: netIncome,
       evicted: evictedList,
       reEntered: reEnteredList,
@@ -2191,12 +2457,11 @@
   }
 
   function updateCompanyUI() {
-    const el = document.getElementById('game-subtitle');
-    const m = GameState.month || 1;
-    if (el) el.textContent = `${GameState.companyName} (${formatYearMonth(m)}) ｜ ステージ ${currentLevelIdx + 1}`;
+    // 旧ヘッダー(#game-subtitle)削除済みのため呼び出し互換スタブとして維持
   }
 
   function saveGame() {
+    if (isTutorialPracticeMode) return;
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(GameState));
     } catch(e) {}
@@ -2205,6 +2470,7 @@
   function ensureGameState() {
     if (GameState.hasCleared === undefined) GameState.hasCleared = false;
     if (GameState.clearedMonth === undefined) GameState.clearedMonth = null;
+    if (GameState.clearedSnapshot === undefined) GameState.clearedSnapshot = null;
     if (!GameState.discovered) GameState.discovered = { combos: [] };
     if (!Array.isArray(GameState.discovered.combos)) GameState.discovered.combos = [];
     if (GameState.company && (GameState.company.officeLevel || 0) >= UPGRADE_CONFIG.office.length - 1) {
@@ -2227,6 +2493,7 @@
   }
 
   function loadGame() {
+    if (isTutorialPracticeMode) return;
     try {
       const data = localStorage.getItem(SAVE_KEY);
       if (data) {
@@ -2237,6 +2504,9 @@
         }
         if (GameState.hasNamedCompany === undefined) {
           GameState.hasNamedCompany = true;
+        }
+        if (parsed.tutorialPhase === undefined) {
+          GameState.tutorialPhase = 'done';
         }
         if (!GameState.company) {
           GameState.company = {
@@ -2312,6 +2582,7 @@
   let turnsLeft = 0;
   let handRefreshesRemaining = 0;
   let hoverCell = null;
+  let lastPlacedAnchor = null;
   let previewMode = false;
   let cellSize = 48;
   let soundEnabled = true;
@@ -2783,8 +3054,9 @@
     Object.entries(screens).forEach(([k, el]) => {
       if (el) el.classList.toggle('active', k === name);
     });
-    if (name === 'game' && typeof syncPlicyHeaderActions === 'function') {
-      syncPlicyHeaderActions();
+    if (name === 'game') {
+      if (typeof syncPlicyHeaderActions === 'function') syncPlicyHeaderActions();
+      if (typeof resizeCanvas === 'function') requestAnimationFrame(() => resizeCanvas());
     }
   }
 
@@ -2794,6 +3066,7 @@
   function initGrid() {
     grid = [];
     nextRoomId = 1;
+    lastPlacedAnchor = null;
     activeMetRequestIds = new Set();
     for (let r = 0; r < GRID; r++) {
       grid.push([]);
@@ -2898,6 +3171,7 @@
         buildEncroachCost: buildEncroachCost,
         encroachCount: encroachCount,
         hintDismissedForBuild: hintDismissedForBuild,
+        tutorialBuildStep: tutorialBuildStep,
         buildRerollCost: buildRerollCost,
         deckCycle: deckCycle,
         draftSlots: draftSlots,
@@ -2944,6 +3218,7 @@
       buildEncroachCost = ab.buildEncroachCost || 0;
       encroachCount = ab.encroachCount || 0;
       hintDismissedForBuild = !!ab.hintDismissedForBuild || (nextRoomId > 1);
+      tutorialBuildStep = (ab.tutorialBuildStep !== undefined) ? ab.tutorialBuildStep : 0;
       selectedWallTarget = null;
       buildRerollCost = ab.buildRerollCost || 0;
       deckCycle = ab.deckCycle || 1;
@@ -2979,8 +3254,7 @@
         if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
         const mbt = document.getElementById('mission-banner-text');
         if (mbt) mbt.textContent = `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
-        const hint = document.getElementById('hint-overlay');
-        if (hint) hint.style.opacity = hintDismissedForBuild ? '0' : '1';
+        syncHintOverlay(false);
 
         showScreen('game');
         resizeCanvas();
@@ -3195,6 +3469,13 @@
 
 
   function initDeckPiles() {
+    if (isTutorialPuzzleActive()) {
+      drawPile = ['k-1', 'toilet', 'bath'];
+      discardPile = [];
+      deckCycle = 1;
+      updateDeckPeekButton();
+      return;
+    }
     const activeIds = getActiveDeckPieceIds();
     drawPile = shuffleArray(activeIds);
     discardPile = [];
@@ -3259,6 +3540,10 @@
   }
 
   function drawPieceFromDeck() {
+    if (isTutorialPuzzleActive()) {
+      const pieceId = drawPile.length > 0 ? drawPile.pop() : 'k-1';
+      return makeTutorialPiece(pieceId, pieceId === 'bath');
+    }
     if (drawPile.length === 0) {
       if (discardPile.length > 0) {
         drawPile = shuffleArray(discardPile);
@@ -3286,6 +3571,19 @@
   }
 
   function refillDraft() {
+    if (isTutorialPuzzleActive()) {
+      draftSlots = [
+        makeTutorialPiece('corr-i2', false),
+        makeTutorialPiece('room-22', false),
+        makeTutorialPiece('dk-22', false)
+      ];
+      keepStates = [false, false, false];
+      keepCounts = [0, 0, 0];
+      updateDeckPeekButton();
+      updateHandRefreshButton();
+      renderDraftUI();
+      return;
+    }
     const maxSlots = getMaxHandSlots();
     while (draftSlots.length < maxSlots) {
       draftSlots.push(null);
@@ -3319,7 +3617,7 @@
     html += `</div>`;
     return html;
   }
-  function createCardElement(piece, isSelected, clickHandler) {
+  function createCardElement(piece, isSelected, clickHandler, slotIdx = null) {
     const card = document.createElement('div');
     card.className = 'draft-card' + (isSelected ? ' selected' : '');
     const shape = isSelected ? getShape(piece, selectedRot, isMirrored) : piece.shape;
@@ -3332,7 +3630,10 @@
       const bgCol = pCycle >= 3 ? '#e11d48' : '#d97706';
       cycleBadgeHtml = `<span style="position:absolute; top:2px; right:3px; font-size:8px; font-weight:800; color:#fff; background:${bgCol}; padding:0px 3.5px; border-radius:4px; line-height:1.25; z-index:2; pointer-events:none;">${pCycle}周+${pct}%</span>`;
     }
-    let miniHtml = `${cycleBadgeHtml}<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols}, var(--mini-cell-size, 13px));">`;
+    const keyBadgeHtml = (slotIdx !== null && slotIdx >= 0 && slotIdx < 9)
+      ? `<span class="pc-slot-key">${slotIdx + 1}</span>`
+      : '';
+    let miniHtml = `${cycleBadgeHtml}${keyBadgeHtml}<div class="draft-card-preview"><div class="mini-grid" style="grid-template-columns:repeat(${cols}, var(--mini-cell-size, 13px));">`;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const filled = shape[r][c] === 1;
@@ -3382,10 +3683,26 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
 
       if (piece) {
+        const tutStep = getCurrentTutorialStep();
+        const isLockedInTut = !!(tutStep && tutStep.slot !== idx);
         const card = createCardElement(piece, isSel, () => {
           initAudio();
           cancelRerollConfirm();
           selectedWallTarget = null;
+          if (tutStep) {
+            if (tutStep.slot !== idx) {
+              playSound('tap');
+              showFloatingText(getTutorialHintText() || '順番に進めよう', '#fbbf24');
+              return;
+            }
+            // チュートリアル配置ステップ中は再タップでうっかり解除しない
+            selectedSlot = idx;
+            playSound('tap');
+            renderDraftUI();
+            updatePieceLabel();
+            drawPlan();
+            return;
+          }
           if (selectedSlot === idx) {
             // 選択中のピースを再タップ -> 選択解除！
             selectedSlot = null;
@@ -3407,7 +3724,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           renderDraftUI();
           updatePieceLabel();
           drawPlan();
-        });
+        }, idx);
+        if (isLockedInTut) card.classList.add('tutorial-locked');
         if (keepStates[idx]) card.classList.add('is-kept');
 
         const keepBtn = document.createElement('button');
@@ -3416,11 +3734,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const kCost = getKeepCost(keepCounts[idx]);
         keepBtn.title = kCost > 0 ? `ロック維持 (更新時 -${kCost}万)` : 'ロック維持 (更新で残す)';
         keepBtn.textContent = keepStates[idx] ? (kCost > 0 ? `🔒-${kCost}万` : '🔒KEEP') : '🔓keep';
+        if (tutStep) {
+          keepBtn.classList.add('tutorial-locked');
+          keepBtn.disabled = true;
+        }
         keepBtn.addEventListener('pointerdown', (e) => {
           e.stopPropagation();
         });
         keepBtn.addEventListener('click', (e) => {
           e.stopPropagation();
+          if (isTutorialPuzzleActive()) return;
           initAudio();
           playSound('tap');
           cancelRerollConfirm();
@@ -3461,6 +3784,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updatePieceLabel();
     updateRerollButton();
     updateMirrorButton();
+    syncTutorialPuzzleUI();
+    syncHintOverlay(previewMode || !!selectedWallTarget);
   }
 
   let isRerollConfirming = false;
@@ -3512,12 +3837,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const nextCost = getDiscardCostForNext(discardCount);
       let subText = '';
       if (costs.total === 0) {
-        subText = `無料枠 ${discardCount}/${freeLimit} (外+${overRate.toFixed(1)}万/枚)`;
+        subText = `無料枠 ${discardCount}/${freeLimit} (+${overRate.toFixed(1)}万)`;
       } else {
         subText = freeRemain > 0
-          ? `無料残${freeRemain}＋超過+${costs.discard.toFixed(1)}万`
-          : `破棄${discardCount} (次+${nextCost.toFixed(1)}万/枚)`;
-        if (costs.keep > 0) subText += ` +維持${costs.keep.toFixed(1)}万`;
+          ? `無料${freeRemain}＋超過+${costs.discard.toFixed(1)}万`
+          : `破棄${discardCount} (次+${nextCost.toFixed(1)}万)`;
+        if (costs.keep > 0) subText += `+維持${costs.keep.toFixed(1)}万`;
       }
 
       if (isRerollConfirming) {
@@ -3526,10 +3851,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         btn.style.boxShadow = costs.total > 0 ? '0 0 12px rgba(248, 113, 113, 0.5)' : '0 0 10px rgba(245, 158, 11, 0.45)';
         btn.style.color = costs.total > 0 ? '#fecdd3' : '#fef08a';
         const confirmHead = costs.total > 0 ? `⚠️ -${costs.total.toFixed(1)}万で更新` : '再タップで更新';
-        const confirmSub = costs.total > 0 ? '再タップで実行 (資金消費)' : `無料枠から消費 (残${freeRemain}枚)`;
+        const confirmSub = costs.total > 0 ? '再タップで実行 (資金消費)' : `無料枠消費 (残${freeRemain}枚)`;
         btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
-          <div style="font-weight:bold; font-size:10px;"><i class="ph-bold ph-warning-circle" style="color:${costs.total > 0 ? '#fca5a5' : '#fde047'};"></i> ${confirmHead}</div>
-          <div style="font-size:8px; color:${costs.total > 0 ? '#fda4af' : '#fde68a'}; margin-top:1px;">${confirmSub}</div>
+          <div style="font-weight:bold; font-size:10px; white-space:nowrap;"><i class="ph-bold ph-warning-circle" style="color:${costs.total > 0 ? '#fca5a5' : '#fde047'};"></i> ${confirmHead}</div>
+          <div style="font-size:8px; color:${costs.total > 0 ? '#fda4af' : '#fde68a'}; margin-top:1px; white-space:nowrap;">${confirmSub}</div>
         </div>`;
       } else {
         btn.style.background = '';
@@ -3538,8 +3863,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         btn.style.color = '';
         const labelColor = costs.total > 0 ? '#fbbf24' : 'inherit';
         btn.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center;">
-          <div style="color:${labelColor};"><i class="ph-bold ph-arrows-clockwise" style="color:${costs.total > 0 ? '#fbbf24' : 'var(--c-blue)'};"></i> 更新 (${costText})</div>
-          <div style="font-size:8px; color:var(--c-text3); margin-top:1px;">${subText}</div>
+          <div style="color:${labelColor}; white-space:nowrap;"><i class="ph-bold ph-arrows-clockwise" style="color:${costs.total > 0 ? '#fbbf24' : 'var(--c-blue)'};"></i> 更新 (${costText})</div>
+          <div style="font-size:8px; color:var(--c-text3); margin-top:1px; white-space:nowrap;">${subText}</div>
         </div>`;
       }
     }
@@ -3680,7 +4005,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
     const pw = parent.clientWidth - padX - 4;
     const ph = parent.clientHeight - padY - 4;
-    const dim = Math.max(GRID * 8, Math.min(pw, ph, 520));
+    const maxDim = window.innerWidth >= 769 ? 648 : 520;
+    const dim = Math.max(GRID * 8, Math.min(pw, ph, maxDim));
     cellSize = Math.floor(dim / GRID);
     const total = cellSize * GRID;
 
@@ -3696,21 +4022,62 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
-  function drawPlan() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    try { drawCells(); } catch(e) { console.error('drawCells error:', e); }
-    try { drawOccupiedBoxOverlay(ctx, grid, cellSize, true); } catch(e) { console.error('drawOccupiedBoxOverlay error:', e); }
-    try { drawArchLines(); } catch(e) { console.error('drawArchLines error:', e); }
-    try { drawLabels(); } catch(e) { console.error('drawLabels error:', e); }
-    try { drawEntrance(); } catch(e) { console.error('drawEntrance error:', e); }
-    try { drawPreview(); } catch(e) { console.error('drawPreview error:', e); }
+  function drawTutorialTargetOverlay() {
+    const step = getCurrentTutorialStep();
+    if (!step || step.targetR === undefined) return;
+    const x = step.targetC * cellSize;
+    const y = step.targetR * cellSize;
+    const w = step.targetW * cellSize;
+    const h = step.targetH * cellSize;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.16)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = Math.max(2, cellSize * 0.06);
+    ctx.setLineDash([5, 3]);
+    ctx.strokeRect(x + 2, y + 2, Math.max(4, w - 4), Math.max(4, h - 4));
+    ctx.setLineDash([]);
+
+    if (!previewMode && cellSize >= 18) {
+      const label = 'ここへ';
+      const fs = Math.max(9, Math.min(11, Math.round(cellSize * 0.25)));
+      ctx.font = `900 ${fs}px "Zen Kaku Gothic New", sans-serif`;
+      const tw = ctx.measureText(label).width;
+      const bw = tw + 8;
+      const bh = fs + 5;
+      const bx = x + Math.max(2, (w - bw) / 2);
+      const by = y + Math.max(2, (h - bh) / 2);
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4);
+      else ctx.rect(bx, by, bw, bh);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, bx + bw / 2, by + bh / 2 + 0.5);
+    }
+    ctx.restore();
   }
 
-  // 占有長方形（最小包含長方形）の境界破線とサイズバッジを描画する共通ヘルパー
+  function drawPlan() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const reachableSet = (typeof runBFS === 'function' && STAGE) ? runBFS() : null;
+    try { drawCells(reachableSet); } catch(e) { console.error('drawCells error:', e); }
+    try { drawOccupiedBoxOverlay(ctx, grid, cellSize, true); } catch(e) { console.error('drawOccupiedBoxOverlay error:', e); }
+    try { drawArchLines(); } catch(e) { console.error('drawArchLines error:', e); }
+    try { drawLabels(reachableSet); } catch(e) { console.error('drawLabels error:', e); }
+    try { drawEntrance(); } catch(e) { console.error('drawEntrance error:', e); }
+    try { drawTutorialTargetOverlay(); } catch(e) { console.error('drawTutorialTargetOverlay error:', e); }
+    try { drawPreview(reachableSet); } catch(e) { console.error('drawPreview error:', e); }
+  }
+
+  // 建築中の占有長方形（最小包含長方形）の境界破線を描画する共通ヘルパー
   function drawOccupiedBoxOverlay(targetCtx, targetGrid, cs, isLiveBuild = false, isCompact = false) {
     const fp = calcFootprintStats(targetGrid);
     if (!fp || !fp.bbox || (isLiveBuild && !fp.hasPlacedPiece)) return;
-    const { minR, maxR, minC, maxC, w, h } = fp.bbox;
+    const { minR, minC, w, h } = fp.bbox;
     const bx = minC * cs;
     const by = minR * cs;
     const bw = w * cs;
@@ -3722,54 +4089,69 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     targetCtx.setLineDash(isCompact ? [3, 2] : [5, 3]);
     targetCtx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
     targetCtx.setLineDash([]);
-
-    if (!isCompact) {
-      const badgeText = `占有 ${w}×${h} (${fp.occupiedArea}ﾏｽ)`;
-      targetCtx.font = `bold ${Math.max(8.5, Math.min(10.5, cs * 0.34))}px "Zen Kaku Gothic New", sans-serif`;
-      const tw = targetCtx.measureText(badgeText).width;
-      const padX = 5, padY = 2;
-      const pillW = tw + padX * 2;
-      const pillH = 14;
-      let px = bx + 2;
-      let py = by - pillH - 2;
-      if (py < 2) py = by + 2;
-      if (px + pillW > GRID * cs - 2) px = Math.max(2, GRID * cs - pillW - 2);
-
-      targetCtx.fillStyle = 'rgba(21, 128, 61, 0.88)';
-      targetCtx.beginPath();
-      if (targetCtx.roundRect) {
-        targetCtx.roundRect(px, py, pillW, pillH, 4);
-      } else {
-        targetCtx.rect(px, py, pillW, pillH);
-      }
-      targetCtx.fill();
-
-      targetCtx.fillStyle = '#ffffff';
-      targetCtx.textAlign = 'left';
-      targetCtx.textBaseline = 'middle';
-      targetCtx.fillText(badgeText, px + padX, py + pillH / 2 + 0.5);
-    }
     targetCtx.restore();
   }
 
-  function drawCells() {
+  function isCellAdjacentToStructure(r, c) {
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    for (const [dr, dc] of dirs) {
+      const nb = grid[r + dr]?.[c + dc];
+      if (nb && nb.type !== T.EMPTY && nb.type !== T.OBSTACLE && nb.type !== T.GARDEN) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function drawCells(reachableSet = null) {
     const fp = calcFootprintStats(grid);
     const bbox = (fp && fp.hasPlacedPiece) ? fp.bbox : null;
+    const highlightConnectable = (selectedSlot !== null && !!draftSlots[selectedSlot]);
 
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const cell = grid[r][c];
         const inBox = bbox && r >= bbox.minR && r <= bbox.maxR && c >= bbox.minC && c <= bbox.maxC;
         const x = c * cellSize, y = r * cellSize;
+        const isAdjConnectable = (cell.type === T.EMPTY && highlightConnectable && isCellAdjacentToStructure(r, c));
+        const isPlacedRoom = (cell.type !== T.EMPTY && cell.type !== T.GARDEN && cell.type !== T.OBSTACLE && cell.type !== T.ENTRANCE);
+        const isUnreachableRoom = !!(isPlacedRoom && reachableSet && !reachableSet.has(`${r},${c}`));
 
         if (cell.type === T.EMPTY || cell.type === T.GARDEN) {
-          // 占有長方形の内側の空き地は「庭（薄緑）」、外側は「未使用敷地（白グレー）」
-          ctx.fillStyle = inBox ? '#ecfccb' : '#f8fafc';
+          if (cell.type === T.EMPTY && highlightConnectable) {
+            if (isAdjConnectable) {
+              ctx.fillStyle = inBox ? '#f0fdf4' : '#ffffff';
+            } else {
+              // 未接続の遠い空きマスは明度を少し落とし、接続可能な隣接マスを際立たせる
+              ctx.fillStyle = inBox ? '#e2f2c0' : '#e5ebf3';
+            }
+          } else {
+            // 占有長方形の内側の空き地は「庭（薄緑）」、外側は「未使用敷地（白グレー）」
+            ctx.fillStyle = inBox ? '#ecfccb' : '#f8fafc';
+          }
         } else {
           const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
           ctx.fillStyle = s.bg;
         }
         ctx.fillRect(x, y, cellSize, cellSize);
+
+        // 玄関から到達できない孤立部屋は視覚的にわかるよう控えめに暗転
+        if (isUnreachableRoom) {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.30)';
+          ctx.fillRect(x, y, cellSize, cellSize);
+        }
+
+        // Connectable frontier subtle border & glow
+        if (isAdjConnectable) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+          ctx.fillRect(x, y, cellSize, cellSize);
+          ctx.strokeStyle = 'rgba(14, 165, 233, 0.6)';
+          ctx.lineWidth = 1.25;
+          ctx.setLineDash([3, 2]);
+          ctx.strokeRect(x + 1.5, y + 1.5, Math.max(2, cellSize - 3), Math.max(2, cellSize - 3));
+          ctx.restore();
+        }
         
         if (cell.type === T.OBSTACLE) {
           ctx.strokeStyle = '#0f172a';
@@ -3781,14 +4163,43 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         }
 
         // Grid guide
-        ctx.strokeStyle = (inBox && (cell.type === T.EMPTY || cell.type === T.GARDEN)) ? '#bef264' : '#e2e8f0';
+        ctx.strokeStyle = isAdjConnectable
+          ? '#7dd3fc'
+          : ((inBox && (cell.type === T.EMPTY || cell.type === T.GARDEN)) ? '#bef264' : (highlightConnectable && cell.type === T.EMPTY ? '#d3dce8' : '#e2e8f0'));
         ctx.lineWidth = 0.5;
         ctx.strokeRect(x, y, cellSize, cellSize);
       }
     }
   }
 
-  function drawPreview() {
+  function isPreviewReachableFromVisited(gr, gc, shape, rw, reachableSet) {
+    if (!reachableSet) return true;
+    const wallSet = new Set((rw || []).map(w => `${w.r},${w.c},${w.dir}`));
+    const dirs = [
+      { dr: -1, dc: 0, dir: 'top', opp: 'bottom' },
+      { dr: 1, dc: 0, dir: 'bottom', opp: 'top' },
+      { dr: 0, dc: -1, dir: 'left', opp: 'right' },
+      { dr: 0, dc: 1, dir: 'right', opp: 'left' }
+    ];
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape[0].length; c++) {
+        if (shape[r][c] !== 1) continue;
+        const absR = gr + r, absC = gc + c;
+        for (const d of dirs) {
+          const nr = absR + d.dr, nc = absC + d.dc;
+          if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) continue;
+          if (!reachableSet.has(`${nr},${nc}`)) continue;
+          if (wallSet.has(`${r},${c},${d.dir}`)) continue;
+          const nb = grid[nr]?.[nc];
+          if (nb && nb.walls && nb.walls[d.opp]) continue;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function drawPreview(reachableSet = null) {
     if (selectedWallTarget) {
       ctx.save();
       const { r1, c1, r2, c2 } = selectedWallTarget;
@@ -3827,11 +4238,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!piece) return;
     const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
-    const pieceCost = getPieceCost(piece, isMirrored);
-    const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
-    const totalPlaceCost = Math.round((pieceCost + enc.cost) * 10) / 10;
-    const canAfford = budget >= totalPlaceCost;
-    const valid = canPlace(hoverCell.r, hoverCell.c, shape) && canAfford;
+    const { valid } = evaluatePiecePlacement(hoverCell.r, hoverCell.c, piece, selectedRot, isMirrored);
+    const previewConnects = !valid || isPreviewReachableFromVisited(hoverCell.r, hoverCell.c, shape, rw, reachableSet);
+    const tutStep = getCurrentTutorialStep();
+    const tutOrientMismatch = !!(tutStep && !isTutorialOrientationMatch(tutStep));
     ctx.save();
     for (let r = 0; r < shape.length; r++) {
       for (let c = 0; c < shape[0].length; c++) {
@@ -3843,6 +4253,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (!valid) {
           ctx.fillStyle = 'rgba(239,68,68,0.35)';
           ctx.strokeStyle = '#dc2626';
+        } else if (!previewConnects) {
+          // 仮置きは可能だがこの向きでは未接続になる場合、文字を出さず控えめなくすみ色で知らせる
+          ctx.fillStyle = isObs ? 'rgba(146, 64, 14, 0.28)' : 'rgba(51, 65, 85, 0.30)';
+          ctx.strokeStyle = isObs ? '#92400e' : '#475569';
+        } else if (tutOrientMismatch) {
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.28)';
+          ctx.strokeStyle = '#d97706';
         } else if (isObs) {
           ctx.fillStyle = 'rgba(245,158,11,0.45)';
           ctx.strokeStyle = '#d97706';
@@ -3875,14 +4292,17 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.restore();
   }
 
-  function drawLabels() {
+  function drawLabels(reachableSet = null) {
     const rooms = {};
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const cell = grid[r][c];
         if (!cell.roomId || cell.type === T.EMPTY || cell.type === T.ENTRANCE) continue;
-        if (!rooms[cell.roomId]) rooms[cell.roomId] = { cells:[], label:cell.label, type:cell.type };
+        if (!rooms[cell.roomId]) rooms[cell.roomId] = { cells:[], label:cell.label, type:cell.type, unreachable: false };
         rooms[cell.roomId].cells.push({r,c});
+        if (reachableSet && !reachableSet.has(`${r},${c}`)) {
+          rooms[cell.roomId].unreachable = true;
+        }
       }
     }
     ctx.save();
@@ -3894,7 +4314,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         else if (rm.cells.length <= 4) rm.label = 'DK';
         else rm.label = 'LDK';
       }
-      const { cells, label } = rm;
+      const { cells, label, unreachable } = rm;
       let ax = 0, ay = 0;
       cells.forEach(({r,c}) => { ax += (c+0.5)*cellSize; ay += (r+0.5)*cellSize; });
       ax /= cells.length; ay /= cells.length;
@@ -3902,9 +4322,30 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       ctx.font = `bold ${Math.max(9, cellSize*0.22)}px "Zen Kaku Gothic New", sans-serif`;
       ctx.fillText(label, ax, ay - (cells.length > 1 ? 5 : 0));
       if (cells.length > 1) {
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = unreachable ? '#334155' : '#64748b';
         ctx.font = `${Math.max(8, cellSize*0.17)}px "Space Grotesk", sans-serif`;
         ctx.fillText(`${cells.length}帖`, ax, ay + cellSize*0.18);
+      }
+      if (unreachable && cellSize >= 20) {
+        // 部屋文字と重ならない左上セル隅へ極小の孤立マークを添える
+        let anchor = cells[0];
+        for (const cellPt of cells) {
+          if (cellPt.r < anchor.r || (cellPt.r === anchor.r && cellPt.c < anchor.c)) anchor = cellPt;
+        }
+        const bx = anchor.c * cellSize + Math.max(5.5, cellSize * 0.2);
+        const by = anchor.r * cellSize + Math.max(5.5, cellSize * 0.2);
+        const br = Math.max(3.6, Math.min(5.2, cellSize * 0.14));
+        ctx.save();
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = `900 ${Math.round(br * 1.55)}px "Space Grotesk", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', bx, by + 0.5);
+        ctx.restore();
       }
     }
     ctx.restore();
@@ -4238,31 +4679,51 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   /* ============================================================
      PLACEMENT
   ============================================================ */
-  function canPlace(gr, gc, shape) {
+  function getPlacementCheck(gr, gc, shape) {
     const sr = shape.length, sc = shape[0].length;
-    if (gr < 0 || gc < 0 || gr+sr > GRID || gc+sc > GRID) return false;
-    
+    if (gr < 0 || gc < 0 || gr + sr > GRID || gc + sc > GRID) {
+      return { ok: false, reason: 'out_of_bounds', shortLabel: '敷地の外です', detailText: '敷地の枠内に入れてください' };
+    }
+
     let hasAdjacent = false;
     for (let r = 0; r < sr; r++) {
       for (let c = 0; c < sc; c++) {
-        if (shape[r][c] === 1) {
-          const targetType = grid[gr+r][gc+c].type;
-          if (targetType !== T.EMPTY && targetType !== T.OBSTACLE) return false;
-          
-          const dirs = [{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
-          for (const {dr,dc} of dirs) {
-            const nr = gr+r+dr, nc = gc+c+dc;
-            if (nr>=0 && nr<GRID && nc>=0 && nc<GRID) {
-              const cell = grid[nr][nc];
-              if (cell.type !== T.EMPTY && cell.type !== T.OBSTACLE && cell.type !== T.GARDEN) {
-                hasAdjacent = true;
-              }
-            }
-          }
+        if (shape[r][c] !== 1) continue;
+        const targetType = grid[gr + r][gc + c].type;
+        if (targetType !== T.EMPTY && targetType !== T.OBSTACLE) {
+          return { ok: false, reason: 'overlap', shortLabel: '部屋と重なっています', detailText: '他の部屋と重なっています' };
+        }
+        if (isCellAdjacentToStructure(gr + r, gc + c)) {
+          hasAdjacent = true;
         }
       }
     }
-    return hasAdjacent;
+    if (!hasAdjacent) {
+      return { ok: false, reason: 'not_adjacent', shortLabel: '玄関か部屋の隣へ', detailText: '玄関か部屋の隣に置けます' };
+    }
+    return { ok: true, reason: 'ok', shortLabel: '', detailText: '' };
+  }
+
+  function canPlace(gr, gc, shape) {
+    return getPlacementCheck(gr, gc, shape).ok;
+  }
+
+  function evaluatePiecePlacement(gr, gc, piece, rot = selectedRot, mirrored = isMirrored) {
+    const shape = getShape(piece, rot, mirrored);
+    const placeCheck = getPlacementCheck(gr, gc, shape);
+    const pieceCost = getPieceCost(piece, mirrored);
+    const enc = getEncroachCostForPlacement(gr, gc, shape);
+    const totalPlaceCost = Math.round((pieceCost + enc.cost) * 10) / 10;
+    const canAfford = budget >= totalPlaceCost;
+    return {
+      shape,
+      placeCheck,
+      pieceCost,
+      enc,
+      totalPlaceCost,
+      canAfford,
+      valid: placeCheck.ok && canAfford
+    };
   }
 
   // 同種ピース統合: 隣接する同種セルを、壁ギミックのない辺を通ってのみ連結し同一roomIdにする
@@ -4316,16 +4777,31 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function placePiece(gr, gc) {
     const piece = draftSlots[selectedSlot];
     if (!piece) return false;
+
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep) {
+      if (tutStep.targetR === undefined || !isTutorialHoverAtTarget(tutStep, gr, gc)) {
+        playSound('error');
+        showFloatingText('光る枠に合わせよう', '#fbbf24');
+        return false;
+      }
+      if (!isTutorialOrientationMatch(tutStep)) {
+        playSound('error');
+        showFloatingText(getTutorialActionNotice(tutStep) || '向きを合わせよう', '#fbbf24');
+        return false;
+      }
+    }
     
-    const shape = getShape(piece, selectedRot, isMirrored);
     const rw = getRotatedWalls(piece, selectedRot, isMirrored);
-    if (!canPlace(gr, gc, shape)) { playSound('error'); return false; }
+    const { shape, placeCheck, pieceCost, enc, totalPlaceCost, canAfford } = evaluatePiecePlacement(gr, gc, piece);
+    if (!placeCheck.ok) {
+      playSound('error');
+      showFloatingText(placeCheck.detailText, '#fca5a5');
+      return false;
+    }
 
     // Check Budget (Piece Cost + Encroachment Cost on Obstacle cells)
-    const pieceCost = getPieceCost(piece, isMirrored);
-    const enc = getEncroachCostForPlacement(gr, gc, shape);
-    const totalPlaceCost = Math.round((pieceCost + enc.cost) * 10) / 10;
-    if (budget < totalPlaceCost) {
+    if (!canAfford) {
       playSound('error');
       showFloatingText('資金不足！', 'var(--c-rose)');
       showEmergencyLoanPrompt(totalPlaceCost - budget);
@@ -4382,8 +4858,21 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     mergeCorridors();
 
+    let sumR = 0, sumC = 0, placedCnt = 0;
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape[0].length; c++) {
+        if (shape[r][c] === 1) {
+          sumR += gr + r;
+          sumC += gc + c;
+          placedCnt++;
+        }
+      }
+    }
+    if (placedCnt > 0) {
+      lastPlacedAnchor = { r: sumR / placedCnt, c: sumC / placedCnt };
+    }
+
     hintDismissedForBuild = true;
-    document.getElementById('hint-overlay').style.opacity = '0';
     playSound('place');
     
     if (piece && piece.id) {
@@ -4392,12 +4881,18 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     draftSlots[selectedSlot] = null;
     keepStates[selectedSlot] = false;
     keepCounts[selectedSlot] = 0;
+
+    if (tutStep && tutorialBuildStep < TUTORIAL_STEPS.length - 1) {
+      tutorialBuildStep++;
+    }
+    hoverCell = null;
+    previewMode = false;
     
     let allEmpty = true;
     for (let i = 0; i < draftSlots.length; i++) {
       if (draftSlots[i] !== null) allEmpty = false;
     }
-    if (allEmpty) {
+    if (allEmpty && !isTutorialPuzzleActive()) {
       const maxSlots = getMaxHandSlots();
       for (let i = 0; i < maxSlots; i++) {
         draftSlots[i] = drawPieceFromDeck();
@@ -4405,17 +4900,14 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         keepCounts[i] = 0;
       }
       selectedSlot = 0;
-    } else {
+    } else if (!isTutorialPuzzleActive()) {
       let next = draftSlots.findIndex(p => p !== null);
       if (next !== -1) selectedSlot = next;
     }
     updateDeckPeekButton();
     
-    renderDraftUI();
     selectedRot = 0;
     isMirrored = false;
-    updatePieceLabel();
-    
     turnsLeft--;
     updateTurnsDisplay();
     renderDraftUI();
@@ -4425,7 +4917,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     saveActiveBuild('game');
 
-    if (isGridFull()) setTimeout(evaluate, 300);
+    if (!isTutorialPuzzleActive() && isGridFull()) setTimeout(evaluate, 300);
     return true;
   }
 
@@ -4461,6 +4953,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   }
 
   function findSolidWallNearPointer(e) {
+    if (isTutorialPuzzleActive()) return null;
     const rect = canvas.getBoundingClientRect();
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const cy = e.touches ? e.touches[0].clientY : e.clientY;
@@ -4558,27 +5051,204 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   let confirmOverlayShownAt = 0;
 
+  function selectDraftSlotByNumber(idx) {
+    if (idx < 0 || idx >= draftSlots.length) return;
+    initAudio();
+    cancelRerollConfirm();
+    selectedWallTarget = null;
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep) {
+      if (tutStep.slot !== idx || !draftSlots[idx]) {
+        playSound('tap');
+        showFloatingText(getTutorialHintText() || '順番に進めよう', '#fbbf24');
+        return;
+      }
+      selectedSlot = idx;
+      playSound('tap');
+      renderDraftUI();
+      updatePieceLabel();
+      drawPlan();
+      return;
+    }
+    if (!draftSlots[idx]) {
+      playSound('tap');
+      return;
+    }
+    if (selectedSlot !== idx) {
+      selectedSlot = idx;
+      selectedRot = 0;
+      isMirrored = false;
+      hoverCell = null;
+      previewMode = false;
+      showConfirmUI(false);
+      playSound('rotate');
+    } else {
+      playSound('tap');
+    }
+    renderDraftUI();
+    updatePieceLabel();
+    drawPlan();
+    const cardsWrap = document.getElementById('draft-container');
+    const cardEl = cardsWrap?.querySelectorAll('.draft-card')?.[idx];
+    if (cardEl && typeof cardEl.scrollIntoView === 'function') {
+      cardEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }
+
+  function findSmartPreviewAnchor(piece, dr, dc) {
+    const shape = getShape(piece, selectedRot, isMirrored);
+    const h = shape.length;
+    const w = shape[0].length;
+    const maxR = Math.max(0, GRID - h);
+    const maxC = Math.max(0, GRID - w);
+    const entR = (STAGE && typeof STAGE.entranceRow === 'number') ? STAGE.entranceRow : Math.floor(GRID / 2);
+    const entC = (STAGE && typeof STAGE.entranceCol === 'number') ? STAGE.entranceCol : Math.floor(GRID / 2);
+    const anchorR = lastPlacedAnchor ? lastPlacedAnchor.r : entR;
+    const anchorC = lastPlacedAnchor ? lastPlacedAnchor.c : entC;
+
+    let best = null;
+    let bestScore = Infinity;
+    for (let r = 0; r <= maxR; r++) {
+      for (let c = 0; c <= maxC; c++) {
+        const chk = getPlacementCheck(r, c, shape);
+        if (!chk.ok) continue;
+        const centerR = r + (h - 1) / 2;
+        const centerC = c + (w - 1) / 2;
+        const dist = Math.hypot(centerR - anchorR, centerC - anchorC);
+        const dirDot = (centerR - anchorR) * dr + (centerC - anchorC) * dc;
+        const score = dist - dirDot * 0.15;
+        if (score < bestScore) {
+          bestScore = score;
+          best = { r, c };
+        }
+      }
+    }
+    if (best) return best;
+    return {
+      r: Math.max(0, Math.min(maxR, Math.round(anchorR) - Math.floor(h / 2) + dr)),
+      c: Math.max(0, Math.min(maxC, Math.round(anchorC) - Math.floor(w / 2) + dc))
+    };
+  }
+
+  function moveSelectedPiecePreview(dr, dc) {
+    initAudio();
+    cancelRerollConfirm();
+    selectedWallTarget = null;
+    if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
+      document.activeElement.blur();
+    }
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep) {
+      if (tutStep.isReroll || tutStep.isFinish) {
+        playSound('tap');
+        showFloatingText(getTutorialHintText() || 'ボタンをタップしよう', '#fbbf24');
+        syncTutorialPuzzleUI();
+        return;
+      }
+      const wasReady = previewMode && hoverCell && hoverCell.r === tutStep.targetR && hoverCell.c === tutStep.targetC;
+      hoverCell = { r: tutStep.targetR, c: tutStep.targetC };
+      previewMode = true;
+      confirmOverlayShownAt = Date.now();
+      showConfirmUI(true);
+      drawPlan();
+      playSound('tap');
+      if (wasReady) {
+        showFloatingText(getTutorialActionNotice(tutStep) || 'そのまま確定しよう', '#fbbf24');
+      }
+      return;
+    }
+
+    if (selectedSlot === null || !draftSlots[selectedSlot]) {
+      const firstIdx = draftSlots.findIndex(p => p !== null);
+      if (firstIdx === -1) {
+        playSound('tap');
+        showFloatingText('手札が空です', '#fbbf24');
+        return;
+      }
+      selectedSlot = firstIdx;
+      selectedRot = 0;
+      isMirrored = false;
+      renderDraftUI();
+      updatePieceLabel();
+    }
+
+    const piece = draftSlots[selectedSlot];
+    const shape = getShape(piece, selectedRot, isMirrored);
+    const maxR = Math.max(0, GRID - shape.length);
+    const maxC = Math.max(0, GRID - shape[0].length);
+
+    if (!previewMode && !hoverCell) {
+      hoverCell = findSmartPreviewAnchor(piece, dr, dc);
+      previewMode = true;
+      confirmOverlayShownAt = Date.now();
+      showConfirmUI(true);
+      drawPlan();
+      playSound('tap');
+      return;
+    }
+
+    const baseR = hoverCell ? hoverCell.r : 0;
+    const baseC = hoverCell ? hoverCell.c : 0;
+    const nr = Math.max(0, Math.min(maxR, baseR + dr));
+    const nc = Math.max(0, Math.min(maxC, baseC + dc));
+    const moved = !previewMode || !hoverCell || nr !== hoverCell.r || nc !== hoverCell.c;
+    hoverCell = { r: nr, c: nc };
+    previewMode = true;
+    confirmOverlayShownAt = Date.now();
+    showConfirmUI(true);
+    drawPlan();
+    if (moved) playSound('tap');
+  }
+
   function rotateSelectedPiece() {
     initAudio();
     cancelRerollConfirm();
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep && !tutStep.allowRotate) {
+      playSound('tap');
+      return;
+    }
     if (selectedSlot === null || !draftSlots[selectedSlot]) return;
     selectedRot = (selectedRot + 1) % 4;
     playSound('rotate');
     renderDraftUI();
     updatePieceLabel();
-    if (previewMode && hoverCell) showConfirmUI(true);
+    if (previewMode && hoverCell) {
+      if (!tutStep) {
+        const sh = getShape(draftSlots[selectedSlot], selectedRot, isMirrored);
+        hoverCell = {
+          r: Math.max(0, Math.min(GRID - sh.length, hoverCell.r)),
+          c: Math.max(0, Math.min(GRID - sh[0].length, hoverCell.c))
+        };
+      }
+      showConfirmUI(true);
+    }
     drawPlan();
   }
 
   function toggleMirrorSelectedPiece() {
     initAudio();
     cancelRerollConfirm();
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep && !tutStep.allowMirror) {
+      playSound('tap');
+      return;
+    }
     if (selectedSlot === null || !draftSlots[selectedSlot]) return;
     isMirrored = !isMirrored;
     playSound('rotate');
     renderDraftUI();
     updatePieceLabel();
-    if (previewMode && hoverCell) showConfirmUI(true);
+    if (previewMode && hoverCell) {
+      if (!tutStep) {
+        const sh = getShape(draftSlots[selectedSlot], selectedRot, isMirrored);
+        hoverCell = {
+          r: Math.max(0, Math.min(GRID - sh.length, hoverCell.r)),
+          c: Math.max(0, Math.min(GRID - sh[0].length, hoverCell.c))
+        };
+      }
+      showConfirmUI(true);
+    }
     drawPlan();
   }
 
@@ -4594,6 +5264,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return;
     }
     if (previewMode && hoverCell) {
+      const tutStep = getCurrentTutorialStep();
+      if (tutStep && !isTutorialConfirmAllowed()) {
+        playSound('error');
+        showFloatingText(getTutorialActionNotice(tutStep) || getTutorialHintText(), '#fbbf24');
+        return;
+      }
       const success = placePiece(hoverCell.r, hoverCell.c);
       if (success) {
         previewMode = false;
@@ -4639,13 +5315,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         });
       }
     }
+    const entranceRects = [];
+    const entCells = (STAGE && STAGE.entranceCells)
+      ? STAGE.entranceCells
+      : (STAGE && typeof STAGE.entranceRow === 'number' ? [{ r: STAGE.entranceRow, c: STAGE.entranceCol }] : []);
+    for (const ec of entCells) {
+      const left = originX + ec.c * cellSize;
+      const top = originY + ec.r * cellSize;
+      entranceRects.push({ left, top, right: left + cellSize, bottom: top + cellSize });
+    }
     return {
       areaW: area.clientWidth,
       areaH: area.clientHeight,
       originX,
       originY,
       boardRect,
-      uiAvoidRects
+      uiAvoidRects,
+      entranceRects
     };
   }
 
@@ -4679,7 +5365,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function findBestOverlayCandidate(ow, oh, targetBBox, cellRects, metrics) {
     const gap = 10;
     const margin = 6;
-    const { areaW, areaH, boardRect, uiAvoidRects } = metrics;
+    const { areaW, areaH, boardRect, uiAvoidRects, entranceRects = [] } = metrics;
     const maxX = Math.max(2, areaW - ow - margin);
     const minX = Math.min(margin, maxX);
     const maxY = Math.max(2, areaH - oh - margin);
@@ -4729,6 +5415,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       let uiOverlap = 0;
       for (const u of uiAvoidRects) uiOverlap += getRectOverlapArea(box, u);
 
+      let entranceOverlap = 0;
+      for (const er of entranceRects) entranceOverlap += getRectOverlapArea(box, er);
+
       const bboxOverlap = getRectOverlapArea(box, targetBBox);
 
       let paddedOverlap = 0;
@@ -4742,6 +5431,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         clipOverflow,
         pieceOverlap,
         uiOverlap,
+        entranceOverlap,
         bboxOverlap,
         paddedOverlap,
         tieScore: Math.round(edgeDist * 200 + boardOverlap + cand.dirRank * 150)
@@ -4758,6 +5448,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (a.clipOverflow !== b.clipOverflow) return a.clipOverflow - b.clipOverflow;
     if (a.pieceOverlap !== b.pieceOverlap) return a.pieceOverlap - b.pieceOverlap;
     if (a.uiOverlap !== b.uiOverlap) return a.uiOverlap - b.uiOverlap;
+    if (a.entranceOverlap !== b.entranceOverlap) return a.entranceOverlap - b.entranceOverlap;
     if (a.bboxOverlap !== b.bboxOverlap) return a.bboxOverlap - b.bboxOverlap;
     if (a.paddedOverlap !== b.paddedOverlap) return a.paddedOverlap - b.paddedOverlap;
     return a.tieScore - b.tieScore;
@@ -4793,6 +5484,39 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
   }
 
+  function syncHintOverlay(forceHide = false) {
+    const hint = document.getElementById('hint-overlay');
+    if (!hint) return;
+    const textEl = document.getElementById('hint-pill-text');
+    const skipBtn = document.getElementById('btn-skip-tutorial-game');
+    const tutStep = getCurrentTutorialStep();
+
+    if (tutStep) {
+      const isBottomStep = !!(tutStep.isReroll || tutStep.isFinish);
+      hint.classList.toggle('is-top', !isBottomStep);
+      hint.classList.toggle('is-bottom', isBottomStep);
+      if (textEl) textEl.textContent = getTutorialHintText();
+      if (skipBtn) {
+        skipBtn.textContent = isTutorialPracticeMode ? '練習終了' : 'スキップ';
+        skipBtn.style.display = 'inline-flex';
+      }
+      hint.style.opacity = '1';
+      return;
+    }
+
+    if (skipBtn) skipBtn.style.display = 'none';
+    const entCells = (STAGE && STAGE.entranceCells) ? STAGE.entranceCells : [{ r: STAGE ? STAGE.entranceRow : 6, c: STAGE ? STAGE.entranceCol : 6 }];
+    const avgR = entCells.reduce((s, cell) => s + (cell.r ?? 6), 0) / Math.max(1, entCells.length);
+    hint.classList.toggle('is-top', avgR >= GRID / 2);
+    hint.classList.toggle('is-bottom', avgR < GRID / 2);
+
+    if (textEl) {
+      const hasSel = (selectedSlot !== null && !!draftSlots[selectedSlot]);
+      textEl.textContent = hasSel ? '玄関の隣の明るいマスをタップ' : '下のカードを選んで玄関の隣へ';
+    }
+    hint.style.opacity = (forceHide || hintDismissedForBuild) ? '0' : '1';
+  }
+
   function showConfirmUI(show) {
     const co = document.getElementById('confirm-overlay');
     const btn = document.getElementById('btn-confirm-place');
@@ -4802,6 +5526,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!show) {
       co.style.display = 'none';
       co.classList.remove('is-stacked');
+      if (btn) btn.classList.remove('confirm-btn-invalid');
     } else {
       co.style.display = 'flex';
       const area = document.querySelector('.canvas-area');
@@ -4811,6 +5536,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         if (pcTools) pcTools.style.display = 'none';
         const wCost = getWallRemoveCost().toFixed(1);
         if (btn) {
+          btn.classList.remove('confirm-btn-invalid');
           btn.innerHTML = `<i class="ph-bold ph-hammer"></i> 壁撤去 (-${wCost}万)`;
           btn.style.background = '#e11d48';
         }
@@ -4819,16 +5545,33 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const wallBox = { left: cx - 14, top: cy - 14, right: cx + 14, bottom: cy + 14 };
         placeConfirmOverlaySafely(co, wallBox, [wallBox], false);
       } else if (hoverCell && selectedSlot !== null && draftSlots[selectedSlot] && metrics) {
-        if (pcTools) pcTools.style.display = '';
+        const tutStep = getCurrentTutorialStep();
+        if (pcTools) {
+          pcTools.style.display = tutStep && !tutStep.allowRotate && !tutStep.allowMirror ? 'none' : '';
+        }
         updateMirrorButton();
         const piece = draftSlots[selectedSlot];
-        const shape = getShape(piece, selectedRot, isMirrored);
-        const enc = getEncroachCostForPlacement(hoverCell.r, hoverCell.c, shape);
+        const { shape, placeCheck, enc, totalPlaceCost, canAfford } = evaluatePiecePlacement(hoverCell.r, hoverCell.c, piece);
+        const tutNotice = tutStep ? getTutorialActionNotice(tutStep) : '';
         if (btn) {
-          if (enc.count > 0) {
+          if (tutStep && !isTutorialConfirmAllowed()) {
+            btn.classList.add('confirm-btn-invalid');
+            btn.innerHTML = `<i class="ph-bold ph-arrow-clockwise"></i> ${tutNotice || '向きを合わせよう'}`;
+            btn.style.background = '';
+          } else if (!placeCheck.ok) {
+            btn.classList.add('confirm-btn-invalid');
+            btn.innerHTML = `<i class="ph-bold ph-warning-circle"></i> ${placeCheck.shortLabel}`;
+            btn.style.background = '';
+          } else if (!canAfford) {
+            btn.classList.add('confirm-btn-invalid');
+            btn.innerHTML = `<i class="ph-bold ph-warning"></i> 資金不足 (${totalPlaceCost.toFixed(1)}万)`;
+            btn.style.background = '';
+          } else if (enc.count > 0) {
+            btn.classList.remove('confirm-btn-invalid');
             btn.innerHTML = `<i class="ph-bold ph-pickaxe"></i> 確定 (+造成${enc.cost.toFixed(1)}万)`;
             btn.style.background = '#f59e0b';
           } else {
+            btn.classList.remove('confirm-btn-invalid');
             btn.innerHTML = `<i class="ph-bold ph-check"></i> 確定`;
             btn.style.background = '';
           }
@@ -4839,17 +5582,43 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
-    const hint = document.getElementById('hint-overlay');
-    if (hint) {
-      // パズル開始時のみ表示し、一度でも盤面操作や配置を行ったらそのパズル中は非表示を維持する
-      hint.style.opacity = (show || hintDismissedForBuild) ? '0' : '1';
-    }
+    syncTutorialPuzzleUI();
+    syncHintOverlay(show);
   }
 
   canvas.addEventListener('pointerdown', e => {
     initAudio();
     cancelRerollConfirm();
-    hintDismissedForBuild = true;
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep) {
+      selectedWallTarget = null;
+      if (tutStep.isReroll || tutStep.isFinish) {
+        playSound('tap');
+        showFloatingText(getTutorialHintText() || 'ボタンをタップしよう', '#fbbf24');
+        syncTutorialPuzzleUI();
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      const rawC = Math.floor((cx - rect.left) / cellSize);
+      const rawR = Math.floor((cy - rect.top) / cellSize);
+      if (isTutorialPointInsideTarget(tutStep, rawR, rawC)) {
+        hoverCell = { r: tutStep.targetR, c: tutStep.targetC };
+        previewMode = true;
+        confirmOverlayShownAt = Date.now();
+        showConfirmUI(true);
+        drawPlan();
+      } else {
+        playSound('tap');
+        hoverCell = null;
+        previewMode = false;
+        showConfirmUI(false);
+        drawPlan();
+        showFloatingText('光る枠の中をタップしよう', '#fbbf24');
+      }
+      return;
+    }
     if (selectedSlot === null || !draftSlots[selectedSlot]) {
       // ピース未選択時は赤壁（耐力壁）のタップ判定を行い、ヒットすれば有料撤去ボタンを表示する
       const wallHit = findSolidWallNearPointer(e);
@@ -4877,6 +5646,23 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
   
   canvas.addEventListener('pointermove', e => {
+    const tutStep = getCurrentTutorialStep();
+    if (tutStep) {
+      if (tutStep.isReroll || tutStep.isFinish || previewMode) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      const rawC = Math.floor((cx - rect.left) / cellSize);
+      const rawR = Math.floor((cy - rect.top) / cellSize);
+      const inside = isTutorialPointInsideTarget(tutStep, rawR, rawC);
+      const nextHover = inside ? { r: tutStep.targetR, c: tutStep.targetC } : null;
+      const changed = (!!hoverCell !== !!nextHover) || (hoverCell && nextHover && (hoverCell.r !== nextHover.r || hoverCell.c !== nextHover.c));
+      if (changed) {
+        hoverCell = nextHover;
+        drawPlan();
+      }
+      return;
+    }
     if (selectedSlot === null || !draftSlots[selectedSlot]) return;
     if (previewMode) {
       const isDragging = (e.pointerType === 'mouse' && e.buttons > 0) || (e.pointerType !== 'mouse');

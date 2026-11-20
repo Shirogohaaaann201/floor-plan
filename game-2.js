@@ -1332,8 +1332,6 @@
       rctx.lineWidth = 0.5;
       rctx.strokeRect(c*cs, r*cs, cs, cs);
     }
-    // 占有長方形の破線枠とサイズラベル
-    drawOccupiedBoxOverlay(rctx, grid, cs, false, false);
     // Draw walls (simplified)
     rctx.save();
     for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
@@ -1813,20 +1811,41 @@
     const btnNext = document.getElementById('btn-next-stage');
     const btnRestart = document.getElementById('btn-restart');
     const btnGiveup = document.getElementById('btn-giveup');
+    const isTutResult = !!(STAGE && STAGE.isTutorial && isTutorialPhaseActive());
+    const tutResultBanner = document.getElementById('tutorial-result-banner');
+    const tutResultText = document.getElementById('tutorial-result-text');
+    const tutResultGuide = document.getElementById('tutorial-result-guide');
+    const btnSkipTutResult = document.getElementById('btn-skip-tutorial-result');
     
     // 足切り撤廃：常に納品（引き渡し）可能
     btnNext.style.display = 'block';
     btnNext.innerHTML = '<i class="ph-bold ph-key" style="font-size:13px; margin-right:4px;"></i>物件を引き渡す';
-    if (btnGiveup) btnGiveup.style.display = 'block';
+    if (btnGiveup) btnGiveup.style.display = isTutResult ? 'none' : 'block';
+    btnNext.classList.toggle('tutorial-spotlight', isTutResult);
+    if (tutResultGuide) {
+      tutResultGuide.style.display = isTutResult ? 'block' : 'none';
+    }
+    if (tutResultBanner && tutResultText) {
+      if (isTutResult) {
+        const netMonthly = Math.round((rent - stats.maintCost) * 10) / 10;
+        const prefix = isTutorialPracticeMode ? '[練習] ' : '';
+        tutResultText.textContent = `${prefix}建築費${totalSpentCost.toFixed(1)}万 → 家賃${rent.toFixed(1)}万/月（実質+${netMonthly.toFixed(1)}万）！「物件を引き渡す」を押そう`;
+        if (btnSkipTutResult) btnSkipTutResult.textContent = isTutorialPracticeMode ? '練習終了' : 'スキップ';
+        tutResultBanner.style.display = 'flex';
+      } else {
+        tutResultBanner.style.display = 'none';
+      }
+    }
     
     // 満足度スタンプ (100%〜: 大満足, 90〜: 満足, 75〜: 納得, 50〜: 妥協, 50未満: 不満)
+    if (typeof closeFlyerSatModal === 'function') closeFlyerSatModal();
     const stampMeta = getFlyerStampMeta(sat);
     if (badge) {
       badge.className = 'flyer-stamp';
       badge.style.borderColor = stampMeta.color;
       badge.style.color = stampMeta.color;
       badge.style.boxShadow = `inset 0 0 0 2px #ffffff, inset 0 0 0 3px ${stampMeta.color}`;
-      badge.innerHTML = `<span class="flyer-stamp-top">満足度</span><span class="flyer-stamp-val font-num">${stampMeta.val}%</span><span class="flyer-stamp-sub">${stampMeta.sub}</span>`;
+      badge.innerHTML = `<span class="flyer-stamp-top">満足度</span><span class="flyer-stamp-val font-num">${stampMeta.val}%</span><span class="flyer-stamp-sub">${stampMeta.sub}</span><span class="flyer-stamp-hint"><i class="ph-bold ph-info"></i>根拠</span>`;
     }
 
     if (!isRestoring) {
@@ -1849,15 +1868,19 @@
       diff.className   = 'flyer-rent-diff clear';
     }
     
-    btnRestart.style.display = 'block';
-    if (GameState.attempts > 0) {
-      btnRestart.disabled = false;
-      btnRestart.style.opacity = '1';
-      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
+    if (isTutResult) {
+      btnRestart.style.display = 'none';
     } else {
-      btnRestart.disabled = true;
-      btnRestart.style.opacity = '0.5';
-      btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
+      btnRestart.style.display = 'block';
+      if (GameState.attempts > 0) {
+        btnRestart.disabled = false;
+        btnRestart.style.opacity = '1';
+        btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残${GameState.attempts}回)`;
+      } else {
+        btnRestart.disabled = true;
+        btnRestart.style.opacity = '0.5';
+        btnRestart.innerHTML = `<i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i> もう一度設計 (残0回)`;
+      }
     }
 
     // Report list
@@ -1956,6 +1979,37 @@
 
     // Site preview canvas
     drawSitePreview();
+
+    const isTutMission = !!(STAGE && STAGE.isTutorial && isTutorialPhaseActive());
+    const tutMissionBanner = document.getElementById('tutorial-mission-banner');
+    const tutMissionText = document.getElementById('tutorial-mission-text');
+    const btnSkipTutMission = document.getElementById('btn-skip-tutorial-mission');
+    const btnStart = document.getElementById('btn-start');
+    const btnDeck = document.getElementById('btn-mission-deck');
+    const btnBackSel = document.getElementById('btn-back-to-select');
+    if (tutMissionBanner) {
+      if (isTutMission) {
+        if (tutMissionText) {
+          tutMissionText.textContent = isTutorialPracticeMode
+            ? '[練習] 固定モデルの1Kで操作と家賃の目安をおさらいしよう'
+            : '初回モデル：固定の1Kで建築費と家賃の目安を体験しよう';
+        }
+        if (btnSkipTutMission) {
+          btnSkipTutMission.textContent = isTutorialPracticeMode ? '練習終了' : 'スキップ';
+        }
+      }
+      tutMissionBanner.style.display = isTutMission ? 'flex' : 'none';
+    }
+    if (btnStart) btnStart.classList.toggle('tutorial-spotlight', isTutMission);
+    if (btnDeck) {
+      btnDeck.classList.toggle('tutorial-locked', isTutMission);
+      btnDeck.disabled = isTutMission;
+    }
+    if (btnBackSel) {
+      btnBackSel.innerHTML = isTutMission
+        ? '<i class="ph-bold ph-arrow-left"></i> ホーム'
+        : '<i class="ph-bold ph-arrow-left"></i> 一覧へ';
+    }
   }
 
   function drawSitePreview() {
@@ -2048,7 +2102,9 @@
     initGrid();
     budget = GameState.funds;
     selectedSlot = 0; selectedRot = 0;
+    isMirrored = false;
     previewMode = false; hoverCell = null;
+    tutorialBuildStep = (STAGE && STAGE.isTutorial && isTutorialPhaseActive()) ? 0 : 0;
     const co = document.getElementById('confirm-overlay');
     if (co) co.style.display = 'none';
     const maxSlots = getMaxHandSlots();
@@ -2066,8 +2122,7 @@
     const _hdrT = document.getElementById('hdr-target-rent'); if (_hdrT) _hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
     updateBudgetUI();
     
-    const hint = document.getElementById('hint-overlay');
-    if (hint) hint.style.opacity = '1';
+    if (typeof syncHintOverlay === 'function') syncHintOverlay(false);
     const mbt = document.getElementById('mission-banner-text');
     if (mbt) mbt.textContent = `「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
     resizeCanvas();
@@ -2145,7 +2200,14 @@
       showScreen('home');
       updateHomeUI();
       openCompanyUpgradeModal('bank');
-      if (getRemainingLoanCapacity() > 0) {
+      const emergDebt = (GameState.company && GameState.company.emergencyDebt) || 0;
+      if (emergDebt > 0) {
+        if (GameState.funds >= emergDebt && getRemainingLoanCapacity() > 0) {
+          showUpgradeFeedback(`⚠️ 建築資金が不足しています（最低${MIN_BUILD_FUNDS}万円必要）。街金を完済すると銀行融資が再開されます！`, 'var(--c-rose)');
+        } else {
+          showUpgradeFeedback(`⚠️ 街金残債により銀行融資が停止中です（最低${MIN_BUILD_FUNDS}万円必要）。物件を売却するか月を進めて返済してください！`, 'var(--c-rose)');
+        }
+      } else if (getRemainingLoanCapacity() > 0) {
         showUpgradeFeedback(`⚠️ 建築資金が不足しています（最低${MIN_BUILD_FUNDS}万円必要）。銀行から運転資金の融資を受けてください！`, 'var(--c-rose)');
       } else {
         showUpgradeFeedback(`⚠️ 建築資金および融資枠が不足しています（最低${MIN_BUILD_FUNDS}万円必要）。所有物件を売却するか、1ヶ月進めて家賃収入を得てください！`, 'var(--c-rose)');
@@ -2170,10 +2232,22 @@
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
   document.getElementById('btn-sound-game')?.addEventListener('click', toggleSound);
 
-  document.getElementById('btn-rotate')?.addEventListener('click', rotateSelectedPiece);
-  document.getElementById('btn-confirm-rotate')?.addEventListener('click', rotateSelectedPiece);
-  document.getElementById('btn-mirror')?.addEventListener('click', toggleMirrorSelectedPiece);
-  document.getElementById('btn-confirm-mirror')?.addEventListener('click', toggleMirrorSelectedPiece);
+  document.getElementById('btn-rotate')?.addEventListener('click', (e) => {
+    rotateSelectedPiece();
+    if (e.detail > 0) e.currentTarget.blur();
+  });
+  document.getElementById('btn-confirm-rotate')?.addEventListener('click', (e) => {
+    rotateSelectedPiece();
+    if (e.detail > 0) e.currentTarget.blur();
+  });
+  document.getElementById('btn-mirror')?.addEventListener('click', (e) => {
+    toggleMirrorSelectedPiece();
+    if (e.detail > 0) e.currentTarget.blur();
+  });
+  document.getElementById('btn-confirm-mirror')?.addEventListener('click', (e) => {
+    toggleMirrorSelectedPiece();
+    if (e.detail > 0) e.currentTarget.blur();
+  });
 
   function isGameShortcutBlockedByModal() {
     // 子要素(btn-help-mission-modal等)の誤一致を防ぎ、実際に表示中のモーダル本体だけを判定する
@@ -2192,13 +2266,34 @@
 
     const k = (e.key || '').toLowerCase();
     const code = e.code || '';
+    const tutStep = (typeof getCurrentTutorialStep === 'function') ? getCurrentTutorialStep() : null;
+
     if (k === 'r' || code === 'KeyR') {
       e.preventDefault();
-      rotateSelectedPiece();
+      if (!tutStep || tutStep.allowRotate) rotateSelectedPiece();
     } else if (k === 'f' || code === 'KeyF') {
       e.preventDefault();
-      toggleMirrorSelectedPiece();
-    } else if (e.key === 'Enter' && !e.repeat && tag !== 'BUTTON' && active?.id !== 'mission-banner') {
+      if (!tutStep || tutStep.allowMirror) toggleMirrorSelectedPiece();
+    } else if (k === 'w' || code === 'KeyW' || code === 'ArrowUp' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (typeof moveSelectedPiecePreview === 'function') moveSelectedPiecePreview(-1, 0);
+    } else if (k === 's' || code === 'KeyS' || code === 'ArrowDown' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (typeof moveSelectedPiecePreview === 'function') moveSelectedPiecePreview(1, 0);
+    } else if (k === 'a' || code === 'KeyA' || code === 'ArrowLeft' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (typeof moveSelectedPiecePreview === 'function') moveSelectedPiecePreview(0, -1);
+    } else if (k === 'd' || code === 'KeyD' || code === 'ArrowRight' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (typeof moveSelectedPiecePreview === 'function') moveSelectedPiecePreview(0, 1);
+    } else if (!e.shiftKey && (/^Digit[1-5]$/.test(code) || /^Numpad[1-5]$/.test(code) || /^[1-5]$/.test(e.key))) {
+      const numMatch = code.match(/^(?:Digit|Numpad)([1-5])$/);
+      const num = numMatch ? parseInt(numMatch[1], 10) : parseInt(e.key, 10);
+      if (num >= 1 && num <= 5 && typeof selectDraftSlotByNumber === 'function') {
+        e.preventDefault();
+        selectDraftSlotByNumber(num - 1);
+      }
+    } else if ((e.key === 'Enter' || e.key === ' ' || code === 'Space') && !e.repeat && tag !== 'BUTTON' && active?.id !== 'mission-banner') {
       if (selectedWallTarget || (previewMode && hoverCell)) {
         e.preventDefault();
         confirmSelectedAction();
@@ -2209,7 +2304,7 @@
         previewMode = false;
         showConfirmUI(false);
         drawPlan();
-      } else if (selectedSlot !== null) {
+      } else if (selectedSlot !== null && !tutStep) {
         selectedSlot = null;
         selectedRot = 0;
         isMirrored = false;
@@ -2224,6 +2319,11 @@
   document.getElementById('btn-reroll')?.addEventListener('click', (e) => {
     e.stopPropagation();
     initAudio();
+    const tutStep = (typeof getCurrentTutorialStep === 'function') ? getCurrentTutorialStep() : null;
+    if (tutStep && !tutStep.isReroll) {
+      playSound('tap');
+      return;
+    }
     const costs = getRerollCost();
     if (budget < costs.total) {
       playSound('error');
@@ -2238,9 +2338,11 @@
       isRerollConfirming = true;
       playSound('tap');
       updateRerollButton();
+      if (tutStep) syncTutorialPuzzleUI();
       if (rerollConfirmTimer) clearTimeout(rerollConfirmTimer);
       rerollConfirmTimer = setTimeout(() => {
         cancelRerollConfirm();
+        if (isTutorialPuzzleActive()) syncTutorialPuzzleUI();
       }, 4000);
       return;
     }
@@ -2265,31 +2367,48 @@
       showFloatingText(`-${costs.total.toFixed(1)}万`, 'var(--c-rose)');
     }
 
-    // 捨てたカードが直後のシャッフルで即座に引き直されないよう、
-    // 先に山札から新しいカードを引き、その後で今回捨てたカードを捨て札へ送る
-    const newlyDiscardedIds = [];
-    for (let i = 0; i < draftSlots.length; i++) {
-      if (draftSlots[i] !== null && keepStates[i]) {
-        keepCounts[i]++;
-      } else {
+    if (tutStep && tutStep.isReroll) {
+      for (let i = 0; i < draftSlots.length; i++) {
         if (draftSlots[i] && draftSlots[i].id) {
-          newlyDiscardedIds.push(draftSlots[i].id);
+          discardPile.push(draftSlots[i].id);
         }
-        draftSlots[i] = drawPieceFromDeck();
-        keepStates[i] = false;
-        keepCounts[i] = 0;
+      }
+      drawPile = [];
+      draftSlots = [
+        makeTutorialPiece('bath', true),
+        makeTutorialPiece('toilet', false),
+        makeTutorialPiece('k-1', false)
+      ];
+      keepStates = [false, false, false];
+      keepCounts = [0, 0, 0];
+      tutorialBuildStep = 3;
+      selectedSlot = 0;
+    } else {
+      // 捨てたカードが直後のシャッフルで即座に引き直されないよう、
+      // 先に山札から新しいカードを引き、その後で今回捨てたカードを捨て札へ送る
+      const newlyDiscardedIds = [];
+      for (let i = 0; i < draftSlots.length; i++) {
+        if (draftSlots[i] !== null && keepStates[i]) {
+          keepCounts[i]++;
+        } else {
+          if (draftSlots[i] && draftSlots[i].id) {
+            newlyDiscardedIds.push(draftSlots[i].id);
+          }
+          draftSlots[i] = drawPieceFromDeck();
+          keepStates[i] = false;
+          keepCounts[i] = 0;
+        }
+      }
+      for (const did of newlyDiscardedIds) {
+        discardPile.push(did);
+      }
+      if (selectedSlot !== null && draftSlots[selectedSlot] === null) {
+        let next = draftSlots.findIndex(p => p !== null);
+        if (next !== -1) selectedSlot = next;
+        else selectedSlot = null;
       }
     }
-    for (const did of newlyDiscardedIds) {
-      discardPile.push(did);
-    }
     updateDeckPeekButton();
-    
-    if (selectedSlot !== null && draftSlots[selectedSlot] === null) {
-      let next = draftSlots.findIndex(p => p !== null);
-      if (next !== -1) selectedSlot = next;
-      else selectedSlot = null;
-    }
 
     isMirrored = false;
     selectedRot = 0;
@@ -2466,7 +2585,28 @@
 
   document.getElementById('btn-finish').addEventListener('click', () => {
     initAudio();
-    if (confirm("設計を完了して査定に進みますか？\n（現在の状態から家賃が確定されます）")) {
+    const tutStep = (typeof getCurrentTutorialStep === 'function') ? getCurrentTutorialStep() : null;
+    if (tutStep) {
+      if (!tutStep.isFinish) {
+        playSound('tap');
+        showFloatingText(getTutorialHintText() || '順番に配置しよう', '#fbbf24');
+        return;
+      }
+      evaluate();
+      return;
+    }
+    const visited = runBFS();
+    const counts = countCells(visited);
+    const warnings = [];
+    if (counts.unreachable > 0) {
+      warnings.push(`⚠️ 孤立部屋が${counts.unreachable}箇所あります（選択解除→赤壁タップで撤去可）`);
+    }
+    if (!counts.hasToilet) warnings.push('⚠️ トイレがありません');
+    if (!counts.hasBath)   warnings.push('⚠️ 浴室がありません');
+    const confirmMsg = warnings.length > 0
+      ? `設計を完了して査定に進みますか？\n\n${warnings.join('\n')}`
+      : "設計を完了して査定に進みますか？\n（現在の状態から家賃が確定されます）";
+    if (confirm(confirmMsg)) {
       evaluate();
     }
   });
@@ -2504,7 +2644,7 @@
     const container = document.getElementById('mission-pool-cards');
     if (!container) return;
     const sub = document.getElementById('mission-select-subtitle');
-    if (sub) sub.textContent = `第${GameState.month}ヶ月 ｜ 受注する案件を1つ選んでください（全3件）`;
+    if (sub) sub.textContent = `${formatYearMonth(GameState.month)} ｜ 受注する案件を1つ選んでください（全3件）`;
 
     const pool = GameState.availableMissions || [];
     if (pool.length === 0) {
@@ -2622,15 +2762,25 @@
 
   document.getElementById('btn-back-to-select')?.addEventListener('click', () => {
     initAudio();
+    if (STAGE && STAGE.isTutorial && isTutorialPhaseActive()) {
+      updateHomeUI();
+      showScreen('home');
+      return;
+    }
     renderMissionSelectUI();
     showScreen('missionSelect');
   });
 
   document.getElementById('btn-go-mission')?.addEventListener('click', () => {
     initAudio();
+    if (GameState.tutorialPhase === 'home_advance_month') return;
     if (!ensureCanStartBuild()) return;
     if (GameState.activeBuild && GameState.activeBuild.stage) {
       if (restoreActiveBuild()) return;
+    }
+    if (GameState.tutorialPhase === 'start_home' && !GameState.currentMission) {
+      openTutorialIntroModal('first');
+      return;
     }
     if (GameState.currentMission) {
       STAGE = GameState.currentMission;
@@ -2748,11 +2898,16 @@
       if (salaryBox) salaryBox.style.display = 'none';
     }
 
+    const curEmergDebt = (GameState.company && GameState.company.emergencyDebt) || 0;
     if (loanBox) {
       if (loanPayment > 0 || remainingDebt > 0) {
         loanBox.style.display = 'flex';
         if (loanPayEl) loanPayEl.textContent = `-${loanPayment.toFixed(1)}万`;
-        if (debtRemEl) debtRemEl.textContent = `${remainingDebt.toFixed(1)}万`;
+        if (debtRemEl) {
+          debtRemEl.textContent = curEmergDebt > 0
+            ? `${remainingDebt.toFixed(1)}万 (うち街金${curEmergDebt.toFixed(1)}万)`
+            : `${remainingDebt.toFixed(1)}万`;
+        }
       } else {
         loanBox.style.display = 'none';
       }
@@ -2778,7 +2933,10 @@
         overdraftBox.style.display = 'block';
         overdraftBox.style.background = 'rgba(245,158,11,0.15)';
         overdraftBox.style.borderColor = 'rgba(245,158,11,0.4)';
-        overdraftText.textContent = `運転資金が不足したため、銀行の融資枠から ${overdraftAmount.toFixed(1)}万円 の自動つなぎ融資が実行されました（現在残債: ${remainingDebt.toFixed(1)}万円）。`;
+        const debtDetail = curEmergDebt > 0
+          ? `${remainingDebt.toFixed(1)}万円［うち街金${curEmergDebt.toFixed(1)}万］`
+          : `${remainingDebt.toFixed(1)}万円`;
+        overdraftText.textContent = `運転資金が不足したため、融資枠から ${overdraftAmount.toFixed(1)}万円 の自動つなぎ融資が実行されました（現在残債: ${debtDetail}）。`;
       } else {
         overdraftBox.style.display = 'none';
       }
@@ -2877,7 +3035,7 @@
 
     const yearNum = Math.max(1, Math.round(finishedMonth / 12));
     if (subEl) {
-      subEl.textContent = `第${yearNum}年目 終了 — 在籍スタッフ${staffList.length}名が来期の契約更改を希望しています。`;
+      subEl.textContent = `${yearNum}年目 終了 — 在籍スタッフ${staffList.length}名が来期の契約更改を希望しています。`;
     }
 
     salaryNegSession = {
@@ -3099,7 +3257,7 @@
         options.push({
           months: 1,
           title: '年越し（翌年1月へ進める）',
-          sub: `1年の締めくくりを終え、新年の第${year + 1}年目を迎えます。`,
+          sub: `1年の締めくくりを終え、新年の${year + 1}年目を迎えます。`,
           badge: '年越し',
           btnClass: 'btn-primary',
           btnStyle: 'background:linear-gradient(135deg, #f59e0b, #d97706); color:#0f172a;'
@@ -3162,9 +3320,14 @@
         }
       }
 
+      const isTutAdvance = (GameState.tutorialPhase === 'home_advance_month');
       options.forEach(opt => {
         const btn = document.createElement('button');
         btn.className = `btn ${opt.btnClass}`;
+        if (isTutAdvance) {
+          if (opt.months === 1) btn.classList.add('tutorial-spotlight');
+          else btn.classList.add('tutorial-locked');
+        }
         btn.style.cssText = `width:100%; padding:10px 12px; text-align:left; display:flex; justify-content:space-between; align-items:center; cursor:pointer; ${opt.btnStyle || ''}`;
         btn.innerHTML = `
           <div>
@@ -3288,6 +3451,15 @@
       evicted: lastEvicted,
       reEntered: lastReEntered,
       onConfirm: () => {
+        if (isTutorialPracticeMode) {
+          exitTutorialPracticeMode('練習チュートリアルを完了しました！（本編データはそのままです）');
+          return;
+        }
+        if (GameState.tutorialPhase === 'home_advance_month') {
+          GameState.tutorialPhase = 'done';
+          window.tutorialDoneMessage = 'チュートリアル完了！ここからは自由に物件を増やして会社を大きくしよう！';
+          window.justCompletedTutorial = true;
+        }
         GameState.currentMission = null;
         GameState.availableMissions = generateMissionPool(GameState.level);
         saveGame();
@@ -3371,12 +3543,16 @@
       maxGardenCluster: p.maxGardenCluster || 0,
       occupiedArea: p.occupiedArea,
       totalCost: p.totalCost !== undefined ? p.totalCost : 0,
+      discountSaved: p.discountSaved || 0,
+      bbox: p.bbox || null,
+      closetCells: p.closetCells || 0,
       earnedRent: 0,
       paidMaint: 0,
       isClear: p.isClear || false,
       satisfiedCount: p.satisfiedCount !== undefined ? p.satisfiedCount : 1,
       totalRequests: p.totalRequests || 1,
       optionalSatisfied: p.optionalSatisfied || 0,
+      satisfiedOptIds: Array.isArray(p.satisfiedOptIds) ? [...p.satisfiedOptIds] : [],
       amenityPenalty: p.amenityPenalty || 0,
       badCombos: p.badCombos || 0,
       goodCombos: p.goodCombos || 0,
@@ -3399,6 +3575,7 @@
       customCombo: p.customCombo || null
     });
     
+    const wasTutorialBuild = !!(STAGE && STAGE.isTutorial && isTutorialPhaseActive());
     const result = processMonthEnd();
     showMonthEndModal({
       type: 'deliver',
@@ -3406,6 +3583,9 @@
       ...result,
       onConfirm: () => {
         GameState.level++;
+        if (wasTutorialBuild) {
+          GameState.tutorialPhase = 'home_advance_month';
+        }
         if (!GameState.stats) getLifetimeStats();
         GameState.stats.lifetimeClearedMissions = (GameState.stats.lifetimeClearedMissions || 0) + 1;
         GameState.stats.lifetimeGoodCombos = (GameState.stats.lifetimeGoodCombos || 0) + (p.goodCombos || 0);
@@ -3568,7 +3748,6 @@
           }
         }
       }
-      drawOccupiedBoxOverlay(ctx, p.propertyGrid, cSize, false, isCompact);
 
       // 2. 部屋ラベル（重心に白フチ付きテキストを描画）
       const rooms = extractRoomsFromProperty(p.propertyGrid);
@@ -3688,7 +3867,10 @@
     pvTitle.innerHTML = `<i class="ph-fill ph-blueprint"></i> 物件 No.${pNum} 間取り図面`;
     
     const stats = calcPropertyStats(p);
-    pvSubinfo.textContent = `${formatBuildingAge(stats.buildingAge)} ｜ 家賃 ${stats.currentRent.toFixed(1)}万/月 ｜ Rank ${getPropertyRank(stats.degRate)}`;
+    const rentInfo = stats.isVacant
+      ? `空室（募集 ${stats.nextRecruitRent.toFixed(1)}万/月）`
+      : `家賃 ${stats.currentRent.toFixed(1)}万/月`;
+    pvSubinfo.textContent = `${formatBuildingAge(stats.buildingAge)} ｜ ${rentInfo} ｜ Rank ${getPropertyRank(stats.degRate)}`;
 
     renderPropertyPlanToCanvas(pvCanvas, p, 280, false);
     pvModal.style.display = 'flex';
@@ -4515,11 +4697,14 @@
 
       const diff = (stats.comboRentDiff !== undefined) ? stats.comboRentDiff : (Math.round(((stats.comboPremiumVal || 0) / 6) * 10) / 10);
       const cPrem = stats.comboPremiumVal || 0;
+      const maxPrem = Math.round(stats.baseCostVal * 0.5 * 10) / 10;
+      const uncappedPrem = Math.round((stats.rawComboPremium || 0) * ((stats.satPremiumRate || 0) / 100) * 10) / 10;
+      const capNote = (cPrem > 0 && uncappedPrem > maxPrem + 0.05) ? '・上限:原価50%' : '';
       if (diff > 0.01) {
         if (stats.satisfaction >= 100) {
-          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 6ヶ月):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 6ヶ月${capNote}):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
         } else if (stats.satisfaction >= 80) {
-          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 6ヶ月 × 反映${stats.satPremiumRate}%):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
+          rows.push(`<div style="display:flex; justify-content:space-between; color:#16a34a;"><span>コンボ設計価値 (家賃増 ${diff.toFixed(1)}万/月 × 6ヶ月 × 反映${stats.satPremiumRate}%${capNote}):</span><strong>+${cPrem.toFixed(1)}万</strong></div>`);
         } else {
           rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ設計価値 (満足度80%未満のため査定除外):</span><span>0.0万</span></div>`);
         }
@@ -4527,6 +4712,12 @@
         rows.push(`<div style="display:flex; justify-content:space-between; color:#e11d48;"><span>間取り欠陥ペナルティ (家賃減 ${Math.abs(diff).toFixed(1)}万/月 × 6ヶ月):</span><strong>-${Math.abs(cPrem).toFixed(1)}万</strong></div>`);
       } else {
         rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>コンボ付加価値:</span><span>なし (0.0万)</span></div>`);
+      }
+
+      const rawInitVal = Math.round((effectiveBaseVal + cPrem) * 10) / 10;
+      if (stats.initialValuation > rawInitVal + 0.05) {
+        const floorDiff = Math.round((stats.initialValuation - rawInitVal) * 10) / 10;
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#0284c7;"><span>最低資産価値保証 (原価の30%下限):</span><strong>+${floorDiff.toFixed(1)}万</strong></div>`);
       }
 
       if (stats.buildingAge > 0) {
@@ -4576,7 +4767,9 @@
     if (key === 'roi') {
       const rentVal = stats.isVacant ? 0 : stats.currentRent;
       const netMonthly = Math.round((rentVal - stats.maintCost) * 10) / 10;
-      const monthsStr = netMonthly > 0 ? `約${(totalCost / netMonthly).toFixed(1)}ヶ月` : '回収不可（赤字）';
+      const monthsStr = netMonthly > 0
+        ? (totalCost <= 0 ? '即時回収' : `約${Math.ceil(totalCost / netMonthly)}ヶ月（計算値 ${(totalCost / netMonthly).toFixed(1)}ヶ月）`)
+        : '回収不可（赤字）';
       return `
         <div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">⏱️ 回収目安の算出根拠</div>
         <div style="display:flex; justify-content:space-between;"><span>実質月収 (家賃 ${rentVal.toFixed(1)}万 − 維持費 ${stats.maintCost.toFixed(1)}万):</span><strong>${netMonthly >= 0 ? '+' : ''}${netMonthly.toFixed(1)}万/月</strong></div>
@@ -4611,6 +4804,153 @@
     });
   }
   window.toggleFlyerBreakdown = toggleFlyerBreakdown;
+
+  function openFlyerSatModal() {
+    const p = window.currentPropertyData;
+    const modal = document.getElementById('flyer-sat-modal');
+    if (!p || !modal) return;
+    initAudio();
+    playSound('tap');
+
+    const stats = calcPropertyStats(p);
+    const stampMeta = getFlyerStampMeta(stats.satisfaction);
+    const summaryEl = document.getElementById('flyer-sat-summary');
+    const rowsEl = document.getElementById('flyer-sat-rows');
+    const noteEl = document.getElementById('flyer-sat-note');
+
+    if (summaryEl) {
+      const bg = stampMeta.val >= 90 ? '#fff1f2' : (stampMeta.val >= 75 ? '#fffbeb' : '#f8fafc');
+      const bd = stampMeta.val >= 90 ? '#fecdd3' : (stampMeta.val >= 75 ? '#fde68a' : '#cbd5e1');
+      summaryEl.style.background = bg;
+      summaryEl.style.borderColor = bd;
+      summaryEl.innerHTML = `
+        <span style="font-size:12px; font-weight:800; color:#334155;">合計満足度（${stampMeta.sub}）</span>
+        <strong class="font-num" style="font-size:19px; font-weight:900; color:${stampMeta.color};">${stats.satisfaction}%</strong>
+      `;
+    }
+
+    const negLv = getStaffSkillLevel('negotiator');
+    const rentVal = Number(p.rent || 0);
+    const targetVal = Number(p.targetRent || 0);
+    let rentDesc = `基準50%（家賃 ${rentVal.toFixed(1)}万 / 希望 ${targetVal.toFixed(1)}万）`;
+    if (negLv > 0 && rentVal > targetVal) {
+      rentDesc += `・交渉人Lv${negLv}で減点軽減`;
+    }
+
+    const satCnt = p.satisfiedCount !== undefined ? p.satisfiedCount : 0;
+    const totReq = p.totalRequests || 1;
+    const goodC = p.goodCombos || 0;
+    const badC = p.badCombos || 0;
+    const comboParts = [];
+    if (goodC > 0) comboParts.push(`良いコンボ ${goodC}件 (+5%×${goodC})`);
+    if (badC > 0) comboParts.push(`欠陥・到達不能 ${badC}件 (-20%×${badC})`);
+    const comboDesc = comboParts.length > 0 ? comboParts.join(' / ') : '成立コンボなし';
+
+    const optIds = Array.isArray(p.satisfiedOptIds) ? p.satisfiedOptIds : [];
+    const optLabels = optIds.map(id => {
+      const def = (typeof REQUEST_REGISTRY !== 'undefined' && REQUEST_REGISTRY[id]) ? REQUEST_REGISTRY[id] : { id };
+      const cleanName = (def.text || id).replace(/\s*\(満足度\+\d+%\)/g, '').trim();
+      const bPct = getOptionalReqBonus(def);
+      return `${cleanName}(+${bPct}%)`;
+    });
+
+    const rows = [
+      {
+        label: '家賃評価',
+        desc: rentDesc,
+        val: `${stats.rentBonus >= 0 ? '+' : ''}${stats.rentBonus}%`,
+        color: stats.rentBonus >= 50 ? '#16a34a' : '#dc2626'
+      },
+      {
+        label: '必須要望',
+        desc: `達成 ${satCnt} / ${totReq}件（全達成で+50%）`,
+        val: `+${stats.reqBonus}%`,
+        color: satCnt >= totReq ? '#16a34a' : '#d97706'
+      },
+      {
+        label: 'コンボ補正',
+        desc: comboDesc,
+        val: `${stats.comboBonus >= 0 ? '+' : ''}${stats.comboBonus}%`,
+        color: stats.comboBonus > 0 ? '#16a34a' : (stats.comboBonus < 0 ? '#dc2626' : '#64748b')
+      }
+    ];
+
+    const hasOptOnStage = !!(STAGE && STAGE.optionalRequests && STAGE.optionalRequests.length > 0);
+    if (stats.optBonus > 0 || optIds.length > 0 || hasOptOnStage) {
+      rows.push({
+        label: '任意要望ボーナス',
+        desc: optLabels.length > 0 ? optLabels.join('・') : '達成項目なし',
+        val: `+${stats.optBonus}%`,
+        color: stats.optBonus > 0 ? '#059669' : '#64748b'
+      });
+    }
+    if (stats.conciergeBonus > 0) {
+      rows.push({
+        label: 'スタッフ接客',
+        desc: 'おもてなしコンシェルジュ効果',
+        val: `+${stats.conciergeBonus}%`,
+        color: '#0284c7'
+      });
+    }
+    if (stats.amenityPenalty > 0) {
+      rows.push({
+        label: '設備欠陥ペナルティ',
+        desc: 'トイレ・浴室などの未設置減点',
+        val: `-${stats.amenityPenalty}%`,
+        color: '#dc2626'
+      });
+    }
+
+    if (rowsEl) {
+      rowsEl.innerHTML = rows.map(row => `
+        <div class="flyer-sat-row">
+          <div>
+            <div style="font-weight:800; color:#1e293b;">${row.label}</div>
+            <div class="flyer-sat-row-sub">${row.desc}</div>
+          </div>
+          <div class="flyer-sat-row-val" style="color:${row.color};">${row.val}</div>
+        </div>
+      `).join('');
+    }
+
+    if (noteEl) {
+      if (stats.satisfaction > 100) {
+        noteEl.textContent = `🛡️ 100%を超えているため、入居後 約${stats.barrierMonths}ヶ月間は退去確率0%（退去保証）になります。`;
+      } else if (stats.satisfaction === 100) {
+        noteEl.textContent = '🛡️ 満足度100%です。維持できれば早期退去のリスクを抑えられます。';
+      } else {
+        noteEl.textContent = '⚠️ 100%未満だと毎月の退去リスクが発生します。希望家賃とのバランスや要望・コンボ達成で高められます。';
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function closeFlyerSatModal() {
+    const modal = document.getElementById('flyer-sat-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  document.getElementById('flyer-clear-badge')?.addEventListener('click', openFlyerSatModal);
+  document.getElementById('btn-close-flyer-sat')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    closeFlyerSatModal();
+  });
+  document.getElementById('btn-close-flyer-sat-x')?.addEventListener('click', () => {
+    initAudio();
+    playSound('tap');
+    closeFlyerSatModal();
+  });
+  document.getElementById('flyer-sat-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target && e.target.id === 'flyer-sat-modal') closeFlyerSatModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const m = document.getElementById('flyer-sat-modal');
+      if (m && m.style.display !== 'none') closeFlyerSatModal();
+    }
+  });
 
   function togglePdBreakdown(key) {
     initAudio();
@@ -4726,7 +5066,9 @@
     else bar.style.background = 'var(--c-rose)';
 
     const satSubEl = document.getElementById('pd-sat-sub');
-    const remBarrier = Math.max(0, (stats.barrierMonths || 0) - stats.tenantTenure);
+    const remBarrier = (stats.barrierMonths > 0)
+      ? Math.max(0, stats.barrierMonths - Math.max(0, stats.tenantTenure - 1))
+      : 0;
     if (satSubEl) {
       if (stats.isVacant) {
         satSubEl.textContent = '空室中（募集待ち）';
@@ -5083,7 +5425,12 @@
     const fundsEl = document.getElementById('upg-current-funds');
     if (fundsEl) fundsEl.textContent = `${GameState.funds.toFixed(1)}万`;
     const debtEl = document.getElementById('upg-current-debt');
-    if (debtEl) debtEl.textContent = `${(co.debt || 0).toFixed(1)}万`;
+    if (debtEl) {
+      const bankD = co.debt || 0;
+      const emergD = co.emergencyDebt || 0;
+      const totalD = Math.round((bankD + emergD) * 10) / 10;
+      debtEl.textContent = emergD > 0 ? `${totalD.toFixed(1)}万 (街金${emergD.toFixed(1)}万)` : `${totalD.toFixed(1)}万`;
+    }
 
     const maxSlots = getMaxStaffSlots();
     const hiredCount = co.hiredStaff ? co.hiredStaff.length : 0;
@@ -6497,12 +6844,23 @@
     const fundsEl = document.getElementById('go-funds');
     const debtEl = document.getElementById('go-debt');
 
+    const m = GameState.month || 1;
+    const clearedCnt = (typeof getLifetimeStats === 'function') ? getLifetimeStats().cleared : (GameState.level || 0);
+    const activeProps = (typeof getActivePropertyCount === 'function') ? getActivePropertyCount() : (GameState.properties || []).length;
+    const bankDebt = GameState.company?.debt || 0;
+    const emergDebt = GameState.company?.emergencyDebt || 0;
+    const totalDebt = Math.round((bankDebt + emergDebt) * 10) / 10;
+
     if (nameEl) nameEl.textContent = GameState.companyName || '焼飯不動産';
     if (reasonEl && reason) reasonEl.textContent = reason;
-    if (monthsEl) monthsEl.textContent = `全 ${GameState.month || 1} ヶ月（クリア案件 ${GameState.level || 0} 件）`;
-    if (propsEl) propsEl.textContent = `${(GameState.properties || []).length} 棟`;
+    if (monthsEl) monthsEl.textContent = `${formatYearMonth(m)}（全 ${m} ヶ月・施工 ${clearedCnt} 件）`;
+    if (propsEl) propsEl.textContent = `${activeProps} 棟`;
     if (fundsEl) fundsEl.textContent = `${(GameState.funds || 0).toFixed(1)} 万`;
-    if (debtEl) debtEl.textContent = `${(GameState.company?.debt || 0).toFixed(1)} 万`;
+    if (debtEl) {
+      debtEl.textContent = emergDebt > 0
+        ? `${totalDebt.toFixed(1)} 万 (銀行${bankDebt.toFixed(1)}/街金${emergDebt.toFixed(1)})`
+        : `${totalDebt.toFixed(1)} 万`;
+    }
 
     modal.style.display = 'flex';
   }
@@ -6528,8 +6886,15 @@
     } catch(e) {}
     GameState.companyName = '焼飯不動産';
     GameState.hasNamedCompany = false;
+    isTutorialPracticeMode = false;
+    tutorialPracticeSnapshot = null;
+    GameState.tutorialPhase = 'start_home';
+    tutorialBuildStep = 0;
+    window.justCompletedTutorial = false;
+    window.tutorialDoneMessage = '';
     GameState.hasCleared = false;
     GameState.clearedMonth = null;
+    GameState.clearedSnapshot = null;
     GameState.funds = 100.0;
     GameState.lastFunds = 100.0;
     GameState.month = 1;
@@ -6593,6 +6958,7 @@
     });
 
     playSound('clear');
+    if (typeof syncTutorialPuzzleUI === 'function') syncTutorialPuzzleUI();
     updateCompanyUI();
     updateHomeUI();
     showScreen('home');
@@ -6623,6 +6989,7 @@
       if (co.officeLevel >= UPGRADE_CONFIG.office.length - 1 && !GameState.hasCleared) {
         GameState.hasCleared = true;
         GameState.clearedMonth = GameState.month || 1;
+        GameState.clearedSnapshot = captureClearedSnapshot();
         triggeredEnding = true;
       }
     } else if (type === 'desk') {
@@ -6754,7 +7121,7 @@
     if (triggeredEnding) {
       closeCompanyUpgradeModal();
       setTimeout(() => {
-        openEndingModal();
+        openEndingModal(true);
       }, 350);
       return;
     }
@@ -7065,7 +7432,7 @@ function updateHomeUI() {
         endingBtn.onclick = (e) => {
           e.stopPropagation();
           initAudio();
-          openEndingModal();
+          openEndingModal(false);
         };
       }
     }
@@ -7132,11 +7499,16 @@ function updateHomeUI() {
           : (!stats.canSell
             ? `<span style="font-size:10px; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:4px; font-weight:700;">🔒売ロック${stats.sellLockRemain}ヶ月</span>`
             : '');
+        const remBarrier = (stats.barrierMonths > 0)
+          ? Math.max(0, stats.barrierMonths - Math.max(0, stats.tenantTenure - 1))
+          : 0;
         const thirdMetricHtml = stats.isVacant
           ? `<span style="color:#2563eb; font-weight:700;">入居率 ${stats.fillChance}%</span>`
-          : (stats.isOriginal && (stats.barrierMonths || 0) > stats.tenantTenure
-            ? `<span style="color:#059669; font-weight:600;">🛡️ 保証残${stats.barrierMonths - stats.tenantTenure}ヶ月</span>`
-            : `<span style="color:${parseFloat(stats.evictRate) >= 15 ? '#e11d48' : '#64748b'}; font-weight:${parseFloat(stats.evictRate) >= 15 ? '700' : 'normal'};">退去 ${stats.evictRate}%</span>`);
+          : (stats.isOriginal && remBarrier > 0
+            ? `<span style="color:#059669; font-weight:600;">🛡️ 保証残${remBarrier}ヶ月</span>`
+            : (!stats.isOriginal && stats.tenantTenure <= 3
+              ? `<span style="color:#0284c7; font-weight:600;">🛡️ 定着残${Math.max(1, 4 - stats.tenantTenure)}ヶ月</span>`
+              : `<span style="color:${parseFloat(stats.evictRate) >= 15 ? '#e11d48' : '#64748b'}; font-weight:${parseFloat(stats.evictRate) >= 15 ? '700' : 'normal'};">退去 ${stats.evictRate}%</span>`));
         const netMonthlyColor = stats.netMonthlyProfit >= 0 ? '#059669' : '#e11d48';
 
         listEl.innerHTML += `
@@ -7168,17 +7540,21 @@ function updateHomeUI() {
     const totalSalaries = (GameState.company?.hiredStaff || []).reduce((acc, s) => acc + (s.salary || 0), 0);
     const recMaint = (GameState.company?.recruitment?.status === 'active') ? RECRUIT_MAINT_COST : 0;
     const loanPay = calcMonthlyLoanPayment(debt);
-    const netIncome = Math.round((totalRent - totalMaint - totalSalaries - recMaint - loanPay.total) * 10) / 10;
+    const emergPay = (typeof calcMonthlyEmergencyPayment === 'function')
+      ? calcMonthlyEmergencyPayment(emergDebt)
+      : { total: 0 };
+    const totalLoanPay = Math.round((loanPay.total + emergPay.total) * 10) / 10;
+    const netIncome = Math.round((totalRent - totalMaint - totalSalaries - recMaint - totalLoanPay) * 10) / 10;
     const incomeEl = document.getElementById('home-co-income');
     if (incomeEl) {
       const sign = netIncome >= 0 ? '+' : '';
       incomeEl.style.color = netIncome >= 0 ? 'var(--c-emerald)' : 'var(--c-rose)';
-      if (totalMaint > 0 || totalSalaries > 0 || recMaint > 0 || loanPay.total > 0) {
+      if (totalMaint > 0 || totalSalaries > 0 || recMaint > 0 || totalLoanPay > 0) {
         const parts = [`家賃 ${totalRent.toFixed(1)}`];
         if (totalMaint > 0) parts.push(`維持費 -${totalMaint.toFixed(1)}`);
         if (totalSalaries > 0) parts.push(`人件費 -${totalSalaries.toFixed(1)}`);
         if (recMaint > 0) parts.push(`求人 -${recMaint.toFixed(1)}`);
-        if (loanPay.total > 0) parts.push(`返済 -${loanPay.total.toFixed(1)}`);
+        if (totalLoanPay > 0) parts.push(`返済 -${totalLoanPay.toFixed(1)}`);
         incomeEl.innerHTML = `${sign}${netIncome.toFixed(1)}<span class="stat-unit">万/月</span>
           <div style="font-size:10px; color:var(--c-text2); font-weight:normal; margin-top:2px;">
             (${parts.join(' / ')})
@@ -7202,10 +7578,84 @@ function updateHomeUI() {
       } else if (isAtCap) {
         btnGo.innerHTML = `<i class="ph-bold ph-warning-octagon" style="margin-right:8px;"></i>管理上限（${activeCount}/${maxCap}棟・要整理）`;
         btnGo.className = 'btn btn-slate';
+      } else if (GameState.tutorialPhase === 'start_home') {
+        btnGo.innerHTML = `<i class="ph-bold ph-sparkle" style="margin-right:8px;"></i>最初の案件へ（チュートリアル）`;
+        btnGo.className = 'btn btn-amber';
       } else {
         btnGo.innerHTML = `<i class="ph-bold ph-newspaper" style="margin-right:8px;"></i>今月の案件を探す（3件）`;
         btnGo.className = 'btn btn-primary';
       }
+    }
+
+    const tutHomeBanner = document.getElementById('tutorial-home-banner');
+    const tutHomeText = document.getElementById('tutorial-home-text');
+    const btnSkipTutHome = document.getElementById('btn-skip-tutorial-home');
+    const btnSkipMonth = document.getElementById('btn-skip-month');
+    const btnOpenUpgrade = document.getElementById('btn-open-upgrade');
+    const btnOpenRecords = document.getElementById('btn-open-records');
+    const btnReplayFooter = document.getElementById('btn-replay-tutorial-footer');
+    const sepReplayFooter = document.getElementById('home-footer-tut-sep');
+    const btnEditCoName = document.getElementById('btn-edit-co-name');
+    const btnResetFooter = document.getElementById('btn-open-reset-confirm');
+
+    [btnGo, btnSkipMonth, btnOpenUpgrade, btnOpenRecords, btnEditCoName, btnResetFooter].forEach(el => {
+      if (el) {
+        el.classList.remove('tutorial-spotlight', 'tutorial-locked');
+        el.disabled = false;
+      }
+    });
+    if (tutHomeBanner) tutHomeBanner.classList.remove('is-done');
+    const hideReplayFooter = isTutorialPhaseActive();
+    if (btnReplayFooter) btnReplayFooter.style.display = hideReplayFooter ? 'none' : 'inline-flex';
+    if (sepReplayFooter) sepReplayFooter.style.display = hideReplayFooter ? 'none' : 'inline';
+
+    if (isTutorialPracticeMode) {
+      [btnEditCoName, btnResetFooter].forEach(el => {
+        if (el) {
+          el.classList.add('tutorial-locked');
+          el.disabled = true;
+        }
+      });
+    }
+
+    if (GameState.tutorialPhase === 'start_home') {
+      if (tutHomeBanner && tutHomeText) {
+        tutHomeText.textContent = isTutorialPracticeMode
+          ? '[練習] 最初の案件へ進んで固定モデルを組んでみよう'
+          : '初回ガイド：まずは固定モデルの1Kを1棟建てて流れを掴もう';
+        tutHomeBanner.style.display = 'flex';
+      }
+      if (btnSkipTutHome) btnSkipTutHome.textContent = isTutorialPracticeMode ? '練習終了' : 'スキップ';
+      if (btnGo) btnGo.classList.add('tutorial-spotlight');
+      [btnSkipMonth, btnOpenUpgrade, btnOpenRecords].forEach(el => {
+        if (el) {
+          el.classList.add('tutorial-locked');
+          el.disabled = true;
+        }
+      });
+    } else if (GameState.tutorialPhase === 'home_advance_month') {
+      if (tutHomeBanner && tutHomeText) {
+        const prefix = isTutorialPracticeMode ? '[練習] ' : '';
+        tutHomeText.textContent = `${prefix}物件完成！「月を進める」→「1ヶ月進める」で家賃を回収しよう`;
+        tutHomeBanner.style.display = 'flex';
+      }
+      if (btnSkipTutHome) btnSkipTutHome.textContent = isTutorialPracticeMode ? '練習終了' : '終了';
+      if (btnSkipMonth) btnSkipMonth.classList.add('tutorial-spotlight');
+      [btnGo, btnOpenUpgrade, btnOpenRecords].forEach(el => {
+        if (el) {
+          el.classList.add('tutorial-locked');
+          el.disabled = true;
+        }
+      });
+    } else if (window.justCompletedTutorial) {
+      if (tutHomeBanner && tutHomeText) {
+        tutHomeBanner.classList.add('is-done');
+        tutHomeText.textContent = window.tutorialDoneMessage || 'チュートリアル完了！ここからは自由に物件を増やして会社を大きくしよう！';
+        tutHomeBanner.style.display = 'flex';
+      }
+      if (btnSkipTutHome) btnSkipTutHome.textContent = 'OK';
+    } else {
+      if (tutHomeBanner) tutHomeBanner.style.display = 'none';
     }
   }
 
@@ -7347,30 +7797,90 @@ function updateHomeUI() {
     render();
   }
 
-  function openEndingModal() {
+  function captureClearedSnapshot() {
+    const lifetime = getLifetimeStats();
+    const debt = ((GameState.company && GameState.company.debt) || 0) + ((GameState.company && GameState.company.emergencyDebt) || 0);
+    const clearedCount = lifetime.cleared !== undefined ? lifetime.cleared : (lifetime.lifetimeClearedMissions || 0);
+    const earnedRentVal = lifetime.earnedRent !== undefined ? lifetime.earnedRent : (lifetime.lifetimeEarnedRent || 0);
+    return {
+      month: GameState.clearedMonth || GameState.month || 1,
+      funds: Math.round((GameState.funds || 0) * 10) / 10,
+      debt: Math.round(debt * 10) / 10,
+      activeProps: getActivePropertyCount(),
+      clearedCount,
+      earnedRent: Math.round(Number(earnedRentVal || 0) * 10) / 10,
+      comboCount: getDiscoveredMasterComboCount(),
+      comboTotal: COMBO_MASTER_LIST.length
+    };
+  }
+
+  function getEndingDisplayStats() {
+    const coName = GameState.companyName || '焼飯不動産';
+    const snap = GameState.clearedSnapshot;
+    if (snap) {
+      return {
+        companyName: coName,
+        month: snap.month || GameState.clearedMonth || GameState.month || 1,
+        funds: Number(snap.funds || 0),
+        debt: Number(snap.debt || 0),
+        activeProps: Number(snap.activeProps || 0),
+        clearedCount: Number(snap.clearedCount || 0),
+        earnedRent: Number(snap.earnedRent || 0),
+        comboCount: Number(snap.comboCount || 0),
+        comboTotal: Number(snap.comboTotal || COMBO_MASTER_LIST.length)
+      };
+    }
+    const cur = captureClearedSnapshot();
+    if (GameState.hasCleared) {
+      GameState.clearedSnapshot = cur;
+      saveGame();
+    }
+    return { companyName: coName, ...cur };
+  }
+
+  function buildEndingShareText() {
+    const s = getEndingDisplayStats();
+    const debtNote = s.debt > 0 ? ` (借入 -${s.debt.toFixed(1)}万)` : '';
+    return [
+      `🏆【マドリビルダー 〜間取り図パズル〜】一流不動産会社認定！`,
+      `🏢 社名: ${s.companyName}`,
+      `📅 本社ビル到達: ${formatYearMonthStr(s.month)}`,
+      `💰 所持資金: ${s.funds.toFixed(1)}万円${debtNote} / 管理物件: ${s.activeProps}棟`,
+      `🔨 累計施工: ${s.clearedCount}件 / 累計家賃: ${s.earnedRent.toFixed(1)}万円`,
+      `📖 コンボ図鑑: ${s.comboCount}/${s.comboTotal}種`,
+      `#マドリビルダー`
+    ].join('\n');
+  }
+
+  function openEndingModal(isFirstClear = false) {
     initAudio();
     const modal = document.getElementById('modal-ending');
     if (!modal) return;
-    const coName = GameState.companyName || '焼飯不動産';
-    const reachedMonth = GameState.clearedMonth || GameState.month || 1;
-    const lifetime = getLifetimeStats();
-    const comboCount = getDiscoveredMasterComboCount();
-    const activeProps = getActivePropertyCount();
+    const s = getEndingDisplayStats();
 
     const nameEl = document.getElementById('ending-company-name');
-    if (nameEl) nameEl.textContent = `${coName} 殿`;
+    if (nameEl) nameEl.textContent = `${s.companyName} 殿`;
     const dateEl = document.getElementById('ending-date');
-    if (dateEl) dateEl.textContent = formatYearMonthStr(reachedMonth);
+    if (dateEl) dateEl.textContent = formatYearMonthStr(s.month);
     const fundsEl = document.getElementById('ending-funds');
-    if (fundsEl) fundsEl.textContent = `${(GameState.funds || 0).toFixed(1)} 万円`;
+    if (fundsEl) {
+      fundsEl.innerHTML = s.debt > 0
+        ? `${s.funds.toFixed(1)} 万円<span style="display:block; font-size:10px; color:#fda4af; font-weight:700;">(借入 -${s.debt.toFixed(1)}万)</span>`
+        : `${s.funds.toFixed(1)} 万円`;
+    }
     const propsEl = document.getElementById('ending-props');
-    if (propsEl) propsEl.textContent = `${activeProps} 棟`;
+    if (propsEl) propsEl.textContent = `${s.activeProps} 棟`;
     const lifeEl = document.getElementById('ending-lifetime');
-    const clearedCount = lifetime.cleared !== undefined ? lifetime.cleared : (lifetime.lifetimeClearedMissions || 0);
-    const earnedRentVal = lifetime.earnedRent !== undefined ? lifetime.earnedRent : (lifetime.lifetimeEarnedRent || 0);
-    if (lifeEl) lifeEl.textContent = `${clearedCount}件 / ${Number(earnedRentVal || 0).toFixed(1)}万`;
+    if (lifeEl) lifeEl.textContent = `${s.clearedCount}件 / ${s.earnedRent.toFixed(1)}万`;
     const combosEl = document.getElementById('ending-combos');
-    if (combosEl) combosEl.textContent = `${comboCount} / ${COMBO_MASTER_LIST.length} 種`;
+    if (combosEl) combosEl.textContent = `${s.comboCount} / ${s.comboTotal} 種`;
+
+    const contBtn = document.getElementById('btn-ending-continue');
+    if (contBtn) {
+      contBtn.innerHTML = isFirstClear
+        ? '<i class="ph-bold ph-buildings"></i> 経営を続ける（エンドレス）'
+        : '<i class="ph-bold ph-check"></i> 閉じる';
+    }
 
     modal.style.display = 'flex';
     playSound('fanfare');
@@ -7384,25 +7894,20 @@ function updateHomeUI() {
   }
   window.closeEndingModal = closeEndingModal;
 
+  function shareEndingToX() {
+    initAudio();
+    playSound('tap');
+    const text = buildEndingShareText();
+    const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    const win = window.open(intentUrl, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      copyEndingStats();
+    }
+  }
+
   function copyEndingStats() {
     initAudio();
-    const coName = GameState.companyName || '焼飯不動産';
-    const reachedMonth = GameState.clearedMonth || GameState.month || 1;
-    const lifetime = getLifetimeStats();
-    const comboCount = getDiscoveredMasterComboCount();
-    const activeProps = getActivePropertyCount();
-    const clearedCount = lifetime.cleared !== undefined ? lifetime.cleared : (lifetime.lifetimeClearedMissions || 0);
-    const earnedRentVal = lifetime.earnedRent !== undefined ? lifetime.earnedRent : (lifetime.lifetimeEarnedRent || 0);
-
-    const text = [
-      `🏆【間取り図パズル＆不動産経営】一流不動産会社認定！`,
-      `🏢 社名: ${coName}`,
-      `📅 本社ビル到達: ${formatYearMonthStr(reachedMonth)}`,
-      `💰 総資産: ${(GameState.funds || 0).toFixed(1)}万円 / 所有物件: ${activeProps}棟`,
-      `🔨 累計施工: ${clearedCount}件 / 累計家賃: ${Number(earnedRentVal || 0).toFixed(1)}万円`,
-      `📖 コンボ図鑑: ${comboCount}/${COMBO_MASTER_LIST.length}種`
-    ].join('\n');
-
+    const text = buildEndingShareText();
     const btn = document.getElementById('btn-ending-copy');
     const showCopiedFeedback = () => {
       playSound('clear');
@@ -7534,6 +8039,10 @@ function updateHomeUI() {
   function openHelpModal(initialTab = 'basic', targetCardId = null) {
     initAudio();
     playSound('tap');
+    const replayHelpBtn = document.getElementById('btn-replay-tutorial-help');
+    if (replayHelpBtn) {
+      replayHelpBtn.style.display = isTutorialPhaseActive() ? 'none' : 'flex';
+    }
     switchHelpTab(initialTab, false);
     const modal = document.getElementById('modal-help');
     if (modal) modal.style.display = 'flex';
@@ -7587,6 +8096,7 @@ function updateHomeUI() {
     playSound('tap');
     closeEndingModal();
   });
+  document.getElementById('btn-ending-x-share')?.addEventListener('click', shareEndingToX);
   document.getElementById('btn-ending-copy')?.addEventListener('click', copyEndingStats);
   document.getElementById('modal-ending')?.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'modal-ending') closeEndingModal();
@@ -7596,6 +8106,250 @@ function updateHomeUI() {
     playSound('tap');
     closeEndingModal();
   });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const em = document.getElementById('modal-ending');
+      if (em && em.style.display !== 'none') closeEndingModal();
+    }
+  });
+
+  let tutorialIntroMode = 'first';
+
+  function openTutorialIntroModal(mode = 'first') {
+    tutorialIntroMode = mode === 'practice' ? 'practice' : 'first';
+    const modal = document.getElementById('tutorial-intro-modal');
+    const titleEl = document.getElementById('tut-intro-title');
+    const noteEl = document.getElementById('tut-intro-note');
+    const skipBtn = document.getElementById('btn-tut-intro-skip');
+    const startBtn = document.getElementById('btn-tut-intro-start');
+    if (!modal) return;
+
+    if (tutorialIntroMode === 'practice') {
+      if (titleEl) titleEl.textContent = '基本の遊び方（練習チュートリアル）';
+      if (noteEl) noteEl.textContent = '※練習モードのため、本編の所持金・所有物件・経過月は変わらず安全にやり直せます。';
+      if (skipBtn) skipBtn.textContent = '閉じる';
+      if (startBtn) startBtn.innerHTML = '<i class="ph-bold ph-play-circle"></i> 練習を始める';
+    } else {
+      if (titleEl) titleEl.textContent = '基本の遊び方';
+      if (noteEl) noteEl.textContent = 'まずは固定の1Kを1棟組んで、建築費や家賃の目安・基本操作を体験しよう！';
+      if (skipBtn) skipBtn.textContent = 'スキップ';
+      if (startBtn) startBtn.innerHTML = '<i class="ph-bold ph-play-circle"></i> 始める';
+    }
+    modal.style.display = 'flex';
+  }
+
+  function closeTutorialIntroModal() {
+    const modal = document.getElementById('tutorial-intro-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function startTutorialPracticeSession() {
+    if (isTutorialPhaseActive()) return;
+    tutorialPracticeSnapshot = JSON.stringify(GameState);
+    isTutorialPracticeMode = true;
+
+    GameState.tutorialPhase = 'start_home';
+    GameState.funds = 100.0;
+    GameState.lastFunds = 100.0;
+    GameState.month = 1;
+    GameState.level = 0;
+    GameState.attempts = 2;
+    GameState.properties = [];
+    GameState.activeBuild = null;
+    GameState.currentMission = createTutorialStage();
+    GameState.company = {
+      salesLevel: 1,
+      brandLevel: 1,
+      officeLevel: 0,
+      deskCount: 0,
+      capacityLevel: 0,
+      debt: 0,
+      emergencyDebt: 0,
+      features: { freeFlip: 0, extraRerolls: 0, extraAttempts: 0, handSize: 0 },
+      hiredStaff: [],
+      recruitment: { status: 'none', candidates: [] },
+      unlockedPieces: [...STARTER_UNLOCKED_IDS],
+      deck: { slotOverrides: {}, customSlots: [null, null, null, null] }
+    };
+    GameState.stats = {
+      lifetimeClearedMissions: 0,
+      lifetimeEarnedRent: 0,
+      lifetimeGoodCombos: 0,
+      lifetimeBadCombos: 0
+    };
+
+    STAGE = GameState.currentMission;
+    attachRequestFunctions(STAGE);
+    currentLevelIdx = 0;
+    tutorialBuildStep = 0;
+    window.justCompletedTutorial = false;
+    window.tutorialDoneMessage = '';
+    setupMissionScreen();
+    showScreen('mission');
+  }
+
+  function exitTutorialPracticeMode(doneMessage = '') {
+    if (!isTutorialPracticeMode) return;
+    const snapJson = tutorialPracticeSnapshot;
+    isTutorialPracticeMode = false;
+    tutorialPracticeSnapshot = null;
+
+    if (snapJson) {
+      try {
+        const snap = JSON.parse(snapJson);
+        for (const k of Object.keys(GameState)) {
+          if (!(k in snap)) delete GameState[k];
+        }
+        Object.assign(GameState, snap);
+      } catch(e) {
+        loadGame();
+      }
+    } else {
+      loadGame();
+    }
+
+    ensureDeckState();
+    ensureGameState();
+    STAGE = GameState.currentMission || null;
+    if (STAGE) attachRequestFunctions(STAGE);
+    if (Array.isArray(GameState.availableMissions)) {
+      GameState.availableMissions.forEach(m => attachRequestFunctions(m));
+    }
+    currentLevelIdx = GameState.level || 0;
+    tutorialBuildStep = 0;
+    previewMode = false;
+    hoverCell = null;
+    selectedWallTarget = null;
+    showConfirmUI(false);
+
+    if (doneMessage) {
+      window.tutorialDoneMessage = doneMessage;
+      window.justCompletedTutorial = true;
+    } else {
+      window.tutorialDoneMessage = '';
+      window.justCompletedTutorial = false;
+    }
+
+    if (typeof syncTutorialPuzzleUI === 'function') syncTutorialPuzzleUI();
+    updateCompanyUI();
+    updateHomeUI();
+    showScreen('home');
+  }
+
+  function requestTutorialReplay() {
+    initAudio();
+    if (isTutorialPhaseActive()) return;
+    if (STAGE && !STAGE.isTutorial && (screens.game?.classList.contains('active') || screens.result?.classList.contains('active'))) {
+      if (!confirm('現在の設計はいったんホームへ保存して、練習用チュートリアルを開きますか？（今の設計データは消えません）')) return;
+      saveActiveBuild(screens.result.classList.contains('active') ? 'result' : 'game');
+    }
+    const helpModal = document.getElementById('modal-help');
+    if (helpModal) helpModal.style.display = 'none';
+    playSound('tap');
+    openTutorialIntroModal('practice');
+  }
+
+  document.getElementById('btn-replay-tutorial-footer')?.addEventListener('click', requestTutorialReplay);
+  document.getElementById('btn-replay-tutorial-help')?.addEventListener('click', requestTutorialReplay);
+
+  document.getElementById('btn-tut-intro-start')?.addEventListener('click', () => {
+    initAudio();
+    closeTutorialIntroModal();
+    playSound('tap');
+    if (tutorialIntroMode === 'practice') {
+      startTutorialPracticeSession();
+      return;
+    }
+    if (!ensureCanStartBuild()) return;
+    GameState.currentMission = createTutorialStage();
+    STAGE = GameState.currentMission;
+    attachRequestFunctions(STAGE);
+    GameState.attempts = getMaxAttempts();
+    saveGame();
+    setupMissionScreen();
+    showScreen('mission');
+  });
+
+  document.getElementById('btn-tut-intro-skip')?.addEventListener('click', () => {
+    initAudio();
+    closeTutorialIntroModal();
+    playSound('tap');
+    if (tutorialIntroMode === 'first') {
+      skipTutorial('intro');
+    }
+  });
+
+  document.getElementById('tutorial-intro-modal')?.addEventListener('pointerdown', (e) => {
+    if (e.target && e.target.id === 'tutorial-intro-modal') {
+      initAudio();
+      closeTutorialIntroModal();
+    }
+  });
+
+  function skipTutorial(source = 'home') {
+    initAudio();
+    if (source === 'home' && window.justCompletedTutorial) {
+      window.justCompletedTutorial = false;
+      window.tutorialDoneMessage = '';
+      playSound('tap');
+      updateHomeUI();
+      return;
+    }
+    if (isTutorialPracticeMode) {
+      if ((source === 'game' || source === 'result') && isTutorialPuzzleActive()) {
+        if (!confirm('練習チュートリアルを終了して本編へ戻りますか？')) return;
+      }
+      playSound('tap');
+      exitTutorialPracticeMode('');
+      return;
+    }
+    if ((source === 'game' || source === 'result') && isTutorialPuzzleActive()) {
+      if (!confirm('チュートリアルをスキップしてホームへ戻りますか？\n（使用した資金は開始前に戻ります）')) return;
+      if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+      clearActiveBuild();
+      GameState.currentMission = null;
+      STAGE = null;
+      tutorialBuildStep = 0;
+      previewMode = false;
+      hoverCell = null;
+      selectedWallTarget = null;
+      showConfirmUI(false);
+    } else if (source === 'mission') {
+      if (GameState.currentMission && GameState.currentMission.isTutorial) {
+        GameState.currentMission = null;
+        STAGE = null;
+      }
+      tutorialBuildStep = 0;
+    } else {
+      if (GameState.currentMission && GameState.currentMission.isTutorial) {
+        GameState.currentMission = null;
+        STAGE = null;
+      }
+      if (GameState.activeBuild && GameState.activeBuild.stage && GameState.activeBuild.stage.isTutorial) {
+        clearActiveBuild();
+      }
+    }
+
+    GameState.tutorialPhase = 'done';
+    window.justCompletedTutorial = false;
+    window.tutorialDoneMessage = '';
+    if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
+      GameState.availableMissions = generateMissionPool(GameState.level);
+    }
+    if (typeof syncTutorialPuzzleUI === 'function') syncTutorialPuzzleUI();
+    saveGame();
+    playSound('tap');
+    updateHomeUI();
+    showScreen('home');
+  }
+
+  document.getElementById('btn-skip-tutorial-home')?.addEventListener('click', () => skipTutorial('home'));
+  document.getElementById('btn-skip-tutorial-mission')?.addEventListener('click', () => skipTutorial('mission'));
+  document.getElementById('btn-skip-tutorial-game')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    skipTutorial('game');
+  });
+  document.getElementById('btn-skip-tutorial-result')?.addEventListener('click', () => skipTutorial('result'));
 
   loadGame();
   if(!GameState.properties) GameState.properties = [];

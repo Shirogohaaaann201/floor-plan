@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1e293b">
   <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
-  <title>間取り図パズル — Floor Plan v1.21</title>
+  <title>マドリビルダー 〜間取り図パズル〜 v1.22</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
@@ -81,6 +81,13 @@
           <span id="home-records-badge" style="font-size:11px; background:#fef3c7; color:#b45309; border:1px solid #fcd34d; padding:1px 6px; border-radius:10px; font-weight:800;">0/30</span>
         </button>
       </div>
+      <div id="tutorial-home-banner" class="tutorial-banner tutorial-banner-light" style="display:none; margin-bottom:10px;">
+        <div class="tutorial-banner-body">
+          <i class="ph-fill ph-sparkle" style="color:#d97706; font-size:16px; flex-shrink:0;"></i>
+          <span id="tutorial-home-text"></span>
+        </div>
+        <button id="btn-skip-tutorial-home" type="button" class="tutorial-skip-btn tutorial-skip-btn-light">スキップ</button>
+      </div>
       <button id="btn-go-mission" class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:bold; margin-bottom:10px; cursor:pointer;">
         <i class="ph-bold ph-briefcase" style="margin-right:8px;"></i>新規案件を探す
       </button>
@@ -93,8 +100,12 @@
         <span style="font-size:10px; background:#e0f2fe; color:#0284c7; border:1px solid #7dd3fc; padding:1px 6px; border-radius:10px; font-weight:800;">ルール・仕様</span>
       </button>
       
-      <div style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:11px; color:#94a3b8; font-weight:bold;">
-        <span>Floor Plan v1.21</span>
+      <div style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; font-size:11px; color:#94a3b8; font-weight:bold;">
+        <span>マドリビルダー v1.22</span>
+        <span id="home-footer-tut-sep" aria-hidden="true">｜</span>
+        <button id="btn-replay-tutorial-footer" type="button" style="background:none; border:none; padding:4px 6px; color:#0284c7; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:3px; text-decoration:underline; text-underline-offset:2px;">
+          <i class="ph-bold ph-graduation-cap"></i> チュートリアル
+        </button>
         <span aria-hidden="true">｜</span>
         <button id="btn-open-reset-confirm" type="button" style="background:none; border:none; padding:4px 6px; color:#94a3b8; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:3px; text-decoration:underline; text-underline-offset:2px;">
           <i class="ph-bold ph-trash"></i> データ初期化
@@ -370,7 +381,7 @@
             <span>人件費・求人費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong></span>
           </div>
           <div id="mem-loan-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:6px; padding-top:6px; justify-content:space-between;">
-            <span>銀行返済(元利): <strong id="mem-loan-pay" style="color:var(--c-rose);">-0.0万</strong></span>
+            <span>借入返済(元利): <strong id="mem-loan-pay" style="color:var(--c-rose);">-0.0万</strong></span>
             <span>残債: <strong id="mem-debt-rem" style="color:#fde047;">0.0万</strong></span>
           </div>
         </div>
@@ -431,7 +442,7 @@
         <button id="btn-skip-close" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
         <div style="font-size:28px; margin-bottom:4px;">⏳</div>
         <div style="font-size:16px; font-weight:bold; color:var(--c-text); margin-bottom:2px;">時間を進める（月送り）</div>
-        <div id="skip-modal-current-date" style="font-size:12px; color:var(--c-amber); font-weight:bold; margin-bottom:12px;">第1ヶ月目（1年目 1月）</div>
+        <div id="skip-modal-current-date" style="font-size:12px; color:var(--c-amber); font-weight:bold; margin-bottom:12px;">現在：1年目 1月</div>
         
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; display:flex; justify-content:space-between; align-items:center;">
           <span style="color:var(--c-text2);">現在の月間見込み収支:</span>
@@ -465,6 +476,45 @@
         <div style="display:flex; gap:8px;">
           <button id="btn-co-name-cancel" class="btn btn-slate" style="flex:1; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
           <button id="btn-co-name-save" class="btn btn-primary" style="flex:1.4; padding:9px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center;">決定する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- チュートリアル導入モーダル（基本のプレイフロー案内） -->
+    <div id="tutorial-intro-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:265; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:360px; max-height:88vh; overflow-y:auto; text-align:left; border:1.5px solid rgba(251,191,36,0.5); box-shadow:0 12px 35px rgba(0,0,0,0.55); padding:16px; box-sizing:border-box;">
+        <div class="mission-card-title" style="color:var(--c-amber-lt); margin-bottom:8px; display:flex; align-items:center; gap:6px; font-size:16px;">
+          <i class="ph-bold ph-compass"></i> <span id="tut-intro-title">基本の遊び方</span>
+        </div>
+        <div id="tut-intro-lead" style="font-size:12px; color:#e2e8f0; margin-bottom:12px; line-height:1.55;">
+          作った間取りを賃貸物件として貸し出し、毎月の家賃収入で会社を大きくするゲームです。
+        </div>
+        <div class="tut-flow-list">
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">1</span>
+            <div><strong>依頼を受ける</strong><span>クライアントの要望と敷地を確認</span></div>
+          </div>
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">2</span>
+            <div><strong>間取りを組む</strong><span>部屋を隣り合わせて繋ぎ、家賃アップ</span></div>
+          </div>
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">3</span>
+            <div><strong>引き渡す</strong><span>完成後、自社の所有物件に登録される</span></div>
+          </div>
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">4</span>
+            <div><strong>月を進めて稼ぐ</strong><span>家賃で資金を増やし、会社や手札を強化</span></div>
+          </div>
+        </div>
+        <div id="tut-intro-note" style="font-size:11px; color:#bae6fd; background:rgba(14,116,144,0.22); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:7px 9px; margin-bottom:14px; line-height:1.45;">
+          まずは固定の1Kを1棟組んで、建築費や家賃の目安・基本操作を体験しよう！
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-tut-intro-skip" type="button" class="btn btn-slate" style="flex:1; padding:10px; font-size:12.5px; cursor:pointer; justify-content:center;">スキップ</button>
+          <button id="btn-tut-intro-start" type="button" class="btn btn-amber" style="flex:1.7; padding:10px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center;">
+            <i class="ph-bold ph-play-circle"></i> 始める
+          </button>
         </div>
       </div>
     </div>
@@ -567,40 +617,46 @@
         <div id="ending-company-name" style="font-size:15px; font-weight:900; color:#38bdf8; margin-bottom:12px;">焼飯不動産 殿</div>
 
         <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); color:#fef3c7; font-size:11.5px; line-height:1.6; padding:10px 12px; border-radius:8px; margin-bottom:14px; text-align:left;">
-          おめでとうございます！一人親方から始まった不動産屋は、見事に自社ビルを構える地域屈指の一流企業へと成長しました！
+          おめでとうございます！小さな個人事務所から始まった不動産屋は、見事に自社ビルを構える地域屈指の一流企業へと成長しました！
         </div>
 
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px; margin-bottom:14px; text-align:left; font-size:12px;">
-          <div style="font-size:11px; color:#fde047; font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; display:flex; align-items:center; gap:5px;">
-            <i class="ph-fill ph-Buildings"></i> 経営達成レコード
+          <div style="font-size:11px; color:#fde047; font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; display:flex; align-items:center; justify-content:space-between; gap:5px;">
+            <span style="display:inline-flex; align-items:center; gap:5px;"><i class="ph-fill ph-buildings"></i> 経営達成レコード</span>
+            <span style="font-size:10px; font-weight:600; color:#94a3b8;">※達成時点の記録</span>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
             <span style="color:var(--c-text2);">本社ビル到達時期:</span>
-            <strong id="ending-date" style="color:var(--c-text);">1年目 1月</strong>
+            <strong id="ending-date" style="color:var(--c-text); white-space:nowrap;">1年目 1月</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span style="color:var(--c-text2);">現在の総資産:</span>
-            <strong id="ending-funds" style="color:var(--c-emerald);">100.0 万円</strong>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px; align-items:baseline;">
+            <span style="color:var(--c-text2);">達成時の所持資金:</span>
+            <strong id="ending-funds" style="color:var(--c-emerald); text-align:right;">100.0 万円</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span style="color:var(--c-text2);">管理物件総数:</span>
-            <strong id="ending-props" style="color:#38bdf8;">0 棟</strong>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
+            <span style="color:var(--c-text2);">管理物件数:</span>
+            <strong id="ending-props" style="color:#38bdf8; white-space:nowrap;">0 棟</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span style="color:var(--c-text2);">累計施工 / 累計家賃収入:</span>
-            <strong id="ending-lifetime" style="color:var(--c-text);">0件 / 0.0万</strong>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
+            <span style="color:var(--c-text2);">累計施工 / 累計家賃:</span>
+            <strong id="ending-lifetime" style="color:var(--c-text); white-space:nowrap;">0件 / 0.0万</strong>
           </div>
-          <div style="display:flex; justify-content:space-between;">
-            <span style="color:var(--c-text2);">発見コンボ・珍間取り数:</span>
-            <strong id="ending-combos" style="color:#fbbf24;">0 / 30 種</strong>
+          <div style="display:flex; justify-content:space-between; gap:8px;">
+            <span style="color:var(--c-text2);">発見コンボ図鑑:</span>
+            <strong id="ending-combos" style="color:#fbbf24; white-space:nowrap;">0 / 30 種</strong>
           </div>
         </div>
 
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <button id="btn-ending-copy" type="button" class="btn btn-secondary" style="width:100%; padding:11px; font-size:12.5px; font-weight:bold; cursor:pointer; background:#334155; color:#f8fafc; border:1px solid #64748b; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-copy"></i> 結果をテキストコピー
-          </button>
-          <button id="btn-ending-continue" type="button" class="btn btn-amber" style="width:100%; padding:13px; font-size:14px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+          <div style="display:flex; gap:8px;">
+            <button id="btn-ending-x-share" type="button" class="btn" style="flex:1; padding:10px 8px; font-size:12px; font-weight:bold; cursor:pointer; background:#020617; color:#f8fafc; border:1px solid #475569; justify-content:center; gap:5px;">
+              <span style="font-weight:900; font-size:13px; line-height:1;">𝕏</span> でポスト
+            </button>
+            <button id="btn-ending-copy" type="button" class="btn btn-secondary" style="flex:1; padding:10px 8px; font-size:12px; font-weight:bold; cursor:pointer; background:#334155; color:#f8fafc; border:1px solid #64748b; justify-content:center; gap:5px;">
+              <i class="ph-bold ph-copy"></i> 結果をコピー
+            </button>
+          </div>
+          <button id="btn-ending-continue" type="button" class="btn btn-amber" style="width:100%; padding:12px; font-size:13.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
             <i class="ph-bold ph-buildings"></i> 経営を続ける（エンドレス）
           </button>
         </div>
@@ -666,6 +722,11 @@
 
           <!-- TAB 1: 基本・操作 -->
           <div id="help-view-basic" class="help-tab-pane">
+            <button id="btn-replay-tutorial-help" type="button" class="btn btn-amber" style="width:100%; padding:9px 12px; font-size:12px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+              <i class="ph-bold ph-graduation-cap" style="font-size:15px;"></i>
+              <span>チュートリアルをもう一度プレイ（練習モード）</span>
+            </button>
+
             <div id="wiki-card-step" class="help-wiki-card highlight-sky">
               <div class="help-wiki-title" style="color:#38bdf8;">
                 <i class="ph-bold ph-cursor-click"></i> 建築の基本ステップ（回転・反転）
@@ -673,7 +734,7 @@
               <div class="help-wiki-body">
                 <strong>①カードを選択 → ②「回転 / 反転」で向きを調整 → ③敷地をタップして「確定」</strong>で配置します。<br>
                 ・<strong>反転（鏡写し）</strong>：左右反転した特殊加工は通常<strong>建築費 +20%</strong>かかります（オフィス設備で +10% → 無料化可）。<br>
-                ・<strong>PC便利操作</strong>：盤面タップ時の「確定」ボタン横にも回転・反転が出ます（キーボード <code>R</code> 回転 / <code>F</code> 反転 / <code>Enter</code> 確定 / <code>Esc</code> 解除に対応）。
+                ・<strong>PC便利操作</strong>：盤面タップ時の「確定」ボタン横にも回転・反転が出ます（キーボード <code>1</code>〜<code>5</code> カード選択 / <code>WASD</code>・<code>↑↓←→</code> 移動 / <code>R</code> 回転 / <code>F</code> 反転 / <code>Enter</code>・<code>Space</code> 確定 / <code>Esc</code> 解除に対応）。
               </div>
             </div>
 
@@ -1040,6 +1101,14 @@
       </div>
     </div>
 
+    <aside id="tutorial-mission-banner" class="tutorial-banner tutorial-banner-dark" style="display:none; width:100%; max-width:480px; margin-bottom:8px;">
+      <div class="tutorial-banner-body">
+        <i class="ph-fill ph-sparkle" style="color:#fbbf24; font-size:16px; flex-shrink:0;"></i>
+        <span id="tutorial-mission-text">初回モデル：固定の1Kで建築費と家賃の目安を体験しよう</span>
+      </div>
+      <button id="btn-skip-tutorial-mission" type="button" class="tutorial-skip-btn">スキップ</button>
+    </aside>
+
     <div class="mission-footer" style="display:flex; gap:8px; width:100%; box-sizing:border-box;">
       <button class="btn btn-slate" id="btn-back-to-select" style="gap:4px; flex:1; padding:12px 6px; font-size:12px;">
         <i class="ph-bold ph-arrow-left"></i>
@@ -1112,12 +1181,13 @@
         <div id="hint-overlay">
           <div class="hint-pill">
             <i class="ph-bold ph-hand-pointing"></i>
-            ピースを選んで敷地をタップ
+            <span id="hint-pill-text">玄関の隣の明るいマスをタップ</span>
+            <button id="btn-skip-tutorial-game" type="button" class="tutorial-skip-inline" style="display:none;">スキップ</button>
           </div>
         </div>
       </div>
       <div id="confirm-overlay" style="display:none; position:absolute; z-index:100; align-items:center; gap:5px; width:max-content; pointer-events:none;">
-        <button id="btn-confirm-place" class="btn btn-amber" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:14px; color:#0f172a; font-weight:bold; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 確定</button>
+        <button id="btn-confirm-place" class="btn btn-amber" title="配置確定 (Enter / Spaceキー)" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:14px; color:#0f172a; font-weight:bold; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 確定</button>
         <div id="confirm-pc-tools" class="confirm-pc-tools">
           <button id="btn-confirm-rotate" type="button" class="confirm-mini-btn" title="回転 (Rキー)">
             <i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber-lt);"></i>
@@ -1168,6 +1238,14 @@
               <div style="display:flex; align-items:center; gap:3px;"><i class="ph-bold ph-arrows-left-right" style="color:var(--c-indigo); font-size:13px;"></i> 反転<span class="pc-key-hint">[F]</span></div>
               <span id="btn-mirror-sub" style="font-size:8px; color:var(--c-text2); margin-top:1px;">+20%</span>
             </button>
+          </div>
+          <div class="pc-shortcut-bar" aria-label="PCキーボード操作">
+            <span><kbd>1</kbd>〜<kbd>5</kbd> 選択</span>
+            <span><kbd>WASD</kbd>/<kbd>↑↓←→</kbd> 移動</span>
+            <span><kbd>R</kbd> 回転</span>
+            <span><kbd>F</kbd> 反転</span>
+            <span><kbd>Enter</kbd>/<kbd>Space</kbd> 確定</span>
+            <span><kbd>Esc</kbd> 解除</span>
           </div>
         </div>
       </div>
@@ -1256,11 +1334,12 @@
             <div class="flyer-catch-sub" id="flyer-sub-catch">【特選・最新物件】</div>
             <div class="flyer-catch-main" id="flyer-main-catch">物件名が入ります</div>
           </div>
-          <div id="flyer-clear-badge" class="flyer-stamp">
+          <button type="button" id="flyer-clear-badge" class="flyer-stamp" title="タップで満足度の計算根拠を表示">
             <span class="flyer-stamp-top">満足度</span>
             <span class="flyer-stamp-val font-num">100%</span>
             <span class="flyer-stamp-sub">大満足 ♥</span>
-          </div>
+            <span class="flyer-stamp-hint"><i class="ph-bold ph-info"></i>根拠</span>
+          </button>
         </div>
 
         <!-- Hero 2-Col (Desktop) / 1-Col (Mobile) -->
@@ -1316,6 +1395,20 @@
           <div class="flyer-comment-text" id="flyer-comment">—</div>
         </div>
 
+        <!-- Tutorial Quick Guide for Flyer (Tutorial only) -->
+        <div id="tutorial-result-guide" class="tut-result-guide" style="display:none;">
+          <div class="tut-result-guide-title">
+            <i class="ph-bold ph-lightbulb"></i>
+            <span>チラシの見方（ざっくりガイド）</span>
+          </div>
+          <ul class="tut-result-guide-list">
+            <li><strong>家賃と希望額</strong>：高いほど毎月稼げますが、高すぎると満足度が下がります</li>
+            <li><strong>満足度</strong>：<code>100%</code>以上でしばらく退去されず安定収入になります</li>
+            <li><strong>維持費・建築費</strong>：毎月家賃から維持費が引かれます（数字タップで内訳表示）</li>
+            <li><strong>診断明細</strong>：下の明細が家賃の内訳。2棟目以降のコンボ狙いの参考に！</li>
+          </ul>
+        </div>
+
         <!-- Construction Cost & ROI -->
         <div id="flyer-cost-box" class="flyer-cost-section">
           <div id="flyer-cost-row" onclick="toggleFlyerBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; cursor:pointer; padding:2px 4px; border-radius:4px; transition:background 0.15s;" title="タップで内訳を表示">
@@ -1347,15 +1440,23 @@
 
       </div><!-- /flyer-body -->
 
+      <div id="tutorial-result-banner" class="tutorial-banner tutorial-banner-light" style="display:none; margin:0 12px 10px;">
+        <div class="tutorial-banner-body">
+          <i class="ph-fill ph-sparkle" style="color:#d97706; font-size:16px; flex-shrink:0;"></i>
+          <span id="tutorial-result-text"></span>
+        </div>
+        <button id="btn-skip-tutorial-result" type="button" class="tutorial-skip-btn tutorial-skip-btn-light">スキップ</button>
+      </div>
+
       <!-- Flyer footer -->
       <div class="flyer-foot">
         <button class="btn btn-dark" id="btn-next-stage" style="display:none; background:var(--c-emerald);">
-          <i class="ph-bold ph-arrow-right" style="font-size:13px;"></i>
-          次のステージへ
+          <i class="ph-bold ph-key" style="font-size:13px;"></i>
+          物件を引き渡す
         </button>
         <button class="btn btn-dark" id="btn-restart">
           <i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i>
-          やり直す
+          もう一度設計
         </button>
         <button class="btn btn-dark" id="btn-giveup" style="display:none; background:var(--c-rose);">
           <i class="ph-bold ph-x" style="font-size:13px;"></i>
@@ -1365,6 +1466,27 @@
       </div>
 
     </div><!-- /flyer-wrap -->
+
+    <!-- Flyer Satisfaction Breakdown Modal -->
+    <div id="flyer-sat-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.82); z-index:260; align-items:center; justify-content:center; padding:16px;">
+      <div class="flyer-sat-card" id="flyer-sat-card">
+        <div class="flyer-sat-head">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <i class="ph-bold ph-calculator" style="color:#e11d48; font-size:17px;"></i>
+            <span style="font-size:14px; font-weight:900; color:#0f172a;">満足度の計算根拠</span>
+          </div>
+          <button id="btn-close-flyer-sat-x" type="button" class="flyer-sat-x" aria-label="閉じる">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+        <div id="flyer-sat-summary" class="flyer-sat-summary"></div>
+        <div id="flyer-sat-rows" class="flyer-sat-rows"></div>
+        <div id="flyer-sat-note" class="flyer-sat-note"></div>
+        <button id="btn-close-flyer-sat" type="button" class="btn btn-dark" style="width:100%; justify-content:center; padding:9px; font-size:12px; margin-top:10px;">
+          閉じる
+        </button>
+      </div>
+    </div>
   </section>
 
   <script src="game-1.js"></script>
