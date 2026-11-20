@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1e293b">
+  <meta name="description" content="壁・部屋・ドア・動線で間取り図を構築するパズルゲーム。不動産チラシ風のリザルトを楽しもう！">
+  <title>マドリビルダー DX 〜間取り図パズル〜 v1.22</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+  <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+  <!-- ==============================
+       SCREEN 1: MISSION BRIEFING
+  ============================== -->
+    <!-- ==============================
+       SCREEN 0: HOME
+  ============================== -->
+  <section id="screen-home" class="screen active blueprint-bg" style="display: block !important; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 40px; height: 100vh;">
+    <div class="home-top-actions" style="position:absolute; top:10px; right:16px; z-index:10; display:flex; align-items:center; gap:8px;">
+      <button id="btn-help-home" class="btn btn-slate" type="button" title="遊び方" style="padding:0; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+        <i class="ph-bold ph-question" style="font-size:18px;"></i>
+      </button>
+      <button id="btn-sound-mission" class="btn btn-slate" style="padding:0; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+        <i id="icon-sound-mission" class="ph-bold ph-speaker-high" style="font-size:18px;"></i>
+      </button>
+    </div>
+    <div class="mission-container home-studio-shell">
+      <div class="home-co-header">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button id="btn-edit-co-name" type="button" style="background:none; border:none; padding:2px 4px; margin:-2px -4px; border-radius:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-align:left;" title="会社名を変更する">
+            <i class="ph-bold ph-buildings" style="font-size:17px; color:#38bdf8;"></i>
+            <span id="home-co-name" style="font-size:15.5px; font-weight:900; color:#f8fafc; letter-spacing:0.2px;">焼飯不動産</span>
+            <i class="ph-bold ph-pencil-simple" style="font-size:12px; color:#94a3b8;"></i>
+          </button>
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(15,23,42,0.7); border:1px solid #334155; padding:3px 8px; border-radius:6px; color:#e2e8f0; font-weight:800; font-size:12px;">
+              <i class="ph-bold ph-calendar-blank" style="color:#38bdf8; font-size:13px;"></i>
+              <span id="home-co-calendar">1年目 1月</span>
+            </div>
+            <div id="home-co-badges" style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-hud-grid">
+        <div class="home-hud-card">
+          <div class="home-hud-label"><i class="ph-fill ph-coins" style="color:#facc15; font-size:12px;"></i>総資産</div>
+          <div id="home-co-funds" class="home-hud-val home-hud-val--funds">100.0<span class="stat-unit">万</span></div>
+        </div>
+        <div class="home-hud-card home-hud-card--income">
+          <div class="home-hud-label"><i class="ph-bold ph-trend-up" style="color:#34d399; font-size:12px;"></i>月間収支</div>
+          <div id="home-co-income" class="home-hud-val" style="color:var(--c-emerald);">+0.0<span class="stat-unit">万/月</span></div>
+        </div>
+      </div>
+
+      <div id="tutorial-home-banner" class="tutorial-banner tutorial-banner-dark" style="display:none; margin-bottom:10px;">
+        <div class="tutorial-banner-body">
+          <i class="ph-fill ph-sparkle" style="color:#fbbf24; font-size:16px; flex-shrink:0;"></i>
+          <span id="tutorial-home-text"></span>
+        </div>
+        <button id="btn-skip-tutorial-home" type="button" class="tutorial-skip-btn">スキップ</button>
+      </div>
+
+      <!-- インタラクティブ・ジオラマオフィス（Step B） -->
+      <div id="office-diorama-panel" class="office-viewport">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0;">
+            <span id="office-rank-subtitle" style="font-size:11px; font-weight:800; color:#e2e8f0;">自宅兼事務所 (4×4)</span>
+            <span id="office-staff-count-badge" style="font-size:10px; font-weight:800; padding:1.5px 6px; border-radius:10px; background:rgba(15,23,42,0.75); border:1px solid #475569; color:#7dd3fc;">社員 0/0人</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button id="btn-toggle-office-guides" type="button" class="office-tool-btn is-on" title="オブジェクト名ガイドを切替">
+              <i class="ph-bold ph-tag"></i> ガイド: ON
+            </button>
+            <button id="btn-sandbox-tools-home" type="button" class="office-tool-btn" title="検証ツールを開く" style="background:#312e81; border-color:#6366f1; color:#e0e7ff;">
+              🧪 検証
+            </button>
+          </div>
+        </div>
+        <div id="office-canvas-wrap" class="office-canvas-frame">
+          <canvas id="office-canvas" style="display:block;"></canvas>
+        </div>
+        <div style="margin-top:7px; text-align:center; font-size:10.5px; color:#94a3b8; font-weight:700; line-height:1.4;">
+          受付・社長机・書庫・物件棚・壁のカレンダー／ボードをタップ！ 社員タップでお喋り
+        </div>
+      </div>
+
+      <button id="btn-open-help-card" type="button" class="btn home-wiki-btn">
+        <i class="ph-bold ph-book-open-text" style="font-size:15px; color:#38bdf8;"></i>
+        <span>遊び方・攻略Wiki</span>
+        <span style="font-size:10px; background:rgba(56,189,248,0.16); color:#7dd3fc; border:1px solid rgba(56,189,248,0.38); padding:1px 6px; border-radius:10px; font-weight:800;">ルール・仕様</span>
+      </button>
+
+      <div style="margin-top:11px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; font-size:11px; color:#64748b; font-weight:bold;">
+        <span>マドリビルダー DX v1.22</span>
+        <span id="home-footer-tut-sep" aria-hidden="true">｜</span>
+        <button id="btn-replay-tutorial-footer" type="button" style="background:none; border:none; padding:4px 6px; color:#38bdf8; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:3px; text-decoration:underline; text-underline-offset:2px;">
+          <i class="ph-bold ph-graduation-cap"></i> チュートリアル
+        </button>
+        <span aria-hidden="true">｜</span>
+        <button id="btn-open-reset-confirm" type="button" style="background:none; border:none; padding:4px 6px; color:#94a3b8; font-size:11px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:3px; text-decoration:underline; text-underline-offset:2px;">
+          <i class="ph-bold ph-trash"></i> データ初期化
+        </button>
+      </div>
+    </div>
+  </section>
+
+    <!-- 物件詳細モーダル -->
+    <div id="prop-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:12px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:360px; max-height:92vh; overflow-y:auto; text-align:left; padding:14px;">
+        <button id="btn-close-prop-detail" style="position:absolute; top:10px; right:10px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" style="margin-bottom:8px; padding-right:28px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span><i class="ph-fill ph-house"></i> 物件詳細</span>
+          <button id="btn-help-prop-detail" type="button" class="wiki-jump-pill">
+            <i class="ph-bold ph-book-open-text"></i> 売却・維持費の仕様
+          </button>
+        </div>
+        
+        <!-- 1. ヘッダー + 月次収支 + 満足度 -->
+        <div style="background:var(--c-surface2); padding:10px 12px; border-radius:8px; margin-bottom:10px;">
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
+            <div id="pd-canvas-wrapper" style="position:relative; flex-shrink:0; cursor:pointer;" title="タップで拡大表示">
+              <canvas id="pd-canvas" width="104" height="104" style="background:#1e293b; border-radius:6px; display:block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);"></canvas>
+              <div style="position:absolute; bottom:3px; right:3px; background:rgba(15,23,42,0.85); color:#cbd5e1; font-size:9px; font-weight:bold; padding:1px 5px; border-radius:4px; pointer-events:none; display:flex; align-items:center; gap:2px; border:1px solid rgba(255,255,255,0.2);">
+                <i class="ph-bold ph-magnifying-glass-plus"></i> 拡大
+              </div>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:3px;">
+                <span style="font-weight:900; font-size:15px; color:var(--c-text);" id="pd-name">物件 No.1</span>
+                <span id="pd-rank-badge" style="font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px;">Rank S</span>
+              </div>
+              <div style="font-size:11px; color:var(--c-text2); margin-bottom:5px;" id="pd-age">築1ヶ月</div>
+              <div id="pd-tenant-badge" style="font-size:10.5px; line-height:1.35;"></div>
+            </div>
+          </div>
+
+          <!-- 月次キャッシュフロー -->
+          <div style="border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); padding:8px 0; margin-bottom:8px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center;">
+              <div style="background:rgba(15,23,42,0.45); padding:5px 4px; border-radius:5px;">
+                <div style="font-size:9.5px; color:var(--c-text2);">家賃</div>
+                <div style="font-weight:bold; font-size:13px; color:var(--c-emerald);" id="pd-rent">0.0万</div>
+              </div>
+              <div onclick="togglePdBreakdown('maint')" style="background:rgba(15,23,42,0.45); padding:5px 4px; border-radius:5px; cursor:pointer;" title="タップで維持費の内訳を表示">
+                <div style="font-size:9.5px; color:var(--c-text2); display:flex; align-items:center; justify-content:center; gap:2px;">維持費 <i class="ph-bold ph-info" style="font-size:9.5px; color:#94a3b8;"></i></div>
+                <div style="font-weight:bold; font-size:13px; color:var(--c-rose);" id="pd-maint">-0.0万</div>
+              </div>
+              <div style="background:rgba(15,23,42,0.45); padding:5px 4px; border-radius:5px;">
+                <div style="font-size:9.5px; color:var(--c-text2);">実質月収</div>
+                <div style="font-weight:900; font-size:13px;" id="pd-monthly-net">+0.0万</div>
+              </div>
+            </div>
+            <div id="pd-next-rent-row" style="display:none; font-size:10.5px; color:#38bdf8; font-weight:bold; text-align:center; margin-top:5px;"></div>
+            <div id="pd-maint-breakdown" style="display:none; font-size:10.5px; color:#e2e8f0; background:rgba(15,23,42,0.75); border:1px solid rgba(248,113,113,0.35); border-radius:6px; padding:6px 8px; margin-top:6px; line-height:1.45;"></div>
+          </div>
+
+          <!-- 満足度 -->
+          <div onclick="togglePdBreakdown('sat')" style="cursor:pointer;" title="タップで満足度の内訳を表示">
+            <div style="font-size:10.5px; color:var(--c-text2); margin-bottom:4px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="display:inline-flex; align-items:center; gap:4px;">満足度 <i class="ph-bold ph-info" style="font-size:11px; color:#94a3b8;"></i></span>
+              <span id="pd-sat-sub" style="font-size:10px; color:#94a3b8;"></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="flex:1; height:7px; background:rgba(0,0,0,0.5); border-radius:4px; overflow:hidden;">
+                <div id="pd-sat-bar" style="height:100%; width:80%; background:var(--c-emerald);"></div>
+              </div>
+              <div style="font-weight:bold; font-size:13px; color:var(--c-text);" id="pd-sat-val">80%</div>
+            </div>
+          </div>
+          <div style="display:none; font-size:10px; color:#cbd5e1; background:rgba(15,23,42,0.75); border:1px solid rgba(255,255,255,0.12); border-radius:5px; padding:6px 8px; margin-top:6px; line-height:1.4;" id="pd-sat-breakdown"></div>
+        </div>
+
+        <!-- 2. 通算収支・売却査定パネル -->
+        <div id="pd-cost-roi-box" style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.22); padding:10px 12px; border-radius:8px; margin-bottom:10px; font-size:11px;">
+          <div style="font-weight:bold; color:#93c5fd; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+            <span>📊 通算収支 <span style="font-size:9.5px; font-weight:normal; color:var(--c-text2);">(項目タップで内訳)</span></span>
+            <span id="pd-roi-badge" style="font-size:10px; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8;">実質回収 0%</span>
+          </div>
+          <div onclick="togglePdBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; cursor:pointer; padding:2px 4px; border-radius:4px;" title="タップで建築費の内訳を表示">
+            <span style="color:var(--c-text2); display:inline-flex; align-items:center; gap:3px;">建築費 <i class="ph-bold ph-info" style="font-size:11px; color:#64748b;"></i></span>
+            <strong id="pd-total-cost" class="font-num" style="color:var(--c-text); font-size:12.5px;">0.0万</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; padding:2px 4px;">
+            <span style="color:var(--c-text2);">家賃累計</span>
+            <strong id="pd-earned-rent" class="font-num" style="color:var(--c-emerald); font-size:12.5px;">+0.0万</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; padding:2px 4px;">
+            <span style="color:var(--c-text2);">維持費累計</span>
+            <strong id="pd-paid-maint" class="font-num" style="color:var(--c-rose); font-size:12.5px;">-0.0万</strong>
+          </div>
+          <div onclick="togglePdBreakdown('val')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; padding:3px 4px; border-top:1px dashed rgba(255,255,255,0.1); cursor:pointer; border-radius:4px;" title="タップで査定額の内訳を表示">
+            <span style="color:var(--c-text2); display:inline-flex; align-items:center; gap:3px;">現在売価 <span id="pd-val-tag" style="font-size:9.5px;"></span> <i class="ph-bold ph-info" style="font-size:11px; color:#38bdf8;"></i></span>
+            <strong id="pd-cur-resale" class="font-num" style="color:#fbbf24; font-size:12.5px;">0.0万</strong>
+          </div>
+          <div onclick="togglePdBreakdown('val')" style="display:flex; justify-content:space-between; align-items:baseline; background:rgba(15,23,42,0.55); padding:5px 8px; border-radius:5px; cursor:pointer;" title="タップで売却損益の内訳を表示">
+            <span style="color:#cbd5e1; font-size:10.5px; font-weight:bold;">売却時 通算損益</span>
+            <strong id="pd-net-profit" class="font-num" style="font-size:13px; color:var(--c-emerald);">+0.0万</strong>
+          </div>
+          <div id="pd-breakdown-drawer" style="display:none; margin-top:6px; padding:7px 9px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.35); border-radius:6px; font-size:10.5px; color:#e2e8f0; line-height:1.5;"></div>
+        </div>
+
+        <!-- 3. リスク・劣化・担保評価 -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+          <div style="background:var(--c-surface2); padding:7px 4px; border-radius:6px; text-align:center;">
+            <div style="font-size:9.5px; color:var(--c-text2);" id="pd-risk-label">退去率</div>
+            <div style="font-weight:bold; color:var(--c-rose); font-size:13.5px; margin-top:1px;" id="pd-current-evict">0.0%</div>
+            <div style="font-size:9px; color:#94a3b8; margin-top:1px;" id="pd-risk-sub"></div>
+          </div>
+          <div style="background:var(--c-surface2); padding:7px 4px; border-radius:6px; text-align:center;">
+            <div style="font-size:9.5px; color:var(--c-text2);">劣化速度</div>
+            <div style="font-weight:bold; color:var(--c-amber); font-size:13.5px; margin-top:1px;" id="pd-deg-rate">0.5%/月</div>
+            <div style="font-size:9px; color:#94a3b8; margin-top:1px;" id="pd-deg-sub">Rank S</div>
+          </div>
+          <div style="background:var(--c-surface2); padding:7px 4px; border-radius:6px; text-align:center;">
+            <div style="font-size:9.5px; color:var(--c-text2);">融資担保</div>
+            <div style="font-weight:bold; color:#38bdf8; font-size:13.5px; margin-top:1px;" id="pd-collateral">+0.0万</div>
+            <div style="font-size:9px; color:#94a3b8; margin-top:1px;" id="pd-collateral-sub">売価×2.0</div>
+          </div>
+        </div>
+
+        <!-- 4. コンボ一覧 -->
+        <div style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:8px 10px; border-radius:6px; margin-bottom:12px; display:none;" id="pd-combos">
+        </div>
+
+        <!-- 5. 売却アクション -->
+        <button id="btn-pd-sell" class="btn btn-dark" style="width:100%; padding:11px; font-size:13.5px; border-color:var(--c-border); color:var(--c-amber-lt);">
+          <i class="ph-bold ph-coin"></i> 売却する (<span id="pd-sell-val">0.0</span>万)
+        </button>
+      </div>
+    </div>
+
+    <!-- 間取り図拡大鑑賞モーダル -->
+    <div id="plan-viewer-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:200; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:center;">
+        <button id="btn-close-plan-viewer" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" id="pv-title" style="margin-bottom:12px; font-size:14px; text-align:left;">
+          <i class="ph-fill ph-blueprint"></i> 間取り図面
+        </div>
+        
+        <div style="background:#1e293b; border-radius:8px; padding:8px; display:inline-block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 4px 12px rgba(0,0,0,0.4); margin-bottom:12px;">
+          <canvas id="pv-canvas" width="280" height="280" style="display:block; margin:0 auto; border-radius:4px; max-width:100%; height:auto;"></canvas>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0 4px; gap:6px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--c-text2); text-align:left; flex:1 1 100%;" id="pv-subinfo">完成間取り図</span>
+          <button id="btn-replay-pv-tour" type="button" class="btn btn-amber" style="padding:5px 10px; font-size:11px; font-weight:bold; cursor:pointer; gap:4px; white-space:nowrap; color:#0f172a;">
+            <i class="ph-bold ph-play"></i> 🎬 内見再生
+          </button>
+          <button id="btn-save-pv-png" type="button" class="btn btn-primary" style="padding:5px 10px; font-size:11px; font-weight:bold; cursor:pointer; gap:4px; white-space:nowrap;">
+            <i class="ph-bold ph-download-simple"></i> 💾 画像保存
+          </button>
+          <button id="btn-close-plan-viewer-bottom" class="btn btn-slate" style="padding:5px 12px; font-size:11px; cursor:pointer; white-space:nowrap;">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 会社強化・オフィス設備モーダル -->
+    <div id="company-upgrade-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:220; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:440px; max-height:88vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); padding:16px; box-sizing:border-box;">
+        
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-buildings" style="color:var(--c-amber);"></i> オフィス</span>
+              <button id="btn-help-upgrade" type="button" class="wiki-jump-pill" data-help-tab="company" data-help-card="wiki-card-office">
+                <i class="ph-bold ph-book-open-text"></i>
+                <span id="btn-help-upgrade-label">強化・設備の仕様</span>
+              </button>
+            </div>
+            <div style="font-size:11px; color:var(--c-text2); margin-top:2px; display:flex; gap:10px; align-items:center;">
+              <span>資金: <strong id="upg-current-funds" style="color:var(--c-emerald); font-size:13px;">0.0万</strong></span>
+              <span>借入: <strong id="upg-current-debt" style="color:var(--c-rose); font-size:13px;">0.0万</strong></span>
+            </div>
+          </div>
+          <button id="btn-close-upgrade" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <!-- Tab Header -->
+        <div style="display:flex; gap:4px; margin-bottom:12px;">
+          <button id="tab-upg-company" class="btn btn-primary" style="flex:1; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-trend-up"></i> 強化
+          </button>
+          <button id="tab-upg-deck" class="btn btn-slate" style="flex:1.15; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-cards"></i> デッキ(<span id="upg-deck-count-tab">20</span>)
+          </button>
+          <button id="tab-upg-staff" class="btn btn-slate" style="flex:1; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-users"></i> 人事(<span id="upg-staff-count-tab">0/0</span>)
+          </button>
+          <button id="tab-upg-bank" class="btn btn-slate" style="flex:0.95; padding:8px 3px; font-size:10.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:3px;">
+            <i class="ph-bold ph-bank"></i> 銀行
+          </button>
+        </div>
+
+        <div id="upg-feedback-banner" style="display:none; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:bold; margin-bottom:10px; text-align:center;"></div>
+
+        <!-- Scrollable Tab Content Container -->
+        <div id="upg-scroll-content" style="overflow-y:auto; flex:1; padding-right:4px;">
+          <!-- Section A: 会社規模・各種強化 -->
+          <div id="upg-view-company">
+            <!-- 1. 本社オフィス・会社規模 (タウンホール) -->
+            <div id="upg-card-office" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 2. 執務デスク増設 (スタッフ枠) -->
+            <div id="upg-card-desks" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 3. 管理システム導入 (管理枠) -->
+            <div id="upg-card-capacity" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 4. 営業力強化 -->
+            <div id="upg-card-sales" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 5. ブランド知名度 -->
+            <div id="upg-card-brand" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+            <!-- 6. 設備投資 -->
+            <div id="upg-card-features" class="upgrade-card" style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;"></div>
+          </div>
+          <!-- Section D: デッキ編成・技術開発 -->
+          <div id="upg-view-deck" style="display:none;">
+            <div id="upg-deck-content"></div>
+          </div>
+          <!-- Section B: スタッフ雇用 -->
+          <div id="upg-view-staff" style="display:none;">
+            <!-- 雇用ステータス -->
+            <div id="upg-staff-status-box" style="background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 12px; margin-bottom:12px;"></div>
+            <!-- 雇用中スタッフ -->
+            <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+              <i class="ph-bold ph-identification-card"></i> 在籍
+            </div>
+            <div id="upg-hired-staff-list" style="margin-bottom:14px;"></div>
+            <!-- 採用候補一覧 -->
+            <div style="font-size:12px; font-weight:bold; color:var(--c-text); margin-bottom:6px; display:flex; align-items:center; gap:4px;">
+              <i class="ph-bold ph-user-plus"></i> 候補
+            </div>
+            <div id="upg-candidate-staff-list"></div>
+          </div>
+          <!-- Section C: 銀行融資 -->
+          <div id="upg-view-bank" style="display:none;">
+            <div id="upg-bank-content"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 月次決算報告モーダル (脱alert) -->
+    <div id="month-end-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:250; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:330px; text-align:left; box-shadow:0 12px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15);">
+        
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div class="mission-card-title" style="margin-bottom:0; font-size:15px;">
+            <i class="ph-fill ph-calendar-check" style="color:var(--c-amber);"></i>
+            <span id="mem-title">月次決算報告</span>
+          </div>
+          <span id="mem-badge" class="badge badge-emerald" style="font-size:10px; padding:3px 8px;">納品完了</span>
+        </div>
+
+        <div style="font-size:12px; color:var(--c-text2); margin-bottom:14px;" id="mem-subtitle">
+          今月の経営報告
+        </div>
+
+        <!-- 収支ボックス -->
+        <div style="background:var(--c-surface2); padding:12px 14px; border-radius:8px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:11px; color:var(--c-text2); margin-bottom:4px;">今月の収支</div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <div>
+              <span style="font-size:24px; font-weight:900; color:var(--c-emerald);" id="mem-income">+0.0</span>
+              <span style="font-size:13px; font-weight:bold; color:var(--c-emerald); margin-left:2px;">万円</span>
+            </div>
+            <span style="font-size:11px; color:var(--c-text2);" id="mem-prop-count">稼働: 1棟</span>
+          </div>
+          <div id="mem-reward-breakdown" style="display:none; font-size:11px; color:#cbd5e1; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px; padding-top:6px; justify-content:space-between;">
+            <span>完工・設計報酬:</span>
+            <strong id="mem-reward" style="color:var(--c-amber-lt);">+0.0万</strong>
+          </div>
+          <div id="mem-salary-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:8px; padding-top:6px; justify-content:space-between;">
+            <span>家賃: <strong id="mem-raw-income" style="color:var(--c-emerald);">+0.0万</strong></span>
+            <span>人件費・求人費: <strong id="mem-salaries" style="color:var(--c-rose);">-0.0万</strong></span>
+          </div>
+          <div id="mem-loan-breakdown" style="display:none; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.1); margin-top:6px; padding-top:6px; justify-content:space-between;">
+            <span>借入返済(元利): <strong id="mem-loan-pay" style="color:var(--c-rose);">-0.0万</strong></span>
+            <span>残債: <strong id="mem-debt-rem" style="color:#fde047;">0.0万</strong></span>
+          </div>
+        </div>
+
+        <!-- 緊急融資・資金ショート通知 -->
+        <div id="mem-overdraft-box" style="display:none; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+          <div style="color:#fcd34d; font-size:11px; font-weight:bold; display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+            <i class="ph-bold ph-bank"></i> 銀行からの緊急つなぎ融資
+          </div>
+          <div style="color:#fef3c7; font-size:11px; line-height:1.5;" id="mem-overdraft-text"></div>
+        </div>
+
+        <!-- トラブル・入退去アラート -->
+        <div id="mem-trouble-box" style="display:none; background:#450a0a; border:1px solid #f87171; border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+          <div id="mem-trouble-title" style="color:#fca5a5; font-size:11px; font-weight:bold; display:flex; align-items:center; gap:4px; margin-bottom:4px;">
+            <i class="ph-bold ph-warning"></i> 空室トラブル発生！
+          </div>
+          <div style="color:#fecaca; font-size:11px; line-height:1.5;" id="mem-trouble-text">
+            退去者が出ました（物件No.1）
+          </div>
+        </div>
+
+        <!-- 次へ進むボタン -->
+        <button id="btn-mem-confirm" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px; font-weight:bold; cursor:pointer;">
+          <i class="ph-bold ph-arrow-right" style="margin-right:6px;"></i>次月へ進む
+        </button>
+
+      </div>
+    </div>
+
+    <!-- 年末スタッフ昇給交渉＆スキル成長モーダル -->
+    <div id="salary-negotiation-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:265; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:390px; max-height:88vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.6); border:1.5px solid rgba(245,158,11,0.45); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:15px; font-weight:bold; color:var(--c-amber-lt); display:flex; align-items:center; gap:6px;">
+              <i class="ph-fill ph-handshake" style="color:var(--c-amber);"></i> 年末・スタッフ契約更改（昇給交渉）
+            </div>
+            <div id="sal-neg-subtitle" style="font-size:11px; color:var(--c-text2); margin-top:2px;">
+              1年間の活躍を踏まえ、スタッフが昇給を希望しています。
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10.5px; color:#cbd5e1; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.28); border-radius:6px; padding:7px 9px; margin-bottom:10px; line-height:1.45;">
+          💡 <strong>昇給承認:</strong> 契約継続＋<strong>10%で既存スキル成長 / 5%で新スキル開眼！</strong><br>
+          ⚠️ <strong>据え置き(拒否):</strong> 給与維持ですが、<strong>40%（連続拒否で80%）の確率で退職</strong>します。
+        </div>
+        <div id="sal-neg-list" style="overflow-y:auto; flex:1; padding-right:4px; margin-bottom:10px;"></div>
+        <button id="btn-sal-neg-done" class="btn btn-primary" style="width:100%; padding:12px; font-size:13.5px; font-weight:bold; justify-content:center; cursor:pointer;" disabled>
+          全員の契約更改を完了して新年へ進む
+        </button>
+      </div>
+    </div>
+
+    <!-- 月送り確認モーダル -->
+    <div id="confirm-skip-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:240; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:center;">
+        <button id="btn-skip-close" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div style="font-size:28px; margin-bottom:4px;">⏳</div>
+        <div style="font-size:16px; font-weight:bold; color:var(--c-text); margin-bottom:2px;">時間を進める（月送り）</div>
+        <div id="skip-modal-current-date" style="font-size:12px; color:var(--c-amber); font-weight:bold; margin-bottom:12px;">現在：1年目 1月</div>
+        
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--c-text2);">現在の月間見込み収支:</span>
+          <span id="skip-modal-net-income" style="font-weight:bold; font-size:13px; color:var(--c-emerald);">+0.0万/月</span>
+        </div>
+
+        <div id="skip-options-container" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+          <!-- 動的ボタンが生成される -->
+        </div>
+
+        <div style="font-size:11px; color:var(--c-text2); margin-bottom:12px; line-height:1.5; text-align:left; background:rgba(0,0,0,0.25); border-radius:6px; padding:8px 10px;">
+          💡 <strong>自動停止:</strong> 期間中に入居者の退去・新入居・当座貸越（借入）が発生した場合は、その月で自動的に停止して報告します。
+        </div>
+
+        <button id="btn-skip-cancel" class="btn btn-slate" style="width:100%; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
+      </div>
+    </div>
+    <!-- 会社名設定・変更モーダル -->
+    <div id="company-name-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:260; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:left; border:1.5px solid rgba(56,189,248,0.4); box-shadow:0 12px 35px rgba(0,0,0,0.5);">
+        <div class="mission-card-title" id="co-name-modal-title" style="color:#38bdf8; margin-bottom:6px; display:flex; align-items:center; gap:6px; font-size:16px;">
+          <i class="ph-bold ph-buildings"></i> 会社名の設定
+        </div>
+        <div id="co-name-modal-desc" style="font-size:11.5px; color:var(--c-text2); margin-bottom:12px; line-height:1.5;">
+          あなたの不動産・建築会社の名前を決めてください（後からいつでも変更できます）。
+        </div>
+        <div style="margin-bottom:14px;">
+          <input id="input-co-name" type="text" maxlength="16" placeholder="焼飯不動産" value="焼飯不動産" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:15px; font-weight:bold; color:#0f172a; background:#f8fafc; border:2px solid #38bdf8; border-radius:8px; outline:none;" />
+          <div style="font-size:10px; color:var(--c-text2); margin-top:4px; text-align:right;">※最大16文字（空欄時は「焼飯不動産」）</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-co-name-cancel" class="btn btn-slate" style="flex:1; padding:9px; font-size:13px; cursor:pointer;">キャンセル</button>
+          <button id="btn-co-name-save" class="btn btn-primary" style="flex:1.4; padding:9px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center;">決定する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- チュートリアル導入モーダル（基本のプレイフロー案内） -->
+    <div id="tutorial-intro-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:265; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:360px; max-height:88vh; overflow-y:auto; text-align:left; border:1.5px solid rgba(251,191,36,0.5); box-shadow:0 12px 35px rgba(0,0,0,0.55); padding:16px; box-sizing:border-box;">
+        <div class="mission-card-title" style="color:var(--c-amber-lt); margin-bottom:8px; display:flex; align-items:center; gap:6px; font-size:16px;">
+          <i class="ph-bold ph-compass"></i> <span id="tut-intro-title">基本の遊び方</span>
+        </div>
+        <div id="tut-intro-lead" style="font-size:12px; color:#e2e8f0; margin-bottom:12px; line-height:1.55;">
+          作った間取りを賃貸物件として貸し出し、毎月の家賃収入で会社を大きくするゲームです。
+        </div>
+        <div class="tut-flow-list">
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">1</span>
+            <div><strong>依頼を受ける</strong><span>クライアントの要望と敷地を確認</span></div>
+          </div>
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">2</span>
+            <div><strong>間取りを組む</strong><span>部屋を隣り合わせて繋ぎ、家賃アップ</span></div>
+          </div>
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">3</span>
+            <div><strong>引き渡す</strong><span>完成後、自社の所有物件に登録される</span></div>
+          </div>
+          <div class="tut-flow-item">
+            <span class="tut-flow-num">4</span>
+            <div><strong>月を進めて稼ぐ</strong><span>家賃で資金を増やし、会社や手札を強化</span></div>
+          </div>
+        </div>
+        <div id="tut-intro-note" style="font-size:11px; color:#bae6fd; background:rgba(14,116,144,0.22); border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:7px 9px; margin-bottom:14px; line-height:1.45;">
+          まずは固定の1Kを1棟組んで、建築費や家賃の目安・基本操作を体験しよう！
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-tut-intro-skip" type="button" class="btn btn-slate" style="flex:1; padding:10px; font-size:12.5px; cursor:pointer; justify-content:center;">スキップ</button>
+          <button id="btn-tut-intro-start" type="button" class="btn btn-amber" style="flex:1.7; padding:10px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center;">
+            <i class="ph-bold ph-play-circle"></i> 始める
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- 管理戸数上限アラートモーダル -->
+    <div id="capacity-alert-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:250; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:left; border:1.5px solid rgba(244,63,94,0.4); box-shadow:0 12px 35px rgba(0,0,0,0.5);">
+        <button id="btn-close-capacity-alert" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" style="color:var(--c-rose); margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <i class="ph-bold ph-warning-octagon"></i> 管理戸数の上限到達
+        </div>
+        
+        <div style="background:var(--c-surface2); padding:12px; border-radius:8px; margin-bottom:14px; border:1px solid rgba(244,63,94,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+            <span style="font-size:12px; color:var(--c-text2);">現在の管理戸数:</span>
+            <span id="cap-alert-count" style="font-size:15px; font-weight:bold; color:var(--c-rose);">4 / 4棟 (満杯)</span>
+          </div>
+          <div style="font-size:11px; color:#cbd5e1; line-height:1.5;">
+            会社の管理キャパシティが上限に達しています。これ以上新しい物件を保有できません。
+          </div>
+        </div>
+
+        <div style="font-size:11px; color:var(--c-text2); margin-bottom:12px; line-height:1.5;">
+          新しい案件を受注するには、既存物件を売却するか、管理キャパシティを拡張してください。
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-cap-to-upgrade" class="btn btn-primary" style="width:100%; padding:11px; font-size:12.5px; font-weight:bold; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-buildings"></i> 事務所を拡張する（管理枠拡大）
+          </button>
+          <button id="btn-cap-to-sell" class="btn btn-secondary" style="width:100%; padding:11px; font-size:12.5px; font-weight:bold; justify-content:center; gap:6px; background:#f8fafc; color:#1e293b; border:1.5px solid #cbd5e1;">
+            <i class="ph-bold ph-handshake"></i> 物件一覧から売却する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 倒産・ゲームオーバーモーダル -->
+    <div id="gameover-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.95); z-index:300; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:360px; text-align:center; border:2px solid #f43f5e; box-shadow:0 15px 40px rgba(244,63,94,0.35); padding:20px;">
+        <div style="font-size:40px; margin-bottom:6px;">📉</div>
+        <div style="font-size:18px; font-weight:900; color:#f43f5e; letter-spacing:1px; margin-bottom:4px;">経営破綻（倒産）</div>
+        <div id="go-company-name" style="font-size:13px; font-weight:bold; color:var(--c-text2); margin-bottom:12px;">焼飯不動産</div>
+
+        <div id="go-reason-box" style="background:rgba(244,63,94,0.12); border:1px solid rgba(244,63,94,0.35); color:#fecdd3; font-size:11px; line-height:1.5; padding:10px 12px; border-radius:6px; margin-bottom:14px; text-align:left;">
+          運転資金および銀行の融資限度額が枯渇し、これ以上の物件建築・事業継続が不可能となりました。
+        </div>
+
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:16px; text-align:left; font-size:12px;">
+          <div style="font-size:11px; color:var(--c-text2); font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">📊 最終経営レコード</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">営業期間:</span>
+            <strong id="go-months" style="color:var(--c-text);">全 1 ヶ月</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">最終所有物件数:</span>
+            <strong id="go-props" style="color:var(--c-emerald);">0 棟</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:var(--c-text2);">最終所持資金:</span>
+            <strong id="go-funds" style="color:var(--c-text);">0.0 万</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--c-text2);">最終借入残高:</span>
+            <strong id="go-debt" style="color:var(--c-rose);">0.0 万</strong>
+          </div>
+        </div>
+
+        <button id="btn-gameover-reset" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px; font-weight:bold; cursor:pointer; background:linear-gradient(135deg, #f43f5e, #e11d48); border:none; color:#fff; justify-content:center; gap:6px;">
+          <i class="ph-bold ph-arrows-clockwise"></i> 新会社を設立して再挑戦
+        </button>
+      </div>
+    </div>
+
+    <!-- データ初期化確認モーダル -->
+    <div id="reset-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:310; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:left; border:1.5px solid rgba(244,63,94,0.45); box-shadow:0 12px 35px rgba(0,0,0,0.5);">
+        <button id="btn-close-reset-confirm" type="button" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+        <div class="mission-card-title" style="color:var(--c-rose); margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+          <i class="ph-bold ph-warning-octagon"></i> データ初期化
+        </div>
+        <div style="background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.28); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:#fecdd3; line-height:1.55;">
+          資金・所有物件・オフィス・記録帳を含むすべてのデータを削除し、最初からやり直します。<br>
+          <strong>この操作は取り消せません。</strong>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-reset-cancel" type="button" class="btn btn-slate" style="flex:1; padding:10px; font-size:13px; cursor:pointer; justify-content:center;">キャンセル</button>
+          <button id="btn-reset-execute" type="button" class="btn btn-primary" style="flex:1.2; padding:10px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center; background:linear-gradient(135deg, #f43f5e, #e11d48); border:none; color:#fff;">初期化する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- エンディング（本社自社ビル到達・表彰状）モーダル -->
+    <div id="modal-ending" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.94); z-index:320; align-items:center; justify-content:center; padding:16px;">
+      <canvas id="ending-confetti-canvas" style="position:absolute; inset:0; pointer-events:none; z-index:1; width:100%; height:100%;"></canvas>
+      <div class="mission-card" style="position:relative; z-index:2; width:100%; max-width:390px; max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; text-align:center; border:2.5px solid #f59e0b; background:linear-gradient(180deg, #1e293b 0%, #0f172a 100%); box-shadow:0 15px 45px rgba(245,158,11,0.35); padding:22px 18px; box-sizing:border-box;">
+        <button id="btn-close-ending-top" type="button" style="position:absolute; top:8px; right:10px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:6px; line-height:1;" title="閉じる"><i class="ph-bold ph-x"></i></button>
+        <div style="font-size:42px; line-height:1; margin-bottom:6px;">🏆</div>
+        <div style="font-size:11px; font-weight:800; color:#fbbf24; letter-spacing:2px; margin-bottom:2px;">CERTIFICATE OF EXCELLENCE</div>
+        <div style="font-size:19px; font-weight:900; color:#fef08a; letter-spacing:0.5px; margin-bottom:6px;">一流不動産会社認定 表彰状</div>
+        <div id="ending-company-name" style="font-size:15px; font-weight:900; color:#38bdf8; margin-bottom:12px;">焼飯不動産 殿</div>
+
+        <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); color:#fef3c7; font-size:11.5px; line-height:1.6; padding:10px 12px; border-radius:8px; margin-bottom:14px; text-align:left;">
+          おめでとうございます！小さな個人事務所から始まった不動産屋は、見事に自社ビルを構える地域屈指の一流企業へと成長しました！
+        </div>
+
+        <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px; margin-bottom:14px; text-align:left; font-size:12px;">
+          <div style="font-size:11px; color:#fde047; font-weight:bold; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; display:flex; align-items:center; justify-content:space-between; gap:5px;">
+            <span style="display:inline-flex; align-items:center; gap:5px;"><i class="ph-fill ph-buildings"></i> 経営達成レコード</span>
+            <span style="font-size:10px; font-weight:600; color:#94a3b8;">※達成時点の記録</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
+            <span style="color:var(--c-text2);">本社ビル到達時期:</span>
+            <strong id="ending-date" style="color:var(--c-text); white-space:nowrap;">1年目 1月</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px; align-items:baseline;">
+            <span style="color:var(--c-text2);">達成時の所持資金:</span>
+            <strong id="ending-funds" style="color:var(--c-emerald); text-align:right;">100.0 万円</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
+            <span style="color:var(--c-text2);">管理物件数:</span>
+            <strong id="ending-props" style="color:#38bdf8; white-space:nowrap;">0 棟</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; gap:8px;">
+            <span style="color:var(--c-text2);">累計施工 / 累計家賃:</span>
+            <strong id="ending-lifetime" style="color:var(--c-text); white-space:nowrap;">0件 / 0.0万</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; gap:8px;">
+            <span style="color:var(--c-text2);">発見コンボ図鑑:</span>
+            <strong id="ending-combos" style="color:#fbbf24; white-space:nowrap;">0 / 30 種</strong>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; gap:8px;">
+            <button id="btn-ending-x-share" type="button" class="btn" style="flex:1; padding:10px 8px; font-size:12px; font-weight:bold; cursor:pointer; background:#020617; color:#f8fafc; border:1px solid #475569; justify-content:center; gap:5px;">
+              <span style="font-weight:900; font-size:13px; line-height:1;">𝕏</span> でポスト
+            </button>
+            <button id="btn-ending-copy" type="button" class="btn btn-secondary" style="flex:1; padding:10px 8px; font-size:12px; font-weight:bold; cursor:pointer; background:#334155; color:#f8fafc; border:1px solid #64748b; justify-content:center; gap:5px;">
+              <i class="ph-bold ph-copy"></i> 結果をコピー
+            </button>
+          </div>
+          <button id="btn-ending-continue" type="button" class="btn btn-amber" style="width:100%; padding:12px; font-size:13.5px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-buildings"></i> 経営を続ける（エンドレス）
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 実績・記録帳（コンボ・珍間取り全30種図鑑）モーダル -->
+    <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・記録帳</span>
+              <button id="btn-help-records" type="button" class="wiki-jump-pill">
+                <i class="ph-bold ph-book-open-text"></i> コンボ・記録の仕様
+              </button>
+            </div>
+            <div id="records-progress-text" style="font-size:11.5px; color:#fde047; font-weight:bold; margin-top:3px;">
+              図鑑収集率: 0 / 30 (0%)
+            </div>
+          </div>
+          <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.4); height:8px; border-radius:4px; overflow:hidden; margin-bottom:12px; border:1px solid rgba(255,255,255,0.08);">
+          <div id="records-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #f59e0b, #10b981); transition:width 0.3s;"></div>
+        </div>
+
+        <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
+          <!-- JSで全30種のカードを生成 -->
+        </div>
+
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:10.5px; color:var(--c-text2);">※パズル完了（査定時）に発生したコンボが自動登録されます</span>
+          <button id="btn-close-records-bottom" class="btn btn-slate" style="padding:6px 14px; font-size:12px; cursor:pointer;">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 遊び方・攻略Wikiモーダル -->
+    <div id="modal-help" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:315; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:86vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(56,189,248,0.4); padding:16px; box-sizing:border-box;">
+        <div style="flex-shrink:0; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+              <i class="ph-bold ph-book-open-text" style="color:#38bdf8;"></i> 遊び方・攻略Wiki
+            </div>
+            <div style="font-size:10.5px; color:var(--c-text2); margin-top:2px;">操作・窓/敷地・デッキ/更新・査定/売却・会社/融資の仕様まとめ</div>
+          </div>
+          <button id="btn-close-help" type="button" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <!-- Wiki Tabs -->
+        <div class="help-tabs-row">
+          <button id="tab-help-basic" type="button" class="btn help-tab-btn active" data-help-tab="basic">基本・操作</button>
+          <button id="tab-help-lot" type="button" class="btn help-tab-btn" data-help-tab="lot">敷地・窓・庭</button>
+          <button id="tab-help-deck" type="button" class="btn help-tab-btn" data-help-tab="deck">デッキ・手札</button>
+          <button id="tab-help-biz" type="button" class="btn help-tab-btn" data-help-tab="biz">経営・売却</button>
+          <button id="tab-help-company" type="button" class="btn help-tab-btn" data-help-tab="company">会社・Q&A</button>
+        </div>
+
+        <div id="help-scroll-content" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; min-height:0; padding-right:2px;">
+
+          <!-- TAB 1: 基本・操作 -->
+          <div id="help-view-basic" class="help-tab-pane">
+            <button id="btn-replay-tutorial-help" type="button" class="btn btn-amber" style="width:100%; padding:9px 12px; font-size:12px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+              <i class="ph-bold ph-graduation-cap" style="font-size:15px;"></i>
+              <span>チュートリアルをもう一度プレイ（練習モード）</span>
+            </button>
+
+            <div id="wiki-card-step" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-cursor-click"></i> 建築の基本ステップ（回転・反転）
+              </div>
+              <div class="help-wiki-body">
+                <strong>①カードを選択 → ②「回転 / 反転」で向きを調整 → ③敷地をタップして「確定」</strong>で配置します。<br>
+                ・<strong>反転（鏡写し）</strong>：左右反転した特殊加工は通常<strong>建築費 +20%</strong>かかります（オフィス設備で +10% → 無料化可）。<br>
+                ・<strong>PC便利操作</strong>：盤面タップ時の「確定」ボタン横にも回転・反転が出ます（キーボード <code>1</code>〜<code>5</code> カード選択 / <code>WASD</code>・<code>↑↓←→</code> 移動 / <code>R</code> 回転 / <code>F</code> 反転 / <code>Enter</code>・<code>Space</code> 確定 / <code>Esc</code> 解除に対応）。
+              </div>
+            </div>
+
+            <div id="wiki-card-merge" class="help-wiki-card highlight-emerald">
+              <div class="help-wiki-title" style="color:#34d399;">
+                <i class="ph-bold ph-door"></i> 部屋の合体・LDK表記・自動ドア
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>合体と表記</strong>：同じ種類の部屋を隣り合わせて置くと壁が消えて1つの広い部屋に合体し、<strong>LDKは合計マス数に応じて「K(1) / DK(2〜4) / LDK(5+)」へ自動変化</strong>します（※<strong>和室だけは合体せず</strong>襖で繋がる独立部屋扱い／UBも通常浴室とは別扱い）。<br>
+                ・<strong>通路とドア</strong>：<strong>廊下同士・玄関↔廊下</strong>は赤い壁がない限り全辺オープンに繋がります。異なる部屋同士が接すると、<strong>1ペアにつき1箇所だけ自動でドア</strong>が開きます。
+              </div>
+            </div>
+
+            <div id="wiki-card-wall" class="help-wiki-card highlight-rose">
+              <div class="help-wiki-title" style="color:#fb7185;">
+                <i class="ph-bold ph-prohibit"></i> 赤い壁（耐力壁）と有料撤去
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>赤い斜線の辺は確定の壁</strong>で、ドアが開かず合体もしません（外周にあれば窓も塞がります。なお、合体で内部に取り込まれた赤い壁は無効化され撤去対象外です）。<br>
+                ・<strong>カード未選択の状態</strong>（選択中カードをもう一度押すと解除）で赤い壁をタップすると、費用（5万 → 10万 → 20万 → <strong>40万［上限］</strong>）を払って<strong>壁撤去</strong>できます。
+              </div>
+            </div>
+
+            <div id="wiki-card-path" class="help-wiki-card">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-path"></i> 動線（到達不能のダブルペナルティ）
+              </div>
+              <div class="help-wiki-body">
+                玄関からドア・廊下を通って辿り着けない部屋（「到達不能」）が残ると、<strong>1箇所につき基本家賃が大きく低下（-30%／下限10%）</strong>するうえ、<strong>NGコンボ1つ分の悪評（満足度-20%・劣化速度+0.5%/月）</strong>も受けます。
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: 敷地・窓・庭 -->
+          <div id="help-view-lot" class="help-tab-pane" style="display:none;">
+            <div id="wiki-card-window" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-sun"></i> 窓ができる条件（・南向きLDK）
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>窓が付く部屋</strong>：水色の窓が付くのは<strong>「LDK（K/DK/LDK）」と「居室（洋室・和室）」だけ</strong>です（玄関・廊下・トイレ・風呂・洗面・収納等は外に面しても壁のまま）。<br>
+                ・<strong>窓が開く条件</strong>：部屋の外側が<strong>空きマス・庭・敷地外（✕マス／盤面端）</strong>に面しており、かつ<strong>赤い壁（耐力壁）が無い辺</strong>に自動で付きます。<br>
+                ・<strong>南向きLDKの条件</strong>：LDKの<strong>下側（南辺）に窓</strong>があり、その真下（盤面端まで）を遮る別の部屋が1つもない状態。
+              </div>
+            </div>
+
+            <div id="wiki-card-site" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-map-pin"></i> 敷地のルール（白マス・✕マス・隣接）
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>白いマス</strong>：通常の建築可能エリア。<br>
+                ・<strong>網掛け✕マス（敷地外・障害物）</strong>：置けない壁ではなく、<strong>高額な造成費</strong>＋<strong>毎月の重い維持費（通常の5倍：0.20万/マス）</strong>を払えば強引に拡張できる非常用スペースです（プレビューが黄色になり「確定 (+造成XX万)」と表示）。<br>
+                ・<strong>隣接必須（飛び地NG）</strong>：どのピースも、玄関か既に置いた部屋・廊下に<strong>1辺でも接していないと配置できません</strong>。
+              </div>
+            </div>
+
+            <div id="wiki-card-garden" class="help-wiki-card highlight-emerald">
+              <div class="help-wiki-title" style="color:#34d399;">
+                <i class="ph-bold ph-plant"></i> 「庭」の自動判定ルール
+              </div>
+              <div class="help-wiki-body">
+                建物を囲う<strong>最小の長方形の内側</strong>にできた空きマス（✕マスは除外）が、自動的に緑枠の<strong>「庭」</strong>として認識されます。<br>
+                ※ L字やコの字型に囲って庭を作れる反面、庭にも<strong>毎月 0.06万/マス の維持費</strong>がかかります。
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: デッキ・手札 -->
+          <div id="help-view-deck" class="help-tab-pane" style="display:none;">
+            <div id="wiki-card-deck-struct" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-stack"></i> デッキの3層構造（20〜24枚）と技術開発
+              </div>
+              <div class="help-wiki-body">
+                山札はホーム「オフィス ＞ デッキ」または案件画面「デッキ編成」から組み替えできます。<br>
+                ・<strong>固定枠（11枚）</strong>：生活インフラの基礎ピース（事故防止のため変更不可）。<br>
+                ・<strong>同カテゴリ入替枠（9枠）</strong>：開発した同カテゴリの上位ピースへ差し替え可能。<br>
+                ・<strong>自由追加枠（最大 +4枚）</strong>：解放済みの全カテゴリから自由に追加（空枠も可）。<br>
+                ・<strong>技術開発（10種・80〜300万）</strong>：和室・大型LDK・WIC・長3/T/Z廊下などを永久解放。<br>
+                ※建築途中でオフィスから変えても<strong>今の山札には反映されず、次の「設計開始」（またはやり直し）から反映</strong>されます（案件確認画面からは即反映）。
+              </div>
+            </div>
+
+            <div id="wiki-card-reroll" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-arrows-clockwise"></i> 更新（リロール）の無料枠と手札補充ルール
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>手札補充</strong>：手札（標準3枚、設備「設計テーブル拡張」で4→5枚）は1枚置くごとではなく、<strong>手札をすべて使い切った時に一括補充</strong>されます。<br>
+                ・<strong>更新コスト</strong>：「KEEPせずに捨てた累計枚数」で決まります：初期無料枠<strong>5枚まで 0万</strong>、超過 +1〜5枚目は <strong>+2.0万/枚</strong>、+6〜10枚目は <strong>+4.0万/枚</strong>、以降 <strong>+8.0万/枚</strong>（※空枠の補充は 0万）。<br>
+                ・<strong>軽減と引直</strong>：設備「無料破棄枠」やスタッフスキル<strong>「中古調達」</strong>（無料枠増加＆超過費用割引）で軽減できます。また、スキル「戦術手札」の<strong>「引直」ボタン</strong>は手札を山札に戻して混ぜ直すため、<strong>無料破棄枠も山札周回も消費しません</strong>（KEEPは解除）。
+              </div>
+            </div>
+
+            <div id="wiki-card-keep" class="help-wiki-card">
+              <div class="help-wiki-title" style="color:#fcd34d;">
+                <i class="ph-bold ph-lock-key"></i> KEEP（ロック）の維持コスト
+              </div>
+              <div class="help-wiki-body">
+                カード左上の <code>🔓keep</code> を押すと次の更新でも手札に残せます。<br>
+                ロックして<strong>1回目の更新を跨ぐ時は 0万（無料）</strong>ですが、ロックしたまま<strong>2回目以降の更新を跨ぐごとに 1万 → 2万 → 4万 → 8万…</strong>（2の累乗）で倍増します。
+              </div>
+            </div>
+
+            <div id="wiki-card-cycle" class="help-wiki-card highlight-emerald">
+              <div class="help-wiki-title" style="color:#34d399;">
+                <i class="ph-bold ph-cards"></i> 山札の周回割増・やり直し・諦める
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>山札の2周目以降</strong>：山札を引き切って捨て札を戻すと、建築費が<strong>2周目 +25% / 3周目以降 +50%</strong>になります（割増率は<strong>引いた時点</strong>で固定／左上の「山札」ボタンで残り内訳を確認可能）。<br>
+                ・<strong>もう一度設計／諦める</strong>：結果画面の「もう一度設計」は着工前の資金に戻して再設計（通常2回、設備「再設計保険」で最大4回）。<strong>「諦める」</strong>も建築費は戻りますが、<strong>1ヶ月が経過</strong>（月次収支・給与・返済が発生）し依頼一覧3件が入れ替わります。<br>
+                ・<strong>依頼詳細・コンボ確認</strong>：画面上の要望バー（「詳細」）タップで達成状況と発生コンボを確認できます。
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: 経営・売却 -->
+          <div id="help-view-biz" class="help-tab-pane" style="display:none;">
+            <div id="wiki-card-cost" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-calculator"></i> 「原価」と「諸経費」・引き渡し条件
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>原価 vs 諸経費</strong>：家賃や売却査定額の基準になるのはピースの<strong>定価「原価」のみ</strong>です。反転加工費・山札周回割増・更新費・壁撤去費・造成費などの<strong>「諸経費」</strong>は物件価値を上げない純粋なコストになります（逆にスタッフの資材割引は物件価値を下げずに支払額だけお得です）。<br>
+                ・<strong>引き渡し条件</strong>：設計完了時の足切りはなく、目標未達や建築途中でも「設計完了」→物件を引き渡すこと自体は可能です。
+              </div>
+            </div>
+
+            <div id="wiki-card-sell" class="help-wiki-card highlight-rose">
+              <div class="help-wiki-title" style="color:#fb7185;">
+                <i class="ph-bold ph-hourglass-medium"></i> 売却は「築6ヶ月（半年）」から＆経年減価
+              </div>
+              <div class="help-wiki-body">
+                建てたばかりの物件には<strong>6ヶ月間の売却ロック（🔒売ロック表示）</strong>がかかります。<br>
+                ・<strong>オーナーチェンジ売却（入居中）</strong>：査定売価の<strong>満額</strong>で売却可能。<br>
+                ・<strong>空室売却（空室中）</strong>：査定売価の<strong>20%引き</strong>になります。<br>
+                ・<strong>査定と減価</strong>：満足度80%未満だと基礎評価が減額され（コンボ加算も80〜100%で段階反映、上限+50%）、さらに<strong>築1ヶ月ごとに -2%ずつ減価</strong>（下限30%）します。
+              </div>
+            </div>
+
+            <div id="wiki-card-combo" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-trophy"></i> コンボ（全30種）・記録帳と「珍間取り」の特性
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>コンボ評価</strong>：<strong>王道（11種）・珍間取り（13種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（6種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
+                ・<strong>珍間取りの隠れ特性</strong>：「ロングコリドー」以外の珍間取り12種には<strong>「飽きられやすい（劣化速度 +0.2〜+0.5%/月・空室時の再入居率 -5〜-20%）」</strong>というデメリットがあります。<br>
+                ・<strong>記録帳</strong>：「設計完了（査定時）」に発生していたコンボが図鑑へ自動登録されます。
+              </div>
+            </div>
+
+            <div id="wiki-card-maint" class="help-wiki-card">
+              <div class="help-wiki-title" style="color:#94a3b8;">
+                <i class="ph-bold ph-crown"></i> 満足度バリア・2代目以降の市場家賃・維持費
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>生活設備と保証</strong>：トイレ未設置（満足度-25%）・浴室未設置（-15%）は大減点。入居初月は退去判定なし。初代で満足度100%超の分は退去率0%保証期間（120%超は2%=1ヶ月）になり、<strong>2代目以降（一般市場）は最初の3ヶ月間が退去率0%保証</strong>＆特注プレミアムが外れて<strong>市場家賃（年-8%、下限60%）</strong>になります。<br>
+                ・<strong>毎月の維持費</strong>：「延床 0.04万/マス ＋ 庭 0.06万/マス ＋ 造成区画 0.20万/マス」（最低0.2万）＋<strong>築1ヶ月ごとに +4%</strong>ずつ増加します（空室中は家賃0で維持費のみ発生）。
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: 会社・Q&A -->
+          <div id="help-view-company" class="help-tab-pane" style="display:none;">
+            <div id="wiki-card-office" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-buildings"></i> オフィス移転割引と営業・ブランド・設備投資
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>ゲーム目標</strong>：オフィスを移転し、<strong>Rank 5「本社自社ビル」到達</strong>を目指します（到達後もエンドレス継続可）。「施工実績・設計品質（累計良コンボ−悪コンボ）・累計家賃」の達成で移転費が大幅割引され、管理棟数・デスク数・各設備の上限が解放されます。<br>
+                ・<strong>営業力（Lv1〜5）</strong>：依頼の予算・目標家賃が <strong>+15%/Lv（最大1.6倍）</strong> 上昇＋空室再入居率 <strong>+2%/Lv</strong>。<br>
+                ・<strong>ブランド（Lv1〜5）</strong>：富裕層・豪邸案件の出現率UP＋<strong>銀行融資枠 +200万/Lv</strong>＋空室再入居率 <strong>+3%/Lv</strong>。
+              </div>
+            </div>
+
+            <div id="wiki-card-staff" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-users-three"></i> スタッフ採用の維持費・スキル重複・昇給交渉
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>同スキルは最大Lvのみ適用</strong>：複数人が同じスキルを持っていても合算されず、最高Lvのみ有効です（満席時の入替雇用・解雇の退職金は0円）。<br>
+                ・<strong>求人広告の維持費に注意</strong>：広告掲載の翌月から候補が3名並びますが、<strong>募集中（アクティブ）の間は毎月 15.0万 の広告維持費</strong>がかかり続けます（即時スカウト後も枠が残っていれば継続）。見送る時は必ず「掲載停止」を押してください。<br>
+                ・<strong>年末の昇給交渉（毎年12月）</strong>：承認で給与 <strong>+15%（最低+0.3万/月）</strong>＋成長抽選（<strong>5%で新スキル開眼［3個未満時］／10%で既存スキルLvUP</strong>）。拒否すると <strong>40%（連続拒否で80%）</strong> の確率で退職します。
+              </div>
+            </div>
+
+            <div id="wiki-card-bank" class="help-wiki-card highlight-rose">
+              <div class="help-wiki-title" style="color:#fb7185;">
+                <i class="ph-bold ph-bank"></i> 銀行・街金の返済ルールと2つの倒産条件
+              </div>
+              <div class="help-wiki-body">
+                ・<strong>最低着工資金</strong>：所持金 <strong>15.0万未満</strong> では新規設計を開始できません。<br>
+                ・<strong>担保と毎月自動返済</strong>：銀行融資枠は「基礎100万＋ブランド加算＋物件担保（入居中：<strong>売価×2.0</strong> / 空室：<strong>売価×0.5</strong>）」。毎月、銀行は「残債5%（最低10万）＋月利1.5%（最低0.2万、金利交渉で軽減）」、街金（上限50万）は「残債5%（最低1万）＋月利10%」が自動返済されます。<br>
+                ・<strong>街金の注意点</strong>：手動借入時は<strong>即時手数料 +10%</strong> が残債に加算され、<strong>建築中に借りた街金残債は「もう一度設計」「諦める」で資金を戻しても消えません</strong>。街金残債がある間は銀行の新規借入が停止します。<br>
+                ・<strong>2つの倒産条件</strong>：①所有物件0棟で「所持金＋融資余力」が15万未満になった時、②<strong>物件を所有していても、月送りの赤字が「銀行融資余力＋街金残枠（上限50万）」を超えた時</strong>に経営破綻となります。
+              </div>
+            </div>
+
+            <div id="wiki-card-qa" class="help-wiki-card highlight-emerald">
+              <div class="help-wiki-title" style="color:#34d399;">
+                <i class="ph-bold ph-chats-circle"></i> よくある質問（Q&A・月送りスキップ）
+              </div>
+              <div class="help-wiki-body">
+                <strong>Q. 赤い壁を消したい！</strong><br>
+                → 選択中のカードを再タップして「未選択」状態にし、赤い壁を直接タップします。<br>
+                <strong>Q. 詳しい内訳を見たい</strong><br>
+                → 物件結果シートの「建築費」「査定額」「維持費」や、物件詳細の各項目をタップすると内訳が開きます。<br>
+                <strong>Q. 複数月スキップはどこまで進む？</strong><br>
+                → スキップ中に<strong>退去・再入居・資金不足（当座貸越）・倒産</strong>が発生した月、および<strong>12月（昇給交渉）</strong>の手前で自動的に停止します。
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="flex-shrink:0; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">
+          <button id="btn-close-help-bottom" type="button" class="btn btn-slate" style="width:100%; padding:10px; font-size:13px; cursor:pointer; justify-content:center;">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 画像保存・共有プレビューモーダル（チラシ画像 / 図面のみ切替・スマホ長押し＆共有シート対応） -->
+    <div id="image-save-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.94); z-index:350; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:420px; max-height:92vh; overflow-y:auto; text-align:center; border:1.5px solid rgba(56,189,248,0.45); box-shadow:0 15px 40px rgba(0,0,0,0.65); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:10px;">
+          <div style="font-size:15px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ph-image" style="color:#38bdf8;"></i> 画像の保存・共有
+          </div>
+          <button id="btn-close-image-save" type="button" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+        <div id="image-save-mode-tabs" style="display:none; gap:6px; margin-bottom:10px; background:rgba(15,23,42,0.75); padding:4px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);">
+          <button id="btn-img-mode-flyer" type="button" class="btn" style="flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center;">📄 チラシ画像</button>
+          <button id="btn-img-mode-plan" type="button" class="btn" style="flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center;">📐 図面のみ</button>
+        </div>
+
+        <div style="background:rgba(56,189,248,0.14); border:1px solid rgba(56,189,248,0.35); color:#bae6fd; font-size:11px; line-height:1.45; padding:7px 10px; border-radius:8px; margin-bottom:10px; text-align:left;">
+          📱 <strong>iPhone / スマホの方:</strong> 下の<strong>画像を長押し</strong>して<strong>「“写真”に保存」</strong>を選ぶか、下の<strong>「共有・カメラロールに保存」</strong>を押してください。
+        </div>
+
+        <div style="background:#0f172a; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); margin-bottom:12px; display:flex; justify-content:center; align-items:center;">
+          <img id="image-save-preview" src="" alt="物件画像プレビュー" style="max-width:100%; max-height:48vh; border-radius:6px; object-fit:contain; -webkit-touch-callout:default !important; user-select:auto !important; -webkit-user-select:auto !important; pointer-events:auto !important;" />
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-image-native-share" type="button" class="btn btn-primary" style="width:100%; padding:11px; font-size:13px; font-weight:bold; cursor:pointer; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-export"></i> 共有・カメラロールに保存
+          </button>
+          <button id="btn-image-direct-dl" type="button" class="btn btn-secondary" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:pointer; background:#334155; color:#f8fafc; border:1px solid #64748b; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-download-simple"></i> ファイルとしてダウンロード（PC向け）
+          </button>
+          <button id="btn-close-image-save-bottom" type="button" class="btn btn-slate" style="width:100%; padding:9px; font-size:12px; cursor:pointer; justify-content:center;">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- パズル中の山札・捨て札確認モーダル -->
+    <div id="deck-peek-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:260; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:420px; max-height:86vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.15); padding:16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:15px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-cards" style="color:var(--c-amber);"></i> 山札・捨て札確認</span>
+              <button id="btn-help-deck-peek" type="button" class="wiki-jump-pill">
+                <i class="ph-bold ph-book-open-text"></i> 山札・更新の仕様
+              </button>
+            </div>
+            <div id="deck-peek-subtitle" style="font-size:11px; color:var(--c-text2); margin-top:2px;">
+              山札残り 0枚 / 捨て札・配置済 0枚
+            </div>
+          </div>
+          <button id="btn-close-deck-peek" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <div id="deck-peek-body" style="overflow-y:auto; flex:1; padding-right:4px;"></div>
+      </div>
+    </div>
+
+    <!-- ==============================
+       SCREEN 1.5: MISSION SELECTION BOARD
+  ============================== -->
+  <section id="screen-mission-select" class="screen blueprint-bg" style="overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:40px; height:100vh;">
+    <div style="padding:16px 12px; width:100%; max-width:480px; margin:0 auto; box-sizing:border-box;">
+      
+      <!-- Top Bar -->
+      <div class="mission-select-topbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:rgba(30,41,59,0.7); padding:10px 14px; border-radius:8px; border:1px solid #334155; backdrop-filter:blur(4px);">
+        <div>
+          <h2 style="margin:0; font-size:16px; color:var(--c-amber-lt); display:flex; align-items:center; gap:6px;">
+            <i class="ph-bold ph-newspaper" style="font-size:18px;"></i> 今月の依頼案件
+          </h2>
+          <div style="font-size:11px; color:var(--c-text2); margin-top:2px;" id="mission-select-subtitle">
+            受注する案件を1つ選んでください（全3件）
+          </div>
+        </div>
+        <button id="btn-back-to-home" class="btn btn-slate" style="padding:6px 12px; font-size:12px; gap:4px;">
+          <i class="ph-bold ph-arrow-left"></i> ホーム
+        </button>
+      </div>
+
+      <!-- Container for 3 cards -->
+      <div id="mission-pool-cards" style="display:flex; flex-direction:column; gap:12px;">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-mission" class="screen blueprint-bg">
+
+    <!-- Client info -->
+    <div class="mission-card">
+      <div class="mission-card-title">
+        <i class="ph-bold ph-user-circle"></i> クライアント
+      </div>
+      <div class="client-block">
+        <canvas id="client-stage-canvas" class="client-stage-canvas" width="60" height="60"></canvas>
+        <div style="min-width:0; flex:1;">
+          <div class="client-name" id="client-name">田中 健一郎</div>
+          <div style="font-size:10px;color:var(--c-text2);margin-top:2px;">
+            <span class="badge badge-amber" id="client-type-badge">一般クライアント</span>
+          </div>
+        </div>
+      </div>
+      <div class="client-req" id="client-quote">
+        「とにかく広い2LDKが欲しい！風呂とトイレは絶対に別でお願いします。良い間取りを頼みますよ！」
+      </div>
+    </div>
+
+    <!-- Requirements -->
+    <div class="mission-card">
+      <div class="mission-card-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-bold ph-list-checks"></i> 要望</span>
+        <button id="btn-help-mission-req" type="button" class="wiki-jump-pill">
+          <i class="ph-bold ph-book-open-text"></i> 合体・LDK表記の仕様
+        </button>
+      </div>
+      <div class="req-list" id="req-list"></div>
+    </div>
+
+    <!-- Site preview -->
+    <div class="mission-card">
+      <div class="mission-card-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-bold ph-map-pin"></i> 敷地</span>
+        <button id="btn-help-mission-lot" type="button" class="wiki-jump-pill">
+          <i class="ph-bold ph-book-open-text"></i> 敷地・窓・庭の仕様
+        </button>
+      </div>
+      <div class="site-preview-wrap">
+        <canvas id="site-preview-canvas"></canvas>
+      </div>
+      <div class="stats-grid" style="margin-top:10px;">
+        <div class="stat-item">
+          <div class="stat-label">目標家賃</div>
+          <div class="stat-value font-num" id="stat-rent">12.0<span class="stat-unit">万/月</span></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">敷地・玄関</div>
+          <div class="stat-value" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
+            <span id="stat-lot-name" style="font-size:12px; font-weight:bold; color:var(--c-text);">スクエアL</span>
+            <span id="stat-entrance-facing" style="font-size:10px; color:#fde047; font-weight:normal;">南向き玄関</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside id="tutorial-mission-banner" class="tutorial-banner tutorial-banner-dark" style="display:none; width:100%; max-width:480px; margin-bottom:8px;">
+      <div class="tutorial-banner-body">
+        <i class="ph-fill ph-sparkle" style="color:#fbbf24; font-size:16px; flex-shrink:0;"></i>
+        <span id="tutorial-mission-text">初回モデル：固定の1Kで建築費と家賃の目安を体験しよう</span>
+      </div>
+      <button id="btn-skip-tutorial-mission" type="button" class="tutorial-skip-btn">スキップ</button>
+    </aside>
+
+    <div class="mission-footer" style="display:flex; gap:8px; width:100%; box-sizing:border-box;">
+      <button class="btn btn-slate" id="btn-back-to-select" style="gap:4px; flex:1; padding:12px 6px; font-size:12px;">
+        <i class="ph-bold ph-arrow-left"></i>
+        一覧へ
+      </button>
+      <button class="btn btn-slate" id="btn-mission-deck" style="gap:4px; flex:1.15; padding:12px 6px; font-size:12px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+        <i class="ph-bold ph-cards" style="color:#38bdf8;"></i>
+        デッキ編成
+      </button>
+      <button class="btn btn-amber" id="btn-start" style="gap:6px; flex:1.6; padding:12px 12px; font-size:14px; font-weight:bold;">
+        <i class="ph-bold ph-play-circle" style="font-size:17px;"></i>
+        設計開始
+      </button>
+    </div>
+  </section>
+
+  <!-- ==============================
+       SCREEN 2: GAME
+  ============================== -->
+  <section id="screen-game" class="screen">
+    <!-- Header (funds / construction cost / current rent / target rent / sound) -->
+    <header class="game-header">
+      <div class="game-header-stats">
+        <div class="target-rent-wrap">
+          <div class="target-rent-label">残資金</div>
+          <div class="target-rent-val font-num" id="hdr-budget" style="color:var(--c-emerald);">100.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
+        </div>
+        <div class="target-rent-wrap cost-wrap">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; width:100%; gap:4px;">
+            <span class="target-rent-label" style="color:#93c5fd;">総投資</span>
+            <span class="target-rent-val font-num" id="hdr-spent-cost" style="color:#38bdf8;">0.0<span style="font-size:9px;color:var(--c-text2);">万</span></span>
+          </div>
+          <div class="hdr-cost-sub font-num" id="hdr-cost-breakdown">原価0.0 / 諸0.0</div>
+        </div>
+        <div class="target-rent-wrap">
+          <div class="target-rent-label">現在査定</div>
+          <div class="target-rent-val font-num" id="realtime-rent-badge" style="color:var(--c-amber-lt); display:inline-block; transition:transform 0.2s, color 0.2s;">0.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
+        </div>
+        <div class="target-rent-wrap">
+          <div class="target-rent-label">目標家賃</div>
+          <div class="target-rent-val font-num" id="hdr-target-rent">12.0<span style="font-size:9px;color:var(--c-text2);">万</span></div>
+        </div>
+      </div>
+      <div class="game-header-actions" style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+        <button id="btn-help-game" class="btn-icon btn" type="button" title="遊び方" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i class="ph-bold ph-question" style="font-size:15px;"></i>
+        </button>
+        <button id="btn-sound-game" class="btn-icon btn" style="width:30px; height:30px; padding:0; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i id="icon-sound-game" class="ph-bold ph-speaker-high" style="font-size:15px;"></i>
+        </button>
+      </div>
+    </header>
+
+
+    <!-- Mission banner (Real-time Checklist — Tap to open detail modal) -->
+    <div class="mission-banner" id="mission-banner" role="button" tabindex="0" title="タップで依頼詳細・発生コンボを確認">
+      <div class="mission-req-pills-wrap" id="mission-req-pills">
+        <!-- Live requirement pills inserted dynamically -->
+      </div>
+      <div class="mission-banner-detail-btn">
+        <i class="ph-bold ph-list-checks" style="font-size:13px;"></i>
+        <span>詳細</span>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <main class="canvas-area blueprint-bg">
+      <div id="canvas-container" style="position:relative;">
+        <canvas id="plan-canvas"></canvas>
+        <div id="hint-overlay">
+          <div class="hint-pill">
+            <i class="ph-bold ph-hand-pointing"></i>
+            <span id="hint-pill-text">玄関の隣の明るいマスをタップ</span>
+            <button id="btn-skip-tutorial-game" type="button" class="tutorial-skip-inline" style="display:none;">スキップ</button>
+          </div>
+        </div>
+      </div>
+      <div id="confirm-overlay" style="display:none; position:absolute; z-index:100; align-items:center; gap:5px; width:max-content; pointer-events:none;">
+        <button id="btn-confirm-place" class="btn btn-amber" title="配置確定 (Enter / Spaceキー)" style="padding:10px 16px; border-radius:100px; box-shadow:0 4px 12px rgba(245,158,11,0.5); font-size:14px; color:#0f172a; font-weight:bold; white-space:nowrap; pointer-events:auto;"><i class="ph-bold ph-check"></i> 確定</button>
+        <div id="confirm-pc-tools" class="confirm-pc-tools">
+          <button id="btn-confirm-rotate" type="button" class="confirm-mini-btn" title="回転 (Rキー)">
+            <i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber-lt);"></i>
+            <span>回転</span>
+          </button>
+          <button id="btn-confirm-mirror" type="button" class="confirm-mini-btn" title="左右反転 (Fキー)">
+            <i class="ph-bold ph-arrows-left-right" style="color:#a5b4fc;"></i>
+            <span id="btn-confirm-mirror-label">反転</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer controls -->
+    <footer class="game-footer">
+      <!-- Toolbar -->
+      <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:6px; min-width:0;">
+        <div class="toolbar-left" style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; overflow-x:auto; white-space:nowrap; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+          <button class="btn btn-slate" id="btn-deck-peek" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; cursor:pointer; flex-shrink:0;" title="山札の残りピースと捨て札を確認">
+            <i class="ph-bold ph-cards" style="font-size:13px; color:#4f46e5;"></i>
+            <span id="deck-peek-count" class="font-num">山札 17/20</span>
+          </button>
+          <button class="btn btn-slate btn-pixel-toggle" id="btn-toggle-pixel-view" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; cursor:pointer; flex-shrink:0;" title="ピクセルアートの実物プレビューへ切替">
+            <i class="ph-bold ph-image-square" style="font-size:13px;"></i> 実物
+          </button>
+          <button class="btn btn-slate" id="btn-sandbox-tools" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #c4b5fd; background:#f5f3ff; color:#5b21b6; font-weight:bold; cursor:pointer; flex-shrink:0;" title="検証用プリセット・デバッグ">
+            🧪 検証
+          </button>
+          <button class="btn btn-slate" id="btn-hand-refresh" style="display:none; padding:4px 8px; font-size:11px; gap:4px; border:1px solid #bae6fd; background:#f0f9ff; color:#0369a1; font-weight:bold; cursor:pointer; flex-shrink:0;" title="手札を山札に戻して引き直す（手札リフレッシュ）">
+            <i class="ph-bold ph-arrows-counter-clockwise" style="font-size:13px; color:#0284c7;"></i>
+            <span id="hand-refresh-count">引直 1/1</span>
+          </button>
+          <span id="piece-label" style="font-size:11px; color:var(--c-text2); white-space:nowrap; flex-shrink:0;"></span>
+        </div>
+        <button class="btn btn-slate" id="btn-finish" style="padding:6px 12px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; flex-shrink:0;">
+          <i class="ph-bold ph-check-square-offset" style="font-size:14px; color:var(--c-emerald);"></i>
+          設計完了
+        </button>
+      </div>
+
+      <!-- Draft tray -->
+      <div id="draft-area" style="display:flex; width:100%; min-width:0;">
+        <div class="draft-area-inner" style="display:flex; flex-direction:column; gap:8px; flex:1; width:100%; min-width:0;">
+          <div id="reroll-info" style="display:none;"></div>
+          <div id="draft-container" style="display:flex; gap:8px;"></div>
+          <div class="action-btn-row" style="display:flex; gap:6px; width:100%;">
+            <button class="btn btn-slate" id="btn-rotate" style="flex:1; padding:6px 4px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; align-items:center; justify-content:center; gap:4px;" title="選択中ピースを90°回転 (Rキー)">
+              <i class="ph-bold ph-arrow-rotate-right" style="color:var(--c-amber); font-size:14px;"></i> 回転<span class="pc-key-hint">[R]</span>
+            </button>
+            <button class="btn btn-slate" id="btn-reroll" style="flex:1.2; padding:4px 6px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+              <div><i class="ph-bold ph-arrows-clockwise" style="color:var(--c-blue); font-size:13px;"></i> 更新</div>
+            </button>
+            <button class="btn btn-slate" id="btn-mirror" style="flex:1; padding:4px 4px; min-height:38px; font-size:11px; border:1px solid var(--c-border); display:flex; flex-direction:column; align-items:center; justify-content:center;" title="選択中ピースを左右反転 (Fキー)">
+              <div style="display:flex; align-items:center; gap:3px;"><i class="ph-bold ph-arrows-left-right" style="color:var(--c-indigo); font-size:13px;"></i> 反転<span class="pc-key-hint">[F]</span></div>
+              <span id="btn-mirror-sub" style="font-size:8px; color:var(--c-text2); margin-top:1px;">+20%</span>
+            </button>
+          </div>
+          <div class="pc-shortcut-bar" aria-label="PCキーボード操作">
+            <span><kbd>1</kbd>〜<kbd>5</kbd> 選択</span>
+            <span><kbd>WASD</kbd>/<kbd>↑↓←→</kbd> 移動</span>
+            <span><kbd>R</kbd> 回転</span>
+            <span><kbd>F</kbd> 反転</span>
+            <span><kbd>Enter</kbd>/<kbd>Space</kbd> 確定</span>
+            <span><kbd>Esc</kbd> 解除</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Mission Modal -->
+    <div id="mission-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:150; align-items:center; justify-content:center; padding:16px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:340px; max-height:82vh; display:flex; flex-direction:column; overflow:hidden;" id="mission-modal-card">
+        <div style="flex-shrink:0; position:relative; padding-right:28px; margin-bottom:8px;">
+          <div class="mission-card-title" style="margin-bottom:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-clipboard-text"></i> クライアントの要望</span>
+            <button id="btn-help-mission-modal" type="button" class="wiki-jump-pill">
+              <i class="ph-bold ph-book-open-text"></i> 窓・コンボの仕様
+            </button>
+          </div>
+          <button id="btn-close-mission" style="position:absolute; top:-6px; right:-6px; padding:6px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; line-height:1;"><i class="ph-bold ph-x"></i></button>
+        </div>
+        <div style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; padding-right:2px;">
+          <div id="modal-client-quote" style="font-size:12px; line-height:1.6; color:var(--c-text); background:var(--c-surface2); padding:10px 12px; border-radius:6px; margin-bottom:12px; border-left:3px solid var(--c-amber);"></div>
+          <div class="req-list" id="modal-req-list"></div>
+          
+          <div class="mission-card-title" style="margin-top:16px; font-size:12px;"><i class="ph-bold ph-magic-wand"></i> 現在の発生コンボ</div>
+          <div id="modal-combo-list" style="font-size:11px; color:var(--c-text); background:var(--c-surface2); padding:10px 12px; border-radius:6px; min-height:30px; line-height:1.5;"></div>
+        </div>
+        <button id="btn-close-mission-bottom" class="btn btn-slate" style="flex-shrink:0; width:100%; margin-top:12px; padding:12px; font-size:14px;">閉じる</button>
+      </div>
+    </div>
+
+    <!-- 緊急街金融資モーダル（パズル中資金ショート時のみ表示） -->
+    <div id="emergency-loan-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:280; align-items:center; justify-content:center; padding:16px;">
+      <div style="background:#1e1b4b; border:2px solid #f43f5e; border-radius:12px; width:100%; max-width:320px; max-height:85vh; overflow-y:auto; padding:16px; box-shadow:0 10px 25px rgba(0,0,0,0.6); text-align:center;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:rgba(244,63,94,0.2); color:#fb7185; font-size:24px; margin-bottom:10px;">
+          <i class="ph-bold ph-warning-octagon"></i>
+        </div>
+        <h3 style="font-size:15px; font-weight:bold; color:#fda4af; margin-bottom:4px;">建築資金が不足しています！</h3>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.4;">
+          予算が足りません（不足: 約<span id="emerg-deficit-val" style="color:#fb7185; font-weight:bold;">0.0</span>万円）。<br>
+          背に腹は代えられない…！今すぐ<strong style="color:#fcd34d;">街金（スピード融資）</strong>から資金を調達しますか？
+        </div>
+        <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(244,63,94,0.3); border-radius:8px; padding:10px; margin-bottom:14px; font-size:10.5px; text-align:left; color:#94a3b8; line-height:1.5;">
+          <div style="color:#fb7185; font-weight:bold; margin-bottom:2px;">⚠️ 街金のご利用条件:</div>
+          <div>・即時手数料: <strong style="color:#fcd34d;">10.0%</strong>（10万借入で残債11.0万）</div>
+          <div>・金利: <strong style="color:#fcd34d;">月利 10.0%</strong>（超高利）</div>
+          <div>・現在の街金借入: <strong id="emerg-current-debt" style="color:#fda4af;">0.0万円</strong> / 上限 50.0万円</div>
+          <div style="color:#fb7185; font-size:9.5px; margin-top:4px; font-weight:bold;">※街金の残債がある間は【銀行の新規融資が全面停止（審査落ち）】になります！</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btn-borrow-emerg-10" class="btn" style="background:#e11d48; color:#fff; font-weight:bold; padding:10px; font-size:12px; justify-content:center; gap:6px; border:none; cursor:pointer;">
+            <i class="ph-bold ph-lightning"></i> +10万円を即日借入（手数料込残債11万）
+          </button>
+          <button id="btn-borrow-emerg-20" class="btn" style="background:#be123c; color:#fff; font-weight:bold; padding:10px; font-size:12px; justify-content:center; gap:6px; border:none; cursor:pointer;">
+            <i class="ph-bold ph-lightning"></i> +20万円を即日借入（手数料込残債22万）
+          </button>
+          <button id="btn-close-emerg-loan" class="btn btn-slate" style="padding:8px; font-size:11px; justify-content:center; margin-top:2px; cursor:pointer;">
+            あきらめる（キャンセル）
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================
+       SCREEN 3: RESULT
+  ============================== -->
+  <section id="screen-result" class="screen">
+    <div class="flyer-wrap anim-enter">
+
+      <!-- Flyer header -->
+      <div class="flyer-head">
+        <div class="flyer-head-left">
+          <span class="flyer-head-pill">特選物件チラシ</span>
+          <span class="flyer-head-title" id="flyer-head-meta">物件詳細シート</span>
+        </div>
+        <div class="flyer-head-right">
+          <span id="flyer-head-status" class="flyer-head-status">新築物件</span>
+          <span id="flyer-head-rank" class="flyer-head-rank">Rank A</span>
+        </div>
+      </div>
+
+      <!-- Flyer body -->
+      <div class="flyer-body">
+
+        <!-- Headline + Satisfaction Stamp -->
+        <div class="flyer-headline-row">
+          <div class="flyer-headline-text">
+            <div class="flyer-catch-sub" id="flyer-sub-catch">【特選・最新物件】</div>
+            <div class="flyer-catch-main" id="flyer-main-catch">物件名が入ります</div>
+          </div>
+          <button type="button" id="flyer-clear-badge" class="flyer-stamp" title="タップで満足度の計算根拠を表示">
+            <span class="flyer-stamp-top">満足度</span>
+            <span class="flyer-stamp-val font-num">100%</span>
+            <span class="flyer-stamp-sub">大満足 ♥</span>
+            <span class="flyer-stamp-hint"><i class="ph-bold ph-info"></i>根拠</span>
+          </button>
+        </div>
+
+        <!-- Hero 2-Col (Desktop) / 1-Col (Mobile) -->
+        <div class="flyer-hero-grid">
+          <!-- Floor plan thumbnail -->
+          <div class="flyer-thumbnail">
+            <div class="flyer-thumbnail-label" style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:6px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:4px;">
+                <i class="ph-bold ph-floor-plan" style="color:#64748b;"></i>
+                完成間取り図
+              </span>
+              <div style="display:inline-flex; gap:6px;">
+                <button id="btn-replay-result-tour" type="button" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+                  <i class="ph-bold ph-play" style="color:#d97706;"></i> 🎬 内見再生
+                </button>
+                <button id="btn-save-result-png" type="button" style="background:#f8fafc; color:#0f172a; border:1px solid #cbd5e1; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; gap:4px; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                  <i class="ph-bold ph-download-simple" style="color:var(--c-blue);"></i> 💾 画像保存
+                </button>
+              </div>
+            </div>
+            <div class="flyer-canvas-frame">
+              <canvas id="result-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Right column: Rent, Specs, Combos -->
+          <div class="flyer-hero-right">
+            <!-- Rent -->
+            <div class="flyer-rent-box">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+                <span class="flyer-rent-label">月額家賃</span>
+                <span id="flyer-rent-diff" class="flyer-rent-diff"></span>
+              </div>
+              <div class="flyer-rent-row">
+                <span class="flyer-rent-val font-num" id="flyer-rent">0.0</span>
+                <span class="flyer-rent-unit">万円 / 月</span>
+              </div>
+              <div class="flyer-rent-note">敷金0・礼金0 / 仲介手数料無料</div>
+            </div>
+
+            <!-- Property Specs -->
+            <div class="flyer-spec-box" id="flyer-spec-rows"></div>
+
+            <!-- Feature Combo Pills -->
+            <div>
+              <div class="flyer-combo-heading">■ 物件の特徴・コンボ</div>
+              <div class="flyer-combo-pills" id="flyer-combo-pills"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tenant Comment -->
+        <div class="flyer-comment-box">
+          <div class="flyer-comment-title" id="flyer-comment-title">
+            <i class="ph-bold ph-chat-centered-dots"></i>
+            <span>入居者の声</span>
+          </div>
+          <div class="flyer-comment-text" id="flyer-comment">—</div>
+        </div>
+
+        <!-- Tutorial Quick Guide for Flyer (Tutorial only) -->
+        <div id="tutorial-result-guide" class="tut-result-guide" style="display:none;">
+          <div class="tut-result-guide-title">
+            <i class="ph-bold ph-lightbulb"></i>
+            <span>チラシの見方（ざっくりガイド）</span>
+          </div>
+          <ul class="tut-result-guide-list">
+            <li><strong>家賃と希望額</strong>：高いほど毎月稼げますが、高すぎると満足度が下がります</li>
+            <li><strong>満足度</strong>：<code>100%</code>以上でしばらく退去されず安定収入になります</li>
+            <li><strong>維持費・建築費</strong>：毎月家賃から維持費が引かれます（数字タップで内訳表示）</li>
+            <li><strong>診断明細</strong>：下の明細が家賃の内訳。2棟目以降のコンボ狙いの参考に！</li>
+          </ul>
+        </div>
+
+        <!-- Construction Cost & ROI -->
+        <div id="flyer-cost-box" class="flyer-cost-section">
+          <div id="flyer-cost-row" onclick="toggleFlyerBreakdown('cost')" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; cursor:pointer; padding:2px 4px; border-radius:4px; transition:background 0.15s;" title="タップで内訳を表示">
+            <span style="font-weight:700; color:#475569; display:inline-flex; align-items:center; gap:3px;">💰 建築費 <i class="ph-bold ph-info" style="font-size:11px; color:#64748b;"></i></span>
+            <strong id="flyer-total-cost" class="font-num" style="font-size:15px; font-weight:800; color:#0f172a;">0.0万円</strong>
+          </div>
+          <div id="flyer-cost-detail" style="display:none;"></div>
+          <div id="flyer-roi-note" style="font-size:10px; color:#0369a1; background:#e0f2fe; border:1px solid #bae6fd; border-radius:4px; padding:4px 6px; display:flex; justify-content:space-between; align-items:center; gap:4px; flex-wrap:wrap;">
+            <span>査定額: 0.0万</span>
+            <span>維持費: -0.0万/月</span>
+            <span>回収目安: —</span>
+          </div>
+          <div id="flyer-breakdown-drawer" style="display:none; margin-top:6px; padding:7px 9px; background:#ffffff; border:1px solid #93c5fd; border-radius:6px; font-size:10.5px; color:#1e293b; line-height:1.5; box-shadow:0 2px 6px rgba(0,0,0,0.04);"></div>
+        </div>
+
+        <!-- Report list -->
+        <div class="flyer-report-section">
+          <div class="flyer-report-title" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span style="display:inline-flex; align-items:center; gap:5px;">
+              <i class="ph-bold ph-chart-polar" style="color:#3b82f6;font-size:13px;"></i>
+              査定・診断明細
+            </span>
+            <button id="btn-help-result" type="button" class="wiki-jump-pill wiki-jump-pill-light">
+              <i class="ph-bold ph-book-open-text"></i> 査定・引き渡し仕様
+            </button>
+          </div>
+          <div class="report-list" id="report-list"></div>
+        </div>
+
+      </div><!-- /flyer-body -->
+
+      <div id="tutorial-result-banner" class="tutorial-banner tutorial-banner-light" style="display:none; margin:0 12px 10px;">
+        <div class="tutorial-banner-body">
+          <i class="ph-fill ph-sparkle" style="color:#d97706; font-size:16px; flex-shrink:0;"></i>
+          <span id="tutorial-result-text"></span>
+        </div>
+        <button id="btn-skip-tutorial-result" type="button" class="tutorial-skip-btn tutorial-skip-btn-light">スキップ</button>
+      </div>
+
+      <!-- Flyer footer -->
+      <div class="flyer-foot">
+        <button class="btn btn-dark" id="btn-next-stage" style="display:none; background:var(--c-emerald);">
+          <i class="ph-bold ph-key" style="font-size:13px;"></i>
+          物件を引き渡す
+        </button>
+        <button class="btn btn-dark" id="btn-restart">
+          <i class="ph-bold ph-arrow-counter-clockwise" style="font-size:13px;"></i>
+          もう一度設計
+        </button>
+        <button class="btn btn-dark" id="btn-giveup" style="display:none; background:var(--c-rose);">
+          <i class="ph-bold ph-x" style="font-size:13px;"></i>
+          諦める
+        </button>
+
+      </div>
+
+    </div><!-- /flyer-wrap -->
+
+    <!-- Flyer Satisfaction Breakdown Modal -->
+    <div id="flyer-sat-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.82); z-index:260; align-items:center; justify-content:center; padding:16px;">
+      <div class="flyer-sat-card" id="flyer-sat-card">
+        <div class="flyer-sat-head">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <i class="ph-bold ph-calculator" style="color:#e11d48; font-size:17px;"></i>
+            <span style="font-size:14px; font-weight:900; color:#0f172a;">満足度の計算根拠</span>
+          </div>
+          <button id="btn-close-flyer-sat-x" type="button" class="flyer-sat-x" aria-label="閉じる">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+        <div id="flyer-sat-summary" class="flyer-sat-summary"></div>
+        <div id="flyer-sat-rows" class="flyer-sat-rows"></div>
+        <div id="flyer-sat-note" class="flyer-sat-note"></div>
+        <button id="btn-close-flyer-sat" type="button" class="btn btn-dark" style="width:100%; justify-content:center; padding:9px; font-size:12px; margin-top:10px;">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================
+       PIXEL COMPLETION & TOUR MODAL (Step A)
+  ============================== -->
+  <div id="pixel-tour-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.94); z-index:350; align-items:center; justify-content:center; padding:12px;">
+    <div class="mission-card" style="width:100%; max-width:480px; padding:14px; text-align:center; border:1px solid rgba(148,163,184,0.3); box-shadow:0 12px 35px rgba(0,0,0,0.6);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
+        <div id="pixel-tour-phase" style="font-size:13px; font-weight:900; color:#f8fafc; text-align:left;">📐 空間を構築中...</div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <button type="button" class="pixel-speed-btn is-active" data-speed="1">1x</button>
+          <button type="button" class="pixel-speed-btn" data-speed="2">2x</button>
+          <button type="button" class="pixel-speed-btn" data-speed="4">4x</button>
+        </div>
+      </div>
+
+      <div style="background:#0f172a; border-radius:8px; padding:6px; display:inline-block; border:1px solid rgba(255,255,255,0.14); margin-bottom:10px;">
+        <canvas id="pixel-tour-canvas" style="display:block; margin:0 auto; border-radius:4px;"></canvas>
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:center; align-items:center;">
+        <button id="btn-pixel-tour-replay" type="button" class="btn btn-slate" style="display:none; padding:10px 12px; font-size:12px; font-weight:bold; cursor:pointer; align-items:center; gap:4px;">
+          <i class="ph-bold ph-arrow-counter-clockwise"></i> もう一度
+        </button>
+        <button id="btn-pixel-tour-finish" type="button" class="btn btn-primary" style="flex:1; padding:10px 14px; font-size:13px; font-weight:bold; cursor:pointer;">
+          <i class="ph-bold ph-fast-forward"></i> スキップして結果へ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       OFFICE PROPERTIES MODAL (所有物件一覧)
+  ============================== -->
+  <div id="office-properties-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.82); z-index:130; align-items:center; justify-content:center; padding:14px;">
+    <div class="mission-card" style="position:relative; width:100%; max-width:540px; max-height:86vh; display:flex; flex-direction:column; text-align:left; padding:18px 16px;">
+      <button id="btn-close-office-props" type="button" style="position:absolute; top:12px; right:12px; padding:6px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding-right:34px; margin-bottom:12px; border-bottom:1px solid var(--c-border); padding-bottom:10px;">
+        <h3 style="margin:0; color:#f8fafc; font-size:16px; font-weight:900; display:flex; align-items:center; gap:7px;">
+          <i class="ph-bold ph-folders" style="color:#38bdf8;"></i> 所有物件一覧
+        </h3>
+        <span id="home-property-capacity" style="font-size:11px; font-weight:bold; padding:2px 8px; border-radius:12px; background:#334155; color:#e2e8f0;">
+          0 / 4棟
+        </span>
+      </div>
+      <div id="property-list" style="flex:1; min-height:110px; max-height:62vh; overflow-y:auto; -webkit-overflow-scrolling:touch; font-size:13px; color:var(--c-text);">
+        <!-- 挿入される -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       SANDBOX TEST TOOLS MODAL
+  ============================== -->
+  <div id="sandbox-tools-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:340; align-items:center; justify-content:center; padding:14px;">
+    <div class="mission-card" style="position:relative; width:100%; max-width:400px; max-height:88vh; overflow-y:auto; text-align:left; padding:16px;">
+      <button id="btn-close-sandbox-tools" style="position:absolute; top:10px; right:10px; padding:6px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+      <div class="mission-card-title" style="margin-bottom:8px;">🧪 ピクセル版 検証ツール</div>
+
+      <div style="font-size:11px; font-weight:800; color:#f1f5f9; margin-bottom:5px;">🏢 Step B: オフィス拡張＆社員チェック</div>
+      <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-bottom:7px;">
+        <button type="button" class="btn btn-slate sb-office-rank-btn" data-rank="0" style="padding:6px 4px; font-size:10.5px; font-weight:800;">R1<br>4×4</button>
+        <button type="button" class="btn btn-slate sb-office-rank-btn" data-rank="1" style="padding:6px 4px; font-size:10.5px; font-weight:800;">R2<br>6×5</button>
+        <button type="button" class="btn btn-slate sb-office-rank-btn" data-rank="2" style="padding:6px 4px; font-size:10.5px; font-weight:800;">R3<br>8×6</button>
+        <button type="button" class="btn btn-slate sb-office-rank-btn" data-rank="3" style="padding:6px 4px; font-size:10.5px; font-weight:800;">R4<br>9×7</button>
+        <button type="button" class="btn btn-slate sb-office-rank-btn" data-rank="4" style="padding:6px 4px; font-size:10.5px; font-weight:800;">R5<br>10×8</button>
+      </div>
+      <div style="display:flex; gap:6px; margin-bottom:12px;">
+        <button id="btn-sb-fill-staff" type="button" class="btn btn-slate" style="flex:1; padding:7px 8px; font-size:11px; font-weight:bold;">
+          👥 全デスク雇用(4人)
+        </button>
+        <button id="btn-sb-toggle-cleared" type="button" class="btn btn-slate" style="flex:1; padding:7px 8px; font-size:11px; font-weight:bold;">
+          🏆 表彰飾りを切替
+        </button>
+      </div>
+
+      <div style="font-size:11px; font-weight:800; color:#f1f5f9; margin-bottom:5px; padding-top:8px; border-top:1px solid #334155;">🏠 Step A: 間取り・内見ツアー即席展開</div>
+      <p style="font-size:10.5px; color:var(--c-text2); margin:0 0 8px; line-height:1.45;">
+        パズル盤面にプリセット間取りを展開し、「設計完了」から内見ツアーをすぐ確認できます。
+      </p>
+      <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:10px;">
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="sento_park" style="justify-content:flex-start; padding:8px 10px; font-size:11.5px; text-align:left;">
+          ♨️ もはや銭湯 ＋ バカデカトイレ ＋ 公園（ファミリー）
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="japan_foyer" style="justify-content:flex-start; padding:8px 10px; font-size:11.5px; text-align:left;">
+          🏯 古き良き日本家屋（田の字）＋ 大ホワイエ（大家族4人）
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="vampire_dark" style="justify-content:flex-start; padding:8px 10px; font-size:11.5px; text-align:left;">
+          🦇 吸血鬼の「封印されし闇」ワープ内見テスト
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="ng_dinks" style="justify-content:flex-start; padding:8px 10px; font-size:11.5px; text-align:left;">
+          😱 NGコンボ（玄関直風呂・食欲減退）＋ DINKS 2人組
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="ninja_secret" style="justify-content:flex-start; padding:8px 10px; font-size:11.5px; text-align:left;">
+          🥷 忍者「隠し部屋」＋ 要塞化テスト（特注）
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="ng_inverted" style="justify-content:flex-start; padding:8px 10px; font-size:11.5px; text-align:left;">
+          🛁 風呂マニア「玄関直風呂・特注反転」喜びテスト
+        </button>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button id="btn-sb-add-funds" type="button" class="btn btn-primary" style="flex:1; padding:9px; font-size:11.5px; font-weight:bold;">
+          💰 資金 +5000万
+        </button>
+        <button id="btn-sb-spawn-specials" type="button" class="btn btn-amber" style="flex:1; padding:9px; font-size:11.5px; font-weight:bold;">
+          ✨ 案B特注を受注枠へ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="pixel_assets.js"></script>
+  <script src="pixel_renderer.js"></script>
+  <script src="pixel_office.js"></script>
+  <script src="game-1.js"></script>
+  <script src="game-2.js"></script>
+</body>
+</html>
