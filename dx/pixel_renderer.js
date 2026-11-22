@@ -19,6 +19,27 @@
     if ([1, 2, 4].includes(savedSpeed)) tourSpeed = savedSpeed;
   } catch (e) {}
 
+  // 空室モードでも残す造り付け設備・外構アセットID
+  const BUILTIN_ASSET_IDS = new Set([
+    'furn_kitchen', 'furn_kitchen_v_west', 'furn_kitchen_v_east',
+    'furn_bath_tub', 'furn_sento_tub', 'furn_ub', 'furn_fuji',
+    'furn_toilet', 'furn_washbasin', 'furn_shoesbox_slim',
+    'furn_tree', 'furn_flower', 'furn_pond', 'furn_lantern',
+    'furn_stepping_stone', 'furn_rose_arch', 'furn_birdbath'
+  ]);
+
+  function getRoomThemeSeed(cells, idx, stageObj) {
+    let h = (idx || 0) * 7 + (cells ? cells.length * 13 : 0);
+    if (cells && cells[0]) {
+      h += cells[0].r * 31 + cells[0].c * 17;
+    }
+    const badge = stageObj?.client?.typeBadge || '';
+    for (let i = 0; i < badge.length; i++) {
+      h += badge.charCodeAt(i) * (i + 3);
+    }
+    return Math.abs(h);
+  }
+
   /* ============================================================
      1. 部屋・壁・コンボ解析ヘルパー
   ============================================================ */
@@ -410,6 +431,11 @@
 
     // 和室が複数ある場合（特に古き良き日本家屋）、役割をローテーション
     let washitsuIdx = 0;
+    let westernRoomIdx = 0;
+    const stageBadge = stageObj?.client?.typeBadge || '';
+    const isWashitsuRoom = (r) => r.type === T.ROOM && (r.label === '和室' || r.pieceLibId === 'room-wa' || r.pieceLibId === 'room-wa2');
+    const totalWashitsu = rooms.filter(isWashitsuRoom).length;
+    const hasAnyWashitsu = totalWashitsu > 0;
     const isFortress = comboNames.has('要塞化');
     const isGlassHouse = comboNames.has('ガラス張りハウス');
     const hasTanoji = comboNames.has('古き良き日本家屋');
@@ -699,9 +725,11 @@
           const supPt = findWallSingle(rm.cells, cellSet, false);
           if (supPt) addItem('furn_supplies', supPt.r, supPt.c, 1, 1, rm.key, { snap: supPt.snap });
         }
+        const ldkSeed = getRoomThemeSeed(rm.cells, 0, stageObj);
+        const isCafeLdk = !isFortress && (stageBadge.includes('陽だまり') || stageBadge.includes('おしゃれ') || stageBadge.includes('DINKS') || (ldkSeed % 3 === 0));
         if (count >= 3 && count < 6) {
           const dPt = findCenterSingle(rm.cells, cellSet);
-          if (dPt) addItem('furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+          if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
         }
         if (count >= 6) {
           const fPt = findWallSingle(rm.cells, cellSet, true);
@@ -709,25 +737,44 @@
           const sH = findWallPair(rm.cells, cellSet, false);
           if (sH) {
             addItem('furn_sofa', sH.r, sH.c, 2, 1, rm.key, { snap: sH.snap });
+            if (isCafeLdk) {
+              const cafePt = findCenterSingle(rm.cells, cellSet);
+              if (cafePt) addItem('furn_cafe_table', cafePt.r, cafePt.c, 1, 1, rm.key, { snap: 'center' });
+            }
           } else {
             const sV = findWallVerticalPair(rm.cells, cellSet);
-            if (sV) addItem(`furn_sofa_v_${sV.snap}`, sV.r, sV.c, 1, 2, rm.key, { snap: sV.snap });
-            else {
+            if (sV) {
+              addItem(`furn_sofa_v_${sV.snap}`, sV.r, sV.c, 1, 2, rm.key, { snap: sV.snap });
+            } else {
               const dPt = findCenterSingle(rm.cells, cellSet);
-              if (dPt) addItem('furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+              if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
             }
           }
           if (count >= 8) {
             const tPt = findWallSingle(rm.cells, cellSet, true);
             if (tPt) addItem(isFortress ? 'furn_fortress_console' : 'furn_tv', tPt.r, tPt.c, 1, 1, rm.key, { snap: tPt.snap });
+            if (isCafeLdk) {
+              const plPt = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+              if (plPt) addItem('furn_plant', plPt.r, plPt.c, 1, 1, rm.key, { snap: plPt.snap });
+            }
           }
         }
         continue;
       }
 
-      // 9) 和室
+      // 9) 和室（第2段階テーマ：0客間 / 1寝間 / 2こたつ間 / 3茶室）
       if (rm.type === T.ROOM && (rm.label === '和室' || rm.pieceLibId === 'room-wa' || rm.pieceLibId === 'room-wa2')) {
-        const mode = hasTanoji ? (washitsuIdx % 4) : 0;
+        const wSeed = getRoomThemeSeed(rm.cells, washitsuIdx, stageObj);
+        let mode = 0;
+        if (hasTanoji) {
+          mode = washitsuIdx % 4;
+        } else if (totalWashitsu >= 2) {
+          mode = (wSeed + washitsuIdx) % 4;
+        } else if (stageBadge.includes('シニア') || stageBadge.includes('和モダン') || stageBadge.includes('庭園')) {
+          mode = (wSeed % 2 === 0) ? 3 : 0;
+        } else {
+          mode = wSeed % 4;
+        }
         washitsuIdx++;
         const kakePt = rm.cells.find(pt => {
           const e = getCellEdges(pt.r, pt.c);
@@ -748,20 +795,42 @@
           if (f1) addItem('furn_futon', f1.r, f1.c, 1, 1, rm.key, { snap: f1.snap });
           const f2 = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
           if (f2) addItem('furn_futon', f2.r, f2.c, 1, 1, rm.key, { snap: f2.snap });
+          if (count >= 4) {
+            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+          }
         } else if (mode === 2) {
           const kt = findCenterSingle(rm.cells, cellSet);
           if (kt) addItem('furn_kotatsu', kt.r, kt.c, 1, 1, rm.key, { snap: 'center' });
+          if (count >= 4 && !kakePt) {
+            const tk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
+          }
+          if (count >= 6) {
+            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+          }
         } else if (mode === 3) {
-          const ch = findCenterSingle(rm.cells, cellSet);
-          if (ch) addItem('furn_chabudai', ch.r, ch.c, 1, 1, rm.key, { snap: 'center' });
-          const tk = findWallSingle(rm.cells, cellSet, true);
-          if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
+          const ts = findCenterSingle(rm.cells, cellSet);
+          if (ts) addItem('furn_tea_set', ts.r, ts.c, 1, 1, rm.key, { snap: 'center' });
+          if (count >= 3) {
+            const bs = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+          }
+          if (count >= 6 && !kakePt) {
+            const tk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
+          }
         } else {
           const ch = findCenterSingle(rm.cells, cellSet);
           if (ch) addItem('furn_chabudai', ch.r, ch.c, 1, 1, rm.key, { snap: 'center' });
           if (count >= 4 && !kakePt) {
             const tk = findWallSingle(rm.cells, cellSet, true);
             if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
+          }
+          if (count >= 4) {
+            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
           }
           if (count >= 6) {
             const kt = findCenterSingle(rm.cells, cellSet);
@@ -771,7 +840,7 @@
         continue;
       }
 
-      // 10) 洋室 (隠し部屋なら忍具＋金庫、要塞化なら監視コンソール＋備蓄、通常ならベッド＆デスク)
+      // 10) 洋室 (隠し部屋 / 要塞化 / 通常テーマ別：bedroom / gaming / kids / study)
       if (rm.type === T.ROOM) {
         if (isHiddenAccess) {
           const wallPt = rm.cells.find(pt => getCellEdges(pt.r, pt.c).hasSolidTop);
@@ -799,7 +868,64 @@
           }
           continue;
         }
-        if (count >= 6) {
+        const rSeed = getRoomThemeSeed(rm.cells, westernRoomIdx, stageObj);
+        let theme = 'bedroom';
+        if (westernRoomIdx === 0) {
+          if (stageBadge.includes('ワーカー')) theme = 'gaming';
+          else if (stageBadge.includes('ミステリー')) theme = 'study';
+          else theme = 'bedroom';
+        } else if (westernRoomIdx === 1) {
+          if (stageBadge.includes('ファミリー') || stageBadge.includes('大家族')) theme = 'kids';
+          else if (stageBadge.includes('ワーカー') || stageBadge.includes('趣味')) theme = 'gaming';
+          else if (stageBadge.includes('豪邸') || stageBadge.includes('VIP') || stageBadge.includes('シニア') || stageBadge.includes('ミステリー')) theme = 'study';
+          else theme = ['gaming', 'study', 'kids'][rSeed % 3];
+        } else {
+          theme = ['kids', 'study', 'gaming', 'bedroom'][(rSeed + westernRoomIdx) % 4];
+        }
+        westernRoomIdx++;
+
+        if (theme === 'gaming') {
+          const gd = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          if (gd) addItem('furn_gaming_desk', gd.r, gd.c, 1, 1, rm.key, { snap: gd.snap });
+          if (count >= 3) {
+            const bs = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            if (bs) addItem('furn_bed_s', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+          }
+          if (count >= 5) {
+            const ex = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (ex) addItem(rSeed % 2 === 0 ? 'furn_bookshelf' : 'furn_plant', ex.r, ex.c, 1, 1, rm.key, { snap: ex.snap });
+          }
+        } else if (theme === 'kids') {
+          const kb = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          if (kb) addItem('furn_kids_bed', kb.r, kb.c, 1, 1, rm.key, { snap: kb.snap });
+          if (count >= 2) {
+            const tb = findCenterSingle(rm.cells, cellSet) || findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (tb) addItem('furn_toy_box', tb.r, tb.c, 1, 1, rm.key, { snap: tb.snap });
+          }
+          if (count >= 4) {
+            const dk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            if (dk) addItem('furn_desk', dk.r, dk.c, 1, 1, rm.key, { snap: dk.snap });
+          }
+          if (count >= 6) {
+            const bk = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (bk) addItem('furn_bookshelf', bk.r, bk.c, 1, 1, rm.key, { snap: bk.snap });
+          }
+        } else if (theme === 'study') {
+          const bd = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          if (bd) addItem('furn_book_desk', bd.r, bd.c, 1, 1, rm.key, { snap: bd.snap });
+          if (count >= 2) {
+            const bk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            if (bk) addItem('furn_bookshelf', bk.r, bk.c, 1, 1, rm.key, { snap: bk.snap });
+          }
+          if (count >= 4) {
+            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (bs) addItem('furn_bed_s', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+          }
+          if (count >= 6) {
+            const pl = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (pl) addItem('furn_plant', pl.r, pl.c, 1, 1, rm.key, { snap: pl.snap });
+          }
+        } else if (count >= 6) {
           const bw = findWallPair(rm.cells, cellSet, true);
           if (bw) {
             addItem('furn_bed_w', bw.r, bw.c, 2, 1, rm.key, { snap: bw.snap });
@@ -827,11 +953,21 @@
       }
     }
 
-    // 11) 庭クラスター配置（もはや公園 / 広大なる庭園 / 箱庭 / 小庭）
+    // 11) 庭クラスター配置（もはや公園 / 和風庭園・イングリッシュガーデン差分）
     const isParkCombo = comboNames.has('もはや公園');
-    for (const cluster of gardenClusters) {
+    gardenClusters.forEach((cluster, gIdx) => {
       const cSet = new Set(cluster.map(x => `${x.r},${x.c}`));
       const len = cluster.length;
+      const gSeed = getRoomThemeSeed(cluster, gIdx, stageObj);
+      let isJapaneseGarden = false;
+      if (hasAnyWashitsu || stageBadge.includes('和') || stageBadge.includes('庭園') || stageBadge.includes('二世帯') || stageBadge.includes('シニア') || stageBadge.includes('忍') || stageBadge.includes('仙')) {
+        isJapaneseGarden = true;
+      } else if (stageBadge.includes('陽だまり') || stageBadge.includes('おしゃれ') || stageBadge.includes('ファミリー') || stageBadge.includes('VIP') || stageBadge.includes('美食')) {
+        isJapaneseGarden = false;
+      } else {
+        isJapaneseGarden = (gSeed % 2 === 0);
+      }
+
       if (isParkCombo || len >= 12) {
         const sb = findHorizontalPair(cluster, cSet, true);
         if (sb) addItem('furn_sandbox', sb.r, sb.c, 2, 1, null);
@@ -844,28 +980,52 @@
         const fl = findSingleCell(cluster, cSet, false);
         if (fl) addItem('furn_flower', fl.r, fl.c, 1, 1, null);
       } else if (len >= 8) {
-        const pd = findHorizontalPair(cluster, cSet, true);
-        if (pd) addItem('furn_pond', pd.r, pd.c, 2, 1, null);
-        const gt = findSingleCell(cluster, cSet, false);
-        if (gt) addItem('furn_garden_table', gt.r, gt.c, 1, 1, null);
-        const ln = findSingleCell(cluster, cSet, true);
-        if (ln) addItem('furn_lantern', ln.r, ln.c, 1, 1, null);
-        const tr1 = findSingleCell(cluster, cSet, true);
-        if (tr1) addItem('furn_tree', tr1.r, tr1.c, 1, 1, null);
-        const fl1 = findSingleCell(cluster, cSet, false);
-        if (fl1) addItem('furn_flower', fl1.r, fl1.c, 1, 1, null);
+        if (isJapaneseGarden) {
+          const pd = findHorizontalPair(cluster, cSet, true);
+          if (pd) addItem('furn_pond', pd.r, pd.c, 2, 1, null);
+          const ln = findSingleCell(cluster, cSet, true);
+          if (ln) addItem('furn_lantern', ln.r, ln.c, 1, 1, null);
+          const ss = findSingleCell(cluster, cSet, false);
+          if (ss) addItem('furn_stepping_stone', ss.r, ss.c, 1, 1, null);
+          const tr1 = findSingleCell(cluster, cSet, true);
+          if (tr1) addItem('furn_tree', tr1.r, tr1.c, 1, 1, null);
+          const fl1 = findSingleCell(cluster, cSet, false);
+          if (fl1) addItem('furn_flower', fl1.r, fl1.c, 1, 1, null);
+        } else {
+          const ra = findSingleCell(cluster, cSet, true);
+          if (ra) addItem('furn_rose_arch', ra.r, ra.c, 1, 1, null);
+          const gt = findSingleCell(cluster, cSet, false);
+          if (gt) addItem('furn_garden_table', gt.r, gt.c, 1, 1, null);
+          const bb = findSingleCell(cluster, cSet, true);
+          if (bb) addItem('furn_birdbath', bb.r, bb.c, 1, 1, null);
+          const tr1 = findSingleCell(cluster, cSet, true);
+          if (tr1) addItem('furn_tree', tr1.r, tr1.c, 1, 1, null);
+          const fl1 = findSingleCell(cluster, cSet, false);
+          if (fl1) addItem('furn_flower', fl1.r, fl1.c, 1, 1, null);
+        }
       } else if (len >= 4) {
-        const ln = findSingleCell(cluster, cSet, true);
-        if (ln) addItem('furn_lantern', ln.r, ln.c, 1, 1, null);
-        const tr = findSingleCell(cluster, cSet, true);
-        if (tr) addItem('furn_tree', tr.r, tr.c, 1, 1, null);
-        const fl = findSingleCell(cluster, cSet, false);
-        if (fl) addItem('furn_flower', fl.r, fl.c, 1, 1, null);
+        if (isJapaneseGarden) {
+          const ln = findSingleCell(cluster, cSet, true);
+          if (ln) addItem('furn_lantern', ln.r, ln.c, 1, 1, null);
+          const ss = findSingleCell(cluster, cSet, false);
+          if (ss) addItem('furn_stepping_stone', ss.r, ss.c, 1, 1, null);
+          const tr = findSingleCell(cluster, cSet, true);
+          if (tr) addItem('furn_tree', tr.r, tr.c, 1, 1, null);
+        } else {
+          const ra = findSingleCell(cluster, cSet, true);
+          if (ra) addItem('furn_rose_arch', ra.r, ra.c, 1, 1, null);
+          const bb = findSingleCell(cluster, cSet, false);
+          if (bb) addItem('furn_birdbath', bb.r, bb.c, 1, 1, null);
+          const fl = findSingleCell(cluster, cSet, false);
+          if (fl) addItem('furn_flower', fl.r, fl.c, 1, 1, null);
+          const tr = findSingleCell(cluster, cSet, true);
+          if (tr) addItem('furn_tree', tr.r, tr.c, 1, 1, null);
+        }
       } else if (len >= 2) {
-        const fl = findSingleCell(cluster, cSet, false);
-        if (fl) addItem('furn_flower', fl.r, fl.c, 1, 1, null);
+        const pt = findSingleCell(cluster, cSet, false);
+        if (pt) addItem(isJapaneseGarden ? 'furn_stepping_stone' : 'furn_flower', pt.r, pt.c, 1, 1, null);
       }
-    }
+    });
 
     // ポップバウンス用：ランダム順の遅延（合計約1.0秒: delay 0..760ms + anim 240ms）
     const indices = items.map((_, i) => i);
@@ -1037,7 +1197,7 @@
   }
 
   // 玄関セル専用：外向き(facing.dir)に応じて土間・上がり框・靴・廊下床を描き分ける
-  function drawEntranceFloorAndShoes(ctx, targetGrid, r, c, cs, facing, enable25DWalls, entranceBoxSnap = null) {
+  function drawEntranceFloorAndShoes(ctx, targetGrid, r, c, cs, facing, enable25DWalls, entranceBoxSnap = null, showShoes = true) {
     const x = c * cs, y = r * cs;
     const dir = (facing && facing.dir) || 'bottom';
     // まず室内側床（廊下木目）を全面に敷く
@@ -1085,22 +1245,24 @@
     }
 
     // 土間に脱いだ靴（furn_shoes_pair: 24x12）を下駄箱側と反対寄りへ配置
-    const sw = cs * 0.50, sh = cs * 0.25;
-    let sx = dx + (dw - sw) / 2;
-    let sy = dy + (dh - sh) / 2;
-    if (dir === 'bottom' || dir === 'top') {
-      if (entranceBoxSnap === 'west') sx = dx + cs * 0.36;
-      else if (entranceBoxSnap === 'east') sx = dx + cs * 0.14;
-    } else {
-      if (entranceBoxSnap === 'north') sy = dy + cs * 0.42;
-      else if (entranceBoxSnap === 'south') sy = dy + cs * 0.18;
+    if (showShoes) {
+      const sw = cs * 0.50, sh = cs * 0.25;
+      let sx = dx + (dw - sw) / 2;
+      let sy = dy + (dh - sh) / 2;
+      if (dir === 'bottom' || dir === 'top') {
+        if (entranceBoxSnap === 'west') sx = dx + cs * 0.36;
+        else if (entranceBoxSnap === 'east') sx = dx + cs * 0.14;
+      } else {
+        if (entranceBoxSnap === 'north') sy = dy + cs * 0.42;
+        else if (entranceBoxSnap === 'south') sy = dy + cs * 0.18;
+      }
+      PixelAssets.drawSprite(ctx, 'furn_shoes_pair', sx, sy, sw, sh);
     }
-    PixelAssets.drawSprite(ctx, 'furn_shoes_pair', sx, sy, sw, sh);
     ctx.restore();
   }
 
   // 完成時専用：2.5D 北側立ち上がり壁面（高さ約42%：1.55倍拡大！）＋ 南側外壁外観 ＋ 窓・壁装飾・外扉
-  function draw25DWallsAndDeco(ctx, targetGrid, cs, plan, stageObj, facing) {
+  function draw25DWallsAndDeco(ctx, targetGrid, cs, plan, stageObj, facing, vacantMode = false) {
     const gSize = targetGrid.length;
     const wallH = Math.max(9, Math.round(cs * 0.42));
     const extH = Math.max(7, Math.round(cs * 0.34));
@@ -1206,10 +1368,12 @@
               ctx.fillStyle = '#ffffff';
               ctx.fillRect(winX + Math.round(winW / 2), winY + 1, 1, winH - 2);
               ctx.fillRect(winX, winY + Math.round(winH / 2), winW, 1);
-              // 左右の小さなカーテン
-              ctx.fillStyle = '#f59e0b';
-              ctx.fillRect(winX - 2, winY, 3, winH);
-              ctx.fillRect(winX + winW - 1, winY, 3, winH);
+              // 左右の小さなカーテン（空室時は外す）
+              if (!vacantMode) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(winX - 2, winY, 3, winH);
+                ctx.fillRect(winX + winW - 1, winY, 3, winH);
+              }
             } else {
               // 壁面装飾（富士山壁画、掛け軸、廊下の絵、時計）
               const key = `${r},${c}`;
@@ -1217,11 +1381,11 @@
               if (wd && wd.type === 'fuji') {
                 PixelAssets.drawSprite(ctx, 'wall_fuji', x + 1, y + 2, cs * 2 - 2, wallH - 5);
                 skipCells.add(`${r},${c + 1}`);
-              } else if (wd && wd.type === 'kakejiku') {
+              } else if (!vacantMode && wd && wd.type === 'kakejiku') {
                 PixelAssets.drawSprite(ctx, 'wall_kakejiku', x, y + 2, cs, wallH - 4);
-              } else if (wd && wd.type === 'scroll_ninja') {
+              } else if (!vacantMode && wd && wd.type === 'scroll_ninja') {
                 PixelAssets.drawSprite(ctx, 'wall_scroll_ninja', x, y + 2, cs, wallH - 4);
-              } else if (!skipCells.has(key)) {
+              } else if (!vacantMode && !skipCells.has(key)) {
                 if (cCur.type === T.CORRIDOR && ((r * 7 + c * 11) % 3 === 0)) {
                   const artId = ((r + c) % 2 === 0) ? 'wall_art_1' : 'wall_art_2';
                   PixelAssets.drawSprite(ctx, artId, x, y + 2, cs, wallH - 4);
@@ -1297,12 +1461,17 @@
   }
 
   function drawPixelBoard(ctx, targetGrid, cs, opts = {}) {
+    if (global.PixelAssets && global.PixelAssets.initAllAssets) {
+      global.PixelAssets.initAllAssets();
+    }
     const gSize = targetGrid.length;
     const {
       showFurniture = true,
+      vacantMode = false,
       enable25DWalls = false,
       showBlueprintOverlay = false,
       showSolidRedOverlay = false,
+      showRoomLabels = false,
       furniturePlan = null,
       furnitureElapsedMs = 99999,
       timeMs = 0,
@@ -1342,7 +1511,7 @@
         const x = c * cs, y = r * cs;
 
         if (cell && cell.type === T.ENTRANCE) {
-          drawEntranceFloorAndShoes(ctx, targetGrid, r, c, cs, facing, enable25DWalls, entBoxSnapMap.get(`${r},${c}`) || null);
+          drawEntranceFloorAndShoes(ctx, targetGrid, r, c, cs, facing, enable25DWalls, entBoxSnapMap.get(`${r},${c}`) || null, !vacantMode);
         } else {
           let floorId = getFloorAssetId(cell, inBox, plan.darkRooms);
           if (isDarkSealed && cell && cell.type !== T.CORRIDOR) {
@@ -1352,7 +1521,7 @@
         }
 
         // 廊下コンボの床装飾（大ホワイエ／ロングコリドー）
-        if (cell && cell.type === T.CORRIDOR) {
+        if (!vacantMode && cell && cell.type === T.CORRIDOR) {
           if (isFoyer) {
             const upSame = targetGrid[r - 1]?.[c]?.type === T.CORRIDOR;
             const dnSame = targetGrid[r + 1]?.[c]?.type === T.CORRIDOR;
@@ -1389,7 +1558,7 @@
     }
 
     // 玄関直風呂のつるっと水たまり（床層）
-    if (showFurniture && Array.isArray(plan.badSpots)) {
+    if (showFurniture && !vacantMode && Array.isArray(plan.badSpots)) {
       for (const sp of plan.badSpots) {
         if (sp.kind !== 'puddle') continue;
         const px = (sp.c + 0.5) * cs;
@@ -1416,13 +1585,14 @@
 
     // 2.5 完成時専用：立ち上がり北壁・外観壁・壁装飾
     if (enable25DWalls) {
-      draw25DWallsAndDeco(ctx, targetGrid, cs, plan, stageObj, facing);
+      draw25DWallsAndDeco(ctx, targetGrid, cs, plan, stageObj, facing, vacantMode);
     }
 
     // 3. 家具描画（ポップバウンス & 壁寄せオフセット対応！）
     if (showFurniture && plan.items) {
       const fn = typeof edgeType === 'function' ? edgeType : null;
       for (const item of plan.items) {
+        if (vacantMode && !BUILTIN_ASSET_IDS.has(item.assetId)) continue;
         const localMs = furnitureElapsedMs - (item.delayMs || 0);
         if (localMs <= 0) continue;
 
@@ -1489,7 +1659,7 @@
         PixelAssets.drawSprite(ctx, drawAssetId, -bw / 2, -bh / 2, bw, bh);
         ctx.restore();
 
-        if (t >= 1 && item.steam) {
+        if (!vacantMode && t >= 1 && item.steam) {
           const phase = ((timeMs / 450) + item.c * 0.4) % 1;
           ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * (1 - phase)})`;
           const sx = cx - 4 + Math.sin(timeMs / 300 + item.r) * 3;
@@ -1497,7 +1667,7 @@
           ctx.fillRect(Math.round(sx), Math.round(sy), Math.max(2, cs * 0.08), Math.max(2, cs * 0.08));
           ctx.fillRect(Math.round(sx + 6), Math.round(sy + 4), Math.max(2, cs * 0.06), Math.max(2, cs * 0.06));
         }
-        if (t >= 1 && item.candle) {
+        if (!vacantMode && t >= 1 && item.candle) {
           const flicker = 0.2 + 0.1 * Math.sin(timeMs / 110);
           ctx.fillStyle = `rgba(251, 146, 60, ${flicker})`;
           ctx.beginPath();
@@ -1519,7 +1689,7 @@
     }
 
     // 4.5 バッドコンボ視覚エフェクト（食欲減退の悪臭モヤ / スケルトンバス視線）
-    if (showFurniture && enable25DWalls && Array.isArray(plan.badSpots)) {
+    if (showFurniture && !vacantMode && enable25DWalls && Array.isArray(plan.badSpots)) {
       const odorInverted = stageObj?.customCombo?.name === '食欲減退' && stageObj.customCombo.isNegativeInversion;
       for (const sp of plan.badSpots) {
         if (sp.kind === 'odor') {
@@ -1567,21 +1737,28 @@
       }
     }
 
-    // 6. パズル中プレビュー時の部屋名ミニラベル（操作補助）
-    if (showBlueprintOverlay) {
-      ctx.font = `bold ${Math.max(8, Math.round(cs * 0.22))}px "Zen Kaku Gothic New", sans-serif`;
+    // 6. パズル中・空室完成図の部屋名ラベル
+    if (showBlueprintOverlay || showRoomLabels) {
+      const lblFontSize = showBlueprintOverlay
+        ? Math.max(8, Math.round(cs * 0.22))
+        : Math.max(8, Math.round(cs * 0.29));
+      const fallbackNames = { ldk: 'LDK', room: '洋室', bath: '浴室', toilet: 'トイレ', washroom: '洗面', closet: '収納', corridor: '廊下' };
+      ctx.font = `bold ${lblFontSize}px "Zen Kaku Gothic New", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
       for (const rm of plan.rooms) {
         if (rm.type === T.CORRIDOR && rm.cells.length <= 1) continue;
         const ax = (rm.cells.reduce((s, p) => s + p.c, 0) / rm.cells.length + 0.5) * cs;
-        const ay = (rm.cells.reduce((s, p) => s + p.r, 0) / rm.cells.length + 0.5) * cs;
-        const txt = rm.type === T.ENTRANCE ? '玄関' : (rm.label || '');
+        let ay = (rm.cells.reduce((s, p) => s + p.r, 0) / rm.cells.length + 0.5) * cs;
+        if (enable25DWalls && rm.minR === rm.maxR) ay += cs * 0.14;
+        const entTxt = (showRoomLabels && !showBlueprintOverlay) ? `${facing.arrow}玄関` : '玄関';
+        const txt = rm.type === T.ENTRANCE ? entTxt : (rm.label || fallbackNames[rm.type] || '');
         if (!txt) continue;
         ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = showBlueprintOverlay ? 3 : 3.2;
         ctx.strokeText(txt, ax, ay);
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = rm.type === T.ENTRANCE ? '#92400e' : '#0f172a';
         ctx.fillText(txt, ax, ay);
       }
     }
@@ -1623,7 +1800,10 @@
       return { actors: ['char_vip', 'char_sp'], isVampire: false, label: 'VIP＋SP' };
     }
     if (badge.includes('二世帯')) {
-      return { actors: ['char_senior_m', 'char_suit', 'char_casual_pink', 'char_kid_1'], isVampire: false, label: '二世帯ファミリー(4人)' };
+      return { actors: ['char_senior_m', 'char_senior_f', 'char_suit', 'char_kid_1'], isVampire: false, label: '二世帯ファミリー(4人)' };
+    }
+    if (badge.includes('シニア')) {
+      return { actors: ['char_senior_m', 'char_senior_f'], isVampire: false, label: 'シニア夫婦(2人)' };
     }
     if (badge.includes('大家族')) {
       return { actors: ['char_suit', 'char_casual_pink', 'char_kid_1', 'char_kid_2'], isVampire: false, label: '大家族ファミリー(4人)' };
@@ -1740,7 +1920,14 @@
       }
       if (comboNames.has('要塞化')) return { text: '🛡️ 光ゼロ！完璧な要塞シェルター', mood: 'weird' };
       if (rm.label === '和室' && comboNames.has('古き良き日本家屋')) return { text: '🏮 伝統の田の字和室だ…！', mood: 'love' };
-      if (comboNames.has('マトリョーシカ')) return { text: '🪆 部屋の奥にまた部屋が…', mood: 'bad' };
+      if (comboNames.has('マトリョーシカ')) {
+        return targetName === 'マトリョーシカ'
+          ? { text: '🕵️ 部屋の中にまた部屋…最高の密室トリックだ！', mood: 'love' }
+          : { text: '🪆 部屋の奥にまた部屋が…', mood: 'bad' };
+      }
+      if (rm.label === '和室' && (stageObj?.client?.typeBadge || '').includes('シニア')) {
+        return { text: '🍵 夫婦でのんびりお茶できそうね', mood: 'love' };
+      }
       if (rm.label === '和室') return { text: '🍵 畳の香りが落ち着く〜', mood: 'good' };
       return { text: '🛏️ 落ち着けるお部屋だ！', mood: 'good' };
     }
@@ -2374,10 +2561,10 @@
 
   function resolveClientBackdropFloor(stageObj) {
     const badge = stageObj?.client?.typeBadge || '';
-    if (badge.includes('和モダン') || badge.includes('二世帯') || badge.includes('忍') || badge.includes('銭湯大名') || badge.includes('仙')) {
+    if (badge.includes('和モダン') || badge.includes('二世帯') || badge.includes('シニア') || badge.includes('忍') || badge.includes('銭湯大名') || badge.includes('仙')) {
       return 'floor_washitsu';
     }
-    if (badge.includes('豪邸') || badge.includes('VIP') || badge.includes('レジデンス') || badge.includes('美食サロン')) {
+    if (badge.includes('豪邸') || badge.includes('VIP') || badge.includes('レジデンス') || badge.includes('美食サロン') || badge.includes('ミステリー')) {
       return 'floor_office_vip';
     }
     if (badge.includes('吸血鬼')) {
@@ -2533,6 +2720,8 @@
     renderClientPortraitCanvas,
     startMissionIdle,
     stopMissionIdle,
+    getEdgeType: (targetGrid, r1, c1, r2, c2) => safeEdgeType(targetGrid, r1, c1, r2, c2, typeof edgeType === 'function' ? edgeType : null),
+    hasSolidWall: (targetGrid, r1, c1, r2, c2) => hasCellSolidWall(targetGrid, r1, c1, r2, c2),
     getSpeed: () => tourSpeed
   };
 })(window);

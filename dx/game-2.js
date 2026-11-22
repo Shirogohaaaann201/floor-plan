@@ -1296,122 +1296,203 @@
   }
 
   /* ============================================================
-     RESULT CANVAS (thumbnail)
+     RESULT CANVAS & MULTI-VIEW RENDERER (家具付 / 空室 / 図面)
   ============================================================ */
-  function drawResultCanvas() {
-    const rc = document.getElementById('result-canvas');
-    const maxDim = Math.min(window.innerWidth - 60, 280);
-    const cs = Math.floor(maxDim / GRID);
-    const total = cs * GRID;
-    rc.width  = total * devicePixelRatio;
-    rc.height = total * devicePixelRatio;
-    rc.style.width  = `${total}px`;
-    rc.style.height = `${total}px`;
-    const rctx = rc.getContext('2d');
-    rctx.resetTransform();
-    rctx.scale(devicePixelRatio, devicePixelRatio);
+  let currentPlanViewMode = 'furnished';
+  let currentShareContext = null;
 
-    const fp = calcFootprintStats(grid);
+  function normalizeGridForRender(rawGrid) {
+    if (!rawGrid || !Array.isArray(rawGrid)) return null;
+    if (typeof grid !== 'undefined' && rawGrid === grid) return grid;
+    return rawGrid.map(row => Array.isArray(row) ? row.map(cell => (cell ? { ...cell } : { type: T.EMPTY })) : []);
+  }
+
+  function drawBlueprintBoard(rctx, targetGrid, stageObj, cs, isCompact = false) {
+    const gSize = targetGrid.length || GRID;
+    const fp = calcFootprintStats(targetGrid);
     const bbox = fp ? fp.bbox : null;
 
-    for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
-      const cell = grid[r][c];
+    for (let r = 0; r < gSize; r++) for (let c = 0; c < gSize; c++) {
+      const cell = targetGrid[r]?.[c];
       const inBox = bbox && r >= bbox.minR && r <= bbox.maxR && c >= bbox.minC && c <= bbox.maxC;
-      if (cell.type === T.GARDEN || cell.type === T.EMPTY) {
-        // 占有長方形の内側は鮮やかな庭（黄緑）、外側は未使用の敷地（淡いグレーベージュ）
+      if (!cell || cell.type === T.GARDEN || cell.type === T.EMPTY) {
         rctx.fillStyle = inBox ? '#d9f99d' : '#eef2f6';
-        rctx.fillRect(c*cs, r*cs, cs, cs);
+        rctx.fillRect(c * cs, r * cs, cs, cs);
         if (!inBox) {
-          // 未使用の敷地には控えめなドット模様を入れて区別しやすくする
           rctx.fillStyle = '#cbd5e1';
-          rctx.fillRect(c*cs + cs*0.46, r*cs + cs*0.46, Math.max(1.2, cs*0.08), Math.max(1.2, cs*0.08));
+          rctx.fillRect(c * cs + cs * 0.46, r * cs + cs * 0.46, Math.max(1.2, cs * 0.08), Math.max(1.2, cs * 0.08));
         }
         rctx.strokeStyle = inBox ? '#bef264' : '#e2e8f0';
+      } else if (cell.type === T.OBSTACLE) {
+        const s = CELL_STYLE[T.OBSTACLE] || { bg: '#cbd5e1', border: '#94a3b8' };
+        rctx.fillStyle = s.bg;
+        rctx.fillRect(c * cs, r * cs, cs, cs);
+        rctx.strokeStyle = s.border;
+        rctx.beginPath();
+        rctx.moveTo(c * cs + 2, r * cs + 2); rctx.lineTo((c + 1) * cs - 2, (r + 1) * cs - 2);
+        rctx.moveTo((c + 1) * cs - 2, r * cs + 2); rctx.lineTo(c * cs + 2, (r + 1) * cs - 2);
+        rctx.stroke();
+        rctx.strokeStyle = '#94a3b8';
       } else {
         const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
-        rctx.fillStyle = s.bg;
-        rctx.fillRect(c*cs, r*cs, cs, cs);
-        rctx.strokeStyle = '#e2e8f0';
+        rctx.fillStyle = cell.color || s.bg;
+        rctx.fillRect(c * cs, r * cs, cs, cs);
+        rctx.strokeStyle = isCompact ? (s.border || '#cbd5e1') : '#e2e8f0';
       }
-      rctx.lineWidth = 0.5;
-      rctx.strokeRect(c*cs, r*cs, cs, cs);
+      rctx.lineWidth = isCompact ? 0.7 : 0.5;
+      rctx.strokeRect(c * cs, r * cs, cs, cs);
     }
-    // Draw walls (simplified)
+
+    if (!isCompact) {
+      rctx.save();
+      for (let r = 0; r < gSize; r++) for (let c = 0; c < gSize; c++) {
+        const x = c * cs, y = r * cs;
+        drawEdgeOn(rctx, x + cs, y, x + cs, y + cs, r, c, r, c + 1, 'v', cs, targetGrid);
+        drawEdgeOn(rctx, x, y + cs, x + cs, y + cs, r, c, r + 1, c, 'h', cs, targetGrid);
+        if (r === 0) drawEdgeOn(rctx, x, y, x + cs, y, -1, c, r, c, 'h', cs, targetGrid);
+        if (c === 0) drawEdgeOn(rctx, x, y, x, y + cs, r, -1, r, c, 'v', cs, targetGrid);
+      }
+      rctx.restore();
+    }
+
+    const rooms = extractRoomsFromProperty(targetGrid);
     rctx.save();
-    for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
-      const x=c*cs, y=r*cs;
-      drawEdgeOn(rctx, x+cs,y,x+cs,y+cs, r,c, r,c+1, 'v',cs);
-      drawEdgeOn(rctx, x,y+cs,x+cs,y+cs, r,c, r+1,c, 'h',cs);
-      if (r===0) drawEdgeOn(rctx,x,y,x+cs,y, -1,c, r,c, 'h',cs);
-      if (c===0) drawEdgeOn(rctx,x,y,x,y+cs, r,-1, r,c, 'v',cs);
-    }
-    rctx.restore();
-    // Labels
-    const rooms={};
-    for (let r=0;r<GRID;r++) for (let c=0;c<GRID;c++) {
-      const cell=grid[r][c];
-      if (!cell.roomId||cell.type===T.EMPTY||cell.type===T.ENTRANCE) continue;
-      if (!rooms[cell.roomId]) rooms[cell.roomId]={cells:[],label:cell.label};
-      rooms[cell.roomId].cells.push({r,c});
-    }
-    rctx.save();
-    rctx.textAlign='center'; rctx.textBaseline='middle';
-    for (const id in rooms) {
-      const {cells,label}=rooms[id];
-      let ax=0,ay=0;
-      cells.forEach(({r,c})=>{ax+=(c+.5)*cs;ay+=(r+.5)*cs;});
-      ax/=cells.length; ay/=cells.length;
-      rctx.fillStyle='#0f172a';
-      rctx.font=`bold ${Math.max(7,cs*0.22)}px "Zen Kaku Gothic New",sans-serif`;
-      rctx.fillText(label,ax,ay);
-    }
-    // Entrance
-    const entCells = (STAGE && STAGE.entranceCells) ? STAGE.entranceCells : [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
-    const facing = getEntranceFacing(STAGE, grid);
-    const label = `${facing.arrow}玄関`;
-    const fontSize = Math.max(7, cs * 0.2);
-    rctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
-
-    const minC = Math.min(...entCells.map(c => c.c));
-    const maxC = Math.max(...entCells.map(c => c.c));
-    const minR = Math.min(...entCells.map(c => c.r));
-    const maxR = Math.max(...entCells.map(c => c.r));
-    const startX = minC * cs, endX = (maxC + 1) * cs;
-    const startY = minR * cs, endY = (maxR + 1) * cs;
-
-    let rx = (startX + endX) / 2, ry = (startY + endY) / 2;
-    if (facing.dir === 'bottom') {
-      rx = (startX + endX) / 2; ry = endY - 1.5;
-      rctx.textAlign = 'center'; rctx.textBaseline = 'bottom';
-    } else if (facing.dir === 'top') {
-      rx = (startX + endX) / 2; ry = startY + 1.5;
-      rctx.textAlign = 'center'; rctx.textBaseline = 'top';
-    } else if (facing.dir === 'left') {
-      rx = startX + 1.5; ry = (startY + endY) / 2;
-      rctx.textAlign = 'left'; rctx.textBaseline = 'middle';
-    } else if (facing.dir === 'right') {
-      rx = endX - 1.5; ry = (startY + endY) / 2;
-      rctx.textAlign = 'right'; rctx.textBaseline = 'middle';
-    }
-
-    rctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    rctx.lineWidth = 2;
+    rctx.textAlign = 'center';
+    rctx.textBaseline = 'middle';
     rctx.lineJoin = 'round';
-    rctx.strokeText(label, rx, ry);
+    for (const room of rooms) {
+      let sumR = 0, sumC = 0;
+      room.cells.forEach(({ r, c }) => { sumR += (r + 0.5) * cs; sumC += (c + 0.5) * cs; });
+      const ax = sumC / room.cells.length;
+      const ay = sumR / room.cells.length;
+      const labelText = isCompact
+        ? getShortRoomLabel(room.type, room.label, room.cells.length)
+        : (room.label || getDefaultRoomLabel(room.type));
+      const fontSize = isCompact
+        ? (room.cells.length >= 4 ? 9.5 : (room.cells.length >= 2 ? 8.5 : 7.5))
+        : Math.max(7, cs * 0.22);
+      rctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
+      if (isCompact) {
+        rctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        rctx.lineWidth = 2.2;
+        rctx.strokeText(labelText, ax, ay);
+      }
+      rctx.fillStyle = '#0f172a';
+      rctx.fillText(labelText, ax, ay);
+    }
 
-    rctx.fillStyle = '#92400e';
-    rctx.fillText(label, rx, ry);
+    let entCells = (stageObj && Array.isArray(stageObj.entranceCells) && stageObj.entranceCells.length > 0)
+      ? stageObj.entranceCells
+      : [];
+    if (entCells.length === 0) {
+      for (let r = 0; r < gSize; r++) for (let c = 0; c < gSize; c++) {
+        if (targetGrid[r]?.[c]?.type === T.ENTRANCE) entCells.push({ r, c });
+      }
+    }
+    if (entCells.length > 0) {
+      const facing = getEntranceFacing(stageObj, targetGrid);
+      const label = isCompact ? `${facing.arrow}玄` : `${facing.arrow}玄関`;
+      const fontSize = isCompact ? Math.max(6.5, cs * 0.28) : Math.max(7, cs * 0.2);
+      rctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
+
+      const minC = Math.min(...entCells.map(c => c.c));
+      const maxC = Math.max(...entCells.map(c => c.c));
+      const minR = Math.min(...entCells.map(c => c.r));
+      const maxR = Math.max(...entCells.map(c => c.r));
+      const startX = minC * cs, endX = (maxC + 1) * cs;
+      const startY = minR * cs, endY = (maxR + 1) * cs;
+
+      let rx = (startX + endX) / 2, ry = (startY + endY) / 2;
+      if (facing.dir === 'bottom') {
+        rx = (startX + endX) / 2; ry = endY - 1.5;
+        rctx.textAlign = 'center'; rctx.textBaseline = 'bottom';
+      } else if (facing.dir === 'top') {
+        rx = (startX + endX) / 2; ry = startY + 1.5;
+        rctx.textAlign = 'center'; rctx.textBaseline = 'top';
+      } else if (facing.dir === 'left') {
+        rx = startX + 1.5; ry = (startY + endY) / 2;
+        rctx.textAlign = 'left'; rctx.textBaseline = 'middle';
+      } else if (facing.dir === 'right') {
+        rx = endX - 1.5; ry = (startY + endY) / 2;
+        rctx.textAlign = 'right'; rctx.textBaseline = 'middle';
+      }
+
+      rctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      rctx.lineWidth = isCompact ? 2 : 2;
+      rctx.strokeText(label, rx, ry);
+      rctx.fillStyle = '#92400e';
+      rctx.fillText(label, rx, ry);
+    }
     rctx.restore();
   }
 
-  function drawEdgeOn(rctx,x1,y1,x2,y2,r1,c1,r2,c2,ori,cs) {
-    const et=edgeType(r1,c1,r2,c2);
-    if (et===E.NONE) return;
-    
-    const isSolid = hasSolidWall(r1, c1, r2, c2);
-    const c1_cell = grid[r1]?.[c1], c2_cell = grid[r2]?.[c2];
-    const ext=!c1_cell||c1_cell.type===T.EMPTY||c1_cell.type===T.GARDEN||
-              !c2_cell||c2_cell.type===T.EMPTY||c2_cell.type===T.GARDEN;
+  function renderPlanCanvasByMode(canvas, rawGrid, stageObj, combos, mode = 'furnished', baseSize = 280, opts = {}) {
+    if (!canvas) return;
+    const gSize = (rawGrid && rawGrid.length) ? rawGrid.length : GRID;
+    const cs = Math.max(4, Math.floor(baseSize / gSize));
+    const total = cs * gSize;
+    const dpr = opts.dpr || window.devicePixelRatio || 1;
+    canvas.width = total * dpr;
+    canvas.height = total * dpr;
+    canvas.style.width = `${total}px`;
+    canvas.style.height = `${total}px`;
+    const rctx = canvas.getContext('2d');
+    rctx.resetTransform();
+    rctx.scale(dpr, dpr);
+    rctx.clearRect(0, 0, total, total);
+
+    const normGrid = normalizeGridForRender(rawGrid);
+    if (!normGrid) {
+      rctx.fillStyle = '#64748b';
+      rctx.font = '11px sans-serif';
+      rctx.textAlign = 'center';
+      rctx.textBaseline = 'middle';
+      rctx.fillText('図面データなし', total / 2, total / 2);
+      return;
+    }
+
+    if ((mode === 'furnished' || mode === 'vacant') && window.PixelRenderer) {
+      canvas.classList.add('is-pixel-canvas');
+      window.PixelRenderer.drawPixelBoard(rctx, normGrid, cs, {
+        showFurniture: true,
+        vacantMode: mode === 'vacant',
+        enable25DWalls: true,
+        showBlueprintOverlay: false,
+        showSolidRedOverlay: false,
+        showRoomLabels: mode === 'vacant' && !opts.isCompact,
+        combos: combos || [],
+        stageObj: stageObj || null,
+        timeMs: 0,
+        furnitureElapsedMs: 99999
+      });
+    } else {
+      canvas.classList.remove('is-pixel-canvas');
+      drawBlueprintBoard(rctx, normGrid, stageObj, cs, !!opts.isCompact);
+    }
+  }
+
+  function drawResultCanvas(overrideMode = null) {
+    const rc = document.getElementById('result-canvas');
+    if (!rc) return;
+    const maxDim = Math.min(window.innerWidth - 60, 280);
+    const combos = window._lastBuiltCombos || (window.currentPropertyData?.combosList || []);
+    const mode = overrideMode || currentPlanViewMode || 'furnished';
+    renderPlanCanvasByMode(rc, grid, STAGE, combos, mode, maxDim, { isCompact: false });
+  }
+
+  function drawEdgeOn(rctx, x1, y1, x2, y2, r1, c1, r2, c2, ori, cs, targetGrid = grid) {
+    const useLive = (targetGrid === grid);
+    const et = useLive
+      ? edgeType(r1, c1, r2, c2)
+      : (window.PixelRenderer ? window.PixelRenderer.getEdgeType(targetGrid, r1, c1, r2, c2) : E.NONE);
+    if (et === E.NONE) return;
+
+    const isSolid = useLive
+      ? hasSolidWall(r1, c1, r2, c2)
+      : (window.PixelRenderer ? window.PixelRenderer.hasSolidWall(targetGrid, r1, c1, r2, c2) : false);
+    const c1_cell = targetGrid[r1]?.[c1], c2_cell = targetGrid[r2]?.[c2];
+    const ext = !c1_cell || c1_cell.type === T.EMPTY || c1_cell.type === T.GARDEN || c1_cell.type === T.OBSTACLE ||
+                !c2_cell || c2_cell.type === T.EMPTY || c2_cell.type === T.GARDEN || c2_cell.type === T.OBSTACLE;
 
     if (et === E.DOOR) {
       const len = ori === 'h' ? Math.abs(x2-x1) : Math.abs(y2-y1);
@@ -1942,6 +2023,8 @@
     document.getElementById('flyer-comment').textContent = comment;
 
     // Draw thumbnail
+    window._lastBuiltCombos = combos;
+    syncPlanViewButtons();
     drawResultCanvas();
     const rc = document.getElementById('result-canvas');
     if (rc) {
@@ -1949,8 +2032,6 @@
         window.currentPropertyData.thumbnail = rc.toDataURL('image/png');
       } catch(e) {}
     }
-
-    window._lastBuiltCombos = combos;
 
     const finishToResult = () => {
       showScreen('result');
@@ -3783,167 +3864,41 @@
     return rooms;
   }
 
-  function renderPropertyPlanToCanvas(canvas, p, baseSize, isCompact) {
+  function renderPropertyPlanToCanvas(canvas, p, baseSize, isCompact, overrideMode = null) {
+    if (!canvas) return;
+    if (p && p.propertyGrid) {
+      const mockStage = {
+        client: { name: p.clientName || '入居者', typeBadge: p.clientTypeBadge || '' },
+        entranceCells: p.entranceCells || null,
+        entranceFacing: p.entranceFacing || null
+      };
+      const mode = overrideMode || currentPlanViewMode || 'furnished';
+      renderPlanCanvasByMode(canvas, p.propertyGrid, mockStage, p.combosList || [], mode, baseSize, { isCompact });
+      return;
+    }
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     canvas.width = baseSize * dpr;
     canvas.height = baseSize * dpr;
     canvas.style.width = `${baseSize}px`;
     canvas.style.height = `${baseSize}px`;
+    canvas.classList.remove('is-pixel-canvas');
     ctx.resetTransform();
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, baseSize, baseSize);
 
-    function drawGridLayers() {
-      ctx.clearRect(0, 0, baseSize, baseSize);
-      if (!p.propertyGrid) {
-        ctx.fillStyle = '#64748b';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('図面データなし', baseSize/2, baseSize/2);
-        return;
-      }
-      const gSize = p.propertyGrid.length || 12;
-      const cSize = baseSize / gSize;
-      const fp = calcFootprintStats(p.propertyGrid, p.encroachCount || 0);
-      const bbox = fp ? fp.bbox : null;
-      
-      // 1. セル背景
-      for (let r=0; r<gSize; r++) {
-        for (let c=0; c<gSize; c++) {
-          const cell = p.propertyGrid[r][c];
-          const inBox = bbox && r >= bbox.minR && r <= bbox.maxR && c >= bbox.minC && c <= bbox.maxC;
-          if (cell && cell.type !== T.EMPTY && cell.type !== T.GARDEN && cell.type !== T.OBSTACLE) {
-            const s = CELL_STYLE[cell.type] || { bg: '#94a3b8', border: '#64748b' };
-            ctx.fillStyle = cell.color || s.bg;
-            ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
-            ctx.strokeStyle = s.border || 'rgba(0,0,0,0.15)';
-            ctx.lineWidth = 0.8;
-            ctx.strokeRect(c * cSize, r * cSize, cSize, cSize);
-          } else if (cell && cell.type === T.OBSTACLE) {
-            ctx.fillStyle = '#334155';
-            ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
-            ctx.strokeStyle = '#475569';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(c * cSize, r * cSize, cSize, cSize);
-            ctx.strokeStyle = '#64748b';
-            ctx.beginPath();
-            ctx.moveTo(c * cSize, r * cSize); ctx.lineTo((c + 1) * cSize, (r + 1) * cSize);
-            ctx.moveTo((c + 1) * cSize, r * cSize); ctx.lineTo(c * cSize, (r + 1) * cSize);
-            ctx.stroke();
-          } else {
-            // Garden (inBox) vs Unused lot (outside bbox)
-            ctx.fillStyle = inBox ? '#d9f99d' : '#1e293b';
-            ctx.fillRect(c * cSize, r * cSize, cSize, cSize);
-            ctx.strokeStyle = inBox ? '#a3e635' : '#334155';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(c * cSize, r * cSize, cSize, cSize);
-          }
-        }
-      }
-
-      // 2. 部屋ラベル（重心に白フチ付きテキストを描画）
-      const rooms = extractRoomsFromProperty(p.propertyGrid);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (const room of rooms) {
-        let sumR = 0, sumC = 0;
-        for (const pt of room.cells) {
-          sumR += pt.r;
-          sumC += pt.c;
-        }
-        const ax = (sumC / room.cells.length + 0.5) * cSize;
-        const ay = (sumR / room.cells.length + 0.5) * cSize;
-        
-        let labelText = '';
-        if (isCompact) {
-          labelText = getShortRoomLabel(room.type, room.label, room.cells.length);
-        } else {
-          labelText = room.label || getDefaultRoomLabel(room.type);
-        }
-
-        const fontSize = isCompact 
-          ? (room.cells.length >= 4 ? 9.5 : (room.cells.length >= 2 ? 8.5 : 7.5))
-          : (room.cells.length >= 4 ? 13 : (room.cells.length >= 2 ? 11.5 : 10));
-
-        ctx.font = `bold ${fontSize}px "Zen Kaku Gothic New", sans-serif`;
-
-        // 白フチで視認性確保
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-        ctx.lineWidth = isCompact ? 2.2 : 3.5;
-        ctx.lineJoin = 'round';
-        ctx.strokeText(labelText, ax, ay);
-
-        // 文字本体
-        ctx.fillStyle = '#0f172a';
-        ctx.fillText(labelText, ax, ay);
-      }
-
-      // 3. 玄関マーカー
-      for (let r=0; r<gSize; r++) {
-        for (let c=0; c<gSize; c++) {
-          const cell = p.propertyGrid[r][c];
-          if (cell && cell.type === T.ENTRANCE) {
-            const facing = getEntranceFacing(null, p.propertyGrid);
-            const label = isCompact ? `${facing.arrow}玄` : `${facing.arrow}玄関`;
-            const markerSize = isCompact ? Math.max(6.5, cSize * 0.28) : Math.max(9, cSize * 0.22);
-            ctx.font = `bold ${markerSize}px "Zen Kaku Gothic New", sans-serif`;
-
-            let cx = (c + 0.5) * cSize;
-            let cy = (r + 0.5) * cSize;
-            if (facing.dir === 'bottom') {
-              cx = (c + 0.5) * cSize;
-              cy = (r + 1) * cSize - 1.5;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
-            } else if (facing.dir === 'top') {
-              cx = (c + 0.5) * cSize;
-              cy = r * cSize + 1.5;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'top';
-            } else if (facing.dir === 'left') {
-              cx = c * cSize + 1.5;
-              cy = (r + 0.5) * cSize;
-              ctx.textAlign = 'left';
-              ctx.textBaseline = 'middle';
-            } else if (facing.dir === 'right') {
-              cx = (c + 1) * cSize - 1.5;
-              cy = (r + 0.5) * cSize;
-              ctx.textAlign = 'right';
-              ctx.textBaseline = 'middle';
-            }
-
-            // 白フチで視認性確保
-            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-            ctx.lineWidth = isCompact ? 2 : 3;
-            ctx.lineJoin = 'round';
-            ctx.strokeText(label, cx, cy);
-
-            ctx.fillStyle = '#92400e';
-            ctx.fillText(label, cx, cy);
-          }
-        }
-      }
-
-      // 4. 外周枠線
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = isCompact ? 2 : 3;
-      ctx.strokeRect(1, 1, baseSize - 2, baseSize - 2);
-    }
-
-    if (p.thumbnail) {
+    if (p && p.thumbnail) {
       const img = new Image();
       img.onload = () => {
         ctx.clearRect(0, 0, baseSize, baseSize);
         ctx.drawImage(img, 0, 0, baseSize, baseSize);
       };
-      img.onerror = () => {
-        drawGridLayers();
-      };
       img.src = p.thumbnail;
-      drawGridLayers();
     } else {
-      drawGridLayers();
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('図面データなし', baseSize / 2, baseSize / 2);
     }
   }
 
@@ -3965,6 +3920,7 @@
       : `家賃 ${stats.currentRent.toFixed(1)}万/月`;
     pvSubinfo.textContent = `${formatBuildingAge(stats.buildingAge)} ｜ ${rentInfo} ｜ Rank ${getPropertyRank(stats.degRate)}`;
 
+    syncPlanViewButtons();
     renderPropertyPlanToCanvas(pvCanvas, p, 280, false);
     pvModal.style.display = 'flex';
   }
@@ -4258,7 +4214,7 @@
     };
   }
 
-  function renderFlyerShareCanvas(planCanvas, data) {
+  function renderFlyerShareCanvas(planCanvas, data, opts = {}) {
     const W = 600;
     const scale = 2;
     const sheetX = 12, sheetY = 12, sheetW = W - 24;
@@ -4463,7 +4419,9 @@
     ctx.lineWidth = 1.5;
     ctx.strokeRect(innerX - 2, heroY - 2, planSize + 4, planSize + 4);
     if (planCanvas) {
+      if (opts && opts.isPixel) ctx.imageSmoothingEnabled = false;
       ctx.drawImage(planCanvas, innerX, heroY, planSize, planSize);
+      ctx.imageSmoothingEnabled = true;
     }
 
     // Right A: Rent Highlight Box
@@ -4586,7 +4544,7 @@
     ctx.font = `bold 10.5px ${fontSans}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('マドリビルダー 〜間取り図パズル〜', innerX, footerY + 14);
+    ctx.fillText('マドリビルダー DX 〜間取り図パズル〜', innerX, footerY + 14);
     ctx.textAlign = 'right';
     ctx.font = `10.5px ${fontSans}`;
     ctx.fillText(`${data.companyName} ｜ ${data.createdLabel}`, innerX + innerW, footerY + 14);
@@ -4647,6 +4605,68 @@
     }
   }
 
+  function syncPlanViewButtons() {
+    document.querySelectorAll('[data-plan-view]').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.planView === currentPlanViewMode);
+    });
+  }
+
+  function buildShareVariantsForMode(ctxObj, viewMode) {
+    if (!ctxObj || !ctxObj.targetGrid) return null;
+    const offCanvas = document.createElement('canvas');
+    renderPlanCanvasByMode(offCanvas, ctxObj.targetGrid, ctxObj.stageObj, ctxObj.combos, viewMode, 288, { isCompact: false, dpr: 2 });
+    const planUrl = offCanvas.toDataURL('image/png');
+    let flyerUrl = null;
+    if (ctxObj.propObj) {
+      const payload = buildFlyerSharePayload(ctxObj.propObj, ctxObj.isResultPreview, ctxObj.propNo);
+      const isPixel = (viewMode === 'furnished' || viewMode === 'vacant') && !!window.PixelRenderer;
+      const flyerCanvas = renderFlyerShareCanvas(offCanvas, payload, { isPixel });
+      flyerUrl = flyerCanvas.toDataURL('image/png');
+    }
+    return {
+      flyer: flyerUrl ? { dataUrl: flyerUrl, filename: `madori_flyer_No${ctxObj.propNo}.png` } : null,
+      plan:  { dataUrl: planUrl, filename: `madori_No${ctxObj.propNo}.png` }
+    };
+  }
+
+  function setPlanViewMode(mode) {
+    if (!['furnished', 'vacant', 'blueprint'].includes(mode)) return;
+    currentPlanViewMode = mode;
+    syncPlanViewButtons();
+
+    const resScr = document.getElementById('screen-result');
+    if (resScr && resScr.classList.contains('active')) {
+      drawResultCanvas();
+      const rc = document.getElementById('result-canvas');
+      if (rc && window.currentPropertyData) {
+        try {
+          window.currentPropertyData.thumbnail = rc.toDataURL('image/png');
+        } catch (e) {}
+      }
+    }
+
+    const pvModal = document.getElementById('plan-viewer-modal');
+    if (pvModal && pvModal.style.display && pvModal.style.display !== 'none' && window.currentViewerProp) {
+      const pvCanvas = document.getElementById('pv-canvas');
+      if (pvCanvas) renderPropertyPlanToCanvas(pvCanvas, window.currentViewerProp, 280, false);
+    }
+
+    const pdModal = document.getElementById('prop-detail-modal');
+    if (pdModal && pdModal.style.display && pdModal.style.display !== 'none' && window.currentDetailProp) {
+      const pdCanvas = document.getElementById('pd-canvas');
+      if (pdCanvas) renderPropertyPlanToCanvas(pdCanvas, window.currentDetailProp, 104, true);
+    }
+
+    const imgModal = document.getElementById('image-save-modal');
+    if (imgModal && imgModal.style.display && imgModal.style.display !== 'none' && currentShareContext) {
+      const refreshed = buildShareVariantsForMode(currentShareContext, mode);
+      if (refreshed) {
+        currentSaveVariants = refreshed;
+        applyImageSaveVariant(currentSaveMode);
+      }
+    }
+  }
+
   function openImageSaveModal(variants, defaultMode = 'flyer') {
     initAudio();
     playSound('tap');
@@ -4656,6 +4676,11 @@
     if (tabsEl) {
       tabsEl.style.display = (variants.flyer && variants.plan) ? 'flex' : 'none';
     }
+    const styleTabsEl = document.getElementById('image-save-style-tabs');
+    if (styleTabsEl) {
+      styleTabsEl.style.display = currentShareContext ? 'flex' : 'none';
+    }
+    syncPlanViewButtons();
     applyImageSaveVariant(defaultMode);
 
     const modal = document.getElementById('image-save-modal');
@@ -4667,6 +4692,7 @@
   function closeImageSaveModal() {
     initAudio();
     playSound('tap');
+    currentShareContext = null;
     const modal = document.getElementById('image-save-modal');
     if (modal) modal.style.display = 'none';
   }
@@ -4674,12 +4700,21 @@
   function downloadCanvasAsPng(canvasEl, filename = 'madori.png', btnEl = null) {
     if (!canvasEl) return;
     try {
+      currentShareContext = null;
       const dataUrl = canvasEl.toDataURL('image/png');
       openImageSaveModal({ plan: { dataUrl, filename } }, 'plan');
     } catch (e) {
       console.error('Failed to save PNG:', e);
     }
   }
+
+  document.querySelectorAll('[data-plan-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      initAudio();
+      playSound('tap');
+      setPlanViewMode(btn.dataset.planView);
+    });
+  });
 
   document.getElementById('btn-img-mode-flyer')?.addEventListener('click', () => {
     initAudio();
@@ -5398,13 +5433,41 @@
     if (e.target.id === 'plan-viewer-modal') closePlanViewer();
   });
   function openPropertyShareModal(planCanvas, propObj, isResultPreview, propNo) {
-    if (!planCanvas) return;
     try {
+      let targetGrid = null;
+      let stageObj = null;
+      let combos = [];
+      if (propObj && propObj.propertyGrid) {
+        targetGrid = propObj.propertyGrid;
+        stageObj = {
+          client: { name: propObj.clientName || '入居者', typeBadge: propObj.clientTypeBadge || '' },
+          entranceCells: propObj.entranceCells || null,
+          entranceFacing: propObj.entranceFacing || null
+        };
+        combos = propObj.combosList || [];
+      } else if (isResultPreview && typeof grid !== 'undefined' && Array.isArray(grid)) {
+        targetGrid = grid;
+        stageObj = typeof STAGE !== 'undefined' ? STAGE : null;
+        combos = window._lastBuiltCombos || (propObj && propObj.combosList) || [];
+      }
+
+      if (targetGrid) {
+        currentShareContext = { targetGrid, stageObj, combos, propObj, isResultPreview, propNo };
+        const variants = buildShareVariantsForMode(currentShareContext, currentPlanViewMode);
+        if (variants) {
+          openImageSaveModal(variants, variants.flyer ? 'flyer' : 'plan');
+          return;
+        }
+      }
+
+      if (!planCanvas) return;
+      currentShareContext = null;
       const planUrl = planCanvas.toDataURL('image/png');
       let flyerUrl = null;
       if (propObj) {
         const payload = buildFlyerSharePayload(propObj, isResultPreview, propNo);
-        const flyerCanvas = renderFlyerShareCanvas(planCanvas, payload);
+        const isPixel = (currentPlanViewMode === 'furnished' || currentPlanViewMode === 'vacant') && !!window.PixelRenderer;
+        const flyerCanvas = renderFlyerShareCanvas(planCanvas, payload, { isPixel });
         flyerUrl = flyerCanvas.toDataURL('image/png');
       }
       openImageSaveModal({

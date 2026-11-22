@@ -1215,6 +1215,30 @@
         isNegativeInversion: false,
         hint: '廊下をループ状（環状）に連結させる (+6.5万)'
       }
+    },
+    {
+      id: 'mystery_writer',
+      minBrand: 2,
+      clientType: 'dinks',
+      lotPool: ['square_m', 'square_l', 'narrow_strip', 'l_shape'],
+      client: {
+        name: '綾辻 霧人',
+        avatar: '🕵️',
+        quote: '「新作の密室トリックの舞台にしたいんだ！居室を3室以上連続で通り抜ける『マトリョーシカ』構造で頼むよ！」',
+        typeBadge: 'ミステリー作家（案B）'
+      },
+      reqKeys: ['ldk1_room2', 'btsep', 'reach'],
+      optKeys: ['opt-closet'],
+      initialBudget: 2700,
+      targetRent: 10.5,
+      maxTurns: 15,
+      customCombo: {
+        name: 'マトリョーシカ',
+        normalBonus: -1.0,
+        customBonus: 5.0,
+        isNegativeInversion: true,
+        hint: '居室を3室以上連続で通り抜ける構造を作る (+5.0万 / 初代満足度も好転)'
+      }
     }
   ];
 
@@ -1389,7 +1413,7 @@
       }
     } else if (clientType === 'dinks') {
       const subRoll = Math.random();
-      if (subRoll < 0.25) {
+      if (subRoll < 0.22) {
         // 共働きDINKS (2LDK・洗面・家事効率)
         const names = ['小林 結衣', '加藤 大和', '山本 美咲'];
         const quotes = [
@@ -1407,7 +1431,7 @@
         optKeys = ['opt-housework'];
         initialBudget = 2500.0 + Math.floor(Math.random() * 8) * 100;
         targetRent = 8.5 + Math.floor(Math.random() * 6) * 0.4;
-      } else if (subRoll < 0.50) {
+      } else if (subRoll < 0.44) {
         // 趣味・収納重視カップル
         const names = ['中村 拓海', '斉藤 翔太', '大野 奈央'];
         const quotes = [
@@ -1425,7 +1449,7 @@
         optKeys = ['opt-closet2'];
         initialBudget = 2400.0 + Math.floor(Math.random() * 8) * 100;
         targetRent = 8.2 + Math.floor(Math.random() * 6) * 0.4;
-      } else if (subRoll < 0.70) {
+      } else if (subRoll < 0.62) {
         // 快適空間重視 (完全防音)
         const names = ['吉岡 涼介', '竹内 杏奈', '岡田 優一'];
         const quotes = [
@@ -1443,7 +1467,7 @@
         optKeys = ['opt-soundproof', 'opt-ldk8'];
         initialBudget = 2700.0 + Math.floor(Math.random() * 8) * 100;
         targetRent = 9.2 + Math.floor(Math.random() * 6) * 0.4;
-      } else if (subRoll < 0.85) {
+      } else if (subRoll < 0.76) {
         // 陽だまりカフェ風DINKS
         const names = ['星野 蓮', '水野 茜', '長澤 悠太'];
         const quotes = [
@@ -1461,7 +1485,7 @@
         optKeys = ['opt-south', 'opt-sunlight'];
         initialBudget = 2650.0 + Math.floor(Math.random() * 8) * 100;
         targetRent = 9.5 + Math.floor(Math.random() * 6) * 0.4;
-      } else {
+      } else if (subRoll < 0.88) {
         // 和モダン・落ち着き重視カップル
         const names = ['桐谷 健', '白川 琴音', '梶原 惣一'];
         const quotes = [
@@ -1479,6 +1503,24 @@
         optKeys = ['opt-washitsu', 'opt-bath'];
         initialBudget = 2800.0 + Math.floor(Math.random() * 8) * 100;
         targetRent = 9.8 + Math.floor(Math.random() * 6) * 0.4;
+      } else {
+        // シニア夫婦
+        const names = ['白石 茂・和子', '大塚 邦夫・節子', '松井 孝雄・富子'];
+        const quotes = [
+          '「夫婦二人で穏やかに暮らせる、和室と専用庭のある落ち着いた住まいが希望です。」',
+          '「セカンドライフをのんびり楽しみたいので、日当たりの良い空間と和室をお願いします。」'
+        ];
+        const avatars = ['👵', '🍵', '🪴'];
+        clientData = {
+          name: names[Math.floor(Math.random() * names.length)],
+          avatar: avatars[Math.floor(Math.random() * avatars.length)],
+          quote: quotes[Math.floor(Math.random() * quotes.length)],
+          typeBadge: 'シニア夫婦'
+        };
+        reqKeys = ['ldk1_room1', 'btsep', 'wash', 'reach'];
+        optKeys = ['opt-washitsu', 'opt-garden'];
+        initialBudget = 2700.0 + Math.floor(Math.random() * 8) * 100;
+        targetRent = 9.0 + Math.floor(Math.random() * 6) * 0.4;
       }
       maxTurns = 15;
     } else if (clientType === 'family') {

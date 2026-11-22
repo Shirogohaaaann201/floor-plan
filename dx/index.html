@@ -243,10 +243,16 @@
     <div id="plan-viewer-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.92); z-index:200; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:340px; text-align:center;">
         <button id="btn-close-plan-viewer" style="position:absolute; top:12px; right:12px; padding:8px; background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
-        <div class="mission-card-title" id="pv-title" style="margin-bottom:12px; font-size:14px; text-align:left;">
+        <div class="mission-card-title" id="pv-title" style="margin-bottom:10px; font-size:14px; text-align:left;">
           <i class="ph-fill ph-blueprint"></i> 間取り図面
         </div>
-        
+
+        <div class="plan-view-bar plan-view-bar--dark" role="tablist" aria-label="間取り表示モード" style="margin-bottom:8px;">
+          <button type="button" class="plan-view-btn is-active" data-plan-view="furnished">家具付</button>
+          <button type="button" class="plan-view-btn" data-plan-view="vacant">空室</button>
+          <button type="button" class="plan-view-btn" data-plan-view="blueprint">図面</button>
+        </div>
+
         <div style="background:#1e293b; border-radius:8px; padding:8px; display:inline-block; border:1px solid rgba(255,255,255,0.15); box-shadow:0 4px 12px rgba(0,0,0,0.4); margin-bottom:12px;">
           <canvas id="pv-canvas" width="280" height="280" style="display:block; margin:0 auto; border-radius:4px; max-width:100%; height:auto;"></canvas>
         </div>
@@ -970,9 +976,15 @@
           <button id="btn-close-image-save" type="button" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
         </div>
 
-        <div id="image-save-mode-tabs" style="display:none; gap:6px; margin-bottom:10px; background:rgba(15,23,42,0.75); padding:4px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);">
+        <div id="image-save-mode-tabs" style="display:none; gap:6px; margin-bottom:8px; background:rgba(15,23,42,0.75); padding:4px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);">
           <button id="btn-img-mode-flyer" type="button" class="btn" style="flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center;">📄 チラシ画像</button>
-          <button id="btn-img-mode-plan" type="button" class="btn" style="flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center;">📐 図面のみ</button>
+          <button id="btn-img-mode-plan" type="button" class="btn" style="flex:1; padding:6px 8px; font-size:11.5px; font-weight:bold; border-radius:6px; cursor:pointer; justify-content:center;">🖼️ 間取り単体</button>
+        </div>
+
+        <div id="image-save-style-tabs" class="plan-view-bar plan-view-bar--dark" role="tablist" aria-label="保存画像の表示切替" style="display:none; margin-bottom:10px;">
+          <button type="button" class="plan-view-btn is-active" data-plan-view="furnished">家具付</button>
+          <button type="button" class="plan-view-btn" data-plan-view="vacant">空室</button>
+          <button type="button" class="plan-view-btn" data-plan-view="blueprint">図面</button>
         </div>
 
         <div style="background:rgba(56,189,248,0.14); border:1px solid rgba(56,189,248,0.35); color:#bae6fd; font-size:11px; line-height:1.45; padding:7px 10px; border-radius:8px; margin-bottom:10px; text-align:left;">
@@ -1368,6 +1380,11 @@
                   <i class="ph-bold ph-download-simple" style="color:var(--c-blue);"></i> 💾 画像保存
                 </button>
               </div>
+            </div>
+            <div class="plan-view-bar" role="tablist" aria-label="間取り表示モード">
+              <button type="button" class="plan-view-btn is-active" data-plan-view="furnished">家具付</button>
+              <button type="button" class="plan-view-btn" data-plan-view="vacant">空室</button>
+              <button type="button" class="plan-view-btn" data-plan-view="blueprint">図面</button>
             </div>
             <div class="flyer-canvas-frame">
               <canvas id="result-canvas"></canvas>
