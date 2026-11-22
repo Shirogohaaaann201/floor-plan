@@ -2549,6 +2549,9 @@
   let missionIdleRaf = null;
   let missionIdleLastTick = -1;
   let missionIdleStage = null;
+  let missionSelectIdleRaf = null;
+  let missionSelectIdleLastTick = -1;
+  let missionSelectIdlePool = null;
 
   function drawCharacterShadow(ctx, cx, cy, rx) {
     ctx.save();
@@ -2634,9 +2637,11 @@
             ];
       }
 
+      const tick = opts.tick || 0;
       placements.forEach(p => drawCharacterShadow(ctx, p.x + 24, p.y + 44, 10));
-      placements.forEach(p => {
-        global.PixelAssets.drawSprite(ctx, `${p.actor}_0`, p.x, p.y, 48, 48);
+      placements.forEach((p, idx) => {
+        const frame = (tick + (idx % 2)) % 2;
+        global.PixelAssets.drawSprite(ctx, `${p.actor}_${frame}`, p.x, p.y, 48, 48);
       });
       return;
     }
@@ -2709,6 +2714,195 @@
     missionIdleRaf = requestAnimationFrame(step);
   }
 
+  function stopMissionSelectIdle() {
+    if (missionSelectIdleRaf) {
+      cancelAnimationFrame(missionSelectIdleRaf);
+      missionSelectIdleRaf = null;
+    }
+    missionSelectIdleLastTick = -1;
+  }
+
+  function startMissionSelectIdle(pool) {
+    if (Array.isArray(pool)) missionSelectIdlePool = pool;
+    stopMissionSelectIdle();
+
+    const step = (now) => {
+      const scr = document.getElementById('screen-mission-select');
+      const container = document.getElementById('mission-pool-cards');
+      if (!scr || !scr.classList.contains('active') || !container || !Array.isArray(missionSelectIdlePool)) {
+        missionSelectIdleRaf = null;
+        return;
+      }
+      const tick = Math.floor(now / 480);
+      if (tick !== missionSelectIdleLastTick) {
+        missionSelectIdleLastTick = tick;
+        container.querySelectorAll('.mission-select-char-canvas').forEach(cv => {
+          const mIdx = parseInt(cv.dataset.missionIdx, 10);
+          if (!Number.isNaN(mIdx) && missionSelectIdlePool[mIdx]) {
+            renderClientPortraitCanvas(cv, missionSelectIdlePool[mIdx], { mode: 'portrait', tick: tick + mIdx });
+          }
+        });
+      }
+      missionSelectIdleRaf = requestAnimationFrame(step);
+    };
+
+    missionSelectIdleRaf = requestAnimationFrame(step);
+  }
+
+  function getClientTapSpeech(stageObj, lastIdx = -1) {
+    const badge = stageObj?.client?.typeBadge || '';
+    let lines;
+    if (badge.includes('吸血鬼') || badge.includes('闇')) {
+      lines = [
+        '「日光だけは勘弁してくれよ…カーテンでも足りないんだ。」',
+        '「ドアがない密室？ フフ、私には壁などないも同然さ。」',
+        '「棺桶を置いても落ち着く暗さが理想だね。」',
+        '「赤ワインが似合う闇の館を頼むよ。」'
+      ];
+    } else if (badge.includes('ミステリー')) {
+      lines = [
+        '「読者が『おおっ！』となるトリックを仕込みたいんだ！」',
+        '「部屋の奥にさらに部屋…想像するだけでゾクゾクするね！」',
+        '「夜な夜な書斎でプロットを練るのが楽しみだよ。」',
+        '「建築家さん、最高の密室ミステリーを一緒に作ろう！」'
+      ];
+    } else if (badge.includes('忍')) {
+      lines = [
+        '「忍びは気配を断つもの…隠し部屋は不可欠でござる。」',
+        '「まさかクローゼットの奥に通路があるとは思うまい…！」',
+        '「手裏剣の手入れができる静かな小部屋を頼む！」',
+        '「任務帰りにすぐ隠れられる動線だと助かるでござる。」'
+      ];
+    } else if (badge.includes('銭湯大名')) {
+      lines = [
+        '「風呂は広ければ広いほど天下に近づくのじゃ！」',
+        '「壁一面にドーンと富士山を描いてほしいのじゃ〜！」',
+        '「ケロリン桶を並べて毎晩温泉気分を味わいたいのう。」',
+        '「湯気の中で政務を語らう…これぞ大名の贅沢よ！」'
+      ];
+    } else if (badge.includes('風呂マニア')) {
+      lines = [
+        '「ただいまから3秒で肩まで浸かるのが夢なんです！」',
+        '「玄関の横に湯船があるなんて最高じゃないですか！？」',
+        '「足元が少し濡れても平気！熱いお湯が正義です！」',
+        '「設計士さん、常識にとらわれない発想を期待してます！」'
+      ];
+    } else if (badge.includes('トイレ評論')) {
+      lines = [
+        '「食べたら即トイレ！1秒も歩きたくないんです！」',
+        '「ニオイ？ 愛があれば気になりませんよ！」',
+        '「LDKとトイレの扉が向かい合う機能美をぜひ…！」',
+        '「時短と効率の極み、お任せしましたよ！」'
+      ];
+    } else if (badge.includes('仙') || badge.includes('哲学')) {
+      lines = [
+        '「行き止まりのない廊下は、宇宙の真理に似ておる…」',
+        '「ぐるぐる歩けば歩くほど、雑念が消えていくのじゃ。」',
+        '「茶をすすりつつ、無限の円環を眺めたいものよ。」',
+        '「ほっほっほ、迷うことすら楽しみのうちじゃな。」'
+      ];
+    } else if (badge.includes('美食サロン')) {
+      lines = [
+        '「今夜もVIPなゲストをお招きしてパーティーですわ♪」',
+        '「広々としたキッチンがないと腕が振るえませんわね。」',
+        '「SPが待機しやすい見通しのよい間取りだと安心ですわ。」'
+      ];
+    } else if (badge.includes('豪邸') || badge.includes('VIP') || badge.includes('レジデンス')) {
+      lines = [
+        '「予算は十分に用意してある。最高級の設計頼むよ。」',
+        '「護衛のSPが動ける余裕も見ておいてくれたまえ。」',
+        '「見た目も機能も一流でなければ満足できんね。」',
+        '「素晴らしい邸宅ができたら、ぜひ紹介させてほしい。」'
+      ];
+    } else if (badge.includes('シニア')) {
+      lines = [
+        '「二人で縁側や庭を眺めながらお茶したいねぇ。」',
+        '「歳を重ねても暮らしやすい、無理のない間取りがいいわね。」',
+        '「段差や移動が少なくて、和室でほっとできると嬉しいよ。」',
+        '「老後の楽しみになるような素敵なお家を頼みます。」'
+      ];
+    } else if (badge.includes('二世帯')) {
+      lines = [
+        '「孫の声も聞こえて、親世代もくつろげるお家がいいわね！」',
+        '「朝の支度が被らないよう、水回りに工夫が欲しいところです。」',
+        '「みんなが集まるリビングと、各自の個室があると安心！」',
+        '「4人仲良く暮らせる間取り、楽しみに待ってます♪」'
+      ];
+    } else if (badge.includes('大家族')) {
+      lines = [
+        '「毎朝トイレ前で大行列なんですよ…ほんと助けて〜！」',
+        '「子どもたちが走り回ってもケンカしない広さが希望です！」',
+        '「洗濯物も多いので、家事動線がスムーズだと大助かり！」'
+      ];
+    } else if (badge.includes('ファミリー')) {
+      lines = [
+        '「子どもがのびのび育つ明るいお家にしたいんです！」',
+        '「家族みんなで料理や洗濯をシェアしやすいと嬉しいなぁ♪」',
+        '「将来のことも考えて、収納もしっかり確保したいですね。」',
+        '「完成したら家族全員で内見に行くのが楽しみです！」'
+      ];
+    } else if (badge.includes('和モダン')) {
+      lines = [
+        '「フローリングの快適さと、畳の癒やし両方欲しいの♪」',
+        '「お休みの日はゆっくりお風呂と和室で温泉旅館気分〜！」',
+        '「渋すぎず、今どきの和モダンな雰囲気だと嬉しいな。」',
+        '「お茶が似合う落ち着く住まい、よろしくお願いします！」'
+      ];
+    } else if (badge.includes('DINKS')) {
+      lines = [
+        '「お互い忙しいので、暮らしやすさと距離感が大事ですね。」',
+        '「休日は二人でリビングでのんびり過ごしたいな♪」',
+        '「収納や洗面所が使いやすければ、さらに快適になりそう！」',
+        '「二人のライフスタイルにぴったりな設計お願いします！」'
+      ];
+    } else if (badge.includes('ミニマリスト')) {
+      lines = [
+        '「荷物はカバン2つ分だけ！無駄な広さはゼロでOKです！」',
+        '「UB大歓迎！家賃を浮かせられるのが一番ですから！」',
+        '「コンパクトで洗練された機能美を見せてください。」',
+        '「小さくてもちゃんと生活できる工夫、期待してます！」'
+      ];
+    } else if (badge.includes('ワーカー')) {
+      lines = [
+        '「ほぼ一日家にいるので、作業スペースの快適さが命です！」',
+        '「オンライン会議前にサッと身支度できる洗面台が欲しくて。」',
+        '「仕事とリラックスを切り替えられる間取りだといいな〜。」',
+        '「カフェ並みに集中できるお部屋、お願いします！」'
+      ];
+    } else if (badge.includes('おしゃれ')) {
+      lines = [
+        '「季節ごとの服と靴が入りきる収納がないとムリ〜！」',
+        '「友達を呼んでも恥ずかしくないセンスのいい部屋がいいな♪」',
+        '「身支度が楽しくなるような素敵な動線、期待してます！」',
+        '「かわいいピクセルのお部屋にしてくれると嬉しいな！」'
+      ];
+    } else if (badge.includes('陽だまり')) {
+      lines = [
+        '「朝起きたとき、窓からポカポカ陽が入ると幸せなんだ〜♪」',
+        '「お気に入りのマグで淹れるコーヒータイムが楽しみです！」',
+        '「風通しがよくて観葉植物も元気に育つお部屋がいいな🌿」',
+        '「明るい光あふれる素敵な間取り、頼みますね！」'
+      ];
+    } else if (badge.includes('初回モデル')) {
+      lines = [
+        '「記念すべき第1号のお部屋ですね！応援してます！」',
+        '「まずは基本の1Kから！無理なく組んでみましょう♪」',
+        '「どんなお部屋ができるかワクワクして待ってます！」'
+      ];
+    } else {
+      lines = [
+        '「新生活のスタート、素敵な間取りだといいなぁ！」',
+        '「無理のない家賃で快適に暮らせるお部屋を探してます！」',
+        '「やっぱり水回りの使い勝手は気になっちゃいますよね。」',
+        '「プロの間取りプラン、楽しみにしています！」'
+      ];
+    }
+    const idx = (typeof lastIdx === 'number' && lastIdx >= 0)
+      ? (lastIdx + 1) % lines.length
+      : Math.floor(Math.random() * lines.length);
+    return { text: lines[idx], idx };
+  }
+
   global.PixelRenderer = {
     drawPixelBoard,
     buildFurniturePlan,
@@ -2720,6 +2914,9 @@
     renderClientPortraitCanvas,
     startMissionIdle,
     stopMissionIdle,
+    startMissionSelectIdle,
+    stopMissionSelectIdle,
+    getClientTapSpeech,
     getEdgeType: (targetGrid, r1, c1, r2, c2) => safeEdgeType(targetGrid, r1, c1, r2, c2, typeof edgeType === 'function' ? edgeType : null),
     hasSolidWall: (targetGrid, r1, c1, r2, c2) => hasCellSolidWall(targetGrid, r1, c1, r2, c2),
     getSpeed: () => tourSpeed

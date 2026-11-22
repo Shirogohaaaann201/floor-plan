@@ -2060,14 +2060,79 @@
   /* ============================================================
      MISSION SCREEN SETUP
   ============================================================ */
+  const clientSpeechTimers = new WeakMap();
+
+  function triggerClientTapTalk(canvasEl, stageObj, quoteEl) {
+    if (!canvasEl || !quoteEl || !stageObj) return;
+    initAudio();
+    playSound('tap');
+
+    canvasEl.classList.remove('is-char-hop');
+    void canvasEl.offsetWidth;
+    canvasEl.classList.add('is-char-hop');
+
+    if (!quoteEl.dataset.origQuote) {
+      quoteEl.dataset.origQuote = quoteEl.textContent;
+    }
+    if (!quoteEl.style.minHeight && quoteEl.offsetHeight > 0) {
+      quoteEl.style.minHeight = `${quoteEl.offsetHeight}px`;
+    }
+
+    const prevIdx = quoteEl.dataset.lastTapIdx !== undefined ? parseInt(quoteEl.dataset.lastTapIdx, 10) : -1;
+    const speech = (window.PixelRenderer && typeof window.PixelRenderer.getClientTapSpeech === 'function')
+      ? window.PixelRenderer.getClientTapSpeech(stageObj, Number.isNaN(prevIdx) ? -1 : prevIdx)
+      : { text: quoteEl.dataset.origQuote, idx: 0 };
+
+    quoteEl.textContent = speech.text;
+    quoteEl.dataset.lastTapIdx = String(speech.idx);
+
+    quoteEl.classList.remove('is-speaking');
+    void quoteEl.offsetWidth;
+    quoteEl.classList.add('is-speaking');
+
+    const prevTimer = clientSpeechTimers.get(quoteEl);
+    if (prevTimer) clearTimeout(prevTimer);
+    const timer = setTimeout(() => {
+      if (quoteEl.dataset.origQuote) quoteEl.textContent = quoteEl.dataset.origQuote;
+      quoteEl.classList.remove('is-speaking');
+      quoteEl.style.minHeight = '';
+      clientSpeechTimers.delete(quoteEl);
+    }, 3200);
+    clientSpeechTimers.set(quoteEl, timer);
+  }
+
+  document.getElementById('client-stage-canvas')?.addEventListener('click', () => {
+    const stageCanvas = document.getElementById('client-stage-canvas');
+    const quoteEl = document.getElementById('client-quote');
+    if (STAGE && stageCanvas && quoteEl) {
+      triggerClientTapTalk(stageCanvas, STAGE, quoteEl);
+    }
+  });
+
   function setupMissionScreen() {
     if (!STAGE) return;
     // Client info
     document.getElementById('client-name').textContent = STAGE.client.name;
-    document.getElementById('client-quote').textContent = STAGE.client.quote;
+    const quoteEl = document.getElementById('client-quote');
+    if (quoteEl) {
+      const prevTimer = clientSpeechTimers.get(quoteEl);
+      if (prevTimer) {
+        clearTimeout(prevTimer);
+        clientSpeechTimers.delete(quoteEl);
+      }
+      delete quoteEl.dataset.origQuote;
+      delete quoteEl.dataset.lastTapIdx;
+      quoteEl.style.minHeight = '';
+      quoteEl.classList.remove('is-speaking');
+      quoteEl.classList.toggle('client-speech-bubble--special', Boolean(STAGE.client.typeBadge && STAGE.client.typeBadge.includes('案B')));
+      quoteEl.textContent = STAGE.client.quote;
+    }
     const stageCanvas = document.getElementById('client-stage-canvas');
     if (stageCanvas && window.PixelRenderer && typeof window.PixelRenderer.renderClientPortraitCanvas === 'function') {
       window.PixelRenderer.renderClientPortraitCanvas(stageCanvas, STAGE, { mode: 'stage', tick: 0 });
+      if (quoteEl) {
+        quoteEl.style.setProperty('--tail-left', `${Math.min(54, Math.max(20, Math.round(stageCanvas.width / 2) - 6))}px`);
+      }
       if (typeof window.PixelRenderer.startMissionIdle === 'function') {
         window.PixelRenderer.startMissionIdle(STAGE);
       }
@@ -2827,12 +2892,13 @@
         </span>
       `).join('');
 
+      const isSpecial = Boolean(m.client.typeBadge && m.client.typeBadge.includes('案B'));
       html += `
         <div class="mission-card" style="margin:0; border:1px solid #334155; background:var(--c-surface); border-radius:8px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.25);">
           <!-- Header -->
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; gap:8px;">
             <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
-              <canvas class="mission-select-char-canvas" data-mission-idx="${idx}" width="68" height="52"></canvas>
+              <canvas class="mission-select-char-canvas" data-mission-idx="${idx}" width="68" height="52" title="タップでひとこと"></canvas>
               <div style="min-width:0;">
                 <div style="font-size:14px; font-weight:bold; color:var(--c-text);">${m.client.name} 様</div>
                 <span style="display:inline-block; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; ${badgeBg}">
@@ -2846,10 +2912,8 @@
             </div>
           </div>
 
-          <!-- Quote -->
-          <div style="font-size:11px; color:var(--c-text2); margin-bottom:10px; background:rgba(15,23,42,0.45); padding:6px 8px; border-radius:4px; line-height:1.4;">
-            ${m.client.quote}
-          </div>
+          <!-- Quote (Speech Bubble) -->
+          <div class="client-speech-bubble mission-card-quote${isSpecial ? ' client-speech-bubble--special' : ''}" data-mission-quote="${idx}">${m.client.quote}</div>
 
           <!-- Lot Specs Banner -->
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:11px; margin-bottom:10px; background:rgba(30,41,59,0.5); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
@@ -2877,9 +2941,13 @@
       container.querySelectorAll('.mission-select-char-canvas').forEach(cv => {
         const mIdx = parseInt(cv.dataset.missionIdx, 10);
         if (!Number.isNaN(mIdx) && pool[mIdx]) {
-          window.PixelRenderer.renderClientPortraitCanvas(cv, pool[mIdx], { mode: 'portrait', tick: 0 });
+          window.PixelRenderer.renderClientPortraitCanvas(cv, pool[mIdx], { mode: 'portrait', tick: mIdx });
         }
       });
+      if (document.getElementById('screen-mission-select')?.classList.contains('active') &&
+          typeof window.PixelRenderer.startMissionSelectIdle === 'function') {
+        window.PixelRenderer.startMissionSelectIdle(pool);
+      }
     }
   }
 
@@ -2908,6 +2976,17 @@
   }
 
   document.getElementById('mission-pool-cards')?.addEventListener('click', (e) => {
+    const charCv = e.target.closest('.mission-select-char-canvas');
+    if (charCv) {
+      const idx = parseInt(charCv.dataset.missionIdx, 10);
+      const card = charCv.closest('.mission-card');
+      const quoteEl = card?.querySelector(`[data-mission-quote="${idx}"]`);
+      const pool = GameState.availableMissions || [];
+      if (!Number.isNaN(idx) && pool[idx] && quoteEl) {
+        triggerClientTapTalk(charCv, pool[idx], quoteEl);
+      }
+      return;
+    }
     const btn = e.target.closest('.btn-select-mission');
     if (btn) {
       const idx = parseInt(btn.dataset.idx, 10);

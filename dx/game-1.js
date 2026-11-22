@@ -3324,6 +3324,11 @@
       } else if (typeof window.PixelRenderer.stopMissionIdle === 'function') {
         window.PixelRenderer.stopMissionIdle();
       }
+      if (name === 'missionSelect' && typeof window.PixelRenderer.startMissionSelectIdle === 'function') {
+        window.PixelRenderer.startMissionSelectIdle(GameState.availableMissions || []);
+      } else if (typeof window.PixelRenderer.stopMissionSelectIdle === 'function') {
+        window.PixelRenderer.stopMissionSelectIdle();
+      }
     }
   }
 

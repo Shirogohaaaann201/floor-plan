@@ -211,6 +211,15 @@
       image-rendering: crisp-edges;
       display: block;
       flex-shrink: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.14s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .client-stage-canvas:hover, .mission-select-char-canvas:hover {
+      border-color: rgba(251, 191, 36, 0.72);
+    }
+    .client-stage-canvas:active, .mission-select-char-canvas:active {
+      transform: scale(0.96);
     }
     .client-stage-canvas {
       border-radius: 10px;
@@ -226,6 +235,19 @@
       background: #0f172a;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
+    @keyframes charTapHop {
+      0%   { transform: translateY(0) scale(1); }
+      45%  { transform: translateY(-5px) scale(1.04); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    .is-char-hop {
+      animation: charTapHop 0.26s ease-out;
+    }
+    @keyframes bubblePopIn {
+      0%   { transform: scale(0.97); }
+      55%  { transform: scale(1.015); }
+      100% { transform: scale(1); }
+    }
     .client-avatar {
       width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -233,12 +255,65 @@
       font-size: 22px;
     }
     .client-name { font-size: 15px; font-weight: 900; }
-    .client-req {
-      margin-top: 6px;
-      font-size: 12px; line-height: 1.6; color: var(--c-text);
-      background: var(--c-surface2);
-      border-left: 3px solid var(--c-amber);
-      padding: 8px 10px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    .client-req,
+    .client-speech-bubble {
+      position: relative;
+      margin-top: 12px;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--c-text);
+      background: #162033;
+      border: 1.5px solid rgba(245, 158, 11, 0.42);
+      padding: 9px 11px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(2, 6, 23, 0.25);
+      transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+    .client-speech-bubble::before,
+    .client-speech-bubble::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      pointer-events: none;
+    }
+    .client-speech-bubble::before {
+      top: -9px;
+      left: var(--tail-left, 26px);
+      border-width: 0 7px 9px 7px;
+      border-color: transparent transparent rgba(245, 158, 11, 0.55) transparent;
+    }
+    .client-speech-bubble::after {
+      top: -7px;
+      left: calc(var(--tail-left, 26px) + 1.5px);
+      border-width: 0 5.5px 7.5px 5.5px;
+      border-color: transparent transparent #162033 transparent;
+    }
+    .mission-card-quote {
+      margin-top: 11px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      line-height: 1.48;
+      --tail-left: 27px;
+    }
+    .client-speech-bubble--special {
+      border-color: rgba(192, 132, 252, 0.55);
+    }
+    .client-speech-bubble--special::before {
+      border-color: transparent transparent rgba(192, 132, 252, 0.65) transparent;
+    }
+    .client-speech-bubble.is-speaking {
+      background: #1e293b;
+      border-color: #fbbf24;
+      color: #fef3c7;
+      animation: bubblePopIn 0.22s ease-out;
+    }
+    .client-speech-bubble.is-speaking::before {
+      border-color: transparent transparent #fbbf24 transparent;
+    }
+    .client-speech-bubble.is-speaking::after {
+      border-color: transparent transparent #1e293b transparent;
     }
 
     /* Requests list */
