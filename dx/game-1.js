@@ -91,7 +91,11 @@
   let wallRemoveCount = 0;      // 現在のパズル中で撤去した赤壁の回数
   let buildEncroachCost = 0;    // 敷地外・障害物(✕マス)の造成・拡張による費用合計
   let encroachCount = 0;        // 現在のパズル中で造成した✕マスの数
+  let buildDemolishCost = 0;    // リノベ既存間取りの解体による費用合計
+  let demolishCount = 0;        // 現在のパズル中で解体した既存部屋の数
   let selectedWallTarget = null;// 赤壁撤去の選択中ターゲット { r1, c1, r2, c2, ori, mx, my }
+  let selectedDemolishTarget = null; // 解体選択中の既存部屋ターゲット
+  let demolishMode = false;     // リノベ解体モードON/OFF
   let hintDismissedForBuild = false; // パズル開始後、一度でも操作したら中央ヒントを再表示しないフラグ
   let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
   let deckCycle = 1;            // 現在の山札周回数 (1周目: 1, 2周目: 2, 3周目以降: 3...)
@@ -225,6 +229,14 @@
     compact_living: {
       id: 'compact_living', icon: 'ph-arrows-in', color: '#0284c7', text: '省スペース設計 (延床12マス以下)',
       fn: counts => (counts.floorCells || 0) <= 12 && counts.floorCells > 0
+    },
+    reno_no_ng: {
+      id: 'reno_no_ng', icon: 'ph-shield-check', color: '#e11d48', text: 'NGコンボをゼロにする',
+      fn: counts => (typeof DXStage2 !== 'undefined' && DXStage2.hasNoNegativeCombos) ? DXStage2.hasNoNegativeCombos(counts) : true
+    },
+    reno_no_ub: {
+      id: 'reno_no_ub', icon: 'ph-bathtub', color: '#0891b2', text: '古いUBを撤去し風呂・トイレ別',
+      fn: counts => !!counts.isBtSeparated && (counts.unitBathCount || 0) === 0
     },
     'opt-closet': {
       id: 'opt-closet', icon: 'ph-coat-hanger', color: '#f59e0b', text: '収納あり', tier: 'light',
@@ -1242,7 +1254,7 @@
     }
   ];
 
-  function generateStage(level = 0, overrideType = null, specialTemplate = null) {
+  function generateStage(level = 0, overrideType = null, specialTemplate = null, stageOpts = null) {
     let clientType = 'single';
     let lotKey = 'square_s';
     let allowWide = false;
@@ -1735,6 +1747,24 @@
     initialBudget = Math.round(initialBudget * salesMultiplier);
     targetRent = Math.round(targetRent * salesMultiplier * 10) / 10;
 
+    let locationData = null;
+    if (typeof DXStage2 !== 'undefined' && DXStage2.pickLocationForLot) {
+      const opts = stageOpts || {};
+      if (opts.forceLocationId) {
+        locationData = DXStage2.pickLocationForLot(lotKey, entranceFacing, clientType, {
+          forceId: opts.forceLocationId,
+          forceSide: opts.forceLocationSide || null
+        });
+      } else if (opts.allowLocation !== false) {
+        const locChance = opts.locationChance !== undefined ? opts.locationChance : (level === 0 ? 0.45 : 0.68);
+        if (Math.random() < locChance) {
+          locationData = DXStage2.pickLocationForLot(lotKey, entranceFacing, clientType, {
+            avoidIds: opts.avoidLocationIds || []
+          });
+        }
+      }
+    }
+
     return {
       id: level + 1,
       name: `${clientData.name} 様の依頼`,
@@ -1751,7 +1781,9 @@
       obstacles: lotDef.obstacles,
       requests: requests,
       optionalRequests: optionalRequests,
-      customCombo: customComboData
+      customCombo: customComboData,
+      location: locationData,
+      renovation: null
     };
   }
 
@@ -1767,11 +1799,15 @@
   function generateMissionPool(level = 0) {
     const pool = [];
     const brandLevel = (GameState && GameState.company && GameState.company.brandLevel) || 1;
+    const salesLevel = (GameState && GameState.company && GameState.company.salesLevel) || 1;
+    const salesMultiplier = 1.0 + (salesLevel - 1) * 0.15;
     const eligibleSpecials = brandLevel >= 2
       ? SPECIAL_CLIENT_TEMPLATES.filter(t => brandLevel >= t.minBrand)
       : [];
     const usedSpecialIds = new Set();
+    const usedLocationIds = [];
     let specialCount = 0;
+    let renoCount = 0;
     const maxSpecialInPool = brandLevel >= 4 ? 2 : (brandLevel >= 2 ? 1 : 0);
 
     for (let i = 0; i < 3; i++) {
@@ -1781,10 +1817,26 @@
         const picked = candidates[Math.floor(Math.random() * candidates.length)];
         usedSpecialIds.add(picked.id);
         specialCount++;
-        pool.push(generateStage(level, picked.clientType, picked));
+        const stg = generateStage(level, picked.clientType, picked, { allowLocation: false });
+        pool.push(stg);
+      } else if (renoCount === 0 && level >= 1 && typeof DXStage2 !== 'undefined' && DXStage2.generateRenovationMission && Math.random() < (i === 1 ? 0.45 : 0.25)) {
+        const renoStg = DXStage2.generateRenovationMission(level, brandLevel, salesMultiplier);
+        if (renoStg) {
+          renoCount++;
+          if (renoStg.location && renoStg.location.id) usedLocationIds.push(renoStg.location.id);
+          pool.push(renoStg);
+          continue;
+        }
       } else {
         const rollType = pickClientTypeByBrand(brandLevel);
-        pool.push(generateStage(level, rollType, null));
+        const allowLoc = (i === 0) ? true : (Math.random() < 0.72);
+        const stg = generateStage(level, rollType, null, {
+          allowLocation: allowLoc,
+          locationChance: i === 0 ? 1.0 : 0.72,
+          avoidLocationIds: usedLocationIds
+        });
+        if (stg.location && stg.location.id) usedLocationIds.push(stg.location.id);
+        pool.push(stg);
       }
     }
     return pool;
@@ -1819,15 +1871,22 @@
         }
       });
     }
+    if (stage.location && stage.location.id && typeof DXStage2 !== 'undefined' && DXStage2.buildLocationPayload) {
+      stage.location = DXStage2.buildLocationPayload(stage.location.id, stage.location.side);
+    }
+    return stage;
   }
 
   function updateStage() {
     currentLevelIdx = GameState.level;
+    if (Array.isArray(GameState.availableMissions)) {
+      GameState.availableMissions = GameState.availableMissions.filter(Boolean);
+    }
     if (!GameState.currentMission) {
       if (!GameState.availableMissions || GameState.availableMissions.length === 0) {
         GameState.availableMissions = generateMissionPool(currentLevelIdx);
       }
-      GameState.currentMission = GameState.availableMissions[0];
+      GameState.currentMission = GameState.availableMissions[0] || generateMissionPool(currentLevelIdx)[0];
       saveGame();
     }
     STAGE = GameState.currentMission;
@@ -3119,7 +3178,10 @@
     const evictRate = Math.min(100, Math.max(0, evictRateVal)).toFixed(1);
 
     // 売却査定額:
-    const baseCost = p.baseCost || (baseRent * 20) || 0;
+    const rawBaseCost = p.baseCost !== undefined ? p.baseCost : ((baseRent * 20) || 0);
+    const baseCost = p.isRenovation
+      ? Math.max(10, (p.baseCost || 0) + (p.demolishCost || 0) * 0.5 + (p.preservedBaseCost || 0) * 0.4)
+      : rawBaseCost;
     const effectiveRent = (p.isOriginalTenant !== false) ? (p.rent || baseRent) : calcMarketRent(p, GameState.month);
     const comboRentDiff = effectiveRent - baseRent;
     const rawComboPremium = comboRentDiff * 6; // 6ヶ月分に是正（フリップ即時大儲けを抑制）
@@ -3173,8 +3235,10 @@
     const floorMaint = Math.round(floorCells * 0.04 * 100) / 100;
     const gardenMaint = Math.round(marginGardenCells * 0.06 * 100) / 100;
     const encroachMaint = Math.round(encroachedCells * 0.20 * 100) / 100;
-    // 基礎維持費: 延床 0.04万/マス + 長方形内の余白庭 0.06万/マス + 造成区画 0.20万/マス (最低0.2万)
-    const baseMaintCost = Math.max(0.2, Math.round((floorCells * 0.04 + marginGardenCells * 0.06 + encroachedCells * 0.20) * 10) / 10);
+    const locMaintMult = (p.location && typeof p.location.maintMult === 'number') ? p.location.maintMult : 1.0;
+    // 基礎維持費: 延床 0.04万/マス + 長方形内の余白庭 0.06万/マス + 造成区画 0.20万/マス (立地倍率適用・最低0.2万)
+    const rawBaseMaint = (floorCells * 0.04 + marginGardenCells * 0.06 + encroachedCells * 0.20) * locMaintMult;
+    const baseMaintCost = Math.max(0.2, Math.round(rawBaseMaint * 10) / 10);
     const ageMaintMult = 1 + buildingAge * 0.04;
     // 経年老朽化による修繕維持費上昇: 1ヶ月あたり +4% (1年で+48%)
     const maintCost = Math.round(baseMaintCost * ageMaintMult * 10) / 10;
@@ -3192,6 +3256,7 @@
       resaleValue: resaleValue,
       standardResaleValue: standardResaleValue,
       baseCostVal: Math.round(baseCost * 10) / 10,
+      locMaintMult: locMaintMult,
       satBaseFactor: satBaseFactor,
       comboPremiumVal: Math.round(comboPremium * 10) / 10,
       comboRentDiff: Math.round(comboRentDiff * 10) / 10,
@@ -3380,6 +3445,12 @@
       }
     }
 
+    // リノベーション案件：既存間取り（固定躯体・解体可能部屋）の初期注入
+    if (STAGE.renovation && typeof DXStage2 !== 'undefined' && DXStage2.injectRenovationGrid) {
+      nextRoomId = DXStage2.injectRenovationGrid(grid, STAGE, makeCell);
+      if (typeof mergeSameType === 'function') mergeSameType();
+    }
+
     turnsLeft = STAGE.maxTurns;
     activeCombos = [];
     updateTurnsDisplay();
@@ -3388,7 +3459,12 @@
   }
 
   function makeCell(type, roomId=null, label='', costPerCell=0.0) {
-    return { type, roomId, pieceId: roomId, label, costPerCell, encroached: false, walls: {top:false, right:false, bottom:false, left:false} };
+    return {
+      type, roomId, pieceId: roomId, label, costPerCell, encroached: false,
+      isExisting: false, locked: false, renoGroupId: '',
+      walls: {top:false, right:false, bottom:false, left:false},
+      lockedWalls: {top:false, right:false, bottom:false, left:false}
+    };
   }
 
   function gardenize() {
@@ -3412,7 +3488,11 @@
         costPerCell: cell.costPerCell || 0,
         pieceLibId: cell.pieceLibId || '',
         encroached: !!cell.encroached,
-        walls: cell.walls ? { ...cell.walls } : {top:false, right:false, bottom:false, left:false}
+        isExisting: !!cell.isExisting,
+        locked: !!cell.locked,
+        renoGroupId: cell.renoGroupId || '',
+        walls: cell.walls ? { ...cell.walls } : {top:false, right:false, bottom:false, left:false},
+        lockedWalls: cell.lockedWalls ? { ...cell.lockedWalls } : {top:false, right:false, bottom:false, left:false}
       };
     }));
   }
@@ -3429,7 +3509,11 @@
           cell.pieceId = d.pieceId;
           cell.pieceLibId = d.pieceLibId || '';
           cell.encroached = !!d.encroached;
+          cell.isExisting = !!d.isExisting;
+          cell.locked = !!d.locked;
+          cell.renoGroupId = d.renoGroupId || '';
           cell.walls = d.walls ? { ...d.walls } : {top:false, right:false, bottom:false, left:false};
+          cell.lockedWalls = d.lockedWalls ? { ...d.lockedWalls } : {top:false, right:false, bottom:false, left:false};
           row.push(cell);
         } else {
           row.push(makeCell(T.EMPTY));
@@ -3457,6 +3541,8 @@
         wallRemoveCount: wallRemoveCount,
         buildEncroachCost: buildEncroachCost,
         encroachCount: encroachCount,
+        buildDemolishCost: buildDemolishCost,
+        demolishCount: demolishCount,
         hintDismissedForBuild: hintDismissedForBuild,
         tutorialBuildStep: tutorialBuildStep,
         buildRerollCost: buildRerollCost,
@@ -3504,9 +3590,13 @@
       wallRemoveCount = ab.wallRemoveCount || 0;
       buildEncroachCost = ab.buildEncroachCost || 0;
       encroachCount = ab.encroachCount || 0;
+      buildDemolishCost = ab.buildDemolishCost || 0;
+      demolishCount = ab.demolishCount || 0;
       hintDismissedForBuild = !!ab.hintDismissedForBuild || (nextRoomId > 1);
       tutorialBuildStep = (ab.tutorialBuildStep !== undefined) ? ab.tutorialBuildStep : 0;
       selectedWallTarget = null;
+      selectedDemolishTarget = null;
+      demolishMode = false;
       buildRerollCost = ab.buildRerollCost || 0;
       deckCycle = ab.deckCycle || 1;
 
@@ -3531,6 +3621,7 @@
       updateBudgetUI();
       updateDeckPeekButton();
       updateHandRefreshButton();
+      if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
 
       if (ab.screen === 'result') {
         evaluate(true);
@@ -3979,6 +4070,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           initAudio();
           cancelRerollConfirm();
           selectedWallTarget = null;
+          selectedDemolishTarget = null;
+          demolishMode = false;
+          if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
           if (tutStep) {
             if (tutStep.slot !== idx) {
               playSound('tap');
@@ -4075,7 +4169,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     updateRerollButton();
     updateMirrorButton();
     syncTutorialPuzzleUI();
-    syncHintOverlay(previewMode || !!selectedWallTarget);
+    syncHintOverlay(previewMode || !!selectedWallTarget || !!selectedDemolishTarget);
   }
 
   let isRerollConfirming = false;
@@ -4219,7 +4313,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         pl.innerHTML = `<span style="color:var(--c-text2); font-size:11px;">選択中: <strong style="color:var(--c-text);">${p.name}</strong></span> <span style="color:${pCycle >= 2 ? '#fbbf24' : 'var(--c-emerald)'}; font-weight:bold; font-size:12px;">(${cost}万)</span>${cycleTag}`;
       } else {
         const wCost = getWallRemoveCost().toFixed(1);
-        pl.innerHTML = `<span style="color:var(--c-text2); font-size:10.5px;">未選択 <span style="color:#fca5a5;">(🔨壁撤去 ${wCost}万)</span></span>`;
+        const demoHint = (STAGE && STAGE.renovation && typeof DXStage2 !== 'undefined' && DXStage2.hasDemolishableCells(grid))
+          ? ` / 既存部屋タップ解体`
+          : '';
+        pl.innerHTML = `<span style="color:var(--c-text2); font-size:10.5px;">未選択 <span style="color:#fca5a5;">(🔨壁撤去 ${wCost}万${demoHint})</span></span>`;
       }
     }
       
@@ -4268,8 +4365,8 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     }
     const spentEl = document.getElementById('hdr-spent-cost');
     const breakEl = document.getElementById('hdr-cost-breakdown');
-    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost) * 10) / 10;
-    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost) * 10) / 10;
+    const totalSpent = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost + (buildDemolishCost || 0)) * 10) / 10;
+    const extraSpent = Math.round((buildMirrorExtraCost + buildCycleExtraCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost + (buildDemolishCost || 0)) * 10) / 10;
     const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
     if (spentEl) {
       spentEl.innerHTML = `${totalSpent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
@@ -4308,7 +4405,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     ctx.scale(devicePixelRatio, devicePixelRatio);
     ctx.imageSmoothingEnabled = false;
     drawPlan();
-    if ((previewMode && hoverCell) || selectedWallTarget) {
+    if ((previewMode && hoverCell) || selectedWallTarget || selectedDemolishTarget) {
       showConfirmUI(true);
     }
   }
@@ -4359,11 +4456,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     const reachableSet = (typeof runBFS === 'function' && STAGE) ? runBFS() : null;
     if (window.pixelPreviewMode && window.PixelRenderer) {
       try {
-        const hasActiveSelection = Boolean((selectedSlot !== null && draftSlots[selectedSlot]) || selectedWallTarget || hoverCell);
+        const hasActiveSelection = Boolean((selectedSlot !== null && draftSlots[selectedSlot]) || selectedWallTarget || selectedDemolishTarget || hoverCell);
         PixelRenderer.drawPixelBoard(ctx, grid, cellSize, {
           showFurniture: false,
           showBlueprintOverlay: hasActiveSelection,
           showSolidRedOverlay: true,
+          selectedDemolishTarget: selectedDemolishTarget,
+          demolishMode: demolishMode,
           stageObj: STAGE
         });
         drawOccupiedBoxOverlay(ctx, grid, cellSize, true);
@@ -4373,6 +4472,16 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return;
     }
     try { drawCells(reachableSet); } catch(e) { console.error('drawCells error:', e); }
+    try {
+      if (typeof DXStage2 !== 'undefined') {
+        DXStage2.drawBlueprintLocationOverlay(ctx, grid, STAGE, cellSize, false);
+        DXStage2.drawBlueprintRenovationOverlays(ctx, grid, cellSize, {
+          selectedDemolishTarget: selectedDemolishTarget,
+          demolishMode: demolishMode,
+          showBadges: true
+        });
+      }
+    } catch(e) { console.error('stage2 blueprint overlay error:', e); }
     try { drawOccupiedBoxOverlay(ctx, grid, cellSize, true); } catch(e) { console.error('drawOccupiedBoxOverlay error:', e); }
     try { drawArchLines(); } catch(e) { console.error('drawArchLines error:', e); }
     try { drawLabels(reachableSet); } catch(e) { console.error('drawLabels error:', e); }
@@ -4761,14 +4870,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     if (et === E.WALL || et === E.WINDOW) {
       const isSolid = hasSolidWall(r1, c1, r2, c2);
-      ctx.strokeStyle = isSolid ? '#ef4444' : (ext ? '#0f172a' : '#1e293b');
-      ctx.lineWidth   = isSolid ? 4 : (ext ? 3.5 : 2);
+      const isLockedW = isSolid && (typeof DXStage2 !== 'undefined') && DXStage2.hasLockedWall(grid, r1, c1, r2, c2);
+      ctx.strokeStyle = isLockedW ? '#9f1239' : (isSolid ? '#ef4444' : (ext ? '#0f172a' : '#1e293b'));
+      ctx.lineWidth   = isLockedW ? 4.5 : (isSolid ? 4 : (ext ? 3.5 : 2));
       ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-      // 耐力壁マーク: 短い斜線を等間隔に描画
+      // 耐力壁マーク: 短い斜線を等間隔に描画（固定躯体壁は鉄骨リベット表示）
       if (isSolid) {
         ctx.save();
-        ctx.strokeStyle = '#ef4444';
+        ctx.strokeStyle = isLockedW ? '#9f1239' : '#ef4444';
         ctx.lineWidth = 1.5;
         const len = ori === 'h' ? Math.abs(x2-x1) : Math.abs(y2-y1);
         const marks = Math.max(2, Math.round(len / 10));
@@ -4780,6 +4890,10 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
           } else {
             ctx.beginPath(); ctx.moveTo(mx-4, my-3); ctx.lineTo(mx+4, my+3); ctx.stroke();
           }
+        }
+        if (isLockedW) {
+          ctx.fillStyle = '#fef08a';
+          ctx.fillRect((x1 + x2) / 2 - 2, (y1 + y2) / 2 - 2, 4, 4);
         }
         ctx.restore();
       }
@@ -5000,6 +5114,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
         const targetType = grid[gr + r][gc + c].type;
         if (targetType !== T.EMPTY && targetType !== T.OBSTACLE) {
           return { ok: false, reason: 'overlap', shortLabel: '部屋と重なっています', detailText: '他の部屋と重なっています' };
+        }
+        if (targetType === T.OBSTACLE && typeof DXStage2 !== 'undefined' && DXStage2.isNonEncroachableObstacle) {
+          const envBlock = DXStage2.isNonEncroachableObstacle(STAGE, gr + r, gc + c, grid);
+          if (envBlock && envBlock.blocked) {
+            return { ok: false, reason: 'env_blocked', shortLabel: envBlock.shortLabel, detailText: envBlock.detailText };
+          }
         }
         if (isCellAdjacentToStructure(gr + r, gc + c)) {
           hasAdjacent = true;
@@ -5310,6 +5430,12 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       }
     }
 
+    if (best) {
+      best.dist = bestDist;
+      if (typeof DXStage2 !== 'undefined' && DXStage2.hasLockedWall) {
+        best.locked = DXStage2.hasLockedWall(grid, best.r1, best.c1, best.r2, best.c2);
+      }
+    }
     return best;
   }
 
@@ -5317,6 +5443,11 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     if (!target) return false;
     const { r1, c1, r2, c2 } = target;
     if (!hasSolidWall(r1, c1, r2, c2)) return false;
+    if (typeof DXStage2 !== 'undefined' && DXStage2.hasLockedWall && DXStage2.hasLockedWall(grid, r1, c1, r2, c2)) {
+      playSound('error');
+      showFloatingText('🔒 固定躯体壁は撤去できません', '#fca5a5');
+      return false;
+    }
 
     const cost = getWallRemoveCost();
     if (budget < cost) {
@@ -5357,6 +5488,97 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     return true;
   }
 
+  function syncDemolishModeButton() {
+    const btn = document.getElementById('btn-demolish-mode');
+    if (!btn) return;
+    const isReno = !!(STAGE && STAGE.renovation);
+    if (!isReno) {
+      btn.style.display = 'none';
+      demolishMode = false;
+      btn.classList.remove('is-active');
+      return;
+    }
+    const canDemo = (typeof DXStage2 !== 'undefined' && DXStage2.hasDemolishableCells)
+      ? DXStage2.hasDemolishableCells(grid)
+      : false;
+    btn.style.display = 'inline-flex';
+    btn.disabled = !canDemo;
+    btn.style.opacity = canDemo ? '1' : '0.45';
+    btn.style.cursor = canDemo ? 'pointer' : 'not-allowed';
+    if (!canDemo) demolishMode = false;
+    btn.classList.toggle('is-active', !!demolishMode);
+    btn.innerHTML = demolishMode
+      ? `<i class="ph-bold ph-hammer"></i> 解体中`
+      : `<i class="ph-bold ph-hammer"></i> 解体`;
+  }
+
+  function demolishRoom(target) {
+    if (!target || !Array.isArray(target.cells) || target.cells.length === 0) return false;
+    const cost = target.cost || 0;
+    if (budget < cost) {
+      playSound('error');
+      showFloatingText('資金不足！', 'var(--c-rose)');
+      showEmergencyLoanPrompt(cost - budget);
+      return false;
+    }
+    for (const pt of target.cells) {
+      if (grid[pt.r] && grid[pt.r][pt.c]) {
+        grid[pt.r][pt.c] = makeCell(T.EMPTY);
+      }
+    }
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const cur = grid[r][c];
+        if (cur && MERGEABLE_TYPES.has(cur.type)) {
+          cur.roomId = cur.pieceId || cur.roomId;
+        }
+      }
+    }
+    mergeSameType();
+
+    budget = Math.round((budget - cost) * 10) / 10;
+    buildDemolishCost = Math.round(((buildDemolishCost || 0) + cost) * 10) / 10;
+    demolishCount = (demolishCount || 0) + 1;
+
+    updateBudgetUI();
+    updatePieceLabel();
+    syncDemolishModeButton();
+    playSound('place');
+    showFloatingText(`🔨 ${target.label}を解体 (-${cost.toFixed(1)}万)`, '#f59e0b');
+    if (typeof updateRealtimeRent === 'function') updateRealtimeRent();
+    saveActiveBuild('game');
+    return true;
+  }
+
+  document.getElementById('btn-demolish-mode')?.addEventListener('click', () => {
+    initAudio();
+    if (!STAGE || !STAGE.renovation) return;
+    const canDemo = (typeof DXStage2 !== 'undefined' && DXStage2.hasDemolishableCells) ? DXStage2.hasDemolishableCells(grid) : false;
+    if (!canDemo) {
+      playSound('tap');
+      showFloatingText('解体できる既存部屋はありません', '#94a3b8');
+      return;
+    }
+    playSound('tap');
+    demolishMode = !demolishMode;
+    selectedWallTarget = null;
+    selectedDemolishTarget = null;
+    if (demolishMode) {
+      selectedSlot = null;
+      selectedRot = 0;
+      isMirrored = false;
+      hoverCell = null;
+      previewMode = false;
+      showConfirmUI(false);
+    }
+    syncDemolishModeButton();
+    renderDraftUI();
+    drawPlan();
+    if (demolishMode) {
+      showFloatingText('🔨 橙枠の既存部屋をタップして解体', '#fbbf24');
+    }
+  });
+
   let confirmOverlayShownAt = 0;
 
   function selectDraftSlotByNumber(idx) {
@@ -5364,6 +5586,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     cancelRerollConfirm();
     selectedWallTarget = null;
+    selectedDemolishTarget = null;
+    demolishMode = false;
+    syncDemolishModeButton();
     const tutStep = getCurrentTutorialStep();
     if (tutStep) {
       if (tutStep.slot !== idx || !draftSlots[idx]) {
@@ -5442,6 +5667,9 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
     initAudio();
     cancelRerollConfirm();
     selectedWallTarget = null;
+    selectedDemolishTarget = null;
+    demolishMode = false;
+    syncDemolishModeButton();
     if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
       document.activeElement.blur();
     }
@@ -5562,6 +5790,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
   function confirmSelectedAction() {
     initAudio();
+    if (selectedDemolishTarget) {
+      const ok = demolishRoom(selectedDemolishTarget);
+      if (ok) {
+        selectedDemolishTarget = null;
+        showConfirmUI(false);
+        drawPlan();
+      }
+      return;
+    }
     if (selectedWallTarget) {
       const ok = removeSolidWall(selectedWallTarget);
       if (ok) {
@@ -5820,7 +6057,13 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
 
     if (textEl) {
       const hasSel = (selectedSlot !== null && !!draftSlots[selectedSlot]);
-      textEl.textContent = hasSel ? '玄関の隣の明るいマスをタップ' : '下のカードを選んで玄関の隣へ';
+      if (hasSel) {
+        textEl.textContent = '玄関の隣の明るいマスをタップ';
+      } else if (STAGE && STAGE.renovation) {
+        textEl.textContent = '🔨「解体」で古い部屋を壊すか、カードを選んで増改築';
+      } else {
+        textEl.textContent = '下のカードを選んで玄関の隣へ';
+      }
     }
     hint.style.opacity = (forceHide || hintDismissedForBuild) ? '0' : '1';
   }
@@ -5840,7 +6083,35 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       const area = document.querySelector('.canvas-area');
       const metrics = area ? getConfirmCanvasMetrics(area) : null;
 
-      if (selectedWallTarget && metrics) {
+      if (selectedDemolishTarget && metrics) {
+        if (pcTools) pcTools.style.display = 'none';
+        const dCost = (selectedDemolishTarget.cost || 0).toFixed(1);
+        const canAffordDemo = budget >= (selectedDemolishTarget.cost || 0);
+        if (btn) {
+          if (canAffordDemo) {
+            btn.classList.remove('confirm-btn-invalid');
+            btn.innerHTML = `<i class="ph-bold ph-hammer"></i> ${selectedDemolishTarget.label}解体 (-${dCost}万)`;
+            btn.style.background = '#ea580c';
+          } else {
+            btn.classList.add('confirm-btn-invalid');
+            btn.innerHTML = `<i class="ph-bold ph-warning"></i> 資金不足 (${dCost}万)`;
+            btn.style.background = '';
+          }
+        }
+        const cellRects = selectedDemolishTarget.cells.map(pt => ({
+          left: metrics.originX + pt.c * cellSize,
+          top: metrics.originY + pt.r * cellSize,
+          right: metrics.originX + (pt.c + 1) * cellSize,
+          bottom: metrics.originY + (pt.r + 1) * cellSize
+        }));
+        const targetBBox = {
+          left: metrics.originX + selectedDemolishTarget.minC * cellSize,
+          top: metrics.originY + selectedDemolishTarget.minR * cellSize,
+          right: metrics.originX + (selectedDemolishTarget.maxC + 1) * cellSize,
+          bottom: metrics.originY + (selectedDemolishTarget.maxR + 1) * cellSize
+        };
+        placeConfirmOverlaySafely(co, targetBBox, cellRects, false);
+      } else if (selectedWallTarget && metrics) {
         if (pcTools) pcTools.style.display = 'none';
         const wCost = getWallRemoveCost().toFixed(1);
         if (btn) {
@@ -5928,21 +6199,61 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
       return;
     }
     if (selectedSlot === null || !draftSlots[selectedSlot]) {
-      // ピース未選択時は赤壁（耐力壁）のタップ判定を行い、ヒットすれば有料撤去ボタンを表示する
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      const rawC = Math.floor((cx - rect.left) / cellSize);
+      const rawR = Math.floor((cy - rect.top) / cellSize);
       const wallHit = findSolidWallNearPointer(e);
-      if (wallHit) {
+      const demoHit = (typeof DXStage2 !== 'undefined' && DXStage2.findDemolishTargetAt)
+        ? DXStage2.findDemolishTargetAt(grid, rawR, rawC)
+        : null;
+
+      // 解体モードOFF時は赤壁を優先。解体モードONでも未選択/固定部または壁直近タップなら壁判定を優先する
+      if (wallHit && (!demolishMode || !demoHit || demoHit.locked || wallHit.dist < cellSize * 0.25)) {
+        selectedDemolishTarget = null;
+        if (wallHit.locked) {
+          selectedWallTarget = null;
+          showConfirmUI(false);
+          playSound('error');
+          showFloatingText('🔒 固定躯体壁は撤去できません', '#fca5a5');
+          drawPlan();
+          return;
+        }
         selectedWallTarget = wallHit;
         playSound('tap');
         confirmOverlayShownAt = Date.now();
         showConfirmUI(true);
+        drawPlan();
+        return;
+      }
+
+      // リノベ解体対象の既存部屋タップ判定
+      selectedWallTarget = null;
+      if (demoHit && demoHit.cells) {
+        selectedDemolishTarget = demoHit;
+        playSound('tap');
+        confirmOverlayShownAt = Date.now();
+        showConfirmUI(true);
       } else {
-        selectedWallTarget = null;
+        selectedDemolishTarget = null;
         showConfirmUI(false);
+        if (demoHit && demoHit.locked) {
+          playSound('error');
+          showFloatingText(`🔒 ${demoHit.label}は構造固定のため解体できません`, '#fca5a5');
+        } else if (demoHit && demoHit.entrance && demolishMode) {
+          playSound('error');
+          showFloatingText('玄関は解体できません', '#fca5a5');
+        } else if (demoHit && demoHit.newlyPlaced && demolishMode) {
+          playSound('tap');
+          showFloatingText('新築部分は解体できません（既存部分のみ可）', '#94a3b8');
+        }
       }
       drawPlan();
       return;
     }
     selectedWallTarget = null;
+    selectedDemolishTarget = null;
     const pos = getCellFromPointer(e);
     if (pos) {
       hoverCell = pos;
@@ -5988,7 +6299,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   });
   
   canvas.addEventListener('pointerleave', () => { 
-    if (!previewMode && !selectedWallTarget) {
+    if (!previewMode && !selectedWallTarget && !selectedDemolishTarget) {
       hoverCell = null; drawPlan(); 
     }
   });

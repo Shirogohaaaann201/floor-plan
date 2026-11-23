@@ -1046,7 +1046,7 @@
   ============================================================ */
   function getFloorAssetId(cell, inBox, darkRooms) {
     if (!cell || cell.type === T.EMPTY || cell.type === T.GARDEN) {
-      return inBox ? 'floor_garden' : 'floor_outside';
+      return inBox ? 'floor_garden' : 'floor_gravel_lot';
     }
     if (cell.type === T.OBSTACLE) return 'floor_obstacle';
     const key = cell.roomId ? `id_${cell.roomId}` : null;
@@ -1178,15 +1178,20 @@
       }
     }
 
-    // パズル中のみ：赤壁（耐力壁）を明示的に赤線オーバーレイ表示
+    // パズル中のみ：赤壁（耐力壁）を明示的に赤線オーバーレイ表示（固定躯体壁は鉄骨リベット付濃紅）
     if (isSolid && showSolidRedOverlay) {
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 3.5;
+      const isLockedW = Boolean(global.DXStage2 && global.DXStage2.hasLockedWall(targetGrid, r1, c1, r2, c2));
+      ctx.strokeStyle = isLockedW ? '#9f1239' : '#ef4444';
+      ctx.lineWidth = isLockedW ? 4.5 : 3.5;
       ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
+      if (isLockedW) {
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(Math.round((x1 + x2) / 2 - 1.5), Math.round((y1 + y2) / 2 - 1.5), 3, 3);
+      }
     }
 
     ctx.restore();
@@ -1460,6 +1465,35 @@
     }
   }
 
+  function resolveLocationEnvTileId(r, c, loc, lotBounds, timeMs) {
+    if (!loc || !lotBounds) return 'floor_obstacle';
+    if (loc.id === 'park_south') {
+      if ((r * 7 + c * 13) % 5 === 0) return 'env_park_tree';
+      if ((loc.side === 'south' && r === lotBounds.maxR + 1 && (r + c) % 2 === 0) || (r * 3 + c * 5) % 4 === 0) {
+        return 'env_park_path';
+      }
+      return 'env_park_grass';
+    }
+    if (loc.id === 'ocean_view') {
+      if (loc.side === 'south' && r === lotBounds.maxR + 1) return 'env_shore_south';
+      if (loc.side === 'north' && r === lotBounds.minR - 1) return 'env_shore_north';
+      if (loc.side === 'west' && c === lotBounds.minC - 1) return 'env_shore_west';
+      if (loc.side === 'east' && c === lotBounds.maxC + 1) return 'env_shore_east';
+      const wavePhase = Math.floor(((timeMs || 0) / 520) + r + c) % 2;
+      return wavePhase === 0 ? 'env_ocean_0' : 'env_ocean_1';
+    }
+    if (loc.id === 'highway_road') {
+      return (loc.side === 'north' || loc.side === 'south') ? 'env_road_h' : 'env_road_v';
+    }
+    if (loc.id === 'sakura_alley') {
+      return ((r * 5 + c * 7) % 3 === 0) ? 'env_sakura_tree' : 'env_sakura_path';
+    }
+    if (loc.id === 'station_front') {
+      return ((r * 3 + c * 11) % 6 === 0) ? 'env_station_plaza' : 'env_station_tile';
+    }
+    return 'floor_obstacle';
+  }
+
   function drawPixelBoard(ctx, targetGrid, cs, opts = {}) {
     if (global.PixelAssets && global.PixelAssets.initAllAssets) {
       global.PixelAssets.initAllAssets();
@@ -1472,12 +1506,18 @@
       showBlueprintOverlay = false,
       showSolidRedOverlay = false,
       showRoomLabels = false,
+      selectedDemolishTarget = null,
+      demolishMode = false,
       furniturePlan = null,
       furnitureElapsedMs = 99999,
       timeMs = 0,
       combos = [],
       stageObj = (typeof STAGE !== 'undefined' ? STAGE : null)
     } = opts;
+
+    const s2 = global.DXStage2 || null;
+    const loc = stageObj && stageObj.location;
+    const lotBounds = (s2 && stageObj) ? s2.getLotBounds(stageObj, targetGrid) : null;
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -1514,7 +1554,9 @@
           drawEntranceFloorAndShoes(ctx, targetGrid, r, c, cs, facing, enable25DWalls, entBoxSnapMap.get(`${r},${c}`) || null, !vacantMode);
         } else {
           let floorId = getFloorAssetId(cell, inBox, plan.darkRooms);
-          if (isDarkSealed && cell && cell.type !== T.CORRIDOR) {
+          if (cell && cell.type === T.OBSTACLE && loc && s2 && lotBounds && s2.isCellInLocationBand(r, c, loc, lotBounds)) {
+            floorId = resolveLocationEnvTileId(r, c, loc, lotBounds, timeMs);
+          } else if (isDarkSealed && cell && cell.type !== T.CORRIDOR) {
             floorId = 'floor_darkness';
           }
           PixelAssets.drawSprite(ctx, floorId, x, y, cs, cs);
@@ -1556,6 +1598,77 @@
         }
       }
     }
+
+    // 1.5 敷地境界線＆境界杭（自分の敷地の未使用砂利と周辺OBSTACLEを明確に分離）
+    ctx.save();
+    for (let r = 0; r < gSize; r++) {
+      for (let c = 0; c < gSize; c++) {
+        const curObs = targetGrid[r]?.[c]?.type === T.OBSTACLE;
+        const x = c * cs, y = r * cs;
+        if (c + 1 < gSize) {
+          const rightObs = targetGrid[r]?.[c + 1]?.type === T.OBSTACLE;
+          if (curObs !== rightObs) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+            ctx.fillRect(x + cs - 1, y, 2, cs);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(x + cs - 1, y + Math.round(cs * 0.45), 2, Math.max(2, Math.round(cs * 0.12)));
+          }
+        }
+        if (r + 1 < gSize) {
+          const downObs = targetGrid[r + 1]?.[c]?.type === T.OBSTACLE;
+          if (curObs !== downObs) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+            ctx.fillRect(x, y + cs - 1, cs, 2);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(x + Math.round(cs * 0.45), y + cs - 1, Math.max(2, Math.round(cs * 0.12)), 2);
+          }
+        }
+      }
+    }
+
+    // 1.6 立地環境演出（幹線道路の車走行／桜並木の花びら）
+    if (loc && s2 && lotBounds) {
+      if (loc.id === 'highway_road') {
+        const horiz = (loc.side === 'north' || loc.side === 'south');
+        const bandRows = [];
+        const bandCols = [];
+        for (let r = 0; r < gSize; r++) {
+          for (let c = 0; c < gSize; c++) {
+            if (targetGrid[r]?.[c]?.type === T.OBSTACLE && s2.isCellInLocationBand(r, c, loc, lotBounds)) {
+              if (!bandRows.includes(r)) bandRows.push(r);
+              if (!bandCols.includes(c)) bandCols.push(c);
+            }
+          }
+        }
+        if (horiz && bandRows.length > 0) {
+          const roadR = loc.side === 'north' ? bandRows[bandRows.length - 1] : bandRows[0];
+          const cy1 = roadR * cs;
+          const phase1 = ((timeMs || 1200) * 0.0022) % (gSize + 2);
+          const phase2 = ((timeMs || 3800) * 0.0017 + 5.5) % (gSize + 2);
+          PixelAssets.drawSprite(ctx, 'env_car_red_h', (phase1 - 1) * cs, cy1, cs, cs);
+          PixelAssets.drawSprite(ctx, 'env_car_blue_h', (gSize - phase2) * cs, cy1, cs, cs);
+        } else if (!horiz && bandCols.length > 0) {
+          const roadC = loc.side === 'west' ? bandCols[bandCols.length - 1] : bandCols[0];
+          const cx1 = roadC * cs;
+          const phase1 = ((timeMs || 1400) * 0.0020) % (gSize + 2);
+          const phase2 = ((timeMs || 4200) * 0.0016 + 4.8) % (gSize + 2);
+          PixelAssets.drawSprite(ctx, 'env_car_red_v', cx1, (phase1 - 1) * cs, cs, cs);
+          PixelAssets.drawSprite(ctx, 'env_car_blue_v', cx1, (gSize - phase2) * cs, cs, cs);
+        }
+      } else if (loc.id === 'sakura_alley' && timeMs > 0) {
+        ctx.fillStyle = 'rgba(249, 168, 212, 0.85)';
+        for (let r = 0; r < gSize; r++) {
+          for (let c = 0; c < gSize; c++) {
+            if (targetGrid[r]?.[c]?.type === T.OBSTACLE && s2.isCellInLocationBand(r, c, loc, lotBounds) && (r + c) % 2 === 0) {
+              const px = (c + 0.2 + ((Math.sin(timeMs / 500 + r + c) + 1) * 0.3)) * cs;
+              const py = (r + (((timeMs / 1800) + r * 0.3 + c * 0.2) % 0.85)) * cs;
+              ctx.fillRect(Math.round(px), Math.round(py), Math.max(2, cs * 0.09), Math.max(2, cs * 0.07));
+            }
+          }
+        }
+      }
+    }
+    ctx.restore();
 
     // 玄関直風呂のつるっと水たまり（床層）
     if (showFurniture && !vacantMode && Array.isArray(plan.badSpots)) {
@@ -1686,6 +1799,15 @@
         if (r === 0) drawPixelWallEdge(ctx, x, y, x + cs, y, -1, c, r, c, 'h', cs, targetGrid, showSolidRedOverlay, enable25DWalls);
         if (c === 0) drawPixelWallEdge(ctx, x, y, x, y + cs, r, -1, r, c, 'v', cs, targetGrid, showSolidRedOverlay, enable25DWalls);
       }
+    }
+
+    // 4.2 パズル中のみ：リノベ固定躯体・解体可能部屋のガイド枠
+    if (showSolidRedOverlay && s2) {
+      s2.drawBlueprintRenovationOverlays(ctx, targetGrid, cs, {
+        selectedDemolishTarget,
+        demolishMode,
+        showBadges: true
+      });
     }
 
     // 4.5 バッドコンボ視覚エフェクト（食欲減退の悪臭モヤ / スケルトンバス視線）
@@ -1880,6 +2002,9 @@
     const isHidden = Boolean(hiddenRoomKeys && hiddenRoomKeys.has(rm.key));
 
     if (rm.type === T.BATH) {
+      if (comboNames.has('海見えビューバス')) {
+        return { text: '🌊 水平線を眺めながらのバスタイム最高！', mood: 'love' };
+      }
       if (comboNames.has('もはや銭湯') && rm.cells.length >= 8) {
         return { text: targetName === 'もはや銭湯' ? '♨️ 自宅に理想の富士山銭湯！最高！' : '♨️ 家に富士山と銭湯が！', mood: 'love' };
       }
@@ -1908,6 +2033,10 @@
       return { text: '🧻 清潔でいいね', mood: 'good' };
     }
     if (rm.type === T.LDK) {
+      if (comboNames.has('幹線道路の騒音')) return { text: '🚗 車の走行音がリビングに響く…！', mood: 'bad' };
+      if (comboNames.has('オーシャンビュー')) return { text: '🌊 オーシャンビューのリビング最高！', mood: 'love' };
+      if (comboNames.has('パークビュー')) return { text: '🌳 窓から公園の緑が見えて気持ちいい！', mood: 'love' };
+      if (comboNames.has('桜並木ビュー')) return { text: '🌸 リビングから桜並木を一望できる！', mood: 'love' };
       if (comboNames.has('要塞化')) return { text: '🛡️ 監視モニター完備の基地だ！', mood: 'weird' };
       if (comboNames.has('ガラス張りハウス')) return { text: '✨ 窓だらけで眩しい開放感！', mood: 'love' };
       if (comboNames.has('家事ラク動線')) return { text: '🧺 料理と洗濯がラクそう！', mood: 'love' };
@@ -1918,6 +2047,12 @@
       if (isHidden || comboNames.has('隠し部屋')) {
         return { text: targetName === '隠し部屋' ? '🥷 これぞ究極の隠し部屋でござる！' : '🕵️ 隠れ家みたいで最高！', mood: 'love' };
       }
+      if (comboNames.has('幹線道路の騒音')) return { text: '🚗 道路側の窓から騒音が気になる…', mood: 'bad' };
+      if (comboNames.has('防音緩衝レイアウト')) return { text: '🤫 大通り沿いなのに驚くほど静か！', mood: 'love' };
+      if (comboNames.has('桜並木ビュー') && rm.label === '和室') return { text: '🌸 畳から満開の桜が見える花見座敷だ！', mood: 'love' };
+      if (comboNames.has('オーシャンビュー')) return { text: '🌊 部屋から海が見えるなんて贅沢！', mood: 'love' };
+      if (comboNames.has('パークビュー')) return { text: '🌳 公園の緑に癒やされる部屋だね', mood: 'love' };
+      if (comboNames.has('桜並木ビュー')) return { text: '🌸 窓いっぱいの桜並木が素敵！', mood: 'love' };
       if (comboNames.has('要塞化')) return { text: '🛡️ 光ゼロ！完璧な要塞シェルター', mood: 'weird' };
       if (rm.label === '和室' && comboNames.has('古き良き日本家屋')) return { text: '🏮 伝統の田の字和室だ…！', mood: 'love' };
       if (comboNames.has('マトリョーシカ')) {
@@ -1932,6 +2067,7 @@
       return { text: '🛏️ 落ち着けるお部屋だ！', mood: 'good' };
     }
     if (rm.type === T.CLOSET) {
+      if (comboNames.has('防音緩衝レイアウト')) return { text: '🧱 収納が道路側の防音壁になってる！賢い！', mood: 'good' };
       if (comboNames.has('収納が本体') && rm.cells.length >= 8) return { text: '📦 ほぼ倉庫なんですけど！？', mood: 'weird' };
       return { text: '👕 たっぷり収納できそう！', mood: 'good' };
     }
@@ -1997,12 +2133,18 @@
     }
 
     const bigGarden = gardenClusters.find(cl => cl.length >= 8);
-    if (bigGarden && comboNames.has('もはや公園')) {
+    if (comboNames.has('公園つづきの庭')) {
+      steps.push({ type: 'pause', speech: '🌳 専用庭がそのまま公園に繋がって開放的！', mood: 'love', durationMs: 1050 });
+    } else if (bigGarden && comboNames.has('もはや公園')) {
       steps.push({ type: 'pause', speech: '🏞️ 庭がもはや児童公園だ！', mood: 'love', durationMs: 1100 });
     } else if (comboNames.has('広大なる庭園')) {
       steps.push({ type: 'pause', speech: '🌳 鯉の泳ぐ日本庭園が素敵！', mood: 'love', durationMs: 1000 });
     } else if (comboNames.has('箱庭のある暮らし')) {
       steps.push({ type: 'pause', speech: '🎍 石灯籠の箱庭が落ち着く〜', mood: 'good', durationMs: 900 });
+    }
+
+    if (comboNames.has('駅前好立地')) {
+      steps.push({ type: 'pause', speech: '🚉 駅近で維持費も安くて最高！', mood: 'love', durationMs: 950 });
     }
 
     const unreachableRooms = rooms.filter(rm => !rm.reachable && rm.type !== T.ENTRANCE);
@@ -2027,6 +2169,8 @@
       }
     } else if (steps.length === 0) {
       steps.push({ type: 'pause', speech: '👀 まずは玄関チェック！', mood: 'good', durationMs: 900 });
+    } else if (stageObj && stageObj.renovation) {
+      steps.push({ type: 'pause', speech: '🔨 見違えるほど素敵なリフォームだ！', mood: 'love', durationMs: 1050 });
     } else {
       steps.push({ type: 'pause', speech: '✨ いいお部屋ですね！', mood: 'love', durationMs: 950 });
     }
@@ -2429,7 +2573,38 @@
       startGame();
     }
     if (typeof STAGE === 'undefined' || !STAGE) return;
+
+    if (presetId === 'reno_ng_fix' && global.DXStage2 && typeof initGrid === 'function') {
+      const renoStage = global.DXStage2.generateRenovationMission(1, 1, 1.0, 'reno_ng_fix_dinks');
+      if (renoStage) {
+        if (typeof GameState !== 'undefined') GameState.currentMission = renoStage;
+        STAGE = renoStage;
+        if (typeof attachRequestFunctions === 'function') attachRequestFunctions(STAGE);
+        initGrid();
+        if (typeof selectedSlot !== 'undefined') selectedSlot = null;
+        if (typeof selectedDemolishTarget !== 'undefined') selectedDemolishTarget = null;
+        if (typeof demolishMode !== 'undefined') demolishMode = false;
+        if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
+        if (typeof renderDraftUI === 'function') renderDraftUI();
+        if (typeof updateBudgetUI === 'function') updateBudgetUI();
+        const hdrT = document.getElementById('hdr-target-rent');
+        if (hdrT && STAGE.targetRent) hdrT.innerHTML = `${STAGE.targetRent.toFixed(1)}<span style="font-size:9px;color:var(--c-text2);">万</span>`;
+        const mbt = document.getElementById('mission-banner-text');
+        if (mbt) mbt.textContent = `【${STAGE.client.name}】${STAGE.renovation.summary}`;
+        if (typeof resizeCanvas === 'function') resizeCanvas();
+        if (typeof drawPlan === 'function') drawPlan();
+        if (typeof updateRealtimeRent === 'function') updateRealtimeRent(true);
+        if (typeof saveActiveBuild === 'function') saveActiveBuild('game');
+        if (typeof showFloatingText === 'function') showFloatingText('🔨 リフォーム検証案件を展開しました！', '#f59e0b');
+        return;
+      }
+    }
+
     STAGE.customCombo = null;
+    STAGE.location = null;
+    STAGE.renovation = null;
+    STAGE.obstacles = [];
+    STAGE.lotType = 'square_xl';
     STAGE.requests = (typeof REQUEST_REGISTRY !== 'undefined')
       ? [{ ...REQUEST_REGISTRY.btsep }, { ...REQUEST_REGISTRY.reach }].filter(Boolean)
       : (STAGE.requests || []);
@@ -2439,6 +2614,22 @@
         grid[r][c] = makeCell(T.EMPTY, 0, '', 0);
       }
     }
+    const applyLotObstacles = (lotKey) => {
+      if (typeof LOT_DEFINITIONS !== 'undefined' && LOT_DEFINITIONS[lotKey]) {
+        STAGE.lotType = lotKey;
+        STAGE.lotName = LOT_DEFINITIONS[lotKey].name;
+        STAGE.obstacles = LOT_DEFINITIONS[lotKey].obstacles || [];
+        for (const obs of STAGE.obstacles) {
+          for (let r = obs.r; r < obs.r + (obs.h || 1); r++) {
+            for (let c = obs.c; c < obs.c + (obs.w || 1); c++) {
+              if (r >= 0 && r < gSize && c >= 0 && c < gSize) {
+                grid[r][c] = makeCell(T.OBSTACLE, null, '');
+              }
+            }
+          }
+        }
+      }
+    };
     let rid = 100;
     const fillRect = (r0, c0, h, w, type, label, libId, cost = 4) => {
       const id = rid++;
@@ -2524,11 +2715,36 @@
       fillRect(5, 3, 2, 3, T.LDK, 'LDK', 'dk-22', 5);
       fillRect(7, 5, 1, 1, T.TOILET, 'WC', 'toilet', 4);
       fillRect(3, 3, 2, 2, T.ROOM, '洋室', 'room-22', 3.7);
+    } else if (presetId === 'ocean_villa') {
+      applyLotObstacles('square_m');
+      if (global.DXStage2) STAGE.location = global.DXStage2.buildLocationPayload('ocean_view', 'south');
+      STAGE.client = { name: '海原 汐音', avatar: '🌊', quote: '「南の海を一望できるオーシャンLDKと海見えビューバスを！」', typeBadge: '陽だまりDINKS' };
+      setEnt(2, 5, 'top');
+      fillRect(3, 5, 4, 1, T.CORRIDOR, '廊下', 'corr-1', 1);
+      fillRect(3, 6, 2, 2, T.ROOM, '洋室', 'room-22', 3.7);
+      fillRect(7, 4, 3, 3, T.LDK, 'LDK', 'ldk-23', 4.3); // 南端に直面＝オーシャンビュー！
+      fillRect(8, 7, 2, 2, T.BATH, '浴室', 'bath-wide', 5); // 南端に直面＝海見えビューバス！
+      fillRect(6, 7, 1, 1, T.WASHROOM, '洗面', 'wash', 6);
+      fillRect(5, 6, 1, 1, T.TOILET, 'WC', 'toilet', 4);
+    } else if (presetId === 'highway_soundproof') {
+      applyLotObstacles('square_m');
+      if (global.DXStage2) STAGE.location = global.DXStage2.buildLocationPayload('highway_road', 'west');
+      STAGE.client = { name: '静音 健一', avatar: '🚗', quote: '「西側が大通りなので、防音緩衝レイアウトで静かな部屋に！」', typeBadge: '在宅ワーカー' };
+      setEnt(9, 6, 'bottom');
+      fillRect(6, 5, 3, 1, T.CORRIDOR, '廊下', 'corr-1', 1);
+      fillRect(5, 2, 2, 1, T.CLOSET, '収納', 'closet-2', 1.2); // 西端バッファ
+      fillRect(7, 2, 1, 1, T.WASHROOM, '洗面', 'wash', 6);
+      fillRect(8, 2, 1, 2, T.BATH, '浴室', 'bath', 6);
+      fillRect(4, 2, 1, 1, T.TOILET, 'WC', 'toilet', 4);
+      fillRect(4, 3, 2, 2, T.ROOM, '洋室', 'room-22', 3.7);
+      fillRect(6, 6, 3, 3, T.LDK, 'LDK', 'ldk-23', 4.3);
     }
 
     if (presetId === 'vampire_dark' && typeof REQUEST_REGISTRY !== 'undefined') {
       STAGE.requests = [{ ...REQUEST_REGISTRY.btsep }, { ...REQUEST_REGISTRY.ldk1_room1 }].filter(Boolean);
     }
+
+    if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
 
     if (typeof nextRoomId !== 'undefined') nextRoomId = rid + 10;
     if (typeof mergeSameType === 'function') mergeSameType();
@@ -2813,6 +3029,12 @@
         '「護衛SPの動線も抜かりなく頼むぞ。」',
         '「見た目も機能も一流が条件だね。」',
         '「名邸ができたらぜひ紹介させてくれ。」'
+      ];
+    } else if (badge.includes('リフォーム')) {
+      lines = [
+        '「活かせる躯体は残して生まれ変わらせて！」',
+        '「古い設備やNG間取りを解体して蘇らせたい！」',
+        '「ビフォーアフターが見違えるリフォームを頼みます！」'
       ];
     } else if (badge.includes('シニア')) {
       lines = [

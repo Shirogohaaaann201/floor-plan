@@ -362,7 +362,15 @@
     { id: 27, name: '箱庭のある暮らし', category: '王道',     bonus: '+0.3万', icon: 'ph-plant',            hint: '建物に囲まれた憩いのプライベートガーデン（4マス以上連結）を設けると…？', desc: '占有枠内に4マス以上連結した庭' },
     { id: 28, name: '広大なる庭園',     category: '王道',     bonus: '+0.6万', icon: 'ph-tree',             hint: '四季を愛でる贅沢なガーデンスペース（8マス以上連結）を確保すると…？',     desc: '占有枠内に8マス以上連結した庭' },
     { id: 29, name: 'もはや公園',       category: '珍間取り', bonus: '+1.2万', icon: 'ph-tree',             hint: '家よりも広大な敷地を庭にしてしまうと…？',                                 desc: '占有枠内の庭が12マス以上連結、または延床面積以上' },
-    { id: 30, name: '要塞化',           category: '珍間取り', bonus: '+2.0万', icon: 'ph-shield-check',     hint: '外界の視線と光を完全に遮断した空間を作ると…？',                         desc: '居室・LDKがあるのに外壁窓が0箇所（完全遮光）' }
+    { id: 30, name: '要塞化',           category: '珍間取り', bonus: '+2.0万', icon: 'ph-shield-check',     hint: '外界の視線と光を完全に遮断した空間を作ると…？',                         desc: '居室・LDKがあるのに外壁窓が0箇所（完全遮光）' },
+    { id: 31, name: 'パークビュー',     category: '立地',     bonus: '+1〜1.5万', icon: 'ph-tree',           hint: '南側公園立地の物件で、南向きに遮蔽なしの窓を向けると…？',               desc: '公園側へ遮られず面する窓付きLDK(+1.5万)または居室(+1.0万)' },
+    { id: 32, name: '公園つづきの庭',   category: '立地',     bonus: '+0.8万', icon: 'ph-plant',            hint: '南側公園立地の物件で、南へ開けた専用庭を作ると…？',                     desc: '公園側へ遮蔽なく繋がる3マス以上の専用庭' },
+    { id: 33, name: 'オーシャンビュー', category: '立地',     bonus: '+1.2〜2万', icon: 'ph-waves',          hint: '海沿い立地の物件で、海側へ遮蔽なしの窓を向けると…？',                   desc: '海側へ遮られず面する窓付きLDK(+2.0万)または居室(+1.2万)' },
+    { id: 34, name: '海見えビューバス', category: '立地',     bonus: '+1.5万', icon: 'ph-bathtub',          hint: '海沿い立地の物件で、独立浴室を海側に面させると…？',                     desc: '海側外壁に赤壁なしで遮蔽なく面する独立浴室（UB不可）' },
+    { id: 35, name: '桜並木ビュー',     category: '立地',     bonus: '+1.5〜2万', icon: 'ph-flower-lotus',   hint: '桜並木立地の物件で、桜側へ窓を向けると…？（和室ならさらに…？）',       desc: '桜側へ遮蔽なく面する窓付き和室(+2.0万)またはLDK/洋室(+1.5万)' },
+    { id: 36, name: '幹線道路の騒音',   category: 'NG',       bonus: '-1.5万', icon: 'ph-warning',          hint: '幹線道路沿いの物件で、道路側へ居室/LDKの窓を向けると…',                 desc: '幹線道路側へ遮蔽なく直面する窓付きLDK・居室' },
+    { id: 37, name: '防音緩衝レイアウト', category: '立地',   bonus: '+1.2万', icon: 'ph-shield-check',     hint: '幹線道路沿いで道路側窓を0にし、収納・水回り・廊下や赤壁を緩衝帯に！',   desc: '道路側の居室/LDK窓をゼロにし、緩衝部屋または遮音赤壁を配置' },
+    { id: 38, name: '駅前好立地',       category: '立地',     bonus: '+1.5〜2万', icon: 'ph-train',          hint: '駅前立地の物件で玄関動線を繋ぐと…？（延床16ﾏｽ以下で高評価！）',        desc: '駅前物件で全室到達（延床16ﾏｽ以下で+2.0万・通常+1.5万・維持費-20%）' }
   ];
 
   function recordDiscoveredCombos(combos) {
@@ -622,6 +630,11 @@
     } else if (maxGardenBlock >= 4) {
       combos.push({ name:'箱庭のある暮らし', bonus:0.3, icon:'ph-plant text-emerald-600', type:'good',
         text:`【王道】箱庭のある暮らし (${maxGardenBlock}マス連結) — 建物に囲まれた憩いのプライベートガーデン (+0.3万)` });
+    }
+
+    if (typeof DXStage2 !== 'undefined' && DXStage2.detectLocationCombos && STAGE && STAGE.location) {
+      const locCombos = DXStage2.detectLocationCombos(grid, STAGE, counts, visited, edgeType, hasSolidWall);
+      if (Array.isArray(locCombos) && locCombos.length > 0) combos.push(...locCombos);
     }
 
     return combos;
@@ -1343,6 +1356,10 @@
       rctx.strokeRect(c * cs, r * cs, cs, cs);
     }
 
+    if (typeof DXStage2 !== 'undefined' && DXStage2.drawBlueprintLocationOverlay && stageObj && stageObj.location) {
+      DXStage2.drawBlueprintLocationOverlay(rctx, targetGrid, stageObj, cs, isCompact);
+    }
+
     if (!isCompact) {
       rctx.save();
       for (let r = 0; r < gSize; r++) for (let c = 0; c < gSize; c++) {
@@ -1558,6 +1575,19 @@
     let html = '';
     const newlyMet = [];
 
+    if (STAGE.location) {
+      html += `<div class="req-pill" style="background:${STAGE.location.badgeBg || 'rgba(2,132,199,0.2)'}; border-color:${STAGE.location.badgeBorder || '#38bdf8'}; color:${STAGE.location.badgeFg || '#7dd3fc'};">
+        <i class="ph-bold ${STAGE.location.icon || 'ph-compass'}"></i>
+        <span>${STAGE.location.shortTag}</span>
+      </div>`;
+    }
+    if (STAGE.renovation) {
+      html += `<div class="req-pill" style="background:rgba(217,119,6,0.22); border-color:rgba(251,191,36,0.55); color:#fde68a;">
+        <i class="ph-bold ph-hammer"></i>
+        <span>リフォーム</span>
+      </div>`;
+    }
+
     // Main requests
     for (const req of STAGE.requests) {
       const isMet = !!(req.fn && req.fn(counts, { unreachable: counts.unreachable }, STAGE));
@@ -1705,6 +1735,20 @@
       wrap.innerHTML = formatCustomComboHtml(STAGE.customCombo, ccMet);
       mrl.appendChild(wrap);
     }
+    if (STAGE.location) {
+      const locDiv = document.createElement('div');
+      locDiv.className = 'stage2-info-card';
+      locDiv.style.marginTop = '8px';
+      locDiv.innerHTML = `<div style="font-weight:800; color:${STAGE.location.badgeFg || '#7dd3fc'}; margin-bottom:2px;"><i class="ph-bold ${STAGE.location.icon || 'ph-compass'}"></i> 立地ギミック：${STAGE.location.name}</div><div style="color:#cbd5e1;">${STAGE.location.desc}</div>`;
+      mrl.appendChild(locDiv);
+    }
+    if (STAGE.renovation) {
+      const renoDiv = document.createElement('div');
+      renoDiv.className = 'stage2-info-card stage2-info-card--reno';
+      renoDiv.style.marginTop = '8px';
+      renoDiv.innerHTML = `<div style="font-weight:800; color:#fde68a; margin-bottom:2px;"><i class="ph-bold ph-hammer"></i> ${STAGE.renovation.title}</div><div style="color:#fef3c7;">${STAGE.renovation.summary}<br><span style="font-size:10px; color:#fcd34d;">※🔒固定躯体・鉄骨壁は撤去不可／橙破線の既存部屋は「🔨解体」で撤去可</span></div>`;
+      mrl.appendChild(renoDiv);
+    }
   }
 
   function updateRealtimeRent(skipToast = false) {
@@ -1793,9 +1837,12 @@
       badCombos++; // 到達不能ペナルティ
     }
 
-    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost) * 10) / 10;
+    const totalSpentCost = Math.round((buildPiecePaidCost + buildRerollCost + buildWallRemoveCost + buildEncroachCost + (buildDemolishCost || 0)) * 10) / 10;
     const discountSaved = Math.max(0, Math.round((buildBaseCost - (buildPiecePaidCost - buildMirrorExtraCost - buildCycleExtraCost)) * 10) / 10);
     const fp = calcFootprintStats(grid, encroachCount);
+    const preservedBaseCost = (STAGE && STAGE.renovation && typeof DXStage2 !== 'undefined' && DXStage2.calcPreservedBaseCost)
+      ? DXStage2.calcPreservedBaseCost(grid)
+      : 0;
 
     window.currentPropertyData = {
       rent: rent,
@@ -1810,6 +1857,13 @@
       wallRemoveCost: buildWallRemoveCost,
       encroachCost: buildEncroachCost,
       encroachCount: fp.encroachedCells,
+      demolishCost: buildDemolishCost || 0,
+      demolishCount: demolishCount || 0,
+      isRenovation: !!(STAGE && STAGE.renovation),
+      renovationTitle: (STAGE && STAGE.renovation) ? STAGE.renovation.title : '',
+      preservedBaseCost: preservedBaseCost,
+      location: (STAGE && STAGE.location) ? { ...STAGE.location } : null,
+      lotType: (STAGE && STAGE.lotType) ? STAGE.lotType : '',
       floorCells: fp.floorCells,
       marginGardenCells: fp.marginGardenCells,
       maxGardenCluster: fp.maxGardenCluster,
@@ -1868,9 +1922,10 @@
     const specRowsEl = document.getElementById('flyer-spec-rows');
     if (specRowsEl) {
       const gardenTxt = flyerMeta.gardenCells > 0 ? ` / 庭${flyerMeta.gardenCells}ﾏｽ` : '';
+      const locBadgeTxt = flyerMeta.locationName ? `・${flyerMeta.locationName}` : '';
       const lotStr = flyerMeta.lotName
-        ? `${flyerMeta.lotName} (${flyerMeta.facingText}${flyerMeta.isWideEnt ? '2ﾏｽ' : ''})`
-        : `${flyerMeta.facingText}玄関${flyerMeta.isWideEnt ? ' (2ﾏｽ)' : ''}`;
+        ? `${flyerMeta.lotName}${locBadgeTxt} (${flyerMeta.facingText}${flyerMeta.isWideEnt ? '2ﾏｽ' : ''})`
+        : `${flyerMeta.facingText}玄関${flyerMeta.isWideEnt ? ' (2ﾏｽ)' : ''}${locBadgeTxt}`;
       specRowsEl.innerHTML = `
         <div class="flyer-spec-row"><span class="flyer-spec-k">間取り</span><span class="flyer-spec-v">${flyerMeta.madori}（延床${flyerMeta.floorCells}ﾏｽ${gardenTxt}）</span></div>
         <div class="flyer-spec-row"><span class="flyer-spec-k">敷地</span><span class="flyer-spec-v">${lotStr}</span></div>
@@ -1913,6 +1968,7 @@
       if (buildRerollCost > 0) extraItems.push(`更新+${buildRerollCost.toFixed(1)}万`);
       if (buildWallRemoveCost > 0) extraItems.push(`壁撤去+${buildWallRemoveCost.toFixed(1)}万`);
       if (buildEncroachCost > 0) extraItems.push(`造成+${buildEncroachCost.toFixed(1)}万`);
+      if ((buildDemolishCost || 0) > 0) extraItems.push(`解体+${buildDemolishCost.toFixed(1)}万`);
       const extraPart = extraItems.length > 0 ? extraItems.join('・') : '諸経費 0.0万';
       const discPart = discountSaved > 0 ? ` ・ 割引 -${discountSaved.toFixed(1)}万` : '';
       fDetailEl.textContent = `ピース原価 ${buildBaseCost.toFixed(1)}万 ・ ${extraPart}${discPart}`;
@@ -2197,6 +2253,24 @@
     // Site preview canvas
     drawSitePreview();
 
+    const s2InfoEl = document.getElementById('mission-stage2-info');
+    if (s2InfoEl) {
+      const blocks = [];
+      if (STAGE.location) {
+        blocks.push(`<div class="stage2-info-card"><div style="font-weight:800; color:${STAGE.location.badgeFg || '#7dd3fc'}; margin-bottom:2px;"><i class="ph-bold ${STAGE.location.icon || 'ph-compass'}"></i> 立地：${STAGE.location.name}</div><div style="color:#cbd5e1;">${STAGE.location.desc}</div></div>`);
+      }
+      if (STAGE.renovation) {
+        blocks.push(`<div class="stage2-info-card stage2-info-card--reno"><div style="font-weight:800; color:#fde68a; margin-bottom:2px;"><i class="ph-bold ph-hammer"></i> リフォーム：${STAGE.renovation.title}（固定${STAGE.renovation.lockedCount}／解体可${STAGE.renovation.removableCount}）</div><div style="color:#fef3c7;">${STAGE.renovation.summary}</div></div>`);
+      }
+      if (blocks.length > 0) {
+        s2InfoEl.innerHTML = blocks.join('<div style="height:6px;"></div>');
+        s2InfoEl.style.display = 'block';
+      } else {
+        s2InfoEl.innerHTML = '';
+        s2InfoEl.style.display = 'none';
+      }
+    }
+
     const isTutMission = !!(STAGE && STAGE.isTutorial && isTutorialPhaseActive());
     const tutMissionBanner = document.getElementById('tutorial-mission-banner');
     const tutMissionText = document.getElementById('tutorial-mission-text');
@@ -2271,6 +2345,9 @@
     // Exterior walls
     pc.strokeStyle = '#0f172a'; pc.lineWidth = 2.5;
     pc.strokeRect(1, 1, total-2, total-2);
+    if (typeof DXStage2 !== 'undefined' && DXStage2.drawSitePreviewExtras) {
+      DXStage2.drawSitePreviewExtras(pc, STAGE, pcs);
+    }
     // Entrance marker
     const entCells = STAGE.entranceCells || [{ r: STAGE.entranceRow, c: STAGE.entranceCol }];
     const facing = getEntranceFacing(STAGE);
@@ -2310,7 +2387,11 @@
     wallRemoveCount = 0;
     buildEncroachCost = 0;
     encroachCount = 0;
+    buildDemolishCost = 0;
+    demolishCount = 0;
     selectedWallTarget = null;
+    selectedDemolishTarget = null;
+    demolishMode = false;
     hintDismissedForBuild = false;
     currentLevelIdx = GameState.level;
     
@@ -2346,6 +2427,7 @@
       mbt.textContent = `${spPrefix}「${STAGE.requests.map(r=>r.text).join('・')}でお願い！」`;
     }
     resizeCanvas();
+    if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
     showScreen('game');
     saveActiveBuild('game');
   }
@@ -2514,14 +2596,17 @@
         selectDraftSlotByNumber(num - 1);
       }
     } else if ((e.key === 'Enter' || e.key === ' ' || code === 'Space') && !e.repeat && tag !== 'BUTTON' && active?.id !== 'mission-banner') {
-      if (selectedWallTarget || (previewMode && hoverCell)) {
+      if (selectedDemolishTarget || selectedWallTarget || (previewMode && hoverCell)) {
         e.preventDefault();
         confirmSelectedAction();
       }
     } else if (e.key === 'Escape') {
-      if (selectedWallTarget || previewMode) {
+      if (selectedDemolishTarget || selectedWallTarget || previewMode || demolishMode) {
+        selectedDemolishTarget = null;
         selectedWallTarget = null;
+        demolishMode = false;
         previewMode = false;
+        if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
         showConfirmUI(false);
         drawPlan();
       } else if (selectedSlot !== null && !tutStep) {
@@ -2823,6 +2908,10 @@
     }
     if (!counts.hasToilet) warnings.push('⚠️ トイレがありません');
     if (!counts.hasBath)   warnings.push('⚠️ 浴室がありません');
+    if (STAGE && STAGE.renovation && STAGE.requests) {
+      const hasUnmetReno = STAGE.requests.some(r => (r.id === 'reno_no_ng' || r.id === 'reno_no_ub') && !(r.fn && r.fn(counts, { unreachable: counts.unreachable }, STAGE)));
+      if (hasUnmetReno) warnings.push('🔨 リフォーム改修条件（NGゼロ/UB撤去）が未達成です');
+    }
     const confirmMsg = warnings.length > 0
       ? `設計を完了して査定に進みますか？\n\n${warnings.join('\n')}`
       : "設計を完了して査定に進みますか？\n（現在の状態から家賃が確定されます）";
@@ -2884,7 +2973,18 @@
       if (cleanTypeBadge.includes('DINKS')) badgeBg = 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;';
       if (cleanTypeBadge.includes('ファミリー')) badgeBg = 'background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid #f59e0b;';
       if (cleanTypeBadge.includes('豪邸')) badgeBg = 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid #a855f7;';
+      if (cleanTypeBadge.includes('リフォーム')) badgeBg = 'background:rgba(217,119,6,0.25); color:#fde68a; border:1px solid #f59e0b;';
       if (isSpecial) badgeBg = 'background:rgba(168,85,247,0.28); color:#e9d5ff; border:1px solid #c084fc;';
+
+      const locTagHtml = m.location
+        ? `<span style="display:inline-block; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; margin-left:4px; background:${m.location.badgeBg}; color:${m.location.badgeFg}; border:1px solid ${m.location.badgeBorder};">${m.location.shortTag}</span>`
+        : '';
+      const renoBoxHtml = m.renovation
+        ? `<div style="margin-bottom:8px; padding:6px 9px; border-radius:6px; background:rgba(120,53,15,0.28); border:1px solid rgba(245,158,11,0.45); font-size:10.5px; color:#fef3c7;"><strong>🔨 ${m.renovation.title}</strong>（固定${m.renovation.lockedCount}・解体可${m.renovation.removableCount}）<br><span style="color:#fde68a;">${m.renovation.summary}</span></div>`
+        : '';
+      const locNoteHtml = m.location
+        ? `<div style="margin-bottom:8px; padding:5px 8px; border-radius:6px; background:rgba(15,23,42,0.55); border:1px solid ${m.location.badgeBorder || 'rgba(56,189,248,0.4)'}; font-size:10px; color:#cbd5e1;"><strong style="color:${m.location.badgeFg || '#7dd3fc'};">${m.location.name}</strong>：${m.location.desc}</div>`
+        : '';
 
       const reqPills = (m.requests || []).map(r => `
         <span style="font-size:10px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
@@ -2908,7 +3008,7 @@
                 <div style="font-size:14px; font-weight:bold; color:var(--c-text);">${m.client.name} 様</div>
                 <span style="display:inline-block; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; ${badgeBg}">
                   ${cleanTypeBadge}
-                </span>
+                </span>${locTagHtml}
               </div>
             </div>
             <div style="text-align:right; flex-shrink:0;">
@@ -2921,10 +3021,12 @@
           <div class="client-speech-bubble mission-card-quote${isSpecial ? ' client-speech-bubble--special' : ''}" data-mission-quote="${idx}">${m.client.quote}</div>
 
           <!-- Lot Specs Banner -->
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:11px; margin-bottom:10px; background:rgba(30,41,59,0.5); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:11px; margin-bottom:8px; background:rgba(30,41,59,0.5); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
             <div><span style="color:var(--c-text2);">敷地タイプ:</span> <strong style="color:var(--c-text);">${m.lotName}</strong></div>
             <div><span style="color:var(--c-text2);">玄関:</span> <strong style="color:#fde047;">${facingText}玄関${entSizeText}</strong></div>
           </div>
+          ${locNoteHtml}
+          ${renoBoxHtml}
 
           <!-- Requirements -->
           <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:${m.customCombo ? '6' : '12'}px;">
@@ -3793,6 +3895,13 @@
       wallRemoveCost: p.wallRemoveCost || 0,
       encroachCost: p.encroachCost || 0,
       encroachCount: p.encroachCount || 0,
+      demolishCost: p.demolishCost || 0,
+      demolishCount: p.demolishCount || 0,
+      isRenovation: !!p.isRenovation,
+      renovationTitle: p.renovationTitle || '',
+      preservedBaseCost: p.preservedBaseCost || 0,
+      location: p.location || (STAGE && STAGE.location ? { ...STAGE.location } : null),
+      lotType: p.lotType || (STAGE && STAGE.lotType ? STAGE.lotType : ''),
       floorCells: p.floorCells,
       marginGardenCells: p.marginGardenCells,
       maxGardenCluster: p.maxGardenCluster || 0,
@@ -3954,7 +4063,10 @@
       const mockStage = {
         client: { name: p.clientName || '入居者', typeBadge: p.clientTypeBadge || '' },
         entranceCells: p.entranceCells || null,
-        entranceFacing: p.entranceFacing || null
+        entranceFacing: p.entranceFacing || null,
+        location: p.location || null,
+        lotType: p.lotType || null,
+        renovation: p.isRenovation ? { title: p.renovationTitle || 'リフォーム済' } : null
       };
       const mode = overrideMode || currentPlanViewMode || 'furnished';
       renderPlanCanvasByMode(canvas, p.propertyGrid, mockStage, p.combosList || [], mode, baseSize, { isCompact });
@@ -4192,6 +4304,9 @@
       return { prefix: '🚨', bg: '#fff1f2', border: '#fda4af', fg: '#be123c' };
     }
     const master = (typeof COMBO_MASTER_LIST !== 'undefined') ? COMBO_MASTER_LIST.find(x => x.name === combo.name) : null;
+    if (master && master.category === '立地') {
+      return { prefix: '📍', bg: '#e0f2fe', border: '#38bdf8', fg: '#0369a1' };
+    }
     const isFunny = !!(FUNNY_LAYOUT_PROPS && FUNNY_LAYOUT_PROPS[combo.name]) || (master && master.category === '珍間取り');
     if (isFunny) {
       return { prefix: '🤪', bg: '#f5f3ff', border: '#c4b5fd', fg: '#6d28d9' };
@@ -4244,7 +4359,9 @@
     const isWideEnt = p.isWideEntrance !== undefined
       ? !!p.isWideEntrance
       : !!(isResultPreview && STAGE && STAGE.entranceCells && STAGE.entranceCells.length >= 2);
-    const ageLabel = isResultPreview ? '新築' : formatBuildingAge(stats.buildingAge);
+    const isReno = Boolean(p.isRenovation || (isResultPreview && typeof STAGE !== 'undefined' && STAGE && STAGE.renovation));
+    const locObj = p.location || (isResultPreview && typeof STAGE !== 'undefined' && STAGE ? STAGE.location : null);
+    const ageLabel = isResultPreview ? (isReno ? 'リノベ完了' : '新築') : formatBuildingAge(stats.buildingAge);
 
     let subCatch = p.subCatch || '';
     let mainCatch = p.mainCatch || '';
@@ -4269,7 +4386,7 @@
         : (stats.isOriginal ? `${clientName} 様の感想` : '入居者レビュー・特徴'));
 
     const createdMonth = p.createdMonth || GameState.month || 1;
-    const statusLabel = isResultPreview ? '新築物件' : (stats.isVacant ? '空室募集中' : '入居中');
+    const statusLabel = isResultPreview ? (isReno ? 'リフォーム済' : '新築物件') : (stats.isVacant ? '空室募集中' : '入居中');
     const rentVal = (!isResultPreview && stats.isVacant) ? stats.nextRecruitRent : stats.currentRent;
 
     return {
@@ -4289,6 +4406,8 @@
       floorCells: stats.floorCells || 0,
       gardenCells: stats.marginGardenCells || 0,
       lotName: p.lotName || '',
+      locationName: locObj ? locObj.name : '',
+      isRenovation: isReno,
       facingText,
       isWideEnt,
       combos: p.combosList || [],
@@ -4430,8 +4549,8 @@
     ctx.textAlign = 'center';
     ctx.fillText(`Rank ${data.rank}`, rankX + rankW / 2, headerY + 25.5);
 
-    const statusBg = data.isVacant ? '#e11d48' : (data.isResultPreview ? '#0284c7' : '#059669');
-    const statusW = data.isVacant ? 74 : 58;
+    const statusBg = data.isVacant ? '#e11d48' : (data.isResultPreview ? (data.isRenovation ? '#d97706' : '#0284c7') : '#059669');
+    const statusW = (data.isVacant || (data.statusLabel && data.statusLabel.length >= 5)) ? 74 : 58;
     const statusX = rankX - statusW - 6;
     drawRoundedRectPath(ctx, statusX, headerY + 13, statusW, 24, 4);
     ctx.fillStyle = statusBg;
@@ -4548,9 +4667,10 @@
     ctx.stroke();
 
     const gardenTxt = data.gardenCells > 0 ? ` / 庭${data.gardenCells}ﾏｽ` : '';
+    const locTxt = data.locationName ? `・${data.locationName}` : '';
     const lotStr = data.lotName
-      ? `${data.lotName} (${data.facingText}${data.isWideEnt ? '2ﾏｽ' : ''})`
-      : `${data.facingText}玄関${data.isWideEnt ? ' (2ﾏｽ)' : ''}`;
+      ? `${data.lotName}${locTxt} (${data.facingText}${data.isWideEnt ? '2ﾏｽ' : ''})`
+      : `${data.facingText}玄関${data.isWideEnt ? ' (2ﾏｽ)' : ''}${locTxt}`;
     const specRows = [
       { k: '間取り', v: `${data.madori}（延床${data.floorCells}ﾏｽ${gardenTxt}）` },
       { k: '敷地',   v: lotStr },
@@ -4877,6 +4997,7 @@
     const rerollCost = p.rerollCost || 0;
     const wallRemoveCost = p.wallRemoveCost || 0;
     const encroachCost = p.encroachCost || 0;
+    const demolishCost = p.demolishCost || 0;
     const piecePaidCost = (p.piecePaidCost !== undefined) ? p.piecePaidCost : baseCost;
     const discountSaved = (p.discountSaved !== undefined)
       ? p.discountSaved
@@ -4891,6 +5012,7 @@
       if (rerollCost > 0) rows.push(`<div style="display:flex; justify-content:space-between;"><span>手札更新・KEEP維持費:</span><strong>+${rerollCost.toFixed(1)}万</strong></div>`);
       if (wallRemoveCost > 0) rows.push(`<div style="display:flex; justify-content:space-between;"><span>赤壁(耐力壁)撤去費:</span><strong>+${wallRemoveCost.toFixed(1)}万</strong></div>`);
       if (encroachCost > 0) rows.push(`<div style="display:flex; justify-content:space-between; color:#d97706;"><span>障害物(✕)造成費 (${stats.encroachedCells}ﾏｽ):</span><strong>+${encroachCost.toFixed(1)}万</strong></div>`);
+      if (demolishCost > 0) rows.push(`<div style="display:flex; justify-content:space-between; color:#ea580c;"><span>既存間取り解体費:</span><strong>+${demolishCost.toFixed(1)}万</strong></div>`);
       if (rows.length === 1) rows.push(`<div style="display:flex; justify-content:space-between; opacity:0.75;"><span>追加経費・造成費:</span><span>0.0万</span></div>`);
       return `<div style="font-weight:bold; margin-bottom:3px; border-bottom:1px dashed rgba(148,163,184,0.35); padding-bottom:2px;">💰 建築費の内訳（計 ${totalCost.toFixed(1)}万）</div>` + rows.join('');
     }
@@ -4963,6 +5085,10 @@
       }
       if (stats.encroachedCells > 0) {
         rows.push(`<div style="display:flex; justify-content:space-between; color:#d97706;"><span>造成区画ペナルティ (${stats.encroachedCells}マス × 0.20万):</span><strong>-${stats.encroachMaint.toFixed(2)}万</strong></div>`);
+      }
+      if ((stats.locMaintMult || 1) < 0.99) {
+        const redPct = Math.round((1 - stats.locMaintMult) * 100);
+        rows.push(`<div style="display:flex; justify-content:space-between; color:#0284c7;"><span>立地特典 (駅前好立地):</span><strong>-${redPct}%軽減</strong></div>`);
       }
       if (stats.buildingAge > 0) {
         const ageExtra = Math.round((stats.maintCost - stats.baseMaintCost) * 10) / 10;
@@ -5526,7 +5652,10 @@
         stageObj = {
           client: { name: propObj.clientName || '入居者', typeBadge: propObj.clientTypeBadge || '' },
           entranceCells: propObj.entranceCells || null,
-          entranceFacing: propObj.entranceFacing || null
+          entranceFacing: propObj.entranceFacing || null,
+          location: propObj.location || null,
+          lotType: propObj.lotType || null,
+          renovation: propObj.isRenovation ? { title: propObj.renovationTitle || 'リフォーム済' } : null
         };
         combos = propObj.combosList || [];
       } else if (isResultPreview && typeof grid !== 'undefined' && Array.isArray(grid)) {
@@ -8200,20 +8329,25 @@ function updateHomeUI() {
       const isFound = discovered.includes(item.name) || discovered.includes(item.id);
       const isGood = item.category === '王道';
       const isNG = item.category === 'NG';
+      const isLoc = item.category === '立地';
       const badgeColor = isGood
         ? 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4);'
         : (isNG
           ? 'background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);'
-          : 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4);');
+          : (isLoc
+            ? 'background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4);'
+            : 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4);'));
+      const cardBorder = isGood ? 'rgba(16,185,129,0.35)' : (isNG ? 'rgba(239,68,68,0.35)' : (isLoc ? 'rgba(56,189,248,0.35)' : 'rgba(168,85,247,0.35)'));
+      const iconColor = isGood ? '#34d399' : (isNG ? '#f87171' : (isLoc ? '#38bdf8' : '#c084fc'));
       const bonusLabel = `${item.category} (${item.bonus})`;
 
       if (isFound) {
         html += `
-          <div style="background:var(--c-surface2); border:1px solid ${isGood ? 'rgba(16,185,129,0.35)' : (isNG ? 'rgba(239,68,68,0.35)' : 'rgba(168,85,247,0.35)')}; border-radius:8px; padding:10px 12px;">
+          <div style="background:var(--c-surface2); border:1px solid ${cardBorder}; border-radius:8px; padding:10px 12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px;">
               <div style="font-size:13px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:6px;">
                 <span style="font-size:11px; color:var(--c-text2); font-family:monospace;">No.${String(index + 1).padStart(2, '0')}</span>
-                <span><i class="ph-bold ${item.icon}" style="color:${isGood ? '#34d399' : (isNG ? '#f87171' : '#c084fc')};"></i> ${item.name}</span>
+                <span><i class="ph-bold ${item.icon}" style="color:${iconColor};"></i> ${item.name}</span>
               </div>
               <span style="font-size:10px; font-weight:bold; padding:2px 7px; border-radius:999px; white-space:nowrap; ${badgeColor}">${bonusLabel}</span>
             </div>
@@ -8468,6 +8602,9 @@ function updateHomeUI() {
     previewMode = false;
     hoverCell = null;
     selectedWallTarget = null;
+    selectedDemolishTarget = null;
+    demolishMode = false;
+    if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
     showConfirmUI(false);
 
     if (doneMessage) {
@@ -8561,6 +8698,9 @@ function updateHomeUI() {
       previewMode = false;
       hoverCell = null;
       selectedWallTarget = null;
+      selectedDemolishTarget = null;
+      demolishMode = false;
+      if (typeof syncDemolishModeButton === 'function') syncDemolishModeButton();
       showConfirmUI(false);
     } else if (source === 'mission') {
       if (GameState.currentMission && GameState.currentMission.isTutorial) {
@@ -8683,7 +8823,10 @@ function updateHomeUI() {
       const mockStage = {
         client: { name: p.clientName || '入居者', typeBadge: p.clientTypeBadge || '' },
         entranceCells: p.entranceCells || null,
-        entranceFacing: p.entranceFacing || null
+        entranceFacing: p.entranceFacing || null,
+        location: p.location || null,
+        lotType: p.lotType || null,
+        renovation: p.isRenovation ? { title: p.renovationTitle || 'リフォーム済' } : null
       };
       window.PixelRenderer.startCompletionTour({
         gridData: pvGrid,
@@ -8818,6 +8961,74 @@ function updateHomeUI() {
       updateHomeUI();
       closeSb();
       showFloatingText('✨ 特注クライアントを受付へ招待しました！', '#c084fc');
+    });
+
+    document.getElementById('btn-sb-spawn-locations')?.addEventListener('click', () => {
+      initAudio();
+      playSound('combo');
+      ensureDeckState();
+      if (GameState.tutorialPhase && GameState.tutorialPhase !== 'done') {
+        GameState.tutorialPhase = 'done';
+      }
+      GameState.company.officeLevel = Math.max(2, GameState.company.officeLevel || 0);
+      GameState.company.brandLevel = Math.max(3, GameState.company.brandLevel || 1);
+      GameState.currentMission = null;
+      GameState.activeBuild = null;
+      const locConfigs = [
+        { locId: 'ocean_view', cType: 'dinks' },
+        { locId: 'highway_road', cType: 'family' },
+        { locId: ['park_south', 'sakura_alley', 'station_front'][Math.floor(Math.random() * 3)], cType: 'single' }
+      ];
+      GameState.availableMissions = locConfigs.map(cfg => {
+        let st = null;
+        for (let tries = 0; tries < 12; tries++) {
+          const cand = generateStage(Math.max(2, GameState.level || 0), cfg.cType, null, { forceLocationId: cfg.locId });
+          if (cand && cand.location && cand.location.id === cfg.locId) {
+            st = cand;
+            break;
+          }
+          if (!st) st = cand;
+        }
+        if (st && !st.location && typeof DXStage2 !== 'undefined' && DXStage2.buildLocationPayload) {
+          st.location = DXStage2.buildLocationPayload(cfg.locId, cfg.locId === 'station_front' ? 'all' : 'south');
+        }
+        return st;
+      });
+      saveGame();
+      updateHomeUI();
+      closeSb();
+      if (typeof openMissionSelect === 'function') openMissionSelect();
+      showFloatingText('🌍 立地ギミック案件3件を受付へ招待しました！', '#38bdf8');
+    });
+
+    document.getElementById('btn-sb-spawn-renovations')?.addEventListener('click', () => {
+      initAudio();
+      playSound('combo');
+      ensureDeckState();
+      if (GameState.tutorialPhase && GameState.tutorialPhase !== 'done') {
+        GameState.tutorialPhase = 'done';
+      }
+      GameState.company.officeLevel = Math.max(2, GameState.company.officeLevel || 0);
+      GameState.company.brandLevel = Math.max(3, GameState.company.brandLevel || 1);
+      GameState.currentMission = null;
+      GameState.activeBuild = null;
+      const renoIds = ['reno_ub_single', 'reno_ng_fix_dinks', 'reno_park_villa'];
+      if (typeof DXStage2 !== 'undefined' && DXStage2.generateRenovationMission) {
+        const brandLv = GameState.company.brandLevel || 3;
+        const lv = Math.max(2, GameState.level || 0);
+        const salesLv = (GameState.company && GameState.company.salesLevel) || 1;
+        const salesMult = 1.0 + (salesLv - 1) * 0.15;
+        GameState.availableMissions = renoIds.map(rid => {
+          const st = DXStage2.generateRenovationMission(lv, brandLv, salesMult, rid);
+          if (st && typeof attachRequestFunctions === 'function') attachRequestFunctions(st);
+          return st;
+        }).filter(Boolean);
+      }
+      saveGame();
+      updateHomeUI();
+      closeSb();
+      if (typeof openMissionSelect === 'function') openMissionSelect();
+      showFloatingText('🔨 リフォーム案件3件を受付へ招待しました！', '#fbbf24');
     });
 
     syncTogglePixelBtn();

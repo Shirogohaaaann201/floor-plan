@@ -672,7 +672,7 @@
       </div>
     </div>
 
-    <!-- 実績・記録帳（コンボ・珍間取り全30種図鑑）モーダル -->
+    <!-- 実績・記録帳（コンボ・珍間取り＆立地全38種図鑑）モーダル -->
     <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:16px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:16px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
@@ -684,7 +684,7 @@
               </button>
             </div>
             <div id="records-progress-text" style="font-size:11.5px; color:#fde047; font-weight:bold; margin-top:3px;">
-              図鑑収集率: 0 / 30 (0%)
+              図鑑収集率: 0 / 38 (0%)
             </div>
           </div>
           <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -695,7 +695,7 @@
         </div>
 
         <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
-          <!-- JSで全30種のカードを生成 -->
+          <!-- JSで全38種のカードを生成 -->
         </div>
 
         <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
@@ -810,6 +810,29 @@
                 ※ L字やコの字型に囲って庭を作れる反面、庭にも<strong>毎月 0.06万/マス の維持費</strong>がかかります。
               </div>
             </div>
+
+            <div id="wiki-card-location" class="help-wiki-card highlight-sky">
+              <div class="help-wiki-title" style="color:#38bdf8;">
+                <i class="ph-bold ph-compass"></i> DX版：立地・周辺環境ギミック
+              </div>
+              <div class="help-wiki-body">
+                敷地外周に<strong>公園・海・幹線道路・桜並木・駅前</strong>などの周辺環境が付くことがあります。<br>
+                ・<strong>見通し（遮蔽なし）</strong>：公園・海・桜方向へ他部屋に遮られず窓（海は独立浴室も可）を向けると家賃UP！<br>
+                ・<strong>幹線道路沿い</strong>：道路側へ居室/LDKの窓を向けると<strong>騒音NG (-1.5万)</strong>。収納・水回り・廊下や赤壁で遮音すると<strong>防音緩衝 (+1.2万)</strong>！<br>
+                ・<strong>駅前好立地</strong>：月次維持費 <strong>-20%</strong>＋コンパクト設計で家賃UP（※海と道路へのはみ出し造成は不可）。
+              </div>
+            </div>
+
+            <div id="wiki-card-renovation" class="help-wiki-card highlight-amber">
+              <div class="help-wiki-title" style="color:#fbbf24;">
+                <i class="ph-bold ph-hammer"></i> DX版：リフォーム案件（固定躯体＆解体）
+              </div>
+              <div class="help-wiki-body">
+                古い間取りが建った状態から始まる案件です。<br>
+                ・<strong>🔒 固定躯体／鉄骨壁</strong>：取り壊せない構造です。活かして周囲に増改築しましょう。<br>
+                ・<strong>橙破線の既存部屋</strong>：カード未選択または<strong>「🔨 解体」</strong>ボタンから有料解体できます（古いUBやNG間取りを撤去して再生！）。
+              </div>
+            </div>
           </div>
 
           <!-- TAB 3: デッキ・手札 -->
@@ -887,10 +910,10 @@
 
             <div id="wiki-card-combo" class="help-wiki-card highlight-amber">
               <div class="help-wiki-title" style="color:#fbbf24;">
-                <i class="ph-bold ph-trophy"></i> コンボ（全30種）・記録帳と「珍間取り」の特性
+                <i class="ph-bold ph-trophy"></i> コンボ（全38種）・記録帳と「珍間取り」の特性
               </div>
               <div class="help-wiki-body">
-                ・<strong>コンボ評価</strong>：<strong>王道（11種）・珍間取り（13種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（6種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
+                ・<strong>コンボ評価</strong>：<strong>王道（11種）・立地（7種）・珍間取り（13種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（7種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ・幹線道路の騒音）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
                 ・<strong>珍間取りの隠れ特性</strong>：「ロングコリドー」以外の珍間取り12種には<strong>「飽きられやすい（劣化速度 +0.2〜+0.5%/月・空室時の再入居率 -5〜-20%）」</strong>というデメリットがあります。<br>
                 ・<strong>記録帳</strong>：「設計完了（査定時）」に発生していたコンボが図鑑へ自動登録されます。
               </div>
@@ -1101,6 +1124,7 @@
       <div class="site-preview-wrap">
         <canvas id="site-preview-canvas"></canvas>
       </div>
+      <div id="mission-stage2-info" style="display:none; margin-top:8px;"></div>
       <div class="stats-grid" style="margin-top:10px;">
         <div class="stat-item">
           <div class="stat-label">目標家賃</div>
@@ -1227,6 +1251,9 @@
           </button>
           <button class="btn btn-slate btn-pixel-toggle" id="btn-toggle-pixel-view" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; cursor:pointer; flex-shrink:0;" title="ピクセルアートの実物プレビューへ切替">
             <i class="ph-bold ph-image-square" style="font-size:13px;"></i> 実物
+          </button>
+          <button class="btn btn-slate btn-demolish-toggle" id="btn-demolish-mode" style="display:none; padding:4px 8px; font-size:11px; gap:4px; border:1px solid #fdba74; background:#fff7ed; color:#9a3412; font-weight:bold; cursor:pointer; flex-shrink:0;" title="既存部屋・不要な赤壁を解体">
+            <i class="ph-bold ph-hammer" style="font-size:13px;"></i> 解体
           </button>
           <button class="btn btn-slate" id="btn-sandbox-tools" style="padding:4px 8px; font-size:11px; gap:4px; border:1px solid #c4b5fd; background:#f5f3ff; color:#5b21b6; font-weight:bold; cursor:pointer; flex-shrink:0;" title="検証用プリセット・デバッグ">
             🧪 検証
@@ -1626,10 +1653,32 @@
           ✨ 特注客を受注枠へ
         </button>
       </div>
+
+      <div style="font-size:11px; font-weight:800; color:#f1f5f9; margin:12px 0 6px; padding-top:8px; border-top:1px solid #334155;">🌍🔨 第2段階：立地ギミック＆リフォーム検証</div>
+      <div style="display:flex; gap:6px; margin-bottom:7px;">
+        <button id="btn-sb-spawn-locations" type="button" class="btn btn-slate" style="flex:1; padding:8px 6px; font-size:11px; font-weight:bold; border-color:#38bdf8; color:#bae6fd;">
+          🌍 立地ギミック3件を受付へ
+        </button>
+        <button id="btn-sb-spawn-renovations" type="button" class="btn btn-slate" style="flex:1; padding:8px 6px; font-size:11px; font-weight:bold; border-color:#fbbf24; color:#fde68a;">
+          🔨 リフォーム3件を受付へ
+        </button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="ocean_villa" style="justify-content:flex-start; padding:7px 10px; font-size:11px; text-align:left;">
+          🌊 オーシャンビュー＋海見えビューバス
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="highway_soundproof" style="justify-content:flex-start; padding:7px 10px; font-size:11px; text-align:left;">
+          🚗 幹線道路沿い＋防音緩衝レイアウト
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="reno_ng_fix" style="justify-content:flex-start; padding:7px 10px; font-size:11px; text-align:left;">
+          🔨 リフォーム案件（NG間取り修復＆固定躯体）
+        </button>
+      </div>
     </div>
   </div>
 
   <script src="pixel_assets.js"></script>
+  <script src="dx_stage2.js"></script>
   <script src="pixel_renderer.js"></script>
   <script src="pixel_office.js"></script>
   <script src="game-1.js"></script>

@@ -223,6 +223,184 @@
       g.hline(0, 11, 24, '#1b172e'); g.hline(0, 23, 24, '#1b172e');
       g.vline(11, 0, 12, '#1b172e'); g.vline(23, 12, 12, '#1b172e');
     });
+
+    // 未使用外構（bbox外の空き地）：専用庭の芝と明確に区別する地味な砂利・淡グレー舗装
+    registerCanvasAsset('floor_gravel_lot', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#d3dbe5');
+      g.hline(0, 23, 24, '#c3cddb');
+      g.vline(23, 0, 24, '#c3cddb');
+      const dots = [[3,4],[9,2],[16,5],[20,10],[6,11],[13,14],[4,19],[18,18],[11,21],[21,2]];
+      dots.forEach(([x, y], i) => {
+        g.px(x, y, i % 2 === 0 ? '#94a3b8' : '#e2e8f0');
+        g.px(x + 1, y + 1, '#b6c2d1');
+      });
+    });
+
+    // 公園タイル（専用庭より落ち着いた濃い公園緑・木立・園路）
+    registerCanvasAsset('env_park_grass', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#6cb75c');
+      [[2,3],[11,5],[19,4],[6,14],[15,17],[21,20]].forEach(([x, y], i) => {
+        g.rect(x, y, 2, 1, i % 2 === 0 ? '#5ea64e' : '#7ec66d');
+      });
+      g.px(8, 19, '#fde047'); g.px(17, 9, '#fef08a');
+    });
+
+    registerCanvasAsset('env_park_tree', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#6cb75c');
+      g.rect(5, 16, 14, 5, '#4b8f3f');
+      g.rect(10, 14, 4, 6, '#7c4a26');
+      g.roundBox(4, 4, 16, 12, '#2f8540', '#1e5e2b', 2);
+      g.roundBox(6, 5, 11, 7, '#43a047', '#2f8540', 1);
+      g.px(9, 6, '#86efac'); g.px(12, 8, '#86efac');
+    });
+
+    registerCanvasAsset('env_park_path', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#6cb75c');
+      g.rect(0, 6, 24, 12, '#e2d4b7');
+      g.hline(0, 6, 24, '#cbb997');
+      g.hline(0, 17, 24, '#cbb997');
+      g.roundBox(6, 2, 12, 4, '#b45309', '#78350f');
+      g.hline(7, 3, 10, '#f59e0b');
+    });
+
+    // オーシャン（海面2フレーム＋各辺の砂浜ショアライン）
+    registerCanvasAsset('env_ocean_0', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#0ea5e9');
+      g.hline(2, 5, 7, '#7dd3fc');
+      g.hline(14, 11, 6, '#38bdf8');
+      g.hline(5, 17, 8, '#bae6fd');
+      g.hline(15, 21, 5, '#7dd3fc');
+    });
+
+    registerCanvasAsset('env_ocean_1', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#0ea5e9');
+      g.hline(5, 6, 7, '#bae6fd');
+      g.hline(12, 10, 8, '#7dd3fc');
+      g.hline(2, 18, 6, '#38bdf8');
+      g.hline(13, 20, 7, '#bae6fd');
+    });
+
+    registerCanvasAsset('env_shore_south', 24, 24, (g) => {
+      g.rect(0, 0, 24, 8, '#f3deb0');
+      g.px(4, 3, '#e2c58a'); g.px(17, 5, '#e2c58a');
+      g.rect(0, 8, 24, 16, '#0ea5e9');
+      g.hline(0, 8, 24, '#e0f2fe');
+      g.hline(3, 9, 8, '#ffffff'); g.hline(15, 9, 6, '#ffffff');
+      g.hline(6, 16, 9, '#7dd3fc');
+    });
+
+    registerCanvasAsset('env_shore_north', 24, 24, (g) => {
+      g.rect(0, 0, 24, 16, '#0ea5e9');
+      g.rect(0, 16, 24, 8, '#f3deb0');
+      g.px(5, 19, '#e2c58a'); g.px(16, 21, '#e2c58a');
+      g.hline(0, 15, 24, '#e0f2fe');
+      g.hline(2, 14, 8, '#ffffff'); g.hline(14, 14, 7, '#ffffff');
+      g.hline(7, 7, 8, '#7dd3fc');
+    });
+
+    registerCanvasAsset('env_shore_west', 24, 24, (g) => {
+      g.rect(0, 0, 16, 24, '#0ea5e9');
+      g.rect(16, 0, 8, 24, '#f3deb0');
+      g.px(19, 6, '#e2c58a'); g.px(21, 17, '#e2c58a');
+      g.vline(15, 0, 24, '#e0f2fe');
+      g.vline(14, 3, 7, '#ffffff'); g.vline(14, 14, 7, '#ffffff');
+      g.vline(7, 5, 8, '#7dd3fc');
+    });
+
+    registerCanvasAsset('env_shore_east', 24, 24, (g) => {
+      g.rect(0, 0, 8, 24, '#f3deb0');
+      g.rect(8, 0, 16, 24, '#0ea5e9');
+      g.px(3, 7, '#e2c58a'); g.px(5, 18, '#e2c58a');
+      g.vline(8, 0, 24, '#e0f2fe');
+      g.vline(9, 2, 8, '#ffffff'); g.vline(9, 13, 8, '#ffffff');
+      g.vline(17, 6, 8, '#7dd3fc');
+    });
+
+    // 幹線道路（水平・垂直）＆ミニカー
+    registerCanvasAsset('env_road_h', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#475569');
+      g.rect(0, 0, 24, 2, '#94a3b8');
+      g.rect(0, 22, 24, 2, '#94a3b8');
+      g.hline(0, 2, 24, '#334155');
+      g.hline(0, 21, 24, '#334155');
+      g.rect(2, 11, 8, 2, '#f8fafc');
+      g.rect(14, 11, 8, 2, '#f8fafc');
+    });
+
+    registerCanvasAsset('env_road_v', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#475569');
+      g.rect(0, 0, 2, 24, '#94a3b8');
+      g.rect(22, 0, 2, 24, '#94a3b8');
+      g.vline(2, 0, 24, '#334155');
+      g.vline(21, 0, 24, '#334155');
+      g.rect(11, 2, 2, 8, '#f8fafc');
+      g.rect(11, 14, 2, 8, '#f8fafc');
+    });
+
+    const drawMiniCarH = (g, body, hi, dark) => {
+      g.roundBox(3, 6, 18, 12, body, '#0f172a', 2);
+      g.rect(7, 8, 9, 8, hi);
+      g.rect(9, 9, 5, 6, '#bae6fd');
+      g.rect(5, 5, 4, 2, '#1e293b'); g.rect(15, 5, 4, 2, '#1e293b');
+      g.rect(5, 17, 4, 2, '#1e293b'); g.rect(15, 17, 4, 2, '#1e293b');
+      g.px(19, 8, '#fef08a'); g.px(19, 15, '#fef08a');
+      g.px(4, 9, dark); g.px(4, 14, dark);
+    };
+    const drawMiniCarV = (g, body, hi, dark) => {
+      g.roundBox(6, 3, 12, 18, body, '#0f172a', 2);
+      g.rect(8, 7, 8, 9, hi);
+      g.rect(9, 9, 6, 5, '#bae6fd');
+      g.rect(5, 5, 2, 4, '#1e293b'); g.rect(17, 5, 2, 4, '#1e293b');
+      g.rect(5, 15, 2, 4, '#1e293b'); g.rect(17, 15, 2, 4, '#1e293b');
+      g.px(8, 19, '#fef08a'); g.px(15, 19, '#fef08a');
+      g.px(9, 4, dark); g.px(14, 4, dark);
+    };
+    registerCanvasAsset('env_car_red_h', 24, 24, (g) => drawMiniCarH(g, '#ef4444', '#fca5a5', '#991b1b'));
+    registerCanvasAsset('env_car_blue_h', 24, 24, (g) => drawMiniCarH(g, '#3b82f6', '#93c5fd', '#1e40af'));
+    registerCanvasAsset('env_car_red_v', 24, 24, (g) => drawMiniCarV(g, '#ef4444', '#fca5a5', '#991b1b'));
+    registerCanvasAsset('env_car_blue_v', 24, 24, (g) => drawMiniCarV(g, '#3b82f6', '#93c5fd', '#1e40af'));
+
+    // 桜並木タイル
+    registerCanvasAsset('env_sakura_path', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#e5dce2');
+      g.hline(0, 11, 24, '#d1c4cd');
+      g.hline(0, 23, 24, '#d1c4cd');
+      g.vline(11, 0, 12, '#d1c4cd');
+      g.vline(22, 12, 12, '#d1c4cd');
+      [[4,5],[15,3],[9,16],[19,19],[6,20]].forEach(([x, y], i) => {
+        g.px(x, y, i % 2 === 0 ? '#f472b6' : '#fbcfe8');
+      });
+    });
+
+    registerCanvasAsset('env_sakura_tree', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#e5dce2');
+      g.rect(5, 17, 14, 4, '#cbbdc6');
+      g.rect(10, 15, 4, 6, '#7c4a26');
+      g.roundBox(3, 3, 18, 13, '#f472b6', '#be185d', 2);
+      g.roundBox(5, 4, 13, 9, '#f9a8d4', '#ec4899', 1);
+      g.px(8, 6, '#fce7f3'); g.px(13, 7, '#fce7f3'); g.px(10, 10, '#fbcfe8');
+      g.px(3, 20, '#f472b6'); g.px(18, 21, '#fbcfe8');
+    });
+
+    // 駅前好立地タイル
+    registerCanvasAsset('env_station_tile', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#cbd5e1');
+      g.rect(0, 0, 12, 12, '#bfc9d6');
+      g.rect(12, 12, 12, 12, '#bfc9d6');
+      g.hline(0, 11, 24, '#94a3b8');
+      g.vline(11, 0, 24, '#94a3b8');
+      g.rect(2, 20, 20, 2, '#facc15');
+    });
+
+    registerCanvasAsset('env_station_plaza', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#cbd5e1');
+      g.hline(0, 11, 24, '#94a3b8');
+      g.vline(11, 0, 24, '#94a3b8');
+      g.rect(10, 10, 4, 10, '#334155');
+      g.roundBox(8, 4, 8, 6, '#fef08a', '#0f172a', 1);
+      g.rect(4, 18, 4, 4, '#64748b');
+      g.rect(16, 18, 4, 4, '#64748b');
+    });
   }
 
   /* ============================================================
