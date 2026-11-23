@@ -2073,7 +2073,7 @@
     }
     if (rm.type === T.CORRIDOR) {
       if (comboNames.has('無限回廊')) {
-        return { text: targetName === '無限回廊' ? '🧘 永遠に歩ける瞑想空間！最高！' : '🌀 ぐるぐる回れる無限回廊…！', mood: 'love' };
+        return { text: targetName === '無限回廊' ? '🧘 永遠に歩ける瞑想空間！最高！' : '🌀 ぐるぐる回れる不思議な廊下…！', mood: 'love' };
       }
       if (comboNames.has('トイレビュッフェ')) return { text: '🚽 便器が並ぶ不思議廊下…！', mood: 'weird' };
       if (comboNames.has('スケルトンバス')) return { text: '👀 玄関から浴室まで一直線！？', mood: 'shock' };
@@ -2098,7 +2098,7 @@
     let cur = { r: start.r, c: start.c };
 
     if (comboNames.has('水門')) {
-      steps.push({ type: 'pause', speech: '🌊 玄関から水回り直結「水門」だ！', mood: 'weird', durationMs: 950 });
+      steps.push({ type: 'pause', speech: '🌊 玄関すぐが水回りばかり…不思議な造り！', mood: 'weird', durationMs: 950 });
     } else if (comboNames.has('スケルトンバス')) {
       steps.push({ type: 'pause', speech: '👀 玄関正面にお風呂が丸見え！？', mood: 'shock', durationMs: 950 });
     }
@@ -2144,7 +2144,7 @@
     }
 
     if (comboNames.has('駅前好立地')) {
-      steps.push({ type: 'pause', speech: '🚉 駅近で維持費も安くて最高！', mood: 'love', durationMs: 950 });
+      steps.push({ type: 'pause', speech: '🚉 駅が近くて毎日の通勤・お出かけが最高！', mood: 'love', durationMs: 950 });
     }
 
     const unreachableRooms = rooms.filter(rm => !rm.reachable && rm.type !== T.ENTRANCE);
@@ -2729,7 +2729,7 @@
     } else if (presetId === 'highway_soundproof') {
       applyLotObstacles('square_m');
       if (global.DXStage2) STAGE.location = global.DXStage2.buildLocationPayload('highway_road', 'west');
-      STAGE.client = { name: '静音 健一', avatar: '🚗', quote: '「西側が大通りなので、防音緩衝レイアウトで静かな部屋に！」', typeBadge: '在宅ワーカー' };
+      STAGE.client = { name: '静音 健一', avatar: '🚗', quote: '「西側が大通りなので、車の音が気にならない静かな部屋に！」', typeBadge: '在宅ワーカー' };
       setEnt(9, 6, 'bottom');
       fillRect(6, 5, 3, 1, T.CORRIDOR, '廊下', 'corr-1', 1);
       fillRect(5, 2, 2, 1, T.CLOSET, '収納', 'closet-2', 1.2); // 西端バッファ
@@ -3032,9 +3032,9 @@
       ];
     } else if (badge.includes('リフォーム')) {
       lines = [
-        '「残せる部屋は活かして綺麗に生まれ変わらせて！」',
-        '「古い水回りや変な間取りを直して住みやすくしたいな！」',
-        '「見違えるようなビフォーアフター、楽しみにしてます！」'
+        '「このお部屋、どんな風に生まれ変わるか楽しみ！」',
+        '「古い水回りがきれいになったら嬉しいな！」',
+        '「見違えるような住み心地、楽しみにしてます！」'
       ];
     } else if (badge.includes('シニア')) {
       lines = [
@@ -3080,7 +3080,7 @@
     } else if (badge.includes('ミニマリスト')) {
       lines = [
         '「荷物はカバン2つ！ムダな広さ不要！」',
-        '「UB大歓迎！家賃を抑えるのが一番です！」',
+        '「ユニットバスでも大歓迎！家賃は抑えたいな！」',
         '「小さくても機能美あふれる空間をぜひ！」',
         '「ムダを削いだミニマルな暮らしが夢です！」'
       ];
@@ -3096,7 +3096,7 @@
         '「季節ごとの服と靴が入る収納が必須〜！」',
         '「友達を呼べるセンスのいい部屋がいいな♪」',
         '「身支度が楽しくなる動線、期待してます！」',
-        '「かわいいピクセルのお部屋にしてね♪」'
+        '「かわいくて居心地のいいお部屋にしてね♪」'
       ];
     } else if (badge.includes('陽だまり')) {
       lines = [
@@ -3107,9 +3107,9 @@
       ];
     } else if (badge.includes('初回モデル')) {
       lines = [
-        '「第1号のお部屋ですね！応援してます！」',
-        '「まずは基本の1Kから組んでみよう♪」',
-        '「どんなお部屋になるかワクワクします！」'
+        '「初めての一人暮らし、ワクワクします！」',
+        '「シンプルで暮らしやすい部屋がいいな♪」',
+        '「どんなお部屋になるか楽しみです！」'
       ];
     } else {
       lines = [
