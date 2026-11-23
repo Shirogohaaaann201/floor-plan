@@ -352,7 +352,7 @@
     { id: 17, name: '秘密のトイレ',   category: '珍間取り', bonus: '+1.0万', icon: 'ph-lock-key',         hint: 'クローゼットの奥に潜む便器',               desc: '収納経由でのみ入れるトイレ' },
     { id: 18, name: '隠し部屋',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-door',             hint: '収納の奥に広がるプライベート空間',         desc: '収納経由でのみ入れる居室' },
     { id: 19, name: 'トイレビュッフェ', category: 'NG',       bonus: '-1.5万', icon: 'ph-toilet',         hint: '廊下にずらりと並ぶ便器',                   desc: '1つの廊下にトイレ3つ以上隣接' },
-    { id: 20, name: 'スケルトンバス', category: 'NG',       bonus: '-1.0万', icon: 'ph-shower',           hint: '玄関正面に浴室の扉が見える',               desc: '玄関正面直線上に浴室ドア' },
+    { id: 20, name: 'スケルトンバス', category: 'NG',       bonus: '-1.0万', icon: 'ph-shower',           hint: '玄関正面の廊下の突き当たりが浴室',         desc: '玄関から廊下一直線の先に浴室ドア（洗面所等を挟めば回避）' },
     { id: 21, name: '無限回廊',       category: '珍間取り', bonus: '+1.5万', icon: 'ph-arrows-clockwise', hint: '廊下がぐるりと一周ループ',                 desc: '廊下が環状に連結' },
     { id: 22, name: 'マトリョーシカ', category: 'NG',       bonus: '-1.0万', icon: 'ph-tree-structure',   hint: '部屋の奥に部屋、その奥にさらに部屋',       desc: '居室を3室以上連続で通り抜け' },
     { id: 23, name: 'プライバシーゼロ', category: 'NG',     bonus: '-1.5万', icon: 'ph-eye',            hint: 'お風呂やトイレが通り道になっている',       desc: '浴室またはトイレが通り抜け動線' },
@@ -559,10 +559,10 @@
       combos.push({ name:'トイレビュッフェ', bonus:-1.5, icon:'ph-toilet text-purple-600', type:'funny',
         text:'【NG】トイレビュッフェ — 廊下に便器が並ぶ異常事態 (-1.5万)' });
     }
-    // 6. スケルトンバス: 玄関正面直線上に浴室ドア
-    if (skeletonBath()) {
+    // 6. スケルトンバス: 玄関正面の廊下突き当たりに浴室ドア（他室を挟めば視線遮断・玄関直風呂とは重複させない）
+    if (!combos.some(c => c.name === '玄関直風呂') && skeletonBath()) {
       combos.push({ name:'スケルトンバス', bonus:-1.0, icon:'ph-shower text-cyan-600', type:'funny',
-        text:'【NG】スケルトンバス — 玄関開けたら風呂丸見え (-1.0万)' });
+        text:'【NG】スケルトンバス — 玄関正面の廊下突き当たりが風呂で丸見え (-1.0万)' });
     }
     // 7. 無限回廊: 廊下ループ検出
     if (infiniteLoop(visited)) {
@@ -801,6 +801,7 @@
       else if (facing.dir === 'top') dr = 1;
       else if (facing.dir === 'left') dc = 1;
       else if (facing.dir === 'right') dc = -1;
+      let passedCorridor = false;
 
       while (true) {
         const nr = r + dr, nc = c + dc;
@@ -809,8 +810,15 @@
         if (et !== E.NONE && et !== E.DOOR) break;
         r = nr; c = nc;
         const cell = grid[r][c];
-        if (cell.type === T.BATH) return true;
-        if (cell.type === T.EMPTY || cell.type === T.GARDEN || cell.type === T.OBSTACLE) break;
+        if (cell.type === T.CORRIDOR) {
+          passedCorridor = true;
+          continue;
+        }
+        if (cell.type === T.BATH) {
+          if (passedCorridor) return true;
+          break;
+        }
+        break;
       }
     }
     return false;
