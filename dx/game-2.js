@@ -1171,7 +1171,7 @@
       reports.push({ icon:'ph-warning text-amber-600', text:'【不便】浴室未設置 — 銭湯必須 (満足度-15%)' });
     }
     if (counts.unitBathCount > 0 && STAGE && STAGE.requests && STAGE.requests.some(r => r.id === 'btsep')) {
-      reports.push({ icon:'ph-info text-blue-500', text:'【設備】3点ユニットバス — 風呂トイレ同室' });
+      reports.push({ icon:'ph-info text-blue-500', text:'【設備】ユニットバス — 風呂トイレ同室' });
     }
 
     // 3. Movement factor (吸血鬼など壁抜け特注時は初代のみ免除)
