@@ -2487,7 +2487,7 @@
       fillRect(5, 8, 1, 2, T.BATH, '浴室', 'bath', 6);
       fillRect(6, 7, 1, 1, T.TOILET, 'WC', 'toilet', 4);
     } else if (presetId === 'vampire_dark') {
-      STAGE.client = { name: 'ドラクル伯爵（自称・夜勤）', avatar: '🧛', quote: '「陽の光は苦手でしてね…完全密室があれば壁を抜けますぞ。」', typeBadge: '吸血鬼（案B）' };
+      STAGE.client = { name: 'ドラクル伯爵（自称・夜勤）', avatar: '🧛', quote: '「陽の光は苦手でしてね…完全密室があれば壁を抜けますぞ。」', typeBadge: '吸血鬼' };
       STAGE.customCombo = { name: '封印されし闇', normalBonus: 5.0, customBonus: 8.5, isNegativeInversion: false, allowUnreachable: true, hint: '入口も窓もない密室を作る (+8.5万)' };
       setEnt(8, 2, 'bottom');
       fillRect(7, 2, 1, 3, T.CORRIDOR, '廊下', 'corr-1', 1);
@@ -2507,7 +2507,7 @@
       fillRect(5, 6, 1, 1, T.TOILET, 'WC', 'toilet', 4); // 食欲減退！
       fillRect(3, 3, 2, 2, T.ROOM, '洋室', 'room-22', 3.7);
     } else if (presetId === 'ninja_secret') {
-      STAGE.client = { name: '霧隠 翔（現代の忍）', avatar: '🥷', quote: '「収納の奥に隠し部屋（＆要塞空間）を頼むでござる！」', typeBadge: '現代の忍（案B）' };
+      STAGE.client = { name: '霧隠 翔（現代の忍）', avatar: '🥷', quote: '「収納の奥に隠し部屋を頼むでござる！」', typeBadge: '現代の忍' };
       STAGE.customCombo = { name: '隠し部屋', normalBonus: 1.5, customBonus: 5.5, isNegativeInversion: false, hint: '収納経由でのみ入れる居室 (+5.5万)' };
       setEnt(8, 3, 'bottom');
       fillRect(7, 3, 1, 2, T.CORRIDOR, '廊下', 'corr-1', 1);
@@ -2517,7 +2517,7 @@
       fillRect(7, 6, 1, 1, T.TOILET, 'WC', 'toilet', 4);
       fillRect(7, 7, 1, 1, T.BATH, '浴室', 'bath', 6);
     } else if (presetId === 'ng_inverted') {
-      STAGE.client = { name: '湯川 哲郎（風呂マニア）', avatar: '🛁', quote: '「帰宅0秒で風呂に飛び込みたい！玄関直結浴室が最高！」', typeBadge: '風呂マニア（案B）' };
+      STAGE.client = { name: '湯川 哲郎（風呂マニア）', avatar: '🛁', quote: '「帰宅0秒で風呂に飛び込みたい！夢のお風呂が最高！」', typeBadge: '風呂マニア' };
       STAGE.customCombo = { name: '玄関直風呂', normalBonus: -2.0, customBonus: 3.5, isNegativeInversion: true, hint: '玄関と浴室を直結ドアで繋ぐ (+3.5万 / 満足度反転)' };
       setEnt(8, 3, 'bottom');
       fillRect(7, 3, 1, 2, T.BATH, '浴室', 'bath', 6); // 玄関直風呂（特注反転！）

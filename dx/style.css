@@ -161,6 +161,7 @@
     .badge-amber { background: var(--c-amber); color: #0f172a; }
     .badge-emerald { background: var(--c-emerald); color: #fff; }
     .badge-rose { background: var(--c-rose); color: #fff; }
+    .badge-purple { background: rgba(168, 85, 247, 0.28); color: #e9d5ff; border: 1px solid #c084fc; }
 
     /* ========================================
        SCREEN 1: MISSION BRIEFING

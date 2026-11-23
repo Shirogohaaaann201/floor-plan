@@ -2113,6 +2113,7 @@
     if (!STAGE) return;
     // Client info
     document.getElementById('client-name').textContent = STAGE.client.name;
+    const isSpecial = Boolean(STAGE.customCombo || (STAGE.client.typeBadge && STAGE.client.typeBadge.includes('案B')));
     const quoteEl = document.getElementById('client-quote');
     if (quoteEl) {
       const prevTimer = clientSpeechTimers.get(quoteEl);
@@ -2124,7 +2125,7 @@
       delete quoteEl.dataset.lastTapIdx;
       quoteEl.style.minHeight = '';
       quoteEl.classList.remove('is-speaking');
-      quoteEl.classList.toggle('client-speech-bubble--special', Boolean(STAGE.client.typeBadge && STAGE.client.typeBadge.includes('案B')));
+      quoteEl.classList.toggle('client-speech-bubble--special', isSpecial);
       quoteEl.textContent = STAGE.client.quote;
     }
     const stageCanvas = document.getElementById('client-stage-canvas');
@@ -2138,7 +2139,10 @@
       }
     }
     const ctb = document.getElementById('client-type-badge');
-    if (ctb && STAGE.client.typeBadge) ctb.textContent = STAGE.client.typeBadge;
+    if (ctb && STAGE.client.typeBadge) {
+      ctb.textContent = STAGE.client.typeBadge.replace('（案B）', '').replace('(案B)', '').trim();
+      ctb.className = isSpecial ? 'badge badge-purple' : 'badge badge-amber';
+    }
 
     // Request list
     const rl = document.getElementById('req-list');
@@ -2874,11 +2878,13 @@
       const facingText = facingMap[m.entranceFacing] || '南向き';
       const entSizeText = (m.entranceCells && m.entranceCells.length > 1) ? '（2マス玄関）' : '';
 
+      const isSpecial = Boolean(m.customCombo || (m.client.typeBadge && m.client.typeBadge.includes('案B')));
+      const cleanTypeBadge = (m.client.typeBadge || '').replace('（案B）', '').replace('(案B)', '').trim();
       let badgeBg = 'background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid #3b82f6;';
-      if (m.client.typeBadge.includes('DINKS')) badgeBg = 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;';
-      if (m.client.typeBadge.includes('ファミリー')) badgeBg = 'background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid #f59e0b;';
-      if (m.client.typeBadge.includes('豪邸')) badgeBg = 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid #a855f7;';
-      if (m.client.typeBadge.includes('案B')) badgeBg = 'background:rgba(168,85,247,0.28); color:#e9d5ff; border:1px solid #c084fc;';
+      if (cleanTypeBadge.includes('DINKS')) badgeBg = 'background:rgba(16,185,129,0.2); color:#34d399; border:1px solid #10b981;';
+      if (cleanTypeBadge.includes('ファミリー')) badgeBg = 'background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid #f59e0b;';
+      if (cleanTypeBadge.includes('豪邸')) badgeBg = 'background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid #a855f7;';
+      if (isSpecial) badgeBg = 'background:rgba(168,85,247,0.28); color:#e9d5ff; border:1px solid #c084fc;';
 
       const reqPills = (m.requests || []).map(r => `
         <span style="font-size:10px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;">
@@ -2892,7 +2898,6 @@
         </span>
       `).join('');
 
-      const isSpecial = Boolean(m.client.typeBadge && m.client.typeBadge.includes('案B'));
       html += `
         <div class="mission-card" style="margin:0; border:1px solid #334155; background:var(--c-surface); border-radius:8px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.25);">
           <!-- Header -->
@@ -2902,7 +2907,7 @@
               <div style="min-width:0;">
                 <div style="font-size:14px; font-weight:bold; color:var(--c-text);">${m.client.name} 様</div>
                 <span style="display:inline-block; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; ${badgeBg}">
-                  ${m.client.typeBadge}
+                  ${cleanTypeBadge}
                 </span>
               </div>
             </div>
@@ -8812,7 +8817,7 @@ function updateHomeUI() {
       saveGame();
       updateHomeUI();
       closeSb();
-      showFloatingText('✨ 案B特注クライアントを受付へ招待しました！', '#c084fc');
+      showFloatingText('✨ 特注クライアントを受付へ招待しました！', '#c084fc');
     });
 
     syncTogglePixelBtn();
