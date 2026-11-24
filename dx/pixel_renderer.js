@@ -251,12 +251,106 @@
     return { rooms: Array.from(roomMap.values()), gardenClusters, bbox, fp };
   }
 
+  function computeDoorSwingPlan(targetGrid, rooms) {
+    const gSize = targetGrid.length;
+    const cellRoomMap = new Map();
+    const cellRoomSize = new Map();
+    for (const rm of rooms) {
+      for (const pt of rm.cells) {
+        cellRoomMap.set(`${pt.r},${pt.c}`, rm);
+        cellRoomSize.set(`${pt.r},${pt.c}`, rm.cells.length);
+      }
+    }
+    const fn = typeof edgeType === 'function' ? edgeType : null;
+    const edgeAt = (r1, c1, r2, c2) => safeEdgeType(targetGrid, r1, c1, r2, c2, fn);
+
+    const vDoors = new Map();
+    const hDoors = new Map();
+    const cellSwingInfo = new Map();
+    const addCellSwing = (r, c, dirKey) => {
+      const k = `${r},${c}`;
+      if (!cellSwingInfo.has(k)) cellSwingInfo.set(k, { count: 0, fromNorth: false, fromWest: false, fromEast: false });
+      const info = cellSwingInfo.get(k);
+      info.count++;
+      info[dirKey] = true;
+    };
+
+    const scoreRoomForSwing = (rm, cellR, cellC) => {
+      if (!rm) return -999;
+      let sc = 0;
+      if (rm.type === T.CORRIDOR) sc += 120;
+      else if (rm.type === T.ENTRANCE) sc += 50;
+      else sc += Math.min(4, rm.cells.length) * 18;
+      if ((rm.type === T.TOILET || rm.type === T.WASHROOM || rm.type === T.CLOSET || rm.type === T.BATH || rm.type === T.LDK) && rm.cells.length <= 1) {
+        sc -= 80;
+      }
+      if (edgeAt(cellR - 1, cellC, cellR, cellC) !== E.DOOR) sc += 15;
+      return sc;
+    };
+
+    // 1) 縦ドア（左右セル間）の開き先・蝶番位置を先決（襖・大型浴室引き戸はスキップ）
+    for (let r = 0; r < gSize; r++) {
+      for (let c = 0; c < gSize - 1; c++) {
+        if (edgeAt(r, c, r, c + 1) !== E.DOOR) continue;
+        const rmL = cellRoomMap.get(`${r},${c}`);
+        const rmR = cellRoomMap.get(`${r},${c + 1}`);
+        const cL = targetGrid[r]?.[c];
+        const cR = targetGrid[r]?.[c + 1];
+        const kind = resolveDoorKind(cL, cR, r, c, r, c + 1, cellRoomSize);
+        if (kind === 'fusuma' || kind === 'bath_slide') continue;
+
+        const scL = scoreRoomForSwing(rmL, r, c);
+        const scR = scoreRoomForSwing(rmR, r, c + 1);
+        const dirX = (kind === 'bath_fold')
+          ? ((cR?.type === T.BATH && cL?.type !== T.BATH) ? 1 : ((cL?.type === T.BATH && cR?.type !== T.BATH) ? -1 : ((scR >= scL) ? 1 : -1)))
+          : ((scR >= scL) ? 1 : -1);
+        const targetC = dirX > 0 ? c + 1 : c;
+        const topIsDoor = edgeAt(r - 1, targetC, r, targetC) === E.DOOR;
+        const botIsDoor = edgeAt(r, targetC, r + 1, targetC) === E.DOOR;
+        const hingeAt = (topIsDoor && !botIsDoor) ? 'bottom' : 'top';
+
+        vDoors.set(`${r},${c}`, { dirX, hingeAt, targetR: r, targetC, kind });
+        addCellSwing(r, targetC, dirX > 0 ? 'fromWest' : 'fromEast');
+      }
+    }
+
+    // 2) 横ドア（上下セル間）の蝶番左右を決定（縦ドア・壁際家具の邪魔にならない側を優先）
+    for (let r = 1; r < gSize; r++) {
+      for (let c = 0; c < gSize; c++) {
+        if (edgeAt(r - 1, c, r, c) !== E.DOOR) continue;
+        const cTop = targetGrid[r - 1]?.[c];
+        const cCur = targetGrid[r]?.[c];
+        const kind = resolveDoorKind(cTop, cCur, r - 1, c, r, c, cellRoomSize);
+        if (kind === 'fusuma' || kind === 'bath_slide') continue;
+
+        const sw = cellSwingInfo.get(`${r},${c}`) || {};
+        const vL = edgeAt(r, c - 1, r, c);
+        const vR = edgeAt(r, c, r, c + 1);
+        const topHasDoor = edgeAt(r - 1, c - 1, r - 1, c) === E.DOOR;
+        let hingeSide = 'left';
+        if (sw.fromWest && !sw.fromEast) hingeSide = 'right';
+        else if (sw.fromEast && !sw.fromWest) hingeSide = 'left';
+        else if (vR === E.WALL && vL === E.DOOR && !sw.fromWest) hingeSide = 'left';
+        else if (vL === E.WALL && vR === E.DOOR && !sw.fromEast) hingeSide = 'right';
+        else if (vR === E.DOOR && vL !== E.DOOR) hingeSide = 'left';
+        else if (vL === E.DOOR && vR !== E.DOOR) hingeSide = 'right';
+        else if (topHasDoor) hingeSide = 'right';
+
+        hDoors.set(`${r},${c}`, { hingeSide, targetR: r, targetC: c, kind });
+        addCellSwing(r, c, 'fromNorth');
+      }
+    }
+
+    return { vDoors, hDoors, cellSwingInfo, cellRoomSize };
+  }
+
   /* ============================================================
      2. 家具レイアウトプランナー (STEP2_PIXEL_SPEC 第6章準拠)
   ============================================================ */
   function buildFurniturePlan(targetGrid, combos, visited, stageObj) {
     const comboNames = new Set((combos || []).map(c => typeof c === 'string' ? c : c.name));
     const { rooms, gardenClusters } = analyzeRoomsAndClusters(targetGrid, visited);
+    const doorPlan = computeDoorSwingPlan(targetGrid, rooms);
     const gSize = targetGrid.length;
     const items = []; // { assetId, r, c, wCells, hCells, roomKey, delayMs, animated, kind }
     const darkRooms = new Set(); // roomKey for 封印されし闇 / 要塞化
@@ -329,6 +423,11 @@
       return 'center';
     };
 
+    const getSwingPenalty = (r, c) => {
+      const sw = doorPlan.cellSwingInfo.get(`${r},${c}`);
+      return sw ? sw.count * 240 : 0;
+    };
+
     // 壁寄せ配置（壁が1辺もないセルには置かない：requireWall）
     const findWallSingle = (cells, cellSet, preferNorth = true, opts = {}) => {
       const { preferSide = false, requireWall = true } = opts;
@@ -349,7 +448,8 @@
           else if (e.wLeft || e.wRight) score += 70;
           if (e.wBottom) score += preferNorth ? 35 : 110;
         }
-        if (e.hasDoor) score -= 45;
+        if (e.hasDoor) score -= 90;
+        score -= getSwingPenalty(pt.r, pt.c);
         return { pt, score, hasAnyWall, snap: pickSnapDir(e, preferSide, preferNorth) };
       });
       const filtered = requireWall ? candidates.filter(c => c.hasAnyWall) : candidates;
@@ -370,7 +470,8 @@
           else if (e1.wTop || e2.wTop) score += 75;
           if (e1.wBottom && e2.wBottom) score += preferNorth ? 25 : 120;
           if (e1.wLeft || e2.wRight) score += 30;
-          if (e1.hasDoor || e2.hasDoor) score -= 50;
+          if (e1.hasDoor || e2.hasDoor) score -= 95;
+          score -= getSwingPenalty(pt.r, pt.c) + getSwingPenalty(pt.r, pt.c + 1);
           const snap = (e1.wTop && e2.wTop) ? 'north' : ((e1.wBottom && e2.wBottom) ? 'south' : (e1.wTop || e2.wTop ? 'north' : 'center'));
           return { pt, score, hasEdgeWall, snap };
         })
@@ -390,7 +491,8 @@
           let snap = null;
           if (e1.wLeft && e2.wLeft) { score += 130; snap = 'west'; }
           else if (e1.wRight && e2.wRight) { score += 130; snap = 'east'; }
-          if (e1.hasDoor || e2.hasDoor) score -= 45;
+          if (e1.hasDoor || e2.hasDoor) score -= 90;
+          score -= getSwingPenalty(pt.r, pt.c) + getSwingPenalty(pt.r + 1, pt.c);
           return { pt, score, snap };
         })
         .filter(x => x.snap !== null)
@@ -407,7 +509,7 @@
         .map(pt => {
           const e = getCellEdges(pt.r, pt.c);
           const dist = Math.hypot(pt.r - avgR, pt.c - avgC);
-          return { pt, score: -dist * 10 - (e.hasDoor ? 25 : 0) };
+          return { pt, score: -dist * 10 - (e.hasDoor ? 60 : 0) - getSwingPenalty(pt.r, pt.c) };
         })
         .sort((a, b) => b.score - a.score);
       return sorted[0] ? { ...sorted[0].pt, snap: 'center' } : null;
@@ -1038,7 +1140,7 @@
       items[origIdx].delayMs = items.length <= 1 ? 0 : (orderIdx / (items.length - 1)) * maxDelay;
     });
 
-    return { items, darkRooms, isGlassHouse, isFortress, comboNames, rooms, wallDecoRooms, sunnyRoomKeys, hiddenRoomKeys, badSpots };
+    return { items, darkRooms, isGlassHouse, isFortress, comboNames, rooms, wallDecoRooms, sunnyRoomKeys, hiddenRoomKeys, badSpots, doorPlan };
   }
 
   /* ============================================================
@@ -1073,7 +1175,332 @@
     return 'floor_outside';
   }
 
-  function drawPixelWallEdge(ctx, x1, y1, x2, y2, r1, c1, r2, c2, ori, cs, targetGrid, showSolidRedOverlay, enable25DWalls = false) {
+  function isWashitsuDoorCell(cell) {
+    return Boolean(cell && (cell.label === '和室' || cell.pieceLibId === 'room-wa' || cell.pieceLibId === 'room-wa2'));
+  }
+
+  function isLargeNonUbBath(cell, r, c, sizeMap) {
+    if (!cell || cell.type !== T.BATH) return false;
+    if (cell.pieceLibId === 'unit-bath' || cell.label === 'UB') return false;
+    const roomSize = sizeMap?.get(`${r},${c}`) || 0;
+    return roomSize >= 4 || cell.pieceLibId === 'bath-wide';
+  }
+
+  function resolveDoorKind(c1, c2, r1, col1, r2, col2, sizeMap) {
+    if (isWashitsuDoorCell(c1) || isWashitsuDoorCell(c2)) return 'fusuma';
+    if (c1?.type === T.BATH || c2?.type === T.BATH) {
+      if (isLargeNonUbBath(c1, r1, col1, sizeMap) || isLargeNonUbBath(c2, r2, col2, sizeMap)) {
+        return 'bath_slide';
+      }
+      return 'bath_fold';
+    }
+    return 'hinged';
+  }
+
+  function getDoorOpeningPost(len, doorKind) {
+    if (doorKind === 'hinged' || doorKind === 'bath_fold') {
+      return Math.max(3, Math.round(len * 0.24));
+    }
+    return Math.max(2, Math.round(len * 0.16));
+  }
+
+  const SLIDE_THEME_FUSUMA = {
+    headerCol: '#5c2d0c',
+    sillCol: '#92400e',
+    railH: '#92400e',
+    backFill: '#f5ebd1',
+    backStroke: '#78350f',
+    frontFill: '#fffbeb',
+    frontStroke: '#5c2d0c',
+    topWoodV: '#d97706',
+    glareCol: null,
+    handleCol: '#334155',
+    isBathGlass: false
+  };
+
+  const SLIDE_THEME_BATH = {
+    headerCol: '#334155',
+    sillCol: '#64748b',
+    railH: '#e2e8f0',
+    backFill: '#7dd3fc',
+    backStroke: '#334155',
+    frontFill: '#bae6fd',
+    frontStroke: '#1e293b',
+    topWoodV: '#f8fafc',
+    glareCol: '#f0f9ff',
+    handleCol: '#1e293b',
+    isBathGlass: true
+  };
+
+  // 浴室用・立ち上がり2.5D折れ戸（蛇腹3連パネル）共通レンダラー（横・縦共通）
+  function drawStandingAccordionPanels(ctx, pts, doorH) {
+    if (!pts || pts.length < 2) return;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y + 1.5);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x, pts[i].y + 1.5);
+    }
+    ctx.stroke();
+
+    const segs = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      segs.push({ a, b, idx: i, depth: Math.min(a.y, b.y) + Math.max(a.y, b.y) });
+    }
+    segs.sort((s1, s2) => s1.depth - s2.depth);
+
+    for (const seg of segs) {
+      const { a, b, idx } = seg;
+      const isLit = (idx % 2 === 0);
+      ctx.fillStyle = isLit ? '#bae6fd' : '#60a5fa';
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y - doorH);
+      ctx.lineTo(b.x, b.y - doorH);
+      ctx.lineTo(b.x, b.y);
+      ctx.lineTo(a.x, a.y);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = isLit ? 'rgba(240, 249, 255, 0.72)' : 'rgba(224, 242, 254, 0.40)';
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y - doorH + 1);
+      ctx.lineTo(b.x, b.y - doorH + 1);
+      ctx.lineTo(b.x, b.y - doorH + Math.max(2, Math.round(doorH * 0.42)));
+      ctx.lineTo(a.x, a.y - doorH + Math.max(2, Math.round(doorH * 0.42)));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y - doorH);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x, pts[i].y - doorH);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y - doorH);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x, pts[i].y - doorH);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = '#334155';
+    for (let i = 0; i < pts.length; i++) {
+      ctx.fillRect(Math.round(pts[i].x) - 0.5, Math.round(pts[i].y - doorH), 1.5, doorH);
+    }
+    const lastPt = pts[pts.length - 1];
+    const prevPt = pts[pts.length - 2];
+    const hx = Math.round(lastPt.x * 0.72 + prevPt.x * 0.28);
+    const hy = Math.round((lastPt.y * 0.72 + prevPt.y * 0.28) - doorH * 0.48);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(hx - 1, hy - 1, 2, 2);
+    ctx.restore();
+  }
+
+  // 横向き引き違い戸（和室襖／大型浴室フロスト引き戸共通）
+  function drawSlidingDoorPanelsH(ctx, x, y, post, dw, wallH, theme) {
+    ctx.fillStyle = theme.headerCol;
+    ctx.fillRect(x + post, y, dw, 2);
+    ctx.fillStyle = theme.sillCol;
+    ctx.fillRect(x + post, y + wallH - 2, dw, 2);
+    if (theme.isBathGlass) {
+      ctx.fillStyle = theme.railH;
+      ctx.fillRect(x + post, y + wallH - 2, dw, 1);
+    }
+    const innerH = Math.max(3, wallH - 4);
+    const panW = Math.max(4, Math.round(dw * 0.48));
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+    ctx.fillRect(x + post + panW + 2, y + wallH - 1, Math.max(2, dw - panW - 2), 2);
+
+    const backX = x + post + Math.round(dw * 0.16);
+    ctx.fillStyle = theme.backFill;
+    ctx.fillRect(backX, y + 2, panW, innerH);
+    if (theme.isBathGlass && innerH >= 5) {
+      ctx.fillStyle = theme.railH;
+      ctx.fillRect(backX + 1, y + 2 + Math.round(innerH * 0.52), Math.max(1, panW - 2), 1);
+    }
+    ctx.strokeStyle = theme.backStroke;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(backX, y + 2, panW, innerH);
+
+    const frontX = x + post + 1;
+    ctx.fillStyle = theme.frontFill;
+    ctx.fillRect(frontX, y + 2, panW, innerH);
+    if (theme.isBathGlass && innerH >= 5) {
+      ctx.fillStyle = theme.glareCol;
+      ctx.fillRect(frontX + 1, y + 3, Math.max(2, panW - 2), Math.max(2, Math.round(innerH * 0.34)));
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(frontX + 1, y + 2 + Math.round(innerH * 0.54), Math.max(1, panW - 2), 1);
+    }
+    ctx.strokeStyle = theme.frontStroke;
+    ctx.strokeRect(frontX, y + 2, panW, innerH);
+    ctx.fillStyle = theme.handleCol;
+    if (theme.isBathGlass) {
+      ctx.fillRect(frontX + panW - 3, y + 3, 1, Math.max(3, innerH - 3));
+    } else {
+      ctx.fillRect(frontX + panW - 3, y + Math.round(wallH * 0.52), 2, 2);
+    }
+  }
+
+  // 縦向き引き違い戸（和室襖／大型浴室フロスト引き戸共通）
+  function drawSlidingDoorPanelsV(ctx, x1, gy1, gap, wallThick, theme) {
+    ctx.fillStyle = theme.sillCol;
+    ctx.fillRect(x1 - 2, gy1, 1, gap);
+    ctx.fillRect(x1 + 1, gy1, 1, gap);
+    const panLen = Math.max(4, Math.round(gap * 0.36));
+    const panThick = Math.max(2, Math.round(wallThick * 0.55));
+    const shift2 = Math.max(2, Math.round(gap * 0.24));
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.20)';
+    ctx.fillRect(x1 + 2, gy1 + 2, panThick + 2, panLen + shift2);
+
+    ctx.fillStyle = theme.backStroke;
+    ctx.fillRect(x1 - panThick, gy1 + shift2, panThick, panLen);
+    ctx.fillStyle = theme.backFill;
+    ctx.fillRect(x1 - panThick + 1, gy1 + shift2 + 1, Math.max(1, panThick - 2), Math.max(2, panLen - 2));
+
+    ctx.fillStyle = theme.frontStroke;
+    ctx.fillRect(x1, gy1, panThick, panLen);
+    ctx.fillStyle = theme.frontFill;
+    ctx.fillRect(x1 + 1, gy1 + 1, Math.max(1, panThick - 2), Math.max(2, panLen - 2));
+    if (theme.isBathGlass && panLen >= 6) {
+      ctx.fillStyle = theme.glareCol;
+      ctx.fillRect(x1 + 1, gy1 + 2, Math.max(1, panThick - 2), Math.max(2, Math.round(panLen * 0.35)));
+    }
+    if (panThick >= 3) {
+      ctx.fillStyle = theme.topWoodV;
+      ctx.fillRect(x1 - panThick + 1, gy1 + shift2, Math.max(1, panThick - 2), 1);
+      ctx.fillRect(x1 + 1, gy1, Math.max(1, panThick - 2), 1);
+    }
+    ctx.fillStyle = theme.handleCol;
+    ctx.fillRect(x1 + 1, gy1 + Math.max(1, Math.round(panLen * 0.72)), 1, theme.isBathGlass ? 2 : 1);
+  }
+
+  function drawStanding3DVerticalDoor(ctx, hx, gy1, gy2, dirX, hingeAt, cs, doorFill, isHidden) {
+    const gap = Math.max(6, gy2 - gy1);
+    const doorH = Math.max(5, Math.round(cs * 0.23));
+    const openX = dirX * Math.max(4, Math.round(gap * 0.60));
+    const slantY = (hingeAt === 'bottom')
+      ? -Math.max(2, Math.round(gap * 0.24))
+      : Math.max(3, Math.round(gap * 0.36));
+    const botY = (hingeAt === 'bottom') ? (gy2 - 2) : (gy1 + 2);
+    const topY = botY - doorH;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.24)';
+    ctx.beginPath();
+    ctx.moveTo(hx, botY);
+    ctx.lineTo(hx + openX + dirX * 1.5, botY + slantY + 2);
+    ctx.lineTo(hx + openX - dirX * 1.5, botY + slantY + 3);
+    ctx.lineTo(hx, botY + 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = isHidden ? '#92400e' : doorFill;
+    ctx.beginPath();
+    ctx.moveTo(hx, topY);
+    ctx.lineTo(hx + openX, topY + slantY);
+    ctx.lineTo(hx + openX, botY + slantY);
+    ctx.lineTo(hx, botY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#5c2d0c';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    if (Math.abs(openX) >= 6 && doorH >= 8) {
+      const insetX = dirX * Math.max(1.5, Math.abs(openX) * 0.22);
+      const insetY = Math.max(2, Math.round(doorH * 0.22));
+      ctx.fillStyle = '#92400e';
+      ctx.beginPath();
+      ctx.moveTo(hx + insetX, topY + insetY);
+      ctx.lineTo(hx + openX - insetX, topY + insetY + slantY);
+      ctx.lineTo(hx + openX - insetX, botY - insetY + slantY);
+      ctx.lineTo(hx + insetX, botY - insetY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = Math.max(1, Math.round(cs * 0.03));
+    ctx.beginPath();
+    ctx.moveTo(hx, topY + 0.5);
+    ctx.lineTo(hx + openX, topY + slantY + 0.5);
+    ctx.stroke();
+
+    const kSize = Math.abs(openX) >= 10 ? 2 : 1;
+    const kx = Math.round(hx + openX * 0.76);
+    const ky = Math.round(topY + doorH * 0.54 + slantY * 0.76);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(kx - (kSize > 1 ? 1 : 0), ky - (kSize > 1 ? 1 : 0), kSize, kSize);
+  }
+
+  function drawAngledDoorLeaf(ctx, hx, hy, tipX, tipY, thick, fillCol, borderCol, drawKnob) {
+    const dx = tipX - hx;
+    const dy = tipY - hy;
+    const len = Math.hypot(dx, dy);
+    if (len < 1) return;
+    const nx = -dy / len;
+    const ny = dx / len;
+
+    const fillQuad = (ox, oy, halfW, col) => {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(hx + ox + nx * halfW, hy + oy + ny * halfW);
+      ctx.lineTo(tipX + ox + nx * halfW, tipY + oy + ny * halfW);
+      ctx.lineTo(tipX + ox - nx * halfW, tipY + oy - ny * halfW);
+      ctx.lineTo(hx + ox - nx * halfW, hy + oy - ny * halfW);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    fillQuad(2, 2.5, thick * 0.5 + 0.6, 'rgba(15, 23, 42, 0.22)');
+    fillQuad(0, 0, thick * 0.5 + 1, borderCol);
+    fillQuad(0, 0, thick * 0.5, fillCol);
+
+    if (drawKnob) {
+      const kx = hx + dx * 0.78;
+      const ky = hy + dy * 0.78;
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(Math.round(kx - 1), Math.round(ky - 1), 2, 2);
+    }
+  }
+
+  function drawFlatBifoldPolyline(ctx, pts) {
+    ctx.save();
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#bae6fd';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPixelWallEdge(ctx, x1, y1, x2, y2, r1, c1, r2, c2, ori, cs, targetGrid, showSolidRedOverlay, enable25DWalls = false, pass = 'all', doorPlan = null) {
     const et = safeEdgeType(targetGrid, r1, c1, r2, c2, typeof edgeType === 'function' ? edgeType : null);
     if (et === E.NONE) return;
 
@@ -1085,112 +1512,236 @@
     const isSolid = hasCellSolidWall(targetGrid, r1, c1, r2, c2);
 
     ctx.save();
-    const wallThick = Math.max(2, Math.round(cs * (isExt ? 0.13 : 0.09)));
+    const rawT = Math.round(cs * 0.15);
+    const wallThick = Math.max(4, rawT % 2 === 0 ? rawT : rawT + 1);
+    const halfT = wallThick / 2;
+    const borderCol = '#0f172a';
+    const topCol = '#1e293b';
+    const inset = wallThick >= 6 ? Math.max(1, Math.round(wallThick * 0.22)) : 1;
+    const coreThick = Math.max(2, wallThick - inset * 2);
 
     if (et === E.DOOR) {
-      // 2Dゼルダ風ドア・襖
       const len = ori === 'h' ? Math.abs(x2 - x1) : Math.abs(y2 - y1);
-      const post = Math.round(len * 0.18);
-      const isWashitsu = Boolean(
-        (c1_cell && c1_cell.label === '和室') || (c2_cell && c2_cell.label === '和室')
-      );
+      const doorKind = resolveDoorKind(c1_cell, c2_cell, r1, c1, r2, c2, doorPlan?.cellRoomSize);
+      const isBathDoor = (doorKind === 'bath_fold' || doorKind === 'bath_slide');
+      const post = getDoorOpeningPost(len, doorKind);
+      const gap = Math.max(4, len - post * 2);
+      const isWashitsu = (doorKind === 'fusuma');
       const isHidden = Boolean(
         ((c1_cell?.type === T.CLOSET && (c2_cell?.type === T.ROOM || c2_cell?.type === T.TOILET)) ||
          (c2_cell?.type === T.CLOSET && (c1_cell?.type === T.ROOM || c1_cell?.type === T.TOILET)))
       );
 
-      ctx.fillStyle = '#334155';
-      if (ori === 'h') {
-        ctx.fillRect(x1, y1 - wallThick / 2, post, wallThick);
-        ctx.fillRect(x2 - post, y1 - wallThick / 2, post, wallThick);
-        if (!enable25DWalls) {
-          // フラット時のみ境界線上に敷居＋扉板を描画（2.5D時は立ち上がり壁面に描画済み）
-          ctx.fillStyle = isHidden ? '#78350f' : (isWashitsu ? '#d97706' : '#92400e');
-          ctx.fillRect(x1 + post, y1 - 1.5, len - post * 2, 3);
-          ctx.fillStyle = isHidden ? '#92400e' : (isWashitsu ? '#fef3c7' : '#b45309');
-          const dw = Math.round((len - post * 2) * 0.55);
-          if (isWashitsu) {
-            ctx.fillRect(x1 + post, y1 - 2, dw, 4);
-            ctx.strokeStyle = '#78350f';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x1 + post, y1 - 2, dw, 4);
-          } else {
-            ctx.fillRect(x1 + post, y1, 4, dw);
-            ctx.fillStyle = '#facc15';
-            ctx.fillRect(x1 + post + 1, y1 + dw - 3, 2, 2);
+      // 1) 両端の壁スタブ（2パスで壁角をシームレス接続）
+      if (pass === 'all' || pass === 'base') {
+        ctx.fillStyle = borderCol;
+        if (ori === 'h') {
+          ctx.fillRect(x1 - halfT, y1 - halfT, post + halfT, wallThick);
+          ctx.fillRect(x2 - post, y1 - halfT, post + halfT, wallThick);
+        } else {
+          ctx.fillRect(x1 - halfT, y1 - halfT, wallThick, post + halfT);
+          ctx.fillRect(x1 - halfT, y2 - post, wallThick, post + halfT);
+        }
+      }
+      if (pass === 'all' || pass === 'top') {
+        ctx.fillStyle = topCol;
+        if (ori === 'h') {
+          ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, Math.max(1, post + halfT - inset * 2), coreThick);
+          ctx.fillRect(x2 - post + inset, y1 - halfT + inset, Math.max(1, post + halfT - inset * 2), coreThick);
+          if (wallThick >= 4) {
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, Math.max(1, post + halfT - inset * 2), 1);
+            ctx.fillRect(x2 - post + inset, y1 - halfT + inset, Math.max(1, post + halfT - inset * 2), 1);
           }
         } else {
-          ctx.fillStyle = isWashitsu ? '#d97706' : '#78350f';
-          ctx.fillRect(x1 + post, y1 - 1, len - post * 2, 2);
+          ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, coreThick, Math.max(1, post + halfT - inset * 2));
+          ctx.fillRect(x1 - halfT + inset, y2 - post + inset, coreThick, Math.max(1, post + halfT - inset * 2));
+          if (wallThick >= 4) {
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, 1, Math.max(1, post + halfT - inset * 2));
+            ctx.fillRect(x1 - halfT + inset, y2 - post + inset, 1, Math.max(1, post + halfT - inset * 2));
+          }
         }
-      } else {
-        ctx.fillRect(x1 - wallThick / 2, y1, wallThick, post);
-        ctx.fillRect(x1 - wallThick / 2, y2 - post, wallThick, post);
-        ctx.fillStyle = isHidden ? '#78350f' : (isWashitsu ? '#d97706' : '#92400e');
-        ctx.fillRect(x1 - 1.5, y1 + post, 3, len - post * 2);
-        ctx.fillStyle = isHidden ? '#92400e' : (isWashitsu ? '#fef3c7' : '#b45309');
-        const dw = Math.round((len - post * 2) * 0.55);
-        if (isWashitsu) {
-          ctx.fillRect(x1 - 2, y1 + post, 4, dw);
-          ctx.strokeStyle = '#78350f';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x1 - 2, y1 + post, 4, dw);
+
+        // 2) ドア表現
+        const doorFill = isHidden ? '#92400e' : (isWashitsu ? '#fef3c7' : '#b45309');
+        const leafThick = Math.max(2.6, wallThick * 0.65);
+
+        if (ori === 'h') {
+          if (!enable25DWalls) {
+            // パズル実物プレビュー（フラット時）
+            const gx1 = x1 + post;
+            const gx2 = x2 - post;
+            ctx.fillStyle = isBathDoor ? '#475569' : '#78350f';
+            ctx.fillRect(gx1 - 1, y1 - halfT, 2, wallThick);
+            ctx.fillRect(gx2 - 1, y1 - halfT, 2, wallThick);
+            ctx.fillStyle = isBathDoor ? '#94a3b8' : 'rgba(120, 53, 15, 0.30)';
+            ctx.fillRect(gx1, y1, gap, 1);
+
+            if (isWashitsu || doorKind === 'bath_slide') {
+              const th = doorKind === 'bath_slide' ? SLIDE_THEME_BATH : SLIDE_THEME_FUSUMA;
+              const panW = Math.max(4, Math.round(gap * 0.42));
+              const panH = Math.max(2, Math.round(wallThick * 0.52));
+              const shift = Math.max(2, Math.round(gap * 0.24));
+              ctx.fillStyle = th.backStroke;
+              ctx.fillRect(gx1 + shift, y1 - panH, panW, panH);
+              ctx.fillStyle = th.backFill;
+              ctx.fillRect(gx1 + shift + 1, y1 - panH + 1, Math.max(1, panW - 2), Math.max(1, panH - 2));
+              ctx.fillStyle = th.frontStroke;
+              ctx.fillRect(gx1, y1, panW, panH);
+              ctx.fillStyle = th.frontFill;
+              ctx.fillRect(gx1 + 1, y1 + 1, Math.max(1, panW - 2), Math.max(1, panH - 2));
+            } else if (doorKind === 'bath_fold') {
+              const swH = doorPlan?.hDoors?.get(`${Math.max(r1, r2)},${c1}`);
+              const hSide = swH?.hingeSide || 'left';
+              const sx = hSide === 'right' ? -1 : 1;
+              const hx0 = hSide === 'right' ? (gx2 - 1) : (gx1 + 1);
+              const span = Math.min(Math.max(4, gap - 2), Math.max(6, Math.round(gap * 0.58)));
+              const stepX = span / 3;
+              const foldD = Math.max(3, Math.round(gap * 0.28));
+              drawFlatBifoldPolyline(ctx, [
+                { x: hx0, y: y1 + 1 },
+                { x: hx0 + sx * stepX, y: y1 + 1 + foldD },
+                { x: hx0 + sx * (stepX * 2), y: y1 + 2 },
+                { x: hx0 + sx * span, y: y1 + 1 + foldD }
+              ]);
+            } else {
+              const swH = doorPlan?.hDoors?.get(`${Math.max(r1, r2)},${c1}`);
+              const hSide = swH?.hingeSide || 'left';
+              const hx = hSide === 'right' ? (gx2 - 1) : (gx1 + 1);
+              const dirX = hSide === 'right' ? -1 : 1;
+              const doorR = Math.max(5, gap - 2);
+              const swingAng = 0.28 * Math.PI;
+              drawAngledDoorLeaf(
+                ctx, hx, y1 + 1,
+                hx + dirX * Math.cos(swingAng) * doorR,
+                (y1 + 1) + Math.sin(swingAng) * doorR,
+                leafThick, doorFill, '#5c2d0c', true
+              );
+            }
+          }
+          // 2.5D 時は draw25DWallsAndDeco が開口奥床・敷居・各種扉を描画
         } else {
-          ctx.fillRect(x1, y1 + post, dw, 4);
-          ctx.fillStyle = '#facc15';
-          ctx.fillRect(x1 + dw - 3, y1 + post + 1, 2, 2);
+          // 縦辺 (ori === 'v')
+          const gy1 = y1 + post;
+          const gy2 = y2 - post;
+          ctx.fillStyle = isBathDoor ? '#475569' : '#78350f';
+          ctx.fillRect(x1 - halfT, gy1 - 1, wallThick, 2);
+          ctx.fillRect(x1 - halfT, gy2 - 1, wallThick, 2);
+
+          if (isWashitsu) {
+            drawSlidingDoorPanelsV(ctx, x1, gy1, gap, wallThick, SLIDE_THEME_FUSUMA);
+          } else if (doorKind === 'bath_slide') {
+            drawSlidingDoorPanelsV(ctx, x1, gy1, gap, wallThick, SLIDE_THEME_BATH);
+          } else if (doorKind === 'bath_fold') {
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(x1 - 1, gy1, 2, gap);
+            const rMin = Math.min(r1, r2), cMin = Math.min(c1, c2);
+            const sw = doorPlan?.vDoors?.get(`${rMin},${cMin}`) || { dirX: 1, hingeAt: 'top' };
+            const bx = x1 + (sw.dirX > 0 ? 1 : -1);
+            const sy = sw.hingeAt === 'bottom' ? -1 : 1;
+            const hy0 = sw.hingeAt === 'bottom' ? (gy2 - 1) : (gy1 + 1);
+            const span = Math.min(Math.max(5, gap - 2), Math.max(6, Math.round(gap * 0.68)));
+            const stepY = span / 3;
+            const foldD = Math.max(3, Math.round(gap * 0.34));
+            const inD = Math.max(1, Math.round(foldD * 0.15));
+            const pts = [
+              { x: bx, y: hy0 },
+              { x: bx + sw.dirX * foldD, y: hy0 + sy * stepY },
+              { x: bx + sw.dirX * inD, y: hy0 + sy * (stepY * 2) },
+              { x: bx + sw.dirX * foldD, y: hy0 + sy * span }
+            ];
+            if (enable25DWalls) {
+              const doorH = Math.max(4, Math.round(cs * 0.16));
+              drawStandingAccordionPanels(ctx, pts, doorH);
+            } else {
+              drawFlatBifoldPolyline(ctx, pts);
+            }
+          } else {
+            ctx.fillStyle = 'rgba(146, 64, 14, 0.45)';
+            ctx.fillRect(x1 - 1, gy1, 2, gap);
+            const rMin = Math.min(r1, r2), cMin = Math.min(c1, c2);
+            const sw = doorPlan?.vDoors?.get(`${rMin},${cMin}`) || { dirX: 1, hingeAt: 'top' };
+            const hx = x1 + (sw.dirX > 0 ? 1 : -1);
+            if (enable25DWalls) {
+              drawStanding3DVerticalDoor(ctx, hx, gy1, gy2, sw.dirX, sw.hingeAt, cs, '#b45309', isHidden);
+            } else {
+              const hy = sw.hingeAt === 'bottom' ? (gy2 - 1) : (gy1 + 1);
+              const dirY = sw.hingeAt === 'bottom' ? -1 : 1;
+              const doorR = Math.max(5, gap - 2);
+              const openAng = 0.24 * Math.PI;
+              drawAngledDoorLeaf(
+                ctx, hx, hy,
+                hx + sw.dirX * Math.cos(openAng) * doorR,
+                hy + dirY * Math.sin(openAng) * doorR,
+                leafThick, doorFill, '#5c2d0c', true
+              );
+            }
+          }
         }
       }
       ctx.restore();
       return;
     }
 
-    // 壁（外壁は濃い外枠＋白い天面、内壁は木目・暗め枠）
-    const borderCol = isExt ? '#0f172a' : '#334155';
-    const topCol = isExt ? '#e2e8f0' : '#cbd5e1';
-    if (ori === 'h') {
-      const w = x2 - x1;
+    // 壁（外壁・内壁を太めの濃紺ベース＋明るい境界ハイライトで統一し2パス接続）
+    if (pass === 'all' || pass === 'base') {
       ctx.fillStyle = borderCol;
-      ctx.fillRect(x1 - wallThick / 2, y1 - wallThick / 2, w + wallThick, wallThick);
-      ctx.fillStyle = topCol;
-      ctx.fillRect(x1, y1 - wallThick / 2 + 1, w, Math.max(1, wallThick - 2));
-      if (et === E.WINDOW && !isSolid) {
-        const winStart = x1 + Math.round(w * 0.22);
-        const winLen = Math.round(w * 0.56);
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(winStart, y1 - wallThick / 2 + 1, winLen, Math.max(2, wallThick - 2));
-        ctx.fillStyle = '#e0f2fe';
-        ctx.fillRect(winStart + 2, y1 - wallThick / 2 + 1, Math.max(2, Math.round(winLen * 0.4)), 1);
-      }
-    } else {
-      const h = y2 - y1;
-      ctx.fillStyle = borderCol;
-      ctx.fillRect(x1 - wallThick / 2, y1 - wallThick / 2, wallThick, h + wallThick);
-      ctx.fillStyle = topCol;
-      ctx.fillRect(x1 - wallThick / 2 + 1, y1, Math.max(1, wallThick - 2), h);
-      if (et === E.WINDOW && !isSolid) {
-        const winStart = y1 + Math.round(h * 0.22);
-        const winLen = Math.round(h * 0.56);
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(x1 - wallThick / 2 + 1, winStart, Math.max(2, wallThick - 2), winLen);
-        ctx.fillStyle = '#e0f2fe';
-        ctx.fillRect(x1 - wallThick / 2 + 1, winStart + 2, 1, Math.max(2, Math.round(winLen * 0.4)));
+      if (ori === 'h') {
+        ctx.fillRect(x1 - halfT, y1 - halfT, (x2 - x1) + wallThick, wallThick);
+      } else {
+        ctx.fillRect(x1 - halfT, y1 - halfT, wallThick, (y2 - y1) + wallThick);
       }
     }
+    if (pass === 'all' || pass === 'top') {
+      if (ori === 'h') {
+        const w = x2 - x1;
+        ctx.fillStyle = topCol;
+        ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, w + wallThick - inset * 2, coreThick);
+        if (coreThick >= 2) {
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, w + wallThick - inset * 2, 1);
+        }
+        if (et === E.WINDOW && !isSolid) {
+          const winStart = x1 + Math.round(w * 0.20);
+          const winLen = Math.round(w * 0.60);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(winStart, y1 - halfT + inset, winLen, coreThick);
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillRect(winStart + 2, y1 - halfT + inset, Math.max(2, Math.round(winLen * 0.42)), 1);
+        }
+      } else {
+        const h = y2 - y1;
+        ctx.fillStyle = topCol;
+        ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, coreThick, h + wallThick - inset * 2);
+        if (coreThick >= 2) {
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(x1 - halfT + inset, y1 - halfT + inset, 1, h + wallThick - inset * 2);
+        }
+        if (et === E.WINDOW && !isSolid) {
+          const winStart = y1 + Math.round(h * 0.20);
+          const winLen = Math.round(h * 0.60);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(x1 - halfT + inset, winStart, coreThick, winLen);
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillRect(x1 - halfT + inset, winStart + 2, 1, Math.max(2, Math.round(winLen * 0.42)));
+        }
+      }
 
-    // パズル中のみ：赤壁（耐力壁）を明示的に赤線オーバーレイ表示（固定躯体壁は鉄骨リベット付濃紅）
-    if (isSolid && showSolidRedOverlay) {
-      const isLockedW = Boolean(global.DXStage2 && global.DXStage2.hasLockedWall(targetGrid, r1, c1, r2, c2));
-      ctx.strokeStyle = isLockedW ? '#9f1239' : '#ef4444';
-      ctx.lineWidth = isLockedW ? 4.5 : 3.5;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-      if (isLockedW) {
-        ctx.fillStyle = '#fef08a';
-        ctx.fillRect(Math.round((x1 + x2) / 2 - 1.5), Math.round((y1 + y2) / 2 - 1.5), 3, 3);
+      // パズル中のみ：赤壁（耐力壁）を明示的に赤線オーバーレイ表示（固定躯体壁は鉄骨リベット付濃紅）
+      if (isSolid && showSolidRedOverlay) {
+        const isLockedW = Boolean(global.DXStage2 && global.DXStage2.hasLockedWall(targetGrid, r1, c1, r2, c2));
+        ctx.strokeStyle = isLockedW ? '#9f1239' : '#ef4444';
+        ctx.lineWidth = isLockedW ? 4.5 : 3.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        if (isLockedW) {
+          ctx.fillStyle = '#fef08a';
+          ctx.fillRect(Math.round((x1 + x2) / 2 - 1.5), Math.round((y1 + y2) / 2 - 1.5), 3, 3);
+        }
       }
     }
 
@@ -1307,27 +1858,115 @@
           else if (isDark) { wallBg = '#2c2547'; wallTopShade = '#201a36'; trimCol = '#141024'; }
 
           if (et === E.DOOR) {
+            const doorKind = resolveDoorKind(cTop, cCur, r - 1, c, r, c, plan?.doorPlan?.cellRoomSize);
+            const isBathDoor = (doorKind === 'bath_fold' || doorKind === 'bath_slide');
             // 立ち上がり壁＋ドア開口
-            const post = Math.round(cs * 0.18);
-            const dw = cs - post * 2;
+            const post = getDoorOpeningPost(cs, doorKind);
+            const dw = Math.max(4, cs - post * 2);
             ctx.fillStyle = wallBg;
             ctx.fillRect(x, y, post, wallH);
             ctx.fillRect(x + cs - post, y, post, wallH);
             ctx.fillStyle = trimCol;
             ctx.fillRect(x, y + wallH - 3, post, 3);
             ctx.fillRect(x + cs - post, y + wallH - 3, post, 3);
-            // ドア枠と扉板
-            const doorIsWa = isWashitsu || (cTop && cTop.label === '和室');
-            ctx.fillStyle = '#78350f';
-            ctx.fillRect(x + post, y, dw, 2);
-            ctx.fillStyle = doorIsWa ? '#fef3c7' : '#b45309';
-            ctx.fillRect(x + post + 1, y + 2, Math.round(dw * 0.45), wallH - 2);
-            ctx.strokeStyle = '#78350f';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x + post + 1, y + 2, Math.round(dw * 0.45), wallH - 2);
-            if (!doorIsWa) {
+
+            // 開口奥に北側の本来の部屋の床を描画＋敷居ライン
+            if (occTop) {
+              const northFloorId = (cTop.type === T.ENTRANCE)
+                ? 'floor_wood'
+                : getFloorAssetId(cTop, true, plan.darkRooms);
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(x + post, y, dw, Math.max(1, wallH - 2));
+              ctx.clip();
+              PixelAssets.drawSprite(ctx, northFloorId, x, y - (cs - wallH), cs, cs);
+              ctx.fillStyle = isBathDoor ? 'rgba(15, 23, 42, 0.16)' : 'rgba(15, 23, 42, 0.08)';
+              ctx.fillRect(x + post, y, dw, Math.max(2, Math.round(wallH * 0.14)));
+              ctx.restore();
+              ctx.fillStyle = isBathDoor ? '#94a3b8' : (doorKind === 'fusuma' ? '#78350f' : '#92400e');
+              ctx.fillRect(x + post, y + wallH - 2, dw, 2);
+              if (isBathDoor) {
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(x + post, y + wallH - 2, dw, 1);
+              }
+            }
+
+            // 縦枠（左右柱：浴室＝アルミサッシ／居室・和室＝木枠）
+            ctx.fillStyle = isBathDoor ? '#475569' : '#78350f';
+            ctx.fillRect(x + post - 1, y + 1, 2, wallH - 1);
+            ctx.fillRect(x + cs - post - 1, y + 1, 2, wallH - 1);
+
+            if (doorKind === 'fusuma') {
+              // 和室（横・2.5D北壁）：引き違い襖
+              drawSlidingDoorPanelsH(ctx, x, y, post, dw, wallH, SLIDE_THEME_FUSUMA);
+            } else if (doorKind === 'bath_slide') {
+              // 大型浴室（横・2.5D北壁）：フロストガラス引き戸
+              drawSlidingDoorPanelsH(ctx, x, y, post, dw, wallH, SLIDE_THEME_BATH);
+            } else if (doorKind === 'bath_fold') {
+              // 狭浴室・UB（横・2.5D北壁）：アルミ蛇腹折れ戸
+              ctx.fillStyle = '#475569';
+              ctx.fillRect(x + post, y, dw, 2);
+              const hSide = plan?.doorPlan?.hDoors?.get(`${r},${c}`)?.hingeSide || 'left';
+              const sx = hSide === 'right' ? -1 : 1;
+              const hx0 = hSide === 'right' ? (x + cs - post - 1) : (x + post + 1);
+              const span = Math.min(Math.max(4, dw - 2), Math.max(6, Math.round(dw * 0.58)));
+              const stepX = span / 3;
+              const foldD = Math.max(3, Math.round(dw * 0.28));
+              const inD = Math.max(1, Math.round(foldD * 0.15));
+              const by = y + wallH - 1;
+              const doorH = Math.max(5, wallH - 2);
+              drawStandingAccordionPanels(ctx, [
+                { x: hx0, y: by },
+                { x: hx0 + sx * stepX, y: by + foldD },
+                { x: hx0 + sx * (stepX * 2), y: by + inD },
+                { x: hx0 + sx * span, y: by + foldD }
+              ], doorH);
+            } else {
+              // 居室・一般（横・2.5D北壁）：全部屋統一サイズの立体斜め開き戸
+              ctx.fillStyle = '#78350f';
+              ctx.fillRect(x + post, y, dw, 2);
+              const openW = Math.min(Math.max(4, dw - 2), Math.max(5, Math.round(dw * 0.62)));
+              const dropY = Math.max(3, Math.round(dw * 0.40));
+              const hSide = plan?.doorPlan?.hDoors?.get(`${r},${c}`)?.hingeSide || 'left';
+              const lx1 = hSide === 'right' ? (x + cs - post - 1) : (x + post + 1);
+              const lx2 = hSide === 'right' ? (lx1 - openW) : (lx1 + openW);
+              const dirSign = hSide === 'right' ? -1 : 1;
+              const baseFloorY = y + wallH - 1;
+
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.24)';
+              ctx.beginPath();
+              ctx.moveTo(lx1, baseFloorY);
+              ctx.lineTo(lx2 + dirSign * 2, baseFloorY + dropY + 2);
+              ctx.lineTo(lx2 - dirSign * 3, baseFloorY + dropY + 3);
+              ctx.lineTo(lx1 - dirSign * 1, baseFloorY + 2);
+              ctx.closePath();
+              ctx.fill();
+
+              ctx.fillStyle = '#b45309';
+              ctx.beginPath();
+              ctx.moveTo(lx1, y + 1);
+              ctx.lineTo(lx2, y + 1 + dropY);
+              ctx.lineTo(lx2, baseFloorY + dropY);
+              ctx.lineTo(lx1, baseFloorY);
+              ctx.closePath();
+              ctx.fill();
+              ctx.strokeStyle = '#5c2d0c';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+
+              if (openW >= 8 && (baseFloorY - y) >= 8) {
+                ctx.fillStyle = '#92400e';
+                ctx.beginPath();
+                ctx.moveTo(lx1 + dirSign * 2, y + 4);
+                ctx.lineTo(lx2 - dirSign * 2, y + 4 + Math.round(dropY * 0.72));
+                ctx.lineTo(lx2 - dirSign * 2, baseFloorY - 3 + Math.round(dropY * 0.72));
+                ctx.lineTo(lx1 + dirSign * 2, baseFloorY - 3);
+                ctx.closePath();
+                ctx.fill();
+              }
+              const kSize = cs >= 36 ? 2 : 1;
               ctx.fillStyle = '#facc15';
-              ctx.fillRect(x + post + Math.round(dw * 0.34), y + Math.round(wallH * 0.52), 2, 2);
+              ctx.fillRect(lx2 - dirSign * (cs >= 36 ? 3 : 2), y + Math.round(wallH * 0.54) + Math.round(dropY * 0.78), kSize, kSize);
             }
           } else {
             // 壁本体（上部陰影＋壁紙＋下端の巾木・長押）
@@ -1740,15 +2379,16 @@
             offY = Math.round(cs * 0.20);
           }
         } else if (enable25DWalls) {
+          const compactNorthDoor = (topEt === E.DOOR) && ((plan?.doorPlan?.cellRoomSize?.get(`${item.r},${item.c}`) || 2) <= 1);
           if (item.snap === 'north') {
-            offY = hasNorthWall ? Math.round(cs * 0.24) : 0;
+            offY = hasNorthWall ? Math.round(cs * (compactNorthDoor ? 0.30 : 0.24)) : 0;
           } else if (item.snap === 'west' || item.snap === 'east') {
             // 左右壁ぴったりスプライトは x=0/x=23 側に描画済みのため offX=0 で完全密着
-            offY = hasNorthWall ? Math.round(cs * 0.16) : 0;
+            offY = hasNorthWall ? Math.round(cs * (compactNorthDoor ? 0.26 : 0.16)) : 0;
           } else if (item.snap === 'south') {
             offY = 0;
           } else if (hasNorthWall) {
-            offY = Math.round(cs * 0.22);
+            offY = Math.round(cs * (compactNorthDoor ? 0.30 : 0.22));
           }
         }
 
@@ -1790,14 +2430,16 @@
       }
     }
 
-    // 4. 境界壁（天面・縦壁・室内ドア）描画
-    for (let r = 0; r < gSize; r++) {
-      for (let c = 0; c < gSize; c++) {
-        const x = c * cs, y = r * cs;
-        drawPixelWallEdge(ctx, x + cs, y, x + cs, y + cs, r, c, r, c + 1, 'v', cs, targetGrid, showSolidRedOverlay, enable25DWalls);
-        drawPixelWallEdge(ctx, x, y + cs, x + cs, y + cs, r, c, r + 1, c, 'h', cs, targetGrid, showSolidRedOverlay, enable25DWalls);
-        if (r === 0) drawPixelWallEdge(ctx, x, y, x + cs, y, -1, c, r, c, 'h', cs, targetGrid, showSolidRedOverlay, enable25DWalls);
-        if (c === 0) drawPixelWallEdge(ctx, x, y, x, y + cs, r, -1, r, c, 'v', cs, targetGrid, showSolidRedOverlay, enable25DWalls);
+    // 4. 境界壁（天面・縦壁・室内ドア）描画（base→top の2パスで壁角をシームレス接続）
+    for (const pass of ['base', 'top']) {
+      for (let r = 0; r < gSize; r++) {
+        for (let c = 0; c < gSize; c++) {
+          const x = c * cs, y = r * cs;
+          drawPixelWallEdge(ctx, x + cs, y, x + cs, y + cs, r, c, r, c + 1, 'v', cs, targetGrid, showSolidRedOverlay, enable25DWalls, pass, plan.doorPlan);
+          drawPixelWallEdge(ctx, x, y + cs, x + cs, y + cs, r, c, r + 1, c, 'h', cs, targetGrid, showSolidRedOverlay, enable25DWalls, pass, plan.doorPlan);
+          if (r === 0) drawPixelWallEdge(ctx, x, y, x + cs, y, -1, c, r, c, 'h', cs, targetGrid, showSolidRedOverlay, enable25DWalls, pass, plan.doorPlan);
+          if (c === 0) drawPixelWallEdge(ctx, x, y, x, y + cs, r, -1, r, c, 'v', cs, targetGrid, showSolidRedOverlay, enable25DWalls, pass, plan.doorPlan);
+        }
       }
     }
 
