@@ -387,6 +387,47 @@
   /* ============================================================
      2. 家具レイアウトプランナー (STEP2_PIXEL_SPEC 第6章準拠)
   ============================================================ */
+  function collectFurnitureCatalogIds(plan) {
+    if (!plan) return [];
+    const cat = global.FurnitureCatalog || null;
+    const norm = (rawId) => {
+      if (!rawId) return null;
+      return (cat && typeof cat.normalizeAssetId === 'function') ? cat.normalizeAssetId(rawId) : rawId;
+    };
+    const seen = new Set();
+    const out = [];
+    const addId = (rawId) => {
+      const id = norm(rawId);
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        out.push(id);
+      }
+    };
+    if (Array.isArray(plan.items)) {
+      for (const it of plan.items) {
+        if (it && it.assetId) addId(it.assetId);
+      }
+    }
+    if (Array.isArray(plan.wallDecoRooms)) {
+      const decoMap = (cat && cat.WALL_DECO_TYPE_TO_ID) || {
+        fuji: 'wall_fuji',
+        shower: 'wall_shower',
+        kakejiku: 'wall_kakejiku',
+        scroll_ninja: 'wall_scroll_ninja',
+        art_1: 'wall_art_1',
+        art_2: 'wall_art_2',
+        clock: 'wall_clock'
+      };
+      for (const wd of plan.wallDecoRooms) {
+        if (wd && wd.type) addId(decoMap[wd.type] || `wall_${wd.type}`);
+      }
+    }
+    if (Array.isArray(plan.extraAssetIds)) {
+      for (const ex of plan.extraAssetIds) addId(ex);
+    }
+    return out;
+  }
+
   function buildFurniturePlan(targetGrid, combos, visited, stageObj) {
     if (!visited) visited = computeVisitedSet(targetGrid, stageObj).visited;
     const comboNames = new Set((combos || []).map(c => typeof c === 'string' ? c : c.name));
@@ -1272,6 +1313,11 @@
             if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
           }
         } else if (mode === 2) {
+          const freeNorthForToko = rm.cells.find(pt =>
+            isFree(pt.r, pt.c, 1, 1, cellSet) &&
+            !northWallDecoCells.has(`${pt.r},${pt.c}`) &&
+            getCellEdges(pt.r, pt.c).hasSolidTop
+          );
           if (coreCovered) {
             items.push({
               assetId: pickWashitsuCenterHoriz(null, 2) ? 'furn_kotatsu' : 'furn_kotatsu_v',
@@ -1279,15 +1325,16 @@
               roomKey: rm.key, delayMs: 0, snap: 'center', centerInRoom: centerBounds
             });
             if (count <= 5) {
-              const wSide = pickSideOrNorthWall(rm.cells);
-              if (wSide) {
-                if (!kakePt && wSide.snap === 'north' && getCellEdges(wSide.r, wSide.c).hasSolidTop) {
-                  addItem('furn_tokonoma', wSide.r, wSide.c, 1, 1, rm.key, { snap: 'north' });
-                } else {
-                  addItem('furn_watansu', wSide.r, wSide.c, 1, 1, rm.key, { snap: wSide.snap });
-                }
+              if (freeNorthForToko && ((wSeed + mode) % 2 === 0 || hasTanoji)) {
+                addItem('furn_tokonoma', freeNorthForToko.r, freeNorthForToko.c, 1, 1, rm.key, { snap: 'north' });
+              } else {
+                const wSide = pickSideOrNorthWall(rm.cells);
+                if (wSide) addItem('furn_watansu', wSide.r, wSide.c, 1, 1, rm.key, { snap: wSide.snap });
               }
             } else {
+              if (freeNorthForToko && (wSeed % 2 === 0)) {
+                addItem('furn_tokonoma', freeNorthForToko.r, freeNorthForToko.c, 1, 1, rm.key, { snap: 'north' });
+              }
               const wt = findWallSingle(rm.cells, cellSet, true);
               if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
               const bs = findWallSingle(rm.cells, cellSet, false);
@@ -1314,6 +1361,11 @@
             if (ts) addItem('furn_tea_set', ts.r, ts.c, 1, 1, rm.key, { snap: 'center', steam: true });
           }
         } else {
+          const freeNorthForToko = rm.cells.find(pt =>
+            isFree(pt.r, pt.c, 1, 1, cellSet) &&
+            !northWallDecoCells.has(`${pt.r},${pt.c}`) &&
+            getCellEdges(pt.r, pt.c).hasSolidTop
+          );
           if (coreCovered) {
             items.push({
               assetId: pickWashitsuCenterHoriz(null, 1) ? 'furn_chabudai_lr' : 'furn_chabudai',
@@ -1321,15 +1373,16 @@
               roomKey: rm.key, delayMs: 0, snap: 'center', centerInRoom: centerBounds
             });
             if (count <= 5) {
-              const wSide = pickSideOrNorthWall(rm.cells);
-              if (wSide) {
-                if (!kakePt && wSide.snap === 'north' && getCellEdges(wSide.r, wSide.c).hasSolidTop) {
-                  addItem('furn_tokonoma', wSide.r, wSide.c, 1, 1, rm.key, { snap: 'north' });
-                } else {
-                  addItem('furn_bonsai', wSide.r, wSide.c, 1, 1, rm.key, { snap: wSide.snap });
-                }
+              if (freeNorthForToko && ((wSeed + mode) % 2 === 0 || hasTanoji)) {
+                addItem('furn_tokonoma', freeNorthForToko.r, freeNorthForToko.c, 1, 1, rm.key, { snap: 'north' });
+              } else {
+                const wSide = pickSideOrNorthWall(rm.cells);
+                if (wSide) addItem('furn_bonsai', wSide.r, wSide.c, 1, 1, rm.key, { snap: wSide.snap });
               }
             } else {
+              if (freeNorthForToko && (wSeed % 2 === 0)) {
+                addItem('furn_tokonoma', freeNorthForToko.r, freeNorthForToko.c, 1, 1, rm.key, { snap: 'north' });
+              }
               const wt = findWallSingle(rm.cells, cellSet, true);
               if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
               const bs = findWallSingle(rm.cells, cellSet, false);
@@ -1566,7 +1619,62 @@
       }
     }
 
-    return { items, darkRooms, isGlassHouse, isFortress, comboNames, rooms, wallDecoRooms, northWallDecoCells, northWallOccupiedByFurn, sunnyRoomKeys, hiddenRoomKeys, badSpots, doorPlan };
+    // 北壁のランダム装飾（絵画・時計）と床小物（靴・廊下絨毯）もプラン内に統一記録し、描画と図鑑認識を一致させる
+    const facing = (typeof getEntranceFacing === 'function') ? getEntranceFacing(stageObj, targetGrid) : { dir: 'bottom' };
+    let hasEnt = false;
+    let hasFoyerRugSpot = false;
+    let hasLongCorridor = false;
+    const isLongCorridorCombo = comboNames.has('ロングコリドー');
+    const isFoyerCombo = comboNames.has('大ホワイエ');
+
+    for (let r = 0; r < gSize; r++) {
+      for (let c = 0; c < gSize; c++) {
+        const cCur = targetGrid[r]?.[c];
+        if (!cCur || cCur.type === T.EMPTY || cCur.type === T.GARDEN || cCur.type === T.OBSTACLE) continue;
+
+        if (cCur.type === T.ENTRANCE) hasEnt = true;
+        if (cCur.type === T.CORRIDOR) {
+          if (isLongCorridorCombo) hasLongCorridor = true;
+          if (isFoyerCombo && !hasFoyerRugSpot) {
+            const upSame = targetGrid[r - 1]?.[c]?.type === T.CORRIDOR;
+            const dnSame = targetGrid[r + 1]?.[c]?.type === T.CORRIDOR;
+            const lfSame = targetGrid[r]?.[c - 1]?.type === T.CORRIDOR;
+            const rtSame = targetGrid[r]?.[c + 1]?.type === T.CORRIDOR;
+            if (upSame && dnSame && lfSame && rtSame) hasFoyerRugSpot = true;
+          }
+        }
+
+        const key = `${r},${c}`;
+        if (northWallDecoCells.has(key) || northWallOccupiedByFurn.has(key)) continue;
+        const e = getCellEdges(r, c);
+        if (!e.hasSolidTop) continue;
+        const cTop = (r - 1 >= 0) ? targetGrid[r - 1]?.[c] : null;
+        const occTop = cTop && cTop.type !== T.EMPTY && cTop.type !== T.GARDEN && cTop.type !== T.OBSTACLE;
+        if (cCur.type === T.ENTRANCE && !occTop && facing && facing.dir === 'top') continue;
+
+        const isWashitsuCell = (cCur.type === T.ROOM) && (cCur.label === '和室' || cCur.pieceLibId === 'room-wa' || cCur.pieceLibId === 'room-wa2');
+        if (cCur.type === T.CORRIDOR && ((r * 7 + c * 11) % 3 === 0)) {
+          registerWallDeco(((r + c) % 2 === 0) ? 'art_1' : 'art_2', r, c, 1);
+        } else if (cCur.type === T.LDK && ((r * 3 + c * 5) % 4 === 1)) {
+          registerWallDeco('clock', r, c, 1);
+        } else if (cCur.type === T.ROOM && !isWashitsuCell && ((r * 5 + c * 9) % 4 === 0)) {
+          registerWallDeco('art_1', r, c, 1);
+        }
+      }
+    }
+
+    const extraAssetIds = [];
+    if (hasEnt) extraAssetIds.push('furn_shoes_pair');
+    if (hasFoyerRugSpot) extraAssetIds.push('furn_rug_foyer');
+    if (hasLongCorridor) extraAssetIds.push('furn_rug_red');
+
+    const built = {
+      items, darkRooms, isGlassHouse, isFortress, comboNames, rooms,
+      wallDecoRooms, northWallDecoCells, northWallOccupiedByFurn,
+      sunnyRoomKeys, hiddenRoomKeys, badSpots, doorPlan, extraAssetIds
+    };
+    built.catalogIds = collectFurnitureCatalogIds(built);
+    return built;
   }
 
   /* ============================================================
@@ -2493,10 +2601,9 @@
                 }
               }
             } else {
-              // 壁面装飾（富士山壁画、浴室シャワー、掛け軸、廊下の絵、時計：北壁寄せ家具と排他）
+              // 壁面装飾（プラン生成時に確定した壁飾りをそのまま描画）
               const key = `${r},${c}`;
               const wd = wallDecoMap.get(key);
-              const blockedByFurn = Boolean(plan?.northWallOccupiedByFurn?.has(key));
               if (wd && wd.type === 'fuji') {
                 PixelAssets.drawSprite(ctx, 'wall_fuji', x + 1, y + 2, cs * 2 - 2, wallH - 5);
                 skipCells.add(`${r},${c + 1}`);
@@ -2506,15 +2613,12 @@
                 PixelAssets.drawSprite(ctx, 'wall_kakejiku', x, y + 2, cs, wallH - 4);
               } else if (!vacantMode && wd && wd.type === 'scroll_ninja') {
                 PixelAssets.drawSprite(ctx, 'wall_scroll_ninja', x, y + 2, cs, wallH - 4);
-              } else if (!vacantMode && !skipCells.has(key) && !blockedByFurn) {
-                if (cCur.type === T.CORRIDOR && ((r * 7 + c * 11) % 3 === 0)) {
-                  const artId = ((r + c) % 2 === 0) ? 'wall_art_1' : 'wall_art_2';
-                  PixelAssets.drawSprite(ctx, artId, x, y + 2, cs, wallH - 4);
-                } else if (cCur.type === T.LDK && ((r * 3 + c * 5) % 4 === 1)) {
-                  PixelAssets.drawSprite(ctx, 'wall_clock', x, y + 2, cs, wallH - 5);
-                } else if (cCur.type === T.ROOM && !isWashitsu && ((r * 5 + c * 9) % 4 === 0)) {
-                  PixelAssets.drawSprite(ctx, 'wall_art_1', x, y + 2, cs, wallH - 4);
-                }
+              } else if (!vacantMode && wd && !skipCells.has(key) && wd.type === 'art_1') {
+                PixelAssets.drawSprite(ctx, 'wall_art_1', x, y + 2, cs, wallH - 4);
+              } else if (!vacantMode && wd && !skipCells.has(key) && wd.type === 'art_2') {
+                PixelAssets.drawSprite(ctx, 'wall_art_2', x, y + 2, cs, wallH - 4);
+              } else if (!vacantMode && wd && !skipCells.has(key) && wd.type === 'clock') {
+                PixelAssets.drawSprite(ctx, 'wall_clock', x, y + 2, cs, wallH - 5);
               }
             }
           }
@@ -3596,6 +3700,7 @@
       gridData,
       stageObj = (typeof STAGE !== 'undefined' ? STAGE : null),
       combos = [],
+      furniturePlan: prebuiltPlan = null,
       isVampireDemo = false,
       skipBlueprintFade = false,
       onFinish = null
@@ -3631,7 +3736,7 @@
     drawSimpleBlueprintSnapshot(bctx, gridData, cs, stageObj);
 
     const { visited } = computeVisitedSet(gridData, stageObj);
-    const furniturePlan = buildFurniturePlan(gridData, combos, visited, stageObj);
+    const furniturePlan = prebuiltPlan || buildFurniturePlan(gridData, combos, visited, stageObj);
     const actorInfo = selectTourActors(stageObj, combos, isVampireDemo);
     const script = buildTourScript(gridData, stageObj, combos, actorInfo.isVampire);
 
@@ -4514,6 +4619,7 @@
   global.PixelRenderer = {
     drawPixelBoard,
     buildFurniturePlan,
+    collectFurnitureCatalogIds,
     startCompletionTour,
     stopActiveTour,
     setTourSpeed,

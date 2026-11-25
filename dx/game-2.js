@@ -373,6 +373,20 @@
     { id: 38, name: '駅前好立地',       category: '立地',     bonus: '+1.5〜2万', icon: 'ph-train',          hint: '駅前立地の物件で玄関動線を繋ぐと…？（延床16ﾏｽ以下で高評価！）',        desc: '駅前物件で全室到達（延床16ﾏｽ以下で+2.0万・通常+1.5万・維持費-20%）' }
   ];
 
+  function getPendingNewCombos(combos) {
+    ensureGameState();
+    const discoveredSet = new Set(GameState.discovered.combos || []);
+    const pending = [];
+    if (Array.isArray(combos)) {
+      for (const c of combos) {
+        if (c && c.name && !discoveredSet.has(c.name) && !pending.includes(c.name)) {
+          pending.push(c.name);
+        }
+      }
+    }
+    return pending;
+  }
+
   function recordDiscoveredCombos(combos) {
     ensureGameState();
     const newlyDiscovered = [];
@@ -390,10 +404,109 @@
     return newlyDiscovered;
   }
 
+  function getPendingNewFurniture(furnitureIds) {
+    ensureGameState();
+    const discoveredSet = new Set(GameState.discovered.furniture || []);
+    const cat = window.FurnitureCatalog || null;
+    const pending = [];
+    if (Array.isArray(furnitureIds)) {
+      for (const rawId of furnitureIds) {
+        const id = (cat && cat.normalizeAssetId) ? (cat.normalizeAssetId(rawId) || rawId) : rawId;
+        if (id && (!cat || cat.getById(id)) && !discoveredSet.has(id) && !pending.includes(id)) {
+          pending.push(id);
+        }
+      }
+    }
+    return pending;
+  }
+
+  function recordDiscoveredFurniture(furnitureIds) {
+    ensureGameState();
+    const cat = window.FurnitureCatalog || null;
+    const newlyDiscovered = [];
+    if (Array.isArray(furnitureIds)) {
+      for (const rawId of furnitureIds) {
+        const id = (cat && cat.normalizeAssetId) ? (cat.normalizeAssetId(rawId) || rawId) : rawId;
+        if (id && (!cat || cat.getById(id)) && !GameState.discovered.furniture.includes(id)) {
+          GameState.discovered.furniture.push(id);
+          newlyDiscovered.push(id);
+        }
+      }
+    }
+    if (newlyDiscovered.length > 0) {
+      saveGame();
+    }
+    return newlyDiscovered;
+  }
+
   function getDiscoveredMasterComboCount() {
     ensureGameState();
     const set = new Set(GameState.discovered.combos || []);
     return COMBO_MASTER_LIST.filter(item => set.has(item.name)).length;
+  }
+
+  function getDiscoveredFurnitureCount() {
+    ensureGameState();
+    const set = new Set(GameState.discovered.furniture || []);
+    const cat = window.FurnitureCatalog || null;
+    if (!cat || !Array.isArray(cat.ITEMS)) return set.size;
+    return cat.ITEMS.filter(item => set.has(item.id)).length;
+  }
+
+  function backfillDiscoveredFurnitureFromProperties() {
+    ensureGameState();
+    if (!Array.isArray(GameState.properties) || !window.PixelRenderer || typeof window.PixelRenderer.buildFurniturePlan !== 'function') {
+      return;
+    }
+    const cat = window.FurnitureCatalog || null;
+    const discoveredSet = new Set(GameState.discovered.furniture || []);
+    let changed = false;
+    for (const p of GameState.properties) {
+      if (!p) continue;
+      if (Array.isArray(p.discoveredFurniture)) {
+        for (const rawId of p.discoveredFurniture) {
+          const id = (cat && cat.normalizeAssetId) ? (cat.normalizeAssetId(rawId) || rawId) : rawId;
+          if (id && (!cat || cat.getById(id)) && !discoveredSet.has(id)) {
+            discoveredSet.add(id);
+            GameState.discovered.furniture.push(id);
+            changed = true;
+          }
+        }
+        continue;
+      }
+      const normGrid = normalizeGridForRender(p.propertyGrid);
+      if (!normGrid) {
+        p.discoveredFurniture = [];
+        continue;
+      }
+      const pseudoStage = {
+        id: p.level || p.propertyNo || 0,
+        location: p.location || null,
+        lotType: p.lotType || '',
+        entranceCells: p.entranceCells || null,
+        entranceFacing: p.entranceFacing || 'bottom',
+        customCombo: p.customCombo || null,
+        client: { name: p.clientName || '', typeBadge: p.clientTypeBadge || '' },
+        renovation: p.isRenovation ? { title: p.renovationTitle || 'リフォーム' } : null
+      };
+      try {
+        const plan = window.PixelRenderer.buildFurniturePlan(normGrid, p.combosList || [], null, pseudoStage);
+        const ids = (plan && Array.isArray(plan.catalogIds))
+          ? plan.catalogIds
+          : (window.PixelRenderer.collectFurnitureCatalogIds ? window.PixelRenderer.collectFurnitureCatalogIds(plan) : []);
+        p.discoveredFurniture = ids;
+        for (const id of ids) {
+          if (id && (!cat || cat.getById(id)) && !discoveredSet.has(id)) {
+            discoveredSet.add(id);
+            GameState.discovered.furniture.push(id);
+            changed = true;
+          }
+        }
+      } catch (e) {}
+    }
+    if (changed) {
+      saveGame();
+    }
   }
 
   function detectCombos(counts, visited) {
@@ -1485,6 +1598,7 @@
         showBlueprintOverlay: false,
         showSolidRedOverlay: false,
         showRoomLabels: mode === 'vacant' && !opts.isCompact,
+        furniturePlan: opts.furniturePlan || null,
         combos: combos || [],
         stageObj: stageObj || null,
         timeMs: 0,
@@ -1502,7 +1616,10 @@
     const maxDim = Math.min(window.innerWidth - 60, 280);
     const combos = window._lastBuiltCombos || (window.currentPropertyData?.combosList || []);
     const mode = overrideMode || currentPlanViewMode || 'furnished';
-    renderPlanCanvasByMode(rc, grid, STAGE, combos, mode, maxDim, { isCompact: false });
+    renderPlanCanvasByMode(rc, grid, STAGE, combos, mode, maxDim, {
+      isCompact: false,
+      furniturePlan: window._lastBuiltPlan || null
+    });
   }
 
   function drawEdgeOn(rctx, x1, y1, x2, y2, r1, c1, r2, c2, ori, cs, targetGrid = grid) {
@@ -1806,7 +1923,17 @@
     const visited = runBFS();
     const counts  = countCells(visited);
     const combos  = detectCombos(counts, visited);
-    const newlyDiscovered = recordDiscoveredCombos(combos);
+    const builtPlan = (window.PixelRenderer && typeof window.PixelRenderer.buildFurniturePlan === 'function')
+      ? window.PixelRenderer.buildFurniturePlan(grid, combos, visited, STAGE)
+      : null;
+    window._lastBuiltPlan = builtPlan;
+    const builtFurnitureIds = (builtPlan && Array.isArray(builtPlan.catalogIds))
+      ? builtPlan.catalogIds
+      : ((builtPlan && window.PixelRenderer && typeof window.PixelRenderer.collectFurnitureCatalogIds === 'function')
+        ? window.PixelRenderer.collectFurnitureCatalogIds(builtPlan)
+        : []);
+    const pendingNewCombos = getPendingNewCombos(combos);
+    const pendingNewFurniture = getPendingNewFurniture(builtFurnitureIds);
 
     const { rent, normalRent, reports, optSatisfiedCount, satisfiedOptIds, amenityPenalty } = calcRent(counts, combos, visited);
 
@@ -1890,6 +2017,7 @@
       badCombos: badCombos,
       goodCombos: goodCombos,
       combosList: combos.map(c => ({name:c.name, icon:c.icon, bonus:c.bonus})),
+      discoveredFurniture: builtFurnitureIds,
       createdMonth: GameState.month,
       isOriginalTenant: true,
       clientName: STAGE.client.name,
@@ -2065,12 +2193,22 @@
     // Report list
     const rl = document.getElementById('report-list');
     rl.innerHTML = '';
-    if (newlyDiscovered.length > 0) {
+    if (pendingNewCombos.length > 0) {
       const newBanner = document.createElement('div');
       newBanner.className = 'report-item';
       newBanner.style.cssText = 'background:#fef3c7; border:1px solid #f59e0b; color:#92400e; font-weight:bold;';
-      newBanner.innerHTML = `<i class="ph-fill ph-trophy" style="font-size:15px; color:#d97706;"></i><span>🆕 記録帳に新コンボ登録：「${newlyDiscovered.join('」「')}」</span>`;
+      newBanner.innerHTML = `<i class="ph-fill ph-trophy" style="font-size:15px; color:#d97706;"></i><span>🆕 引き渡しでコンボ図鑑に初登録：「${pendingNewCombos.join('」「')}」</span>`;
       rl.appendChild(newBanner);
+    }
+    if (pendingNewFurniture.length > 0) {
+      const cat = window.FurnitureCatalog || null;
+      const sampleNames = pendingNewFurniture.slice(0, 4).map(id => cat?.getById(id)?.name || id);
+      const moreTxt = pendingNewFurniture.length > 4 ? ` ほか+${pendingNewFurniture.length - 4}種` : '';
+      const furnBanner = document.createElement('div');
+      furnBanner.className = 'report-item';
+      furnBanner.style.cssText = 'background:#e0f2fe; border:1px solid #38bdf8; color:#0c4a6e; font-weight:bold;';
+      furnBanner.innerHTML = `<i class="ph-fill ph-armchair" style="font-size:15px; color:#0284c7;"></i><span>🪑 引き渡しで家具図鑑に初登録 (${pendingNewFurniture.length}種)：「${sampleNames.join('」「')}」${moreTxt}</span>`;
+      rl.appendChild(furnBanner);
     }
     for (const rep of reports) {
       const item = document.createElement('div');
@@ -2113,6 +2251,7 @@
         gridData: grid,
         stageObj: STAGE,
         combos: combos,
+        furniturePlan: builtPlan,
         isVampireDemo: Boolean(STAGE?.client?.typeBadge?.includes('吸血鬼')),
         onFinish: finishToResult
       });
@@ -2937,6 +3076,7 @@
       if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
       GameState.attempts -= 1;
       GameState.lastFunds = GameState.funds;
+      window._lastBuiltPlan = null;
       clearActiveBuild();
       saveGame();
       startGame();
@@ -3846,6 +3986,7 @@
   document.getElementById('btn-giveup')?.addEventListener('click', () => {
     initAudio();
     if (GameState.lastFunds !== undefined) GameState.funds = GameState.lastFunds;
+    window._lastBuiltPlan = null;
     clearActiveBuild();
     const result = processMonthEnd();
     showMonthEndModal({
@@ -3866,11 +4007,17 @@
 
   document.getElementById('btn-next-stage')?.addEventListener('click', () => {
     initAudio();
-    // トランザクション確定: ここで初めて正式に資金を更新！
+    // トランザクション確定: ここで初めて正式に資金・コンボ・家具図鑑を更新！
     GameState.funds = budget;
     clearActiveBuild();
     if (!GameState.properties) GameState.properties = [];
     const p = window.currentPropertyData || {};
+    recordDiscoveredCombos(p.combosList || window._lastBuiltCombos || []);
+    const builtFurnIds = Array.isArray(p.discoveredFurniture)
+      ? p.discoveredFurniture
+      : ((window._lastBuiltPlan && window._lastBuiltPlan.catalogIds) ? window._lastBuiltPlan.catalogIds : []);
+    recordDiscoveredFurniture(builtFurnIds);
+    window._lastBuiltPlan = null;
     // currentPropertyData がない場合のフォールバック（念のため）
     const rentToSave = p.rent !== undefined ? p.rent : parseFloat(document.getElementById('flyer-rent').textContent);
     // gridの簡易コピーを保存 (type, label, roomId, pieceLibId, encroached, walls)
@@ -3929,6 +4076,7 @@
       badCombos: p.badCombos || 0,
       goodCombos: p.goodCombos || 0,
       combosList: p.combosList || [],
+      discoveredFurniture: Array.isArray(builtFurnIds) ? [...builtFurnIds] : [],
       createdMonth: p.createdMonth || GameState.month,
       moveInMonth: p.moveInMonth || GameState.month,
       vacantMonths: 0,
@@ -7280,7 +7428,8 @@
     GameState.currentMission = null;
     GameState.activeBuild = null;
     GameState.properties = [];
-    GameState.discovered = { combos: [] };
+    GameState.discovered = { combos: [], furniture: [] };
+    window._lastBuiltPlan = null;
     GameState.company = {
       salesLevel: 1,
       brandLevel: 1,
@@ -7816,7 +7965,10 @@ function updateHomeUI() {
 
     const recordsBadgeEl = document.getElementById('home-records-badge');
     if (recordsBadgeEl) {
-      recordsBadgeEl.textContent = `${getDiscoveredMasterComboCount()}/${COMBO_MASTER_LIST.length}`;
+      const furnTotal = (window.FurnitureCatalog && Array.isArray(window.FurnitureCatalog.ITEMS)) ? window.FurnitureCatalog.ITEMS.length : 0;
+      recordsBadgeEl.textContent = furnTotal > 0
+        ? `${getDiscoveredMasterComboCount()}/${COMBO_MASTER_LIST.length}・🪑${getDiscoveredFurnitureCount()}/${furnTotal}`
+        : `${getDiscoveredMasterComboCount()}/${COMBO_MASTER_LIST.length}`;
     }
 
     const capEl = document.getElementById('home-property-capacity');
@@ -8312,29 +8464,299 @@ function updateHomeUI() {
     }
   }
 
+  let activeRecordsTab = 'combos'; // 'combos' | 'furniture'
+  let activeFurnCategory = 'すべて';
+  let selectedFurnId = null;
+  let selectedFurnViewIdx = 0;
+
+  function drawFurniturePreviewCanvas(canvas, item, viewIdx, unlocked) {
+    if (!canvas || !window.PixelAssets) return;
+    if (window.PixelAssets.initAllAssets) window.PixelAssets.initAllAssets();
+    const ctx = canvas.getContext('2d');
+    const cw = canvas.width;
+    const ch = canvas.height;
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.imageSmoothingEnabled = false;
+
+    const floorId = (item && item.floorId) || 'floor_room';
+    const tileSz = cw >= 120 ? 48 : 28;
+    for (let y = 0; y < ch; y += tileSz) {
+      for (let x = 0; x < cw; x += tileSz) {
+        window.PixelAssets.drawSprite(ctx, floorId, x, y, tileSz, tileSz);
+      }
+    }
+
+    if (item && item.isWall) {
+      const wallH = Math.round(ch * 0.44);
+      let wallBg = '#f3efe6';
+      let shade = '#e8e2d5';
+      let trim = '#b4845a';
+      if (floorId === 'floor_washitsu') { wallBg = '#e3d5b8'; shade = '#d6c5a3'; trim = '#855832'; }
+      else if (floorId === 'floor_bath') { wallBg = '#e0f4fe'; shade = '#bae6fd'; trim = '#7dd3fc'; }
+      ctx.fillStyle = wallBg;
+      ctx.fillRect(0, 0, cw, wallH);
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, 0, cw, Math.max(2, Math.round(cw * 0.03)));
+      if (floorId === 'floor_bath') {
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillRect(0, Math.round(wallH * 0.5), cw, 1);
+      }
+      ctx.fillStyle = trim;
+      ctx.fillRect(0, wallH - 3, cw, 3);
+    }
+
+    if (!unlocked || !item) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.72)';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.font = `bold ${Math.round(cw * 0.32)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('🔒', cw / 2, ch / 2 - (cw >= 120 ? 10 : 0));
+      if (cw >= 120) {
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('未発見のインテリア', cw / 2, ch / 2 + 24);
+      }
+      return;
+    }
+
+    const views = Array.isArray(item.views) && item.views.length > 0
+      ? item.views
+      : [{ label: '正面', spriteId: item.id }];
+    const safeIdx = ((viewIdx % views.length) + views.length) % views.length;
+    const sprId = views[safeIdx].spriteId;
+    const spr = window.PixelAssets.getSprite(sprId);
+    if (!spr) return;
+
+    const pad = cw >= 120 ? 14 : 6;
+    const maxW = cw - pad * 2;
+    const maxH = ch - pad * 2;
+    let dw, dh;
+    if (cw >= 120 && spr.width <= 72 && spr.height <= 72 && spr.width * 2 <= maxW && spr.height * 2 <= maxH) {
+      dw = spr.width * 2;
+      dh = spr.height * 2;
+    } else {
+      const sc = Math.min(maxW / spr.width, maxH / spr.height);
+      dw = Math.max(8, Math.round(spr.width * sc));
+      dh = Math.max(8, Math.round(spr.height * sc));
+    }
+    const dx = Math.round((cw - dw) / 2);
+    const dy = item.isWall
+      ? Math.max(4, Math.round((Math.round(ch * 0.44) - dh) / 2))
+      : Math.round((ch - dh) / 2);
+    window.PixelAssets.drawSprite(ctx, sprId, dx, dy, dw, dh);
+  }
+
+  function getFilteredCatalogItems() {
+    const cat = window.FurnitureCatalog || null;
+    if (!cat || !Array.isArray(cat.ITEMS)) return [];
+    if (activeFurnCategory === 'すべて') return cat.ITEMS;
+    return cat.ITEMS.filter(it => it.category === activeFurnCategory);
+  }
+
+  function renderFurnitureCategoryBar() {
+    const bar = document.getElementById('records-furn-cats');
+    if (!bar) return;
+    if (activeRecordsTab !== 'furniture' || selectedFurnId) {
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'flex';
+    const cat = window.FurnitureCatalog || null;
+    const cats = ['すべて', ...((cat && cat.CATEGORIES) || [])];
+    const discoveredSet = new Set((GameState.discovered && GameState.discovered.furniture) || []);
+    bar.innerHTML = cats.map(c => {
+      const list = (c === 'すべて') ? ((cat && cat.ITEMS) || []) : ((cat && cat.ITEMS) || []).filter(i => i.category === c);
+      const got = list.filter(i => discoveredSet.has(i.id)).length;
+      const isAct = (c === activeFurnCategory);
+      return `<button type="button" class="furn-cat-pill${isAct ? ' active' : ''}" data-furn-cat="${c}">${c} (${got}/${list.length})</button>`;
+    }).join('');
+  }
+
+  function openFurnitureDetail(furnId) {
+    const cat = window.FurnitureCatalog || null;
+    const item = cat ? cat.getById(furnId) : null;
+    if (!item) return;
+    selectedFurnId = item.id;
+    selectedFurnViewIdx = 0;
+    renderRecordsModal();
+  }
+
+  function closeFurnitureDetail() {
+    selectedFurnId = null;
+    selectedFurnViewIdx = 0;
+    renderRecordsModal();
+  }
+
+  function rotateFurnitureDetail(delta) {
+    const cat = window.FurnitureCatalog || null;
+    const item = (selectedFurnId && cat) ? cat.getById(selectedFurnId) : null;
+    if (!item) return;
+    const len = (item.views && item.views.length) || 1;
+    if (len <= 1) return;
+    selectedFurnViewIdx = (selectedFurnViewIdx + delta + len) % len;
+    renderFurnitureDetailView(item);
+  }
+
+  function stepFurnitureDetail(delta) {
+    const list = getFilteredCatalogItems();
+    if (!list.length || !selectedFurnId) return;
+    const curIdx = list.findIndex(x => x.id === selectedFurnId);
+    if (curIdx < 0) return;
+    const nextIdx = (curIdx + delta + list.length) % list.length;
+    selectedFurnId = list[nextIdx].id;
+    selectedFurnViewIdx = 0;
+    renderRecordsModal();
+  }
+
+  function renderFurnitureDetailView(item) {
+    const cat = window.FurnitureCatalog || null;
+    const discoveredSet = new Set((GameState.discovered && GameState.discovered.furniture) || []);
+    const unlocked = discoveredSet.has(item.id);
+    const catalogIdx = (cat && cat.ITEMS) ? cat.ITEMS.findIndex(x => x.id === item.id) : 0;
+    const noStr = `No.${String(catalogIdx + 1).padStart(2, '0')}`;
+
+    const titleEl = document.getElementById('furn-detail-title');
+    if (titleEl) titleEl.textContent = unlocked ? `${noStr} ${item.name}` : `${noStr} 🔒 ？？？`;
+
+    const badgesEl = document.getElementById('furn-detail-badges');
+    if (badgesEl) {
+      const rMeta = (cat && cat.RARITY_META && cat.RARITY_META[item.rarity]) || { label: '定番', color: '#94a3b8', bg: 'rgba(148,163,184,0.16)', border: 'rgba(148,163,184,0.38)' };
+      badgesEl.innerHTML = `
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(56,189,248,0.16);color:#7dd3fc;border:1px solid rgba(56,189,248,0.4);">${item.category}</span>
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:${rMeta.bg};color:${rMeta.color};border:1px solid ${rMeta.border};">${rMeta.label}</span>
+      `;
+    }
+
+    const detailCanvas = document.getElementById('furn-detail-canvas');
+    drawFurniturePreviewCanvas(detailCanvas, item, selectedFurnViewIdx, unlocked);
+
+    const views = Array.isArray(item.views) && item.views.length > 0 ? item.views : [{ label: '正面', spriteId: item.id }];
+    const canRotate = unlocked && views.length > 1;
+    const rotLeftBtn = document.getElementById('btn-furn-rot-left');
+    const rotRightBtn = document.getElementById('btn-furn-rot-right');
+    const dirLabel = document.getElementById('furn-detail-dir-label');
+    if (rotLeftBtn) rotLeftBtn.disabled = !canRotate;
+    if (rotRightBtn) rotRightBtn.disabled = !canRotate;
+    if (dirLabel) {
+      if (!unlocked) dirLabel.textContent = '未発見';
+      else if (views.length <= 1) dirLabel.textContent = `${views[0].label} (固定)`;
+      else dirLabel.textContent = `${views[selectedFurnViewIdx].label} (${selectedFurnViewIdx + 1}/${views.length})`;
+    }
+
+    const flavorEl = document.getElementById('furn-detail-flavor');
+    if (flavorEl) {
+      flavorEl.innerHTML = unlocked
+        ? `<strong>📖 解説:</strong> ${item.flavor}`
+        : `<strong>🔒 未発見:</strong> この家具が設置された間取りを設計し、「物件を引き渡す」と図鑑へ登録されます。`;
+    }
+
+    const hintEl = document.getElementById('furn-detail-hint');
+    if (hintEl) {
+      hintEl.innerHTML = `<strong>💡 出現条件ヒント:</strong> ${item.hint}`;
+    }
+
+    const filtered = getFilteredCatalogItems();
+    const prevBtn = document.getElementById('btn-furn-prev');
+    const nextBtn = document.getElementById('btn-furn-next');
+    if (prevBtn) prevBtn.disabled = filtered.length <= 1;
+    if (nextBtn) nextBtn.disabled = filtered.length <= 1;
+  }
+
+  function switchRecordsTab(tabKey) {
+    activeRecordsTab = (tabKey === 'furniture') ? 'furniture' : 'combos';
+    selectedFurnId = null;
+    selectedFurnViewIdx = 0;
+    renderRecordsModal();
+  }
+
   function renderRecordsModal() {
     const listContainer = document.getElementById('records-list-container');
+    const detailPanel = document.getElementById('furniture-detail-panel');
     const progText = document.getElementById('records-progress-text');
     const progBar = document.getElementById('records-progress-bar');
+    const tabComboBtn = document.getElementById('tab-records-combos');
+    const tabFurnBtn = document.getElementById('tab-records-furniture');
+    const tabComboCnt = document.getElementById('tab-combos-count');
+    const tabFurnCnt = document.getElementById('tab-furniture-count');
     if (!listContainer) return;
 
-    const discovered = (GameState.discovered && Array.isArray(GameState.discovered.combos))
+    const comboFoundList = (GameState.discovered && Array.isArray(GameState.discovered.combos))
       ? GameState.discovered.combos
       : [];
-    const total = COMBO_MASTER_LIST.length;
-    const count = getDiscoveredMasterComboCount();
-    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const comboTotal = COMBO_MASTER_LIST.length;
+    const comboCount = getDiscoveredMasterComboCount();
 
-    if (progText) {
-      progText.textContent = `図鑑収集率: ${count} / ${total} (${pct}%)`;
+    const cat = window.FurnitureCatalog || null;
+    const furnItems = (cat && Array.isArray(cat.ITEMS)) ? cat.ITEMS : [];
+    const furnTotal = furnItems.length;
+    const furnCount = getDiscoveredFurnitureCount();
+
+    if (tabComboCnt) tabComboCnt.textContent = `${comboCount}/${comboTotal}`;
+    if (tabFurnCnt) tabFurnCnt.textContent = `${furnCount}/${furnTotal}`;
+    if (tabComboBtn) tabComboBtn.classList.toggle('active', activeRecordsTab === 'combos');
+    if (tabFurnBtn) tabFurnBtn.classList.toggle('active', activeRecordsTab === 'furniture');
+
+    const total = activeRecordsTab === 'furniture' ? furnTotal : comboTotal;
+    const count = activeRecordsTab === 'furniture' ? furnCount : comboCount;
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const labelPrefix = activeRecordsTab === 'furniture' ? '家具収集率' : 'コンボ収集率';
+    if (progText) progText.textContent = `${labelPrefix}: ${count} / ${total} (${pct}%)`;
+    if (progBar) progBar.style.width = `${pct}%`;
+
+    renderFurnitureCategoryBar();
+
+    if (activeRecordsTab === 'furniture') {
+      const selectedItem = (selectedFurnId && cat) ? cat.getById(selectedFurnId) : null;
+      if (selectedItem && detailPanel) {
+        listContainer.classList.remove('is-furn-grid');
+        listContainer.style.display = 'none';
+        detailPanel.style.display = 'flex';
+        renderFurnitureDetailView(selectedItem);
+        return;
+      }
+      if (detailPanel) detailPanel.style.display = 'none';
+      listContainer.style.display = '';
+      listContainer.classList.add('is-furn-grid');
+
+      const discoveredSet = new Set((GameState.discovered && GameState.discovered.furniture) || []);
+      const filtered = getFilteredCatalogItems();
+      let html = '';
+      filtered.forEach(item => {
+        const globalIdx = furnItems.findIndex(x => x.id === item.id);
+        const noStr = `No.${String(globalIdx + 1).padStart(2, '0')}`;
+        const unlocked = discoveredSet.has(item.id);
+        const rotCount = (item.views && item.views.length) || 1;
+        const rotBadge = (unlocked && rotCount > 1)
+          ? `<span class="furn-card-rot-tag">↻ ${rotCount}向き</span>`
+          : '';
+        html += `
+          <button type="button" class="furn-grid-card${unlocked ? '' : ' is-locked'}" data-furn-id="${item.id}">
+            <span class="furn-card-no">${noStr}</span>
+            <canvas class="furn-card-canvas" width="56" height="56" data-furn-id="${item.id}"></canvas>
+            <span class="furn-card-name">${unlocked ? item.name : '🔒 ？？？'}</span>
+            ${rotBadge}
+          </button>
+        `;
+      });
+      listContainer.innerHTML = html;
+
+      listContainer.querySelectorAll('canvas[data-furn-id]').forEach(cv => {
+        const fid = cv.getAttribute('data-furn-id');
+        const it = cat ? cat.getById(fid) : null;
+        if (it) drawFurniturePreviewCanvas(cv, it, 0, discoveredSet.has(it.id));
+      });
+      return;
     }
-    if (progBar) {
-      progBar.style.width = `${pct}%`;
-    }
+
+    if (detailPanel) detailPanel.style.display = 'none';
+    listContainer.style.display = 'flex';
+    listContainer.classList.remove('is-furn-grid');
 
     let html = '';
     COMBO_MASTER_LIST.forEach((item, index) => {
-      const isFound = discovered.includes(item.name) || discovered.includes(item.id);
+      const isFound = comboFoundList.includes(item.name) || comboFoundList.includes(item.id);
       const isGood = item.category === '王道';
       const isNG = item.category === 'NG';
       const isLoc = item.category === '立地';
@@ -8387,9 +8809,13 @@ function updateHomeUI() {
     listContainer.innerHTML = html;
   }
 
-  function openRecordsModal() {
+  function openRecordsModal(initialTab = null) {
     initAudio();
     playSound('tap');
+    backfillDiscoveredFurnitureFromProperties();
+    if (initialTab === 'combos' || initialTab === 'furniture') activeRecordsTab = initialTab;
+    selectedFurnId = null;
+    selectedFurnViewIdx = 0;
     renderRecordsModal();
     const modal = document.getElementById('modal-records');
     if (modal) modal.style.display = 'flex';
@@ -8402,11 +8828,45 @@ function updateHomeUI() {
     if (modal) modal.style.display = 'none';
   }
 
-  document.getElementById('btn-open-records')?.addEventListener('click', openRecordsModal);
+  document.getElementById('btn-open-records')?.addEventListener('click', () => openRecordsModal());
   document.getElementById('btn-close-records')?.addEventListener('click', closeRecordsModal);
   document.getElementById('btn-close-records-bottom')?.addEventListener('click', closeRecordsModal);
   document.getElementById('modal-records')?.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'modal-records') closeRecordsModal();
+  });
+  document.getElementById('tab-records-combos')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); switchRecordsTab('combos');
+  });
+  document.getElementById('tab-records-furniture')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); switchRecordsTab('furniture');
+  });
+  document.getElementById('records-furn-cats')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-furn-cat]');
+    if (!btn) return;
+    initAudio(); playSound('tap');
+    activeFurnCategory = btn.getAttribute('data-furn-cat') || 'すべて';
+    renderRecordsModal();
+  });
+  document.getElementById('records-list-container')?.addEventListener('click', (e) => {
+    const card = e.target.closest('.furn-grid-card[data-furn-id]');
+    if (!card) return;
+    initAudio(); playSound('tap');
+    openFurnitureDetail(card.getAttribute('data-furn-id'));
+  });
+  document.getElementById('btn-furn-detail-back')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); closeFurnitureDetail();
+  });
+  document.getElementById('btn-furn-rot-left')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); rotateFurnitureDetail(-1);
+  });
+  document.getElementById('btn-furn-rot-right')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); rotateFurnitureDetail(1);
+  });
+  document.getElementById('btn-furn-prev')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); stepFurnitureDetail(-1);
+  });
+  document.getElementById('btn-furn-next')?.addEventListener('click', () => {
+    initAudio(); playSound('tap'); stepFurnitureDetail(1);
   });
 
   function switchHelpTab(tabKey, playTapSound = true) {
@@ -8749,6 +9209,7 @@ function updateHomeUI() {
 
   loadGame();
   if(!GameState.properties) GameState.properties = [];
+  backfillDiscoveredFurnitureFromProperties();
   updateHomeUI();
 
   let resumed = false;

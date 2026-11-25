@@ -274,6 +274,11 @@
       : ((gs?.discovered?.combos || []).length);
     const comboTotal = (typeof COMBO_MASTER_LIST !== 'undefined' && Array.isArray(COMBO_MASTER_LIST))
       ? COMBO_MASTER_LIST.length : 30;
+    const furnFound = (typeof getDiscoveredFurnitureCount === 'function')
+      ? getDiscoveredFurnitureCount()
+      : ((gs?.discovered?.furniture || []).length);
+    const furnTotal = (global.FurnitureCatalog && Array.isArray(global.FurnitureCatalog.ITEMS))
+      ? global.FurnitureCatalog.ITEMS.length : 0;
 
     const curM = gs?.month || 1;
     const curYear = Math.floor((curM - 1) / 12) + 1;
@@ -311,7 +316,7 @@
     return {
       gs, co, officeLevel, layout, deskCount, hiredStaff, hasCleared,
       activeCount, maxCap, isAtCap, vacantCount,
-      comboFound, comboTotal, curYear, monthInYear,
+      comboFound, comboTotal, furnFound, furnTotal, curYear, monthInYear,
       tutorialPhase, missionMode, receptionClient, hasSpecialWaiting, rankDef,
       attempts: gs?.attempts ?? 2
     };
@@ -819,7 +824,9 @@
         h: wallH + cs + 4,
         tagX: bsX + cs * 0.5,
         tagY: bsY + cs + 7,
-        tagText: `記録帳 ${snap.comboFound}/${snap.comboTotal}`,
+        tagText: snap.furnTotal > 0
+          ? `図鑑 ${snap.comboFound + snap.furnFound}/${snap.comboTotal + snap.furnTotal}`
+          : `記録帳 ${snap.comboFound}/${snap.comboTotal}`,
         tagColor: '#fbbf24',
         tagUrgent: false
       },

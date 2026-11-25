@@ -2156,7 +2156,8 @@
     availableMissions: [],
     properties: [],
     discovered: {
-      combos: []
+      combos: [],
+      furniture: []
     },
     company: {
       salesLevel: 1,
@@ -2754,8 +2755,9 @@
     if (GameState.hasCleared === undefined) GameState.hasCleared = false;
     if (GameState.clearedMonth === undefined) GameState.clearedMonth = null;
     if (GameState.clearedSnapshot === undefined) GameState.clearedSnapshot = null;
-    if (!GameState.discovered) GameState.discovered = { combos: [] };
+    if (!GameState.discovered) GameState.discovered = { combos: [], furniture: [] };
     if (!Array.isArray(GameState.discovered.combos)) GameState.discovered.combos = [];
+    if (!Array.isArray(GameState.discovered.furniture)) GameState.discovered.furniture = [];
     if (GameState.company && (GameState.company.officeLevel || 0) >= UPGRADE_CONFIG.office.length - 1) {
       if (!GameState.hasCleared) {
         GameState.hasCleared = true;

@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=c3b">
 
 </head>
 
@@ -80,6 +80,9 @@
           <div style="display:flex; align-items:center; gap:5px;">
             <button id="btn-toggle-office-guides" type="button" class="office-tool-btn is-on" title="オブジェクト名ガイドを切替">
               <i class="ph-bold ph-tag"></i> ガイド: ON
+            </button>
+            <button id="btn-open-records" type="button" class="office-tool-btn" title="コンボ・家具図鑑を開く">
+              <i class="ph-bold ph-trophy" style="color:#fbbf24;"></i> 図鑑
             </button>
             <button id="btn-sandbox-tools-home" type="button" class="office-tool-btn" title="検証ツールを開く" style="background:#312e81; border-color:#6366f1; color:#e0e7ff;">
               🧪 検証
@@ -672,13 +675,13 @@
       </div>
     </div>
 
-    <!-- 実績・記録帳（コンボ・珍間取り＆立地全38種図鑑）モーダル -->
-    <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:16px;">
-      <div class="mission-card" style="position:relative; width:100%; max-width:460px; max-height:85vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:16px; box-sizing:border-box;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+    <!-- 実績・記録帳（コンボ全38種＆家具図鑑全65種）モーダル -->
+    <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:14px;">
+      <div class="mission-card" style="position:relative; width:100%; max-width:500px; max-height:88vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:14px 16px; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:8px;">
           <div>
             <div style="font-size:16px; font-weight:bold; color:var(--c-text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・記録帳</span>
+              <span style="display:inline-flex; align-items:center; gap:6px;"><i class="ph-fill ph-trophy" style="color:var(--c-amber);"></i> 実績・図鑑</span>
               <button id="btn-help-records" type="button" class="wiki-jump-pill">
                 <i class="ph-bold ph-book-open-text"></i> コンボ・記録の仕様
               </button>
@@ -690,17 +693,59 @@
           <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
         </div>
 
-        <div style="background:rgba(0,0,0,0.4); height:8px; border-radius:4px; overflow:hidden; margin-bottom:12px; border:1px solid rgba(255,255,255,0.08);">
+        <div class="records-tab-bar">
+          <button id="tab-records-combos" type="button" class="records-tab-btn active">
+            🏆 コンボ記録 (<span id="tab-combos-count">0/38</span>)
+          </button>
+          <button id="tab-records-furniture" type="button" class="records-tab-btn">
+            🪑 家具図鑑 (<span id="tab-furniture-count">0/65</span>)
+          </button>
+        </div>
+
+        <div id="records-furn-cats" class="furn-cat-bar" style="display:none;"></div>
+
+        <div style="background:rgba(0,0,0,0.4); height:7px; border-radius:4px; overflow:hidden; margin-bottom:10px; border:1px solid rgba(255,255,255,0.08); flex-shrink:0;">
           <div id="records-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, #f59e0b, #10b981); transition:width 0.3s;"></div>
         </div>
 
         <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
-          <!-- JSで全38種のカードを生成 -->
+          <!-- JSで全38種のカードまたは家具図鑑グリッドを生成 -->
         </div>
 
-        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:10.5px; color:var(--c-text2);">※パズル完了（査定時）に発生したコンボが自動登録されます</span>
-          <button id="btn-close-records-bottom" class="btn btn-slate" style="padding:6px 14px; font-size:12px; cursor:pointer;">閉じる</button>
+        <!-- 家具詳細＆90°回転プレビュー -->
+        <div id="furniture-detail-panel" class="furn-detail-panel" style="display:none;">
+          <div class="furn-detail-head">
+            <button id="btn-furn-detail-back" type="button" class="furn-nav-btn">
+              <i class="ph-bold ph-arrow-left"></i> 一覧へ
+            </button>
+            <div style="display:flex; gap:6px;">
+              <button id="btn-furn-prev" type="button" class="furn-nav-btn" title="前の家具">◀</button>
+              <button id="btn-furn-next" type="button" class="furn-nav-btn" title="次の家具">▶</button>
+            </div>
+          </div>
+
+          <div class="furn-detail-title-row">
+            <div id="furn-detail-title" class="furn-detail-title">No.01 システムキッチン</div>
+            <div id="furn-detail-badges" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+          </div>
+
+          <div class="furn-stage-box">
+            <canvas id="furn-detail-canvas" width="160" height="160"></canvas>
+          </div>
+
+          <div class="furn-rot-bar">
+            <button id="btn-furn-rot-left" type="button" class="furn-rot-btn">↺ 左90°</button>
+            <div id="furn-detail-dir-label" class="furn-dir-label">正面 (1/1)</div>
+            <button id="btn-furn-rot-right" type="button" class="furn-rot-btn">右90° ↻</button>
+          </div>
+
+          <div id="furn-detail-flavor" class="furn-detail-box"></div>
+          <div id="furn-detail-hint" class="furn-detail-box furn-detail-box--hint"></div>
+        </div>
+
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <span style="font-size:10px; color:var(--c-text2); line-height:1.35;">※「物件を引き渡す」確定時にコンボ・家具が自動登録されます</span>
+          <button id="btn-close-records-bottom" class="btn btn-slate" style="padding:6px 14px; font-size:12px; cursor:pointer; flex-shrink:0;">閉じる</button>
         </div>
       </div>
     </div>
@@ -915,7 +960,7 @@
               <div class="help-wiki-body">
                 ・<strong>コンボ評価</strong>：<strong>王道（11種）・立地（7種）・珍間取り（13種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（7種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ・幹線道路の騒音）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
                 ・<strong>珍間取りの隠れ特性</strong>：「ロングコリドー」以外の珍間取り12種には<strong>「飽きられやすい（劣化速度 +0.2〜+0.5%/月・空室時の再入居率 -5〜-20%）」</strong>というデメリットがあります。<br>
-                ・<strong>記録帳</strong>：「設計完了（査定時）」に発生していたコンボが図鑑へ自動登録されます。
+                ・<strong>記録帳・家具図鑑</strong>：「物件を引き渡す」確定時に発生していたコンボ・設置された家具が図鑑へ自動登録されます（再設計・諦める時は未登録）。
               </div>
             </div>
 
@@ -1677,11 +1722,12 @@
     </div>
   </div>
 
-  <script src="pixel_assets.js"></script>
-  <script src="dx_stage2.js"></script>
-  <script src="pixel_renderer.js"></script>
-  <script src="pixel_office.js"></script>
-  <script src="game-1.js"></script>
-  <script src="game-2.js"></script>
+  <script src="pixel_assets.js?v=c3"></script>
+  <script src="furniture_catalog.js?v=c3"></script>
+  <script src="dx_stage2.js?v=c3"></script>
+  <script src="pixel_renderer.js?v=c3"></script>
+  <script src="pixel_office.js?v=c3"></script>
+  <script src="game-1.js?v=c3"></script>
+  <script src="game-2.js?v=c3b"></script>
 </body>
 </html>
