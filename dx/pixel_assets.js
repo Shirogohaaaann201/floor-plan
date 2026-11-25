@@ -1373,34 +1373,135 @@
       g.rect(19, 32, 10, 6, '#b45309');
     });
 
-    // 5. 茶室セット（炉＋茶釜＋赤い毛氈座布団＋抹茶椀）
+    // 5. 茶室囲炉裏・茶道具（仏壇に見えないよう明るい緋毛氈＋桧炉縁＋白灰に刷新）
     registerCanvasAsset('furn_tea_set', 48, 48, (g) => {
-      g.roundBox(7, 25, 16, 15, '#dc2626', '#7f1d1d', 2); // 毛氈座布団
-      g.rect(9, 27, 12, 11, '#ef4444');
-      g.shadow(16, 20, 18, 3);
-      g.box(16, 9, 18, 16, '#475569', '#0f172a', 2); // 炉枠
-      g.roundBox(19, 11, 12, 12, '#1e293b', '#020617', 2); // 黒い茶釜
-      g.rect(22, 13, 6, 3, '#64748b');
-      // 抹茶椀＆茶筅
-      g.roundBox(28, 28, 10, 9, '#0f172a', '#020617', 2);
-      g.rect(30, 30, 6, 5, '#22c55e');
-      g.roundBox(31, 19, 4, 6, '#fef3c7', '#92400e');
+      g.shadow(6, 37, 36, 4);
+      // 下敷きの緋毛氈（赤い茶席敷物）
+      g.box(6, 11, 36, 27, INK, '#b91c1c');
+      g.rect(7, 12, 34, 25, '#dc2626');
+      // 左〜中央：明るい桧枠の炉・灰・鉄瓶
+      g.box(9, 14, 21, 21, INK, '#e6be8a');
+      g.rect(10, 15, 19, 19, '#f3d5a5');
+      g.rect(12, 17, 15, 15, '#94a3b8');
+      g.rect(13, 18, 13, 13, '#e2e8f0'); // 白灰
+      g.px(17, 27, '#f97316'); // 炭火アクセント
+      // 小さな茶釜
+      g.box(15, 19, 9, 8, INK, '#475569');
+      g.rect(16, 20, 7, 4, '#64748b');
+      g.rect(18, 18, 3, 2, '#facc15'); // 金蓋つまみ
+      // 右：抹茶碗と和菓子小盆
+      g.box(32, 15, 8, 20, WOOD_DK, '#d49a6a');
+      g.box(33, 17, 6, 6, INK, '#16a34a');
+      g.rect(34, 18, 4, 3, '#86efac');
+      g.box(34, 26, 4, 4, '#9c5d33', '#fce7f3'); // 和菓子
     });
 
-    // 6. 飾り台＆松盆栽
-    registerCanvasAsset('furn_bonsai', 48, 48, (g) => {
-      g.shadow(9, 36, 30, 4);
-      g.roundBox(9, 27, 30, 11, WOOD_DK, '#1e293b', 2);
-      g.rect(11, 29, 26, 4, WOOD_MD);
-      g.roundBox(16, 21, 16, 8, '#1e293b', '#020617', 1); // 黒鉢
-      g.rect(21, 14, 5, 8, '#78350f'); // 曲がった幹
-      g.rect(24, 12, 4, 4, '#78350f');
-      // 松の葉の段層
-      g.roundBox(11, 9, 14, 7, '#15803d', '#052e16', 1);
-      g.roundBox(21, 5, 15, 8, '#16a34a', '#052e16', 1);
-      g.rect(24, 7, 7, 3, '#4ade80');
-      g.rect(14, 11, 6, 2, '#22c55e');
+    // 茶室中央配置専用：囲炉裏・茶道具＋座布団2枚（周囲に他の床家具を置かない主役配置）
+    registerCanvasAsset('furn_tea_set_center', 64, 52, (g) => {
+      // 左の藍座布団
+      g.shadow(2, 34, 9, 3);
+      g.box(1, 18, 10, 16, INK, '#1e3a8a');
+      g.rect(2, 19, 8, 13, '#2563eb');
+      g.rect(4, 22, 4, 7, '#60a5fa');
+      // 右の藍座布団
+      g.shadow(53, 34, 9, 3);
+      g.box(53, 18, 10, 16, INK, '#1e3a8a');
+      g.rect(54, 19, 8, 13, '#2563eb');
+      g.rect(56, 22, 4, 7, '#60a5fa');
+      // 中央：緋毛氈
+      g.shadow(12, 43, 40, 4);
+      g.box(12, 9, 40, 34, INK, '#b91c1c');
+      g.rect(13, 10, 38, 32, '#dc2626');
+      g.hline(14, 11, 36, '#ef4444');
+      // 明るい桧炉縁＋白灰の囲炉裏
+      g.box(15, 14, 24, 24, INK, '#d49a6a');
+      g.rect(16, 15, 22, 22, '#f3d5a5');
+      g.rect(19, 18, 16, 16, '#94a3b8');
+      g.rect(20, 19, 14, 14, '#e2e8f0');
+      g.rect(24, 29, 5, 2, '#f97316');
+      g.px(26, 29, '#fef08a');
+      // 鉄釜＋金蓋つまみ＋竹柄杓
+      g.box(22, 20, 10, 9, INK, '#334155');
+      g.rect(23, 21, 8, 5, '#475569');
+      g.hline(24, 22, 4, '#94a3b8');
+      g.rect(25, 19, 4, 2, '#facc15');
+      g.hline(31, 22, 6, '#d97706');
+      g.rect(35, 21, 3, 3, '#fde68a');
+      // 右：木製茶盆＋抹茶碗・棗・和菓子
+      g.box(41, 14, 9, 24, WOOD_DK, '#d49a6a');
+      g.box(42, 16, 7, 7, INK, '#15803d');
+      g.rect(43, 17, 5, 4, '#4ade80');
+      g.px(44, 18, '#dcfce7');
+      g.box(43, 24, 5, 5, INK, '#7f1d1d');
+      g.px(45, 25, '#facc15');
+      g.box(42, 31, 7, 5, '#4d7c0f', '#f8fafc');
+      g.rect(44, 32, 3, 3, '#f472b6');
     });
+
+    // 6. 飾り棚（違い棚）上の控えめな小盆栽＆青磁花瓶
+    registerCanvasAsset('furn_bonsai', 48, 48, (g) => {
+      g.shadow(8, 37, 32, 4);
+      g.box(8, 22, 32, 16, INK, '#4a2518');
+      g.rect(9, 23, 30, 4, '#6d3924');
+      g.hline(9, 23, 30, '#9c5d33');
+      g.rect(10, 28, 28, 8, '#2d150c');
+      g.rect(10, 28, 2, 9, '#6d3924');
+      g.rect(23, 28, 2, 9, '#6d3924');
+      g.rect(36, 28, 2, 9, '#6d3924');
+      g.rect(25, 31, 11, 2, '#78350f');
+      // 左上：控えめな小盆栽
+      g.box(12, 17, 10, 6, INK, '#334155');
+      g.rect(13, 18, 8, 2, '#64748b');
+      g.rect(16, 12, 2, 6, '#5c371e');
+      g.box(10, 8, 8, 6, INK, '#15803d');
+      g.rect(11, 9, 6, 3, '#22c55e');
+      g.px(12, 9, '#4ade80');
+      g.box(17, 10, 6, 4, INK, '#166534');
+      g.rect(18, 11, 4, 2, '#22c55e');
+      // 右上：青磁花瓶と梅小枝
+      g.box(29, 14, 6, 9, INK, '#2dd4bf');
+      g.rect(30, 15, 3, 6, '#99f6e4');
+      g.px(32, 11, '#5c371e');
+      g.px(31, 10, '#fbcfe8');
+      g.px(34, 11, '#ffffff');
+    });
+
+    registerCanvasAsset('furn_bonsai_south', 48, 48, (g) => {
+      g.shadow(8, 37, 32, 4);
+      g.box(8, 20, 32, 18, INK, '#4a2518');
+      g.rect(9, 21, 30, 9, '#6d3924');
+      g.rect(12, 18, 10, 6, INK, '#334155');
+      g.box(11, 10, 8, 6, INK, '#15803d');
+      g.rect(12, 11, 5, 3, '#22c55e');
+      g.box(28, 16, 6, 8, INK, '#2dd4bf');
+      g.px(31, 13, '#fbcfe8');
+      g.rect(9, 30, 30, 7, '#2d150c');
+    });
+
+    registerCanvasAsset('furn_bonsai_west', 48, 48, (g) => {
+      g.shadow(4, 38, 18, 3);
+      g.box(4, 16, 17, 22, INK, '#4a2518');
+      g.rect(5, 17, 15, 13, '#6d3924');
+      g.hline(5, 17, 15, '#9c5d33');
+      g.vline(5, 17, 13, '#854d27');
+      g.hline(5, 30, 15, INK);
+      g.rect(5, 31, 15, 6, '#3b1d12');
+      g.rect(7, 32, 11, 4, '#231009');
+      g.box(7, 18, 9, 6, INK, '#334155');
+      g.rect(8, 19, 7, 2, '#64748b');
+      g.rect(10, 14, 2, 5, '#5c371e');
+      g.box(6, 11, 8, 5, INK, '#15803d');
+      g.rect(7, 12, 6, 2, '#22c55e');
+      g.px(8, 12, '#4ade80');
+      g.box(11, 13, 6, 4, INK, '#166534');
+      g.rect(12, 14, 4, 2, '#22c55e');
+      g.box(11, 24, 6, 6, INK, '#2dd4bf');
+      g.rect(12, 25, 3, 4, '#99f6e4');
+      g.px(14, 22, '#5c371e');
+      g.px(13, 21, '#fbcfe8');
+      g.px(15, 22, '#ffffff');
+    });
+    registerMirroredX('furn_bonsai_east', 'furn_bonsai_west');
 
     // 7. カフェ風丸テーブル＆椅子2脚
     registerCanvasAsset('furn_cafe_table', 48, 48, (g) => {
@@ -1460,6 +1561,272 @@
       g.roundBox(31, 28, 11, 10, '#15803d', '#14532d', 2);
       g.rect(33, 30, 6, 4, '#4ade80');
     });
+
+    // === Furniture v2 拡張（対面アイランド・向き別4方向差分・浴室・和家具） ===
+    // 1. 対面アイランドキッチン + バースツール2脚 (96x48)
+    registerCanvasAsset('furn_island_kitchen', 96, 48, (g) => {
+      g.shadow(6, 30, 84, 5);
+      [25, 61].forEach((sx) => {
+        g.shadow(sx, 40, 10, 3);
+        g.roundBox(sx, 33, 10, 9, WOOD_LT, WOOD_DK, 2);
+        g.rect(sx + 2, 35, 6, 4, WOOD_HI);
+      });
+      g.roundBox(5, 8, 86, 25, '#f8fafc', SLATE_LN, 2);
+      g.rect(7, 25, 82, 6, WOOD_MD);
+      for (let x = 14; x < 84; x += 8) g.vline(x, 25, 6, WOOD_DK);
+      g.hline(7, 24, 82, '#e2e8f0');
+      g.box(11, 11, 21, 11, '#7dd3fc', '#64748b', 2);
+      g.rect(14, 14, 7, 3, '#bae6fd');
+      g.rect(20, 9, 3, 4, '#334155');
+      g.rect(20, 12, 3, 2, '#cbd5e1');
+      g.roundBox(39, 13, 16, 8, '#fde68a', '#d97706');
+      g.rect(42, 15, 5, 3, '#f97316');
+      g.box(62, 11, 23, 11, '#334155', INK, 2);
+      g.roundBox(65, 13, 7, 7, '#ef4444', '#991b1b');
+      g.roundBox(75, 13, 7, 7, '#64748b', '#1e293b');
+    });
+
+    // 2. 南背もたれ・北向きソファ (96x48: 広いLDKのTV対面中央配置用)
+    registerCanvasAsset('furn_sofa_south', 96, 48, (g) => {
+      g.shadow(11, 40, 74, 4);
+      g.roundBox(11, 12, 74, 29, '#e11d48', '#881337', 2);
+      g.roundBox(21, 14, 26, 15, '#f43f5e', '#9f1239');
+      g.roundBox(49, 14, 26, 15, '#f43f5e', '#9f1239');
+      g.roundBox(13, 14, 7, 17, '#be123c', '#881337');
+      g.roundBox(76, 14, 7, 17, '#be123c', '#881337');
+      g.rect(13, 30, 70, 9, '#fb7185');
+      g.hline(14, 36, 68, '#fda4af');
+      g.roundBox(64, 22, 7, 6, '#fef3c7', '#d97706');
+    });
+
+    // 3. リビング織りラグ (96x48)
+    registerCanvasAsset('furn_living_rug', 96, 48, (g) => {
+      g.roundBox(5, 4, 86, 40, '#fef3c7', '#d97706', 2);
+      g.rect(8, 7, 80, 34, '#fef9c3');
+      g.box(12, 10, 72, 28, '#fde68a', '#f59e0b', 1);
+      for (let x = 16; x < 80; x += 8) {
+        g.hline(x, 15, 4, '#fcd34d');
+        g.hline(x + 2, 31, 4, '#fcd34d');
+      }
+      for (let y = 7; y < 41; y += 4) {
+        g.hline(3, y, 2, '#f59e0b');
+        g.hline(91, y, 2, '#f59e0b');
+      }
+    });
+
+    // 4. PCデスク＆チェア 方向別 (west / east / south)
+    registerCanvasAsset('furn_desk_west', 48, 48, (g) => {
+      g.shadow(1, 38, 22, 3);
+      g.roundBox(1, 7, 19, 34, WOOD_LT, WOOD_DK, 2);
+      g.rect(14, 9, 4, 30, WOOD_MD);
+      g.box(3, 15, 9, 18, '#38bdf8', INK, 2);
+      g.rect(5, 17, 3, 7, '#bae6fd');
+      g.rect(13, 17, 3, 12, '#e2e8f0');
+      g.rect(13, 31, 3, 3, '#94a3b8');
+      g.rect(6, 9, 4, 4, '#d97706');
+      g.roundBox(22, 17, 11, 14, '#475569', INK, 2);
+      g.rect(24, 19, 6, 10, '#64748b');
+    });
+    registerMirroredX('furn_desk_east', 'furn_desk_west');
+    registerCanvasAsset('furn_desk_south', 48, 48, (g) => {
+      g.shadow(7, 41, 34, 3);
+      g.roundBox(17, 11, 14, 11, '#475569', INK, 2);
+      g.rect(19, 13, 10, 6, '#64748b');
+      g.roundBox(7, 23, 34, 19, WOOD_LT, WOOD_DK, 2);
+      g.rect(9, 25, 30, 4, WOOD_MD);
+      g.box(15, 31, 18, 8, '#38bdf8', INK, 2);
+      g.rect(17, 26, 12, 3, '#e2e8f0');
+    });
+
+    // 5. ゲーミングデスク＆チェア 方向別 (west / east / south)
+    registerCanvasAsset('furn_gaming_desk_west', 48, 48, (g) => {
+      g.shadow(1, 39, 22, 3);
+      g.roundBox(1, 6, 19, 36, '#1e293b', '#020617', 2);
+      g.vline(18, 8, 32, '#38bdf8');
+      g.box(2, 9, 10, 14, '#06b6d4', '#020617', 2);
+      g.box(2, 25, 10, 14, '#22c55e', '#020617', 2);
+      g.rect(13, 14, 3, 14, '#a855f7');
+      g.rect(13, 31, 3, 4, '#f43f5e');
+      g.roundBox(21, 17, 13, 14, '#0f172a', '#020617', 2);
+      g.rect(22, 19, 8, 10, '#dc2626');
+    });
+    registerMirroredX('furn_gaming_desk_east', 'furn_gaming_desk_west');
+    registerCanvasAsset('furn_gaming_desk_south', 48, 48, (g) => {
+      g.shadow(6, 41, 36, 3);
+      g.roundBox(17, 9, 14, 12, '#0f172a', '#020617', 2);
+      g.rect(19, 12, 10, 7, '#dc2626');
+      g.roundBox(6, 22, 36, 20, '#1e293b', '#020617', 2);
+      g.hline(8, 24, 32, '#38bdf8');
+      g.box(9, 31, 14, 9, '#06b6d4', '#020617', 2);
+      g.box(25, 31, 14, 9, '#22c55e', '#020617', 2);
+      g.rect(14, 26, 14, 3, '#a855f7');
+    });
+
+    // 6. 文豪書斎デスク 方向別 (west / east / south)
+    registerCanvasAsset('furn_book_desk_west', 48, 48, (g) => {
+      g.shadow(1, 39, 22, 3);
+      g.roundBox(1, 6, 20, 36, '#7c2d12', '#451a03', 2);
+      g.rect(3, 8, 15, 32, '#9a3412');
+      g.roundBox(2, 9, 6, 8, '#15803d', '#052e16', 1);
+      g.box(5, 19, 11, 12, '#fefce8', '#64748b', 1);
+      g.roundBox(7, 34, 5, 5, '#1e293b', '#020617');
+      g.roundBox(22, 17, 11, 14, '#78350f', '#451a03', 2);
+      g.rect(24, 19, 6, 10, '#b45309');
+    });
+    registerMirroredX('furn_book_desk_east', 'furn_book_desk_west');
+    registerCanvasAsset('furn_book_desk_south', 48, 48, (g) => {
+      g.shadow(6, 41, 36, 3);
+      g.roundBox(17, 10, 14, 11, '#78350f', '#451a03', 2);
+      g.rect(19, 12, 10, 6, '#b45309');
+      g.roundBox(6, 22, 36, 20, '#7c2d12', '#451a03', 2);
+      g.rect(8, 24, 32, 15, '#9a3412');
+      g.roundBox(9, 32, 8, 6, '#15803d', '#052e16', 1);
+      g.box(19, 25, 12, 11, '#fefce8', '#64748b', 1);
+    });
+
+    // 7. 子ども用ベッド 方向別 (west / east / south)
+    registerCanvasAsset('furn_kids_bed_west', 48, 48, (g) => {
+      g.shadow(1, 36, 35, 3);
+      g.roundBox(1, 11, 35, 24, '#93c5fd', '#2563eb', 2);
+      g.rect(3, 13, 4, 20, '#60a5fa');
+      g.roundBox(7, 15, 7, 16, '#e0f2fe', '#38bdf8', 1);
+      g.roundBox(14, 13, 20, 20, '#fef08a', '#ca8a04', 2);
+      g.rect(14, 13, 3, 20, '#ffffff');
+      g.rect(22, 21, 3, 3, '#facc15');
+      g.px(20, 17, '#f97316'); g.px(28, 27, '#ef4444');
+    });
+    registerMirroredX('furn_kids_bed_east', 'furn_kids_bed_west');
+    registerCanvasAsset('furn_kids_bed_south', 48, 48, (g) => {
+      g.shadow(11, 41, 26, 3);
+      g.roundBox(11, 7, 26, 35, '#93c5fd', '#2563eb', 2);
+      g.rect(13, 36, 22, 4, '#60a5fa');
+      g.roundBox(15, 29, 18, 7, '#e0f2fe', '#38bdf8', 1);
+      g.roundBox(13, 9, 22, 20, '#fef08a', '#ca8a04', 2);
+      g.rect(13, 26, 22, 3, '#ffffff');
+      g.rect(22, 16, 3, 3, '#facc15');
+    });
+
+    // 8. 浴室壁面シャワー＆鏡・水栓 (48x22) ＋ 風呂椅子＆洗面器 (48x48)
+    registerCanvasAsset('wall_shower', 48, 22, (g) => {
+      g.box(7, 2, 13, 17, '#334155', '#bae6fd');
+      g.rect(8, 3, 11, 15, '#e0f2fe');
+      g.hline(9, 4, 7, '#ffffff');
+      g.hline(9, 5, 5, '#ffffff');
+      g.vline(9, 6, 8, '#ffffff');
+      g.rect(8, 16, 11, 2, '#64748b');
+      g.box(23, 2, 15, 17, '#334155', '#64748b');
+      g.rect(24, 3, 13, 15, '#94a3b8');
+      g.box(29, 3, 3, 12, '#1e293b', '#e2e8f0');
+      g.vline(26, 6, 9, '#1e293b');
+      g.px(27, 14, '#1e293b');
+      g.box(24, 2, 7, 4, '#1e293b', '#f8fafc');
+      g.px(24, 6, '#38bdf8');
+      g.px(26, 6, '#7dd3fc');
+      g.box(22, 14, 17, 5, '#1e293b', '#f8fafc');
+      g.hline(23, 15, 15, '#cbd5e1');
+      g.rect(24, 16, 3, 2, '#0284c7');
+      g.rect(34, 16, 3, 2, '#dc2626');
+      g.box(21, 19, 18, 2, '#1e293b', '#e2e8f0');
+    });
+
+    registerCanvasAsset('furn_bath_stool', 48, 48, (g) => {
+      g.shadow(11, 29, 25, 4);
+      g.box(11, 20, 14, 11, INK, '#d49a6a');
+      g.rect(12, 21, 12, 4, '#f3d5a5');
+      g.hline(13, 22, 10, '#fef3c7');
+      g.rect(15, 27, 6, 4, '#1e293b');
+      g.rect(12, 26, 2, 4, '#9c5d33');
+      g.rect(22, 26, 2, 4, '#9c5d33');
+      g.box(26, 22, 10, 8, INK, '#fde047');
+      g.rect(27, 23, 8, 5, '#fef08a');
+      g.rect(28, 24, 6, 3, '#bae6fd');
+      g.px(29, 24, '#ffffff');
+    });
+
+    // 9. 民芸和箪笥 4方向 (north / south / west / east: 黒鉄の隅金具・丸金具錠前)
+    const WATANSU_DK = '#5c2414';
+    const WATANSU_MD = '#8a391e';
+    const WATANSU_LT = '#b55633';
+    const IRON = '#0f172a';
+    const IRON_HI = '#475569';
+
+    registerCanvasAsset('furn_watansu', 48, 48, (g) => {
+      g.shadow(6, 35, 36, 4);
+      g.box(6, 11, 36, 25, INK, WATANSU_MD);
+      g.rect(7, 12, 34, 6, WATANSU_LT);
+      g.hline(7, 12, 34, '#d9835c');
+      g.hline(7, 17, 34, WATANSU_DK);
+      g.box(28, 13, 9, 4, WATANSU_DK, '#9c5d33');
+      g.box(30, 13, 3, 3, INK, '#f8fafc');
+      g.px(31, 14, '#4ade80');
+      g.rect(7, 18, 34, 17, WATANSU_MD);
+      g.box(8, 18, 22, 5, WATANSU_DK, WATANSU_LT);
+      g.box(8, 24, 22, 5, WATANSU_DK, WATANSU_LT);
+      g.box(8, 30, 22, 5, WATANSU_DK, WATANSU_LT);
+      g.box(31, 18, 9, 5, WATANSU_DK, WATANSU_LT);
+      g.box(31, 24, 9, 11, WATANSU_DK, WATANSU_LT);
+      g.rect(7, 18, 4, 2, IRON); g.rect(7, 18, 2, 4, IRON);
+      g.rect(37, 18, 4, 2, IRON); g.rect(39, 18, 2, 4, IRON);
+      g.rect(7, 33, 4, 2, IRON); g.rect(7, 31, 2, 4, IRON);
+      g.rect(37, 33, 4, 2, IRON); g.rect(39, 31, 2, 4, IRON);
+      g.rect(11, 20, 4, 2, IRON); g.rect(23, 20, 4, 2, IRON);
+      g.px(12, 20, IRON_HI); g.px(24, 20, IRON_HI);
+      g.rect(11, 26, 4, 2, IRON); g.rect(23, 26, 4, 2, IRON);
+      g.px(12, 26, IRON_HI); g.px(24, 26, IRON_HI);
+      g.rect(11, 32, 4, 2, IRON); g.rect(23, 32, 4, 2, IRON);
+      g.px(12, 32, IRON_HI); g.px(24, 32, IRON_HI);
+      g.rect(34, 20, 3, 2, IRON);
+      g.rect(33, 27, 6, 5, IRON);
+      g.rect(34, 28, 4, 3, '#1e293b');
+      g.px(35, 29, '#fbbf24');
+      g.px(36, 29, IRON_HI);
+    });
+
+    registerCanvasAsset('furn_watansu_south', 48, 48, (g) => {
+      g.shadow(6, 38, 36, 4);
+      g.box(6, 12, 36, 28, INK, WATANSU_MD);
+      g.rect(7, 13, 34, 17, WATANSU_LT);
+      g.hline(7, 13, 34, '#d9835c');
+      g.rect(7, 13, 4, 2, IRON); g.rect(7, 13, 2, 4, IRON);
+      g.rect(37, 13, 4, 2, IRON); g.rect(39, 13, 2, 4, IRON);
+      g.rect(7, 28, 4, 2, IRON); g.rect(7, 26, 2, 4, IRON);
+      g.rect(37, 28, 4, 2, IRON); g.rect(39, 26, 2, 4, IRON);
+      g.box(12, 17, 10, 7, INK, '#15803d');
+      g.hline(14, 19, 6, '#4ade80');
+      g.box(27, 17, 9, 8, WATANSU_DK, '#9c5d33');
+      g.box(30, 19, 3, 3, INK, '#f8fafc');
+      g.rect(7, 30, 34, 9, WATANSU_DK);
+      g.rect(12, 33, 7, 3, IRON); g.rect(29, 33, 7, 3, IRON);
+      g.px(32, 34, '#fbbf24');
+    });
+
+    registerCanvasAsset('furn_watansu_west', 48, 48, (g) => {
+      g.shadow(4, 38, 19, 3);
+      g.box(4, 14, 18, 24, INK, WATANSU_MD);
+      g.rect(5, 15, 16, 15, WATANSU_LT);
+      g.hline(5, 15, 16, '#d9835c');
+      g.vline(5, 15, 15, '#d9835c');
+      g.rect(5, 15, 3, 2, IRON); g.rect(5, 15, 2, 3, IRON);
+      g.rect(18, 15, 3, 2, IRON); g.rect(19, 15, 2, 3, IRON);
+      g.rect(5, 28, 3, 2, IRON); g.rect(5, 27, 2, 3, IRON);
+      g.rect(18, 28, 3, 2, IRON); g.rect(19, 27, 2, 3, IRON);
+      g.box(8, 17, 7, 5, INK, '#15803d');
+      g.hline(9, 19, 5, '#4ade80');
+      g.box(8, 23, 8, 5, WATANSU_DK, '#9c5d33');
+      g.box(11, 24, 3, 3, INK, '#f8fafc');
+      g.px(12, 25, '#4ade80');
+      g.rect(20, 17, 2, 11, WATANSU_DK);
+      g.rect(21, 18, 2, 3, IRON); g.px(21, 19, IRON_HI);
+      g.rect(21, 24, 2, 3, IRON); g.px(21, 25, IRON_HI);
+      g.hline(5, 30, 16, INK);
+      g.rect(5, 31, 16, 6, WATANSU_DK);
+      g.rect(7, 32, 12, 4, '#471b0e');
+      g.rect(10, 33, 6, 2, IRON);
+      g.hline(11, 33, 4, IRON_HI);
+      g.rect(5, 35, 3, 2, IRON);
+      g.rect(18, 35, 3, 2, IRON);
+    });
+    registerMirroredX('furn_watansu_east', 'furn_watansu_west');
   }
 
   /* ============================================================

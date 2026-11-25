@@ -21,12 +21,51 @@
 
   // 空室モードでも残す造り付け設備・外構アセットID
   const BUILTIN_ASSET_IDS = new Set([
-    'furn_kitchen', 'furn_kitchen_v_west', 'furn_kitchen_v_east',
+    'furn_kitchen', 'furn_kitchen_v_west', 'furn_kitchen_v_east', 'furn_island_kitchen',
     'furn_bath_tub', 'furn_sento_tub', 'furn_ub', 'furn_fuji',
     'furn_toilet', 'furn_washbasin', 'furn_shoesbox_slim',
     'furn_tree', 'furn_flower', 'furn_pond', 'furn_lantern',
     'furn_stepping_stone', 'furn_rose_arch', 'furn_birdbath'
   ]);
+
+  // 部屋中央に置くもの（ラグ・マット・食卓・こたつ・アイランド・布団・囲炉裏等）
+  const CENTER_SNAP_ASSETS = new Set([
+    'furn_bathmat', 'furn_rug_foyer', 'furn_rug_red', 'furn_living_rug',
+    'furn_toy_box', 'furn_dining', 'furn_cafe_table', 'furn_chabudai',
+    'furn_kotatsu', 'furn_tea_set', 'furn_tea_set_center', 'furn_coffin', 'furn_island_kitchen',
+    'furn_futon'
+  ]);
+
+  const spriteBoundsCache = new Map();
+  function getSpriteContentBounds(spriteId) {
+    if (spriteBoundsCache.has(spriteId)) return spriteBoundsCache.get(spriteId);
+    const spr = global.PixelAssets && global.PixelAssets.getSprite(spriteId);
+    if (!spr || !spr.canvas) return null;
+    try {
+      const ctx = spr.canvas.getContext('2d');
+      const w = spr.width || spr.canvas.width;
+      const h = spr.height || spr.canvas.height;
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = -1, maxY = -1;
+      for (let y = 0; y < h; y++) {
+        const rowOff = y * w * 4;
+        for (let x = 0; x < w; x++) {
+          if (data[rowOff + x * 4 + 3] >= 120) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      const res = (maxX >= minX && maxY >= minY) ? { minX, minY, maxX, maxY, w, h } : null;
+      spriteBoundsCache.set(spriteId, res);
+      return res;
+    } catch (e) {
+      spriteBoundsCache.set(spriteId, null);
+      return null;
+    }
+  }
 
   function getRoomThemeSeed(cells, idx, stageObj) {
     let h = (idx || 0) * 7 + (cells ? cells.length * 13 : 0);
@@ -348,6 +387,7 @@
      2. 家具レイアウトプランナー (STEP2_PIXEL_SPEC 第6章準拠)
   ============================================================ */
   function buildFurniturePlan(targetGrid, combos, visited, stageObj) {
+    if (!visited) visited = computeVisitedSet(targetGrid, stageObj).visited;
     const comboNames = new Set((combos || []).map(c => typeof c === 'string' ? c : c.name));
     const { rooms, gardenClusters } = analyzeRoomsAndClusters(targetGrid, visited);
     const doorPlan = computeDoorSwingPlan(targetGrid, rooms);
@@ -423,9 +463,28 @@
       return 'center';
     };
 
+    const countCellDoors = (r, c) => {
+      const e = getCellEdges(r, c);
+      let n = 0;
+      if (e.top === E.DOOR) n++;
+      if (e.bottom === E.DOOR) n++;
+      if (e.left === E.DOOR) n++;
+      if (e.right === E.DOOR) n++;
+      return n;
+    };
+
     const getSwingPenalty = (r, c) => {
       const sw = doorPlan.cellSwingInfo.get(`${r},${c}`);
       return sw ? sw.count * 240 : 0;
+    };
+
+    const wallDecoRooms = []; // 立ち上がり北壁に掛ける装飾情報
+    const northWallDecoCells = new Set(); // 北壁装飾が専有するセル（背の高い壁寄せ家具と相互排他）
+    const registerWallDeco = (type, r, c, wCells = 1) => {
+      wallDecoRooms.push({ type, r, c, wCells });
+      for (let dc = 0; dc < wCells; dc++) {
+        northWallDecoCells.add(`${r},${c + dc}`);
+      }
     };
 
     // 壁寄せ配置（壁が1辺もないセルには置かない：requireWall）
@@ -435,6 +494,7 @@
       const candidates = freeCells.map(pt => {
         const e = getCellEdges(pt.r, pt.c);
         const hasAnyWall = e.wTop || e.wLeft || e.wRight || e.wBottom;
+        const dc = countCellDoors(pt.r, pt.c);
         let score = 0;
         if (preferSide) {
           if (e.wLeft || e.wRight) score += 150;
@@ -449,6 +509,10 @@
           if (e.wBottom) score += preferNorth ? 35 : 110;
         }
         if (e.hasDoor) score -= 90;
+        if (e.top === E.DOOR) score -= 70;
+        if (e.top === E.WINDOW) score -= 35;
+        if (dc >= 2) score -= (dc - 1) * 180;
+        if (northWallDecoCells.has(`${pt.r},${pt.c}`)) score -= 180;
         score -= getSwingPenalty(pt.r, pt.c);
         return { pt, score, hasAnyWall, snap: pickSnapDir(e, preferSide, preferNorth) };
       });
@@ -471,8 +535,15 @@
           if (e1.wBottom && e2.wBottom) score += preferNorth ? 25 : 120;
           if (e1.wLeft || e2.wRight) score += 30;
           if (e1.hasDoor || e2.hasDoor) score -= 95;
+          if (e1.top === E.DOOR || e2.top === E.DOOR) score -= 70;
+          if (northWallDecoCells.has(`${pt.r},${pt.c}`) || northWallDecoCells.has(`${pt.r},${pt.c + 1}`)) score -= 220;
           score -= getSwingPenalty(pt.r, pt.c) + getSwingPenalty(pt.r, pt.c + 1);
-          const snap = (e1.wTop && e2.wTop) ? 'north' : ((e1.wBottom && e2.wBottom) ? 'south' : (e1.wTop || e2.wTop ? 'north' : 'center'));
+          let snap;
+          if (!preferNorth && e1.wBottom && e2.wBottom) snap = 'south';
+          else if (e1.wTop && e2.wTop && !(northWallDecoCells.has(`${pt.r},${pt.c}`) || northWallDecoCells.has(`${pt.r},${pt.c + 1}`))) snap = 'north';
+          else if (e1.wBottom && e2.wBottom) snap = 'south';
+          else if (e1.wTop || e2.wTop) snap = 'north';
+          else snap = 'center';
           return { pt, score, hasEdgeWall, snap };
         })
         .filter(x => x.snap !== 'center')
@@ -543,7 +614,6 @@
     const hasTanoji = comboNames.has('古き良き日本家屋');
     const hasWaterGate = comboNames.has('水門');
     const hasInfinityLoop = comboNames.has('無限回廊');
-    const wallDecoRooms = []; // 立ち上がり北壁に掛ける装飾情報
     const sunnyRoomKeys = new Set();
     const hiddenRoomKeys = new Set();
     const badSpots = [];
@@ -694,27 +764,86 @@
         continue;
       }
 
-      // 4) 浴室（通常 / セレブ浴室 / もはや銭湯：富士山は立ち上がり北壁に貼る！）
+      // 4) 浴室（通常 / セレブ浴室 / もはや銭湯：富士山は立ち上がり北壁に貼り、浴槽は壁画を避けて下段側へ）
       if (rm.type === T.BATH) {
+        const placeShowerIfOpen = () => {
+          const showerCands = rm.cells
+            .filter(pt => {
+              if (usedCells.has(`${pt.r},${pt.c}`)) return false;
+              if (northWallDecoCells.has(`${pt.r},${pt.c}`)) return false;
+              return getCellEdges(pt.r, pt.c).hasSolidTop;
+            })
+            .sort((a, b) => {
+              const da = countCellDoors(a.r, a.c), db = countCellDoors(b.r, b.c);
+              return da - db || a.r - b.r || a.c - b.c;
+            });
+          if (showerCands[0]) {
+            registerWallDeco('shower', showerCands[0].r, showerCands[0].c, 1);
+          }
+          return showerCands[0] || null;
+        };
+
+        const placeStoolIfSafe = (preferredCell = null) => {
+          const cands = rm.cells
+            .filter(pt => isFree(pt.r, pt.c, 1, 1, cellSet))
+            .map(pt => {
+              const e = getCellEdges(pt.r, pt.c);
+              const dc = countCellDoors(pt.r, pt.c);
+              const sw = getSwingPenalty(pt.r, pt.c);
+              let sc = 100 - dc * 120 - sw;
+              if (e.top === E.DOOR) sc -= 80;
+              if (preferredCell && pt.r === preferredCell.r && pt.c === preferredCell.c) sc += 45;
+              if (e.wLeft || e.wRight || e.wBottom) sc += 15;
+              return { pt, dc, sw, e, sc };
+            })
+            .filter(x => x.dc === 0 || (x.dc === 1 && x.sw === 0 && x.e.top !== E.DOOR && count >= 4))
+            .sort((a, b) => b.sc - a.sc || a.pt.r - b.pt.r || a.pt.c - b.pt.c);
+          if (cands[0]) {
+            addItem('furn_bath_stool', cands[0].pt.r, cands[0].pt.c, 1, 1, rm.key, { snap: 'center' });
+          }
+        };
+
         if (count >= 8) {
-          const fujiWallCell = rm.cells.find(pt => {
+          const fujiCands = rm.cells.filter(pt => {
             const e1 = getCellEdges(pt.r, pt.c);
             const e2 = getCellEdges(pt.r, pt.c + 1);
             return cellSet.has(`${pt.r},${pt.c + 1}`) && e1.wTop && e2.wTop;
+          }).sort((a, b) => {
+            const sa = (getCellEdges(a.r, a.c).hasSolidTop && getCellEdges(a.r, a.c + 1).hasSolidTop) ? 1 : 0;
+            const sb = (getCellEdges(b.r, b.c).hasSolidTop && getCellEdges(b.r, b.c + 1).hasSolidTop) ? 1 : 0;
+            const midC = (rm.minC + rm.maxC) / 2;
+            return sb - sa || a.r - b.r || (Math.abs(a.c + 0.5 - midC) - Math.abs(b.c + 0.5 - midC));
           });
+          const fujiWallCell = fujiCands[0] || null;
           if (fujiWallCell) {
-            wallDecoRooms.push({ type: 'fuji', r: fujiWallCell.r, c: fujiWallCell.c, wCells: 2 });
+            registerWallDeco('fuji', fujiWallCell.r, fujiWallCell.c, 2);
           } else {
             const fujiPt = findWallPair(rm.cells, cellSet, true);
             if (fujiPt) addItem('furn_fuji', fujiPt.r, fujiPt.c, 2, 1, rm.key, { snap: 'north' });
           }
-          const tubPt = findCenterSingle(rm.cells, cellSet);
-          if (tubPt && isFree(tubPt.r, tubPt.c, 2, 1, cellSet)) {
-            addItem('furn_sento_tub', tubPt.r, tubPt.c, 2, 1, rm.key, { steam: true, snap: 'center' });
+
+          const lowerCells = fujiWallCell ? rm.cells.filter(pt => pt.r > fujiWallCell.r) : rm.cells;
+          const lowerSet = new Set(lowerCells.map(pt => `${pt.r},${pt.c}`));
+          let placedSentoTub = false;
+          const lowerPair = findWallPair(lowerCells, lowerSet, false);
+          if (lowerPair) {
+            addItem('furn_sento_tub', lowerPair.r, lowerPair.c, 2, 1, rm.key, { steam: true, snap: lowerPair.snap });
+            placedSentoTub = true;
           } else {
-            const tp = findWallPair(rm.cells, cellSet, true);
+            const midPairCells = (lowerCells.length >= 2 ? lowerCells : rm.cells);
+            const tpC = midPairCells.find(pt => isFree(pt.r, pt.c, 2, 1, cellSet));
+            if (tpC) {
+              addItem('furn_sento_tub', tpC.r, tpC.c, 2, 1, rm.key, { steam: true, snap: 'center' });
+              placedSentoTub = true;
+            }
+          }
+          if (!placedSentoTub) {
+            const tp = findWallPair(rm.cells, cellSet, false);
             if (tp) addItem('furn_sento_tub', tp.r, tp.c, 2, 1, rm.key, { steam: true, snap: tp.snap });
           }
+
+          const shPt = placeShowerIfOpen();
+          placeStoolIfSafe(shPt);
           for (let k = 0; k < 2; k++) {
             const kPt = findWallSingle(rm.cells, cellSet, false);
             if (kPt) addItem('furn_kerorin', kPt.r, kPt.c, 1, 1, rm.key, { snap: kPt.snap });
@@ -726,11 +855,15 @@
             const p1 = findWallSingle(rm.cells, cellSet, true);
             if (p1) addItem('furn_bath_tub', p1.r, p1.c, 1, 1, rm.key, { steam: true, snap: p1.snap });
           }
-          const pPlant = findWallSingle(rm.cells, cellSet, false);
-          if (pPlant) addItem('furn_plant', pPlant.r, pPlant.c, 1, 1, rm.key, { snap: pPlant.snap });
+          const shPt = placeShowerIfOpen();
+          placeStoolIfSafe(shPt);
         } else {
           const p1 = findWallSingle(rm.cells, cellSet, true);
           if (p1) addItem('furn_bath_tub', p1.r, p1.c, 1, 1, rm.key, { steam: true, snap: p1.snap });
+          if (count >= 2) {
+            const shPt = placeShowerIfOpen();
+            placeStoolIfSafe(shPt);
+          }
         }
         continue;
       }
@@ -739,7 +872,7 @@
       if (rm.type === T.TOILET) {
         if (isHiddenAccess) {
           const scrollPt = rm.cells.find(pt => getCellEdges(pt.r, pt.c).hasSolidTop);
-          if (scrollPt) wallDecoRooms.push({ type: 'scroll_ninja', r: scrollPt.r, c: scrollPt.c });
+          if (scrollPt) registerWallDeco('scroll_ninja', scrollPt.r, scrollPt.c, 1);
         }
         if (count >= 4) {
           const midPt = findCenterSingle(rm.cells, cellSet);
@@ -771,13 +904,21 @@
         continue;
       }
 
-      // 6) 洗面所（壁寄せ）
+      // 6) 洗面所（壁寄せ・扉塞ぎ洗濯機の抑止）
       if (rm.type === T.WASHROOM) {
         const p1 = findWallSingle(rm.cells, cellSet, true);
         if (p1) addItem('furn_washbasin', p1.r, p1.c, 1, 1, rm.key, { snap: p1.snap });
         if (count >= 2) {
-          const p2 = findWallSingle(rm.cells, cellSet, false);
-          if (p2) addItem('furn_washer', p2.r, p2.c, 1, 1, rm.key, { snap: p2.snap });
+          const freeCells = rm.cells.filter(pt => {
+            if (!isFree(pt.r, pt.c, 1, 1, cellSet)) return false;
+            const e = getCellEdges(pt.r, pt.c);
+            if (!(e.wTop || e.wLeft || e.wRight || e.wBottom)) return false;
+            const dc = countCellDoors(pt.r, pt.c);
+            if (e.top === E.DOOR || getSwingPenalty(pt.r, pt.c) > 0) return false;
+            return count === 2 ? dc === 0 : dc <= 1;
+          });
+          const picked = freeCells.length > 0 ? findWallSingle(freeCells, cellSet, false) : null;
+          if (picked) addItem('furn_washer', picked.r, picked.c, 1, 1, rm.key, { snap: picked.snap });
         }
         continue;
       }
@@ -809,20 +950,54 @@
         continue;
       }
 
-      // 8) LDK (要塞化時は監視モニター＋備蓄も併設)
+      // 8) LDK (要塞化時は監視モニター＋備蓄も併設 / 広いLDKで対面アイランド＋中央ソファ対応)
       if (rm.type === T.LDK) {
-        const kitchenH = findWallPair(rm.cells, cellSet, true);
-        if (kitchenH) {
-          addItem('furn_kitchen', kitchenH.r, kitchenH.c, 2, 1, rm.key, { snap: kitchenH.snap });
-        } else {
-          const kitchenV = findWallVerticalPair(rm.cells, cellSet);
-          if (kitchenV) {
-            addItem(`furn_kitchen_v_${kitchenV.snap}`, kitchenV.r, kitchenV.c, 1, 2, rm.key, { snap: kitchenV.snap });
-          } else {
-            const k1 = findWallSingle(rm.cells, cellSet, true);
-            if (k1) addItem('furn_kitchen', k1.r, k1.c, 1, 1, rm.key, { snap: k1.snap });
+        const rmW = rm.maxC - rm.minC + 1;
+        const rmH = rm.maxR - rm.minR + 1;
+        const isSpaciousLdk = (count >= 9) && (rmW >= 3) && (rmH >= 3);
+        let placedIsland = false;
+        let islandRow = -1;
+
+        if (isSpaciousLdk) {
+          const islandCandidates = [];
+          for (const pt of rm.cells) {
+            if (!isFree(pt.r, pt.c, 2, 1, cellSet)) continue;
+            if (!cellSet.has(`${pt.r - 1},${pt.c}`) || !cellSet.has(`${pt.r + 1},${pt.c}`)) continue;
+            if (!cellSet.has(`${pt.r - 1},${pt.c + 1}`) || !cellSet.has(`${pt.r + 1},${pt.c + 1}`)) continue;
+            const e1 = getCellEdges(pt.r, pt.c);
+            const e2 = getCellEdges(pt.r, pt.c + 1);
+            if (e1.hasDoor || e2.hasDoor) continue;
+            if (e1.top !== E.NONE || e2.top !== E.NONE || e1.bottom !== E.NONE || e2.bottom !== E.NONE) continue;
+            if (getSwingPenalty(pt.r, pt.c) > 0 || getSwingPenalty(pt.r, pt.c + 1) > 0) continue;
+            let score = (pt.r === rm.minR + 1) ? 120 : 80;
+            if (e1.wLeft || e2.wRight) score += 15;
+            score -= Math.abs(pt.c + 0.5 - (rm.minC + rm.maxC) * 0.5) * 6;
+            islandCandidates.push({ pt, score });
+          }
+          islandCandidates.sort((a, b) => b.score - a.score || (a.pt.r - b.pt.r) || (a.pt.c - b.pt.c));
+          const isl = islandCandidates[0]?.pt || null;
+          if (isl) {
+            addItem('furn_island_kitchen', isl.r, isl.c, 2, 1, rm.key, { snap: 'center', floating: true });
+            placedIsland = true;
+            islandRow = isl.r;
           }
         }
+
+        if (!placedIsland) {
+          const kitchenH = findWallPair(rm.cells, cellSet, true);
+          if (kitchenH) {
+            addItem('furn_kitchen', kitchenH.r, kitchenH.c, 2, 1, rm.key, { snap: kitchenH.snap });
+          } else {
+            const kitchenV = findWallVerticalPair(rm.cells, cellSet);
+            if (kitchenV) {
+              addItem(`furn_kitchen_v_${kitchenV.snap}`, kitchenV.r, kitchenV.c, 1, 2, rm.key, { snap: kitchenV.snap });
+            } else {
+              const k1 = findWallSingle(rm.cells, cellSet, true);
+              if (k1) addItem('furn_kitchen', k1.r, k1.c, 1, 1, rm.key, { snap: k1.snap });
+            }
+          }
+        }
+
         if (isFortress) {
           const supPt = findWallSingle(rm.cells, cellSet, false);
           if (supPt) addItem('furn_supplies', supPt.r, supPt.c, 1, 1, rm.key, { snap: supPt.snap });
@@ -834,56 +1009,104 @@
           if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
         }
         if (count >= 6) {
-          const fPt = findWallSingle(rm.cells, cellSet, true);
+          const backWallCells = placedIsland ? rm.cells.filter(pt => pt.r === islandRow - 1) : [];
+          const fPt = (backWallCells.length > 0 && findWallSingle(backWallCells, cellSet, true))
+            || findWallSingle(rm.cells, cellSet, true);
           if (fPt) addItem('furn_fridge', fPt.r, fPt.c, 1, 1, rm.key, { snap: fPt.snap });
-          const sH = findWallPair(rm.cells, cellSet, false);
-          if (sH) {
-            addItem('furn_sofa', sH.r, sH.c, 2, 1, rm.key, { snap: sH.snap });
-            if (isCafeLdk) {
-              const cafePt = findCenterSingle(rm.cells, cellSet);
-              if (cafePt) addItem('furn_cafe_table', cafePt.r, cafePt.c, 1, 1, rm.key, { snap: 'center' });
+
+          let placedFloatingLiving = false;
+          if (count >= 8 && rmW >= 3 && rmH >= 3 && !isFortress) {
+            const livingPairs = [];
+            for (const tvPt of rm.cells) {
+              if (!isFree(tvPt.r, tvPt.c, 1, 1, cellSet)) continue;
+              const te = getCellEdges(tvPt.r, tvPt.c);
+              if (te.hasDoor || getSwingPenalty(tvPt.r, tvPt.c) > 0) continue;
+
+              // 北壁にTV → 1マス南に北向きソファ＋ラグ
+              if (te.wTop) {
+                for (const scStart of [tvPt.c, tvPt.c - 1]) {
+                  const sr = tvPt.r + 1;
+                  if (sr > rm.maxR || !isFree(sr, scStart, 2, 1, cellSet)) continue;
+                  const se1 = getCellEdges(sr, scStart), se2 = getCellEdges(sr, scStart + 1);
+                  if (se1.hasDoor || se2.hasDoor || getSwingPenalty(sr, scStart) > 0 || getSwingPenalty(sr, scStart + 1) > 0) continue;
+                  let sc = te.hasSolidTop ? 120 : 90;
+                  if (placedIsland && sr === islandRow) sc -= 40;
+                  if (se1.wBottom || se2.wBottom) sc -= 20;
+                  livingPairs.push({ tvPt, tvSnap: 'north', sr, scCol: scStart, sofaAsset: 'furn_sofa_south', score: sc });
+                }
+              }
+              // 南壁にTV → 1マス北に南向きソファ＋ラグ
+              if (te.wBottom) {
+                for (const scStart of [tvPt.c, tvPt.c - 1]) {
+                  const sr = tvPt.r - 1;
+                  if (sr < rm.minR || !isFree(sr, scStart, 2, 1, cellSet)) continue;
+                  const se1 = getCellEdges(sr, scStart), se2 = getCellEdges(sr, scStart + 1);
+                  if (se1.hasDoor || se2.hasDoor || getSwingPenalty(sr, scStart) > 0 || getSwingPenalty(sr, scStart + 1) > 0) continue;
+                  let sc = te.hasSolidBottom ? 115 : 85;
+                  if (placedIsland && sr === islandRow) sc -= 40;
+                  if (se1.wTop || se2.wTop) sc -= 20;
+                  livingPairs.push({ tvPt, tvSnap: 'south', sr, scCol: scStart, sofaAsset: 'furn_sofa', score: sc });
+                }
+              }
             }
-          } else {
-            const sV = findWallVerticalPair(rm.cells, cellSet);
-            if (sV) {
-              addItem(`furn_sofa_v_${sV.snap}`, sV.r, sV.c, 1, 2, rm.key, { snap: sV.snap });
-            } else {
-              const dPt = findCenterSingle(rm.cells, cellSet);
-              if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+            livingPairs.sort((a, b) => b.score - a.score);
+            const best = livingPairs[0];
+            if (best) {
+              addItem('furn_tv', best.tvPt.r, best.tvPt.c, 1, 1, rm.key, { snap: best.tvSnap });
+              items.push({
+                assetId: 'furn_living_rug',
+                r: best.sr, c: best.scCol, wCells: 2, hCells: 1,
+                roomKey: rm.key, delayMs: 0, snap: 'center', floating: true, isFloorRug: true
+              });
+              addItem(best.sofaAsset, best.sr, best.scCol, 2, 1, rm.key, { snap: 'center', floating: true });
+              placedFloatingLiving = true;
             }
           }
-          if (count >= 8) {
-            const tPt = findWallSingle(rm.cells, cellSet, true);
-            if (tPt) addItem(isFortress ? 'furn_fortress_console' : 'furn_tv', tPt.r, tPt.c, 1, 1, rm.key, { snap: tPt.snap });
-            if (isCafeLdk) {
-              const plPt = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
-              if (plPt) addItem('furn_plant', plPt.r, plPt.c, 1, 1, rm.key, { snap: plPt.snap });
+
+          if (!placedFloatingLiving) {
+            const sH = findWallPair(rm.cells, cellSet, false);
+            if (sH) {
+              addItem('furn_sofa', sH.r, sH.c, 2, 1, rm.key, { snap: sH.snap });
+              if (isCafeLdk) {
+                const cafePt = findCenterSingle(rm.cells, cellSet);
+                if (cafePt) addItem('furn_cafe_table', cafePt.r, cafePt.c, 1, 1, rm.key, { snap: 'center' });
+              }
+            } else {
+              const sV = findWallVerticalPair(rm.cells, cellSet);
+              if (sV) {
+                addItem(`furn_sofa_v_${sV.snap}`, sV.r, sV.c, 1, 2, rm.key, { snap: sV.snap });
+              } else {
+                const dPt = findCenterSingle(rm.cells, cellSet);
+                if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+              }
             }
+            if (count >= 8) {
+              const tPt = findWallSingle(rm.cells, cellSet, true);
+              if (tPt) addItem(isFortress ? 'furn_fortress_console' : 'furn_tv', tPt.r, tPt.c, 1, 1, rm.key, { snap: tPt.snap });
+              if (isCafeLdk) {
+                const plPt = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+                if (plPt) addItem('furn_plant', plPt.r, plPt.c, 1, 1, rm.key, { snap: plPt.snap });
+              }
+            }
+          } else if (count >= 9) {
+            const dPt = findCenterSingle(rm.cells, cellSet);
+            if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
           }
         }
         continue;
       }
 
-      // 9) 和室（第2段階テーマ：0客間 / 1寝間 / 2こたつ間 / 3茶室）
+      // 9) 和室（0客間 / 1寝間 / 2こたつ間 / 3茶室※田の字限定）
       if (rm.type === T.ROOM && (rm.label === '和室' || rm.pieceLibId === 'room-wa' || rm.pieceLibId === 'room-wa2')) {
         const wSeed = getRoomThemeSeed(rm.cells, washitsuIdx, stageObj);
-        let mode = 0;
-        if (hasTanoji) {
-          mode = washitsuIdx % 4;
-        } else if (totalWashitsu >= 2) {
-          mode = (wSeed + washitsuIdx) % 4;
-        } else if (stageBadge.includes('シニア') || stageBadge.includes('和モダン') || stageBadge.includes('庭園')) {
-          mode = (wSeed % 2 === 0) ? 3 : 0;
-        } else {
-          mode = wSeed % 4;
-        }
+        const mode = hasTanoji ? (washitsuIdx % 4) : ((wSeed + washitsuIdx) % 3);
         washitsuIdx++;
         const kakePt = rm.cells.find(pt => {
           const e = getCellEdges(pt.r, pt.c);
           return e.wTop && e.top !== E.WINDOW;
         });
         if (kakePt) {
-          wallDecoRooms.push({ type: isHiddenAccess ? 'scroll_ninja' : 'kakejiku', r: kakePt.r, c: kakePt.c });
+          registerWallDeco(isHiddenAccess ? 'scroll_ninja' : 'kakejiku', kakePt.r, kakePt.c, 1);
         }
         if (isHiddenAccess) {
           const ng = findCenterSingle(rm.cells, cellSet);
@@ -892,51 +1115,134 @@
           if (sb) addItem('furn_safe_box', sb.r, sb.c, 1, 1, rm.key, { snap: sb.snap });
           continue;
         }
+        const rmW = rm.maxC - rm.minC + 1;
+        const rmH = rm.maxR - rm.minR + 1;
+        const midR1 = Math.floor((rm.minR + rm.maxR) / 2);
+        const midR2 = Math.ceil((rm.minR + rm.maxR) / 2);
+        const midC1 = Math.floor((rm.minC + rm.maxC) / 2);
+        const midC2 = Math.ceil((rm.minC + rm.maxC) / 2);
+        const coreCovered = (rmW >= 2 && rmH >= 2)
+          && cellSet.has(`${midR1},${midC1}`)
+          && cellSet.has(`${midR1},${midC2}`)
+          && cellSet.has(`${midR2},${midC1}`)
+          && cellSet.has(`${midR2},${midC2}`);
+        const centerBounds = { minR: rm.minR, maxR: rm.maxR, minC: rm.minC, maxC: rm.maxC };
+        const pickSideOrNorthWall = (cellsForPick) => {
+          const nonDecoCells = cellsForPick.filter(pt => !northWallDecoCells.has(`${pt.r},${pt.c}`));
+          if (nonDecoCells.length === 0) return null;
+          const cand = findWallSingle(nonDecoCells, cellSet, true, { preferSide: true });
+          if (!cand) return null;
+          if (cand.snap === 'west' || cand.snap === 'east' || (cand.snap === 'north' && !northWallDecoCells.has(`${cand.r},${cand.c}`))) {
+            return cand;
+          }
+          return null;
+        };
+
         if (mode === 1) {
-          const f1 = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
-          if (f1) addItem('furn_futon', f1.r, f1.c, 1, 1, rm.key, { snap: f1.snap });
-          const f2 = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
-          if (f2) addItem('furn_futon', f2.r, f2.c, 1, 1, rm.key, { snap: f2.snap });
+          const pairCands = rm.cells
+            .filter(pt => isFree(pt.r, pt.c, 2, 1, cellSet))
+            .map(pt => {
+              const e1 = getCellEdges(pt.r, pt.c);
+              const e2 = getCellEdges(pt.r, pt.c + 1);
+              let sc = 120;
+              if (northWallDecoCells.has(`${pt.r},${pt.c}`) || northWallDecoCells.has(`${pt.r},${pt.c + 1}`)) sc -= 90;
+              if (e1.hasDoor || e2.hasDoor) sc -= 80;
+              sc -= getSwingPenalty(pt.r, pt.c) + getSwingPenalty(pt.r, pt.c + 1);
+              if (pt.r === rm.maxR) sc += 25;
+              return { pt, sc };
+            })
+            .sort((a, b) => b.sc - a.sc || b.pt.r - a.pt.r || a.pt.c - b.pt.c);
+          if (pairCands[0]) {
+            const p = pairCands[0].pt;
+            addItem('furn_futon', p.r, p.c, 1, 1, rm.key, { snap: 'center' });
+            addItem('furn_futon', p.r, p.c + 1, 1, 1, rm.key, { snap: 'center' });
+          } else {
+            const f1 = findCenterSingle(rm.cells, cellSet);
+            if (f1) addItem('furn_futon', f1.r, f1.c, 1, 1, rm.key, { snap: 'center' });
+            if (count >= 3) {
+              const f2 = findCenterSingle(rm.cells, cellSet);
+              if (f2) addItem('furn_futon', f2.r, f2.c, 1, 1, rm.key, { snap: 'center' });
+            }
+          }
           if (count >= 4) {
-            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            const wt = findWallSingle(rm.cells, cellSet, true);
+            if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
+          }
+          if (count >= 6) {
+            const bs = findWallSingle(rm.cells, cellSet, false);
             if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
           }
         } else if (mode === 2) {
-          const kt = findCenterSingle(rm.cells, cellSet);
-          if (kt) addItem('furn_kotatsu', kt.r, kt.c, 1, 1, rm.key, { snap: 'center' });
-          if (count >= 4 && !kakePt) {
-            const tk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
-            if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
-          }
-          if (count >= 6) {
-            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
-            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
-          }
-        } else if (mode === 3) {
-          const ts = findCenterSingle(rm.cells, cellSet);
-          if (ts) addItem('furn_tea_set', ts.r, ts.c, 1, 1, rm.key, { snap: 'center' });
-          if (count >= 3) {
-            const bs = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
-            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
-          }
-          if (count >= 6 && !kakePt) {
-            const tk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
-            if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
-          }
-        } else {
-          const ch = findCenterSingle(rm.cells, cellSet);
-          if (ch) addItem('furn_chabudai', ch.r, ch.c, 1, 1, rm.key, { snap: 'center' });
-          if (count >= 4 && !kakePt) {
-            const tk = findWallSingle(rm.cells, cellSet, true);
-            if (tk) addItem('furn_tokonoma', tk.r, tk.c, 1, 1, rm.key, { snap: tk.snap });
-          }
-          if (count >= 4) {
-            const bs = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
-            if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
-          }
-          if (count >= 6) {
+          if (coreCovered) {
+            items.push({
+              assetId: 'furn_kotatsu',
+              r: midR1, c: midC1, wCells: 1, hCells: 1,
+              roomKey: rm.key, delayMs: 0, snap: 'center', centerInRoom: centerBounds
+            });
+            if (count <= 5) {
+              const wSide = pickSideOrNorthWall(rm.cells);
+              if (wSide) {
+                if (!kakePt && wSide.snap === 'north' && getCellEdges(wSide.r, wSide.c).hasSolidTop) {
+                  addItem('furn_tokonoma', wSide.r, wSide.c, 1, 1, rm.key, { snap: 'north' });
+                } else {
+                  addItem('furn_watansu', wSide.r, wSide.c, 1, 1, rm.key, { snap: wSide.snap });
+                }
+              }
+            } else {
+              const wt = findWallSingle(rm.cells, cellSet, true);
+              if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
+              const bs = findWallSingle(rm.cells, cellSet, false);
+              if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+            }
+          } else {
             const kt = findCenterSingle(rm.cells, cellSet);
             if (kt) addItem('furn_kotatsu', kt.r, kt.c, 1, 1, rm.key, { snap: 'center' });
+            if (count >= 4) {
+              const wt = pickSideOrNorthWall(rm.cells);
+              if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
+            }
+          }
+        } else if (mode === 3) {
+          if (coreCovered) {
+            rm.cells.forEach(pt => markUsed(pt.r, pt.c, 1, 1));
+            items.push({
+              assetId: 'furn_tea_set_center',
+              r: midR1, c: midC1, wCells: 1, hCells: 1,
+              roomKey: rm.key, delayMs: 0, snap: 'center', steam: true, centerInRoom: centerBounds
+            });
+          } else {
+            const ts = findCenterSingle(rm.cells, cellSet);
+            if (ts) addItem('furn_tea_set', ts.r, ts.c, 1, 1, rm.key, { snap: 'center', steam: true });
+          }
+        } else {
+          if (coreCovered) {
+            items.push({
+              assetId: 'furn_chabudai',
+              r: midR1, c: midC1, wCells: 1, hCells: 1,
+              roomKey: rm.key, delayMs: 0, snap: 'center', centerInRoom: centerBounds
+            });
+            if (count <= 5) {
+              const wSide = pickSideOrNorthWall(rm.cells);
+              if (wSide) {
+                if (!kakePt && wSide.snap === 'north' && getCellEdges(wSide.r, wSide.c).hasSolidTop) {
+                  addItem('furn_tokonoma', wSide.r, wSide.c, 1, 1, rm.key, { snap: 'north' });
+                } else {
+                  addItem('furn_bonsai', wSide.r, wSide.c, 1, 1, rm.key, { snap: wSide.snap });
+                }
+              }
+            } else {
+              const wt = findWallSingle(rm.cells, cellSet, true);
+              if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
+              const bs = findWallSingle(rm.cells, cellSet, false);
+              if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+            }
+          } else {
+            const ch = findCenterSingle(rm.cells, cellSet);
+            if (ch) addItem('furn_chabudai', ch.r, ch.c, 1, 1, rm.key, { snap: 'center' });
+            if (count >= 4) {
+              const bs = pickSideOrNorthWall(rm.cells);
+              if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
+            }
           }
         }
         continue;
@@ -946,7 +1252,7 @@
       if (rm.type === T.ROOM) {
         if (isHiddenAccess) {
           const wallPt = rm.cells.find(pt => getCellEdges(pt.r, pt.c).hasSolidTop);
-          if (wallPt) wallDecoRooms.push({ type: 'scroll_ninja', r: wallPt.r, c: wallPt.c });
+          if (wallPt) registerWallDeco('scroll_ninja', wallPt.r, wallPt.c, 1);
           const ng = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
           if (ng) addItem('furn_ninja_gear', ng.r, ng.c, 1, 1, rm.key, { snap: ng.snap });
           const sb = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
@@ -1140,7 +1446,21 @@
       items[origIdx].delayMs = items.length <= 1 ? 0 : (orderIdx / (items.length - 1)) * maxDelay;
     });
 
-    return { items, darkRooms, isGlassHouse, isFortress, comboNames, rooms, wallDecoRooms, sunnyRoomKeys, hiddenRoomKeys, badSpots, doorPlan };
+    // 北壁に密接する背高・壁寄せ家具のセルを記録（時計・絵画等と喧嘩しないよう排他制御）
+    const northWallOccupiedByFurn = new Set();
+    for (const it of items) {
+      if (!it.roomKey || it.floating || it.isFloorRug || it.snap === 'center' || CENTER_SNAP_ASSETS.has(it.assetId)) continue;
+      if (it.snap === 'south' || it.assetId === 'furn_futon' || it.assetId === 'furn_bath_stool') continue;
+      const wc = it.wCells || 1;
+      for (let dc = 0; dc < wc; dc++) {
+        const r = it.r, c = it.c + dc;
+        if (getCellEdges(r, c).hasSolidTop) {
+          northWallOccupiedByFurn.add(`${r},${c}`);
+        }
+      }
+    }
+
+    return { items, darkRooms, isGlassHouse, isFortress, comboNames, rooms, wallDecoRooms, northWallDecoCells, northWallOccupiedByFurn, sunnyRoomKeys, hiddenRoomKeys, badSpots, doorPlan };
   }
 
   /* ============================================================
@@ -1705,10 +2025,22 @@
         if (et === E.WINDOW && !isSolid) {
           const winStart = x1 + Math.round(w * 0.20);
           const winLen = Math.round(w * 0.60);
-          ctx.fillStyle = '#38bdf8';
-          ctx.fillRect(winStart, y1 - halfT + inset, winLen, coreThick);
-          ctx.fillStyle = '#e0f2fe';
-          ctx.fillRect(winStart + 2, y1 - halfT + inset, Math.max(2, Math.round(winLen * 0.42)), 1);
+          const w1 = isWashitsuDoorCell(c1_cell);
+          const w2 = isWashitsuDoorCell(c2_cell);
+          if ((w1 !== w2) && coreThick >= 2) {
+            const halfC = Math.floor(coreThick / 2);
+            const remC = coreThick - halfC;
+            const topIsShoji = w1;
+            ctx.fillStyle = topIsShoji ? '#fef3c7' : '#38bdf8';
+            ctx.fillRect(winStart, y1 - halfT + inset, winLen, halfC);
+            ctx.fillStyle = topIsShoji ? '#38bdf8' : '#fef3c7';
+            ctx.fillRect(winStart, y1 - halfT + inset + halfC, winLen, remC);
+          } else {
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(winStart, y1 - halfT + inset, winLen, coreThick);
+            ctx.fillStyle = '#e0f2fe';
+            ctx.fillRect(winStart + 2, y1 - halfT + inset, Math.max(2, Math.round(winLen * 0.42)), 1);
+          }
         }
       } else {
         const h = y2 - y1;
@@ -1721,10 +2053,22 @@
         if (et === E.WINDOW && !isSolid) {
           const winStart = y1 + Math.round(h * 0.20);
           const winLen = Math.round(h * 0.60);
-          ctx.fillStyle = '#38bdf8';
-          ctx.fillRect(x1 - halfT + inset, winStart, coreThick, winLen);
-          ctx.fillStyle = '#e0f2fe';
-          ctx.fillRect(x1 - halfT + inset, winStart + 2, 1, Math.max(2, Math.round(winLen * 0.42)));
+          const w1 = isWashitsuDoorCell(c1_cell);
+          const w2 = isWashitsuDoorCell(c2_cell);
+          if ((w1 !== w2) && coreThick >= 2) {
+            const halfC = Math.floor(coreThick / 2);
+            const remC = coreThick - halfC;
+            const leftIsShoji = w1;
+            ctx.fillStyle = leftIsShoji ? '#fef3c7' : '#38bdf8';
+            ctx.fillRect(x1 - halfT + inset, winStart, halfC, winLen);
+            ctx.fillStyle = leftIsShoji ? '#38bdf8' : '#fef3c7';
+            ctx.fillRect(x1 - halfT + inset + halfC, winStart, remC, winLen);
+          } else {
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(x1 - halfT + inset, winStart, coreThick, winLen);
+            ctx.fillStyle = '#e0f2fe';
+            ctx.fillRect(x1 - halfT + inset, winStart + 2, 1, Math.max(2, Math.round(winLen * 0.42)));
+          }
         }
       }
 
@@ -1997,39 +2341,66 @@
                 ctx.fillRect(dx + 1, y - Math.max(4, Math.round(cs * 0.14)), dw - 2, Math.max(3, Math.round(cs * 0.1)));
               }
             } else if (et === E.WINDOW) {
-              // 窓ガラス＋白サッシ＋小さなカーテン両袖！
-              const winW = Math.round(cs * 0.58);
-              const winX = x + Math.round((cs - winW) / 2);
-              const winY = y + 2;
-              const winH = Math.max(6, wallH - 5);
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(winX - 1, winY, winW + 2, winH);
-              ctx.fillStyle = '#38bdf8';
-              ctx.fillRect(winX, winY + 1, winW, winH - 2);
-              ctx.fillStyle = '#e0f2fe';
-              ctx.fillRect(winX + 2, winY + 2, Math.round(winW * 0.35), Math.max(2, winH - 5));
-              // 中央の縦桟＆横桟
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(winX + Math.round(winW / 2), winY + 1, 1, winH - 2);
-              ctx.fillRect(winX, winY + Math.round(winH / 2), winW, 1);
-              // 左右の小さなカーテン（空室時は外す）
-              if (!vacantMode) {
-                ctx.fillStyle = '#f59e0b';
-                ctx.fillRect(winX - 2, winY, 3, winH);
-                ctx.fillRect(winX + winW - 1, winY, 3, winH);
+              if (isWashitsu) {
+                // 和室北壁：内障子（木枠＋明るい生成り和紙＋組子格子）
+                const winW = Math.round(cs * 0.62);
+                const winX = x + Math.round((cs - winW) / 2);
+                const winY = y + 2;
+                const winH = Math.max(7, wallH - 5);
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(winX - 1, winY, winW + 2, winH);
+                ctx.fillStyle = '#fefce8';
+                ctx.fillRect(winX, winY + 1, winW, winH - 2);
+                ctx.fillStyle = '#fef9c3';
+                ctx.fillRect(winX + 1, winY + 2, Math.round(winW * 0.52), Math.max(2, winH - 4));
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(winX, winY + 1 + Math.round((winH - 2) * 0.34), winW, 1);
+                ctx.fillRect(winX, winY + 1 + Math.round((winH - 2) * 0.67), winW, 1);
+                ctx.fillStyle = '#c28550';
+                ctx.fillRect(winX + Math.round(winW * 0.17), winY + 1, 1, winH - 2);
+                ctx.fillRect(winX + Math.round(winW * 0.33), winY + 1, 1, winH - 2);
+                ctx.fillRect(winX + Math.round(winW * 0.67), winY + 1, 1, winH - 2);
+                ctx.fillRect(winX + Math.round(winW * 0.83), winY + 1, 1, winH - 2);
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(winX + Math.floor(winW / 2) - 1, winY + 1, 2, winH - 2);
+              } else {
+                // 窓ガラス＋白サッシ＋小さなカーテン両袖！
+                const winW = Math.round(cs * 0.58);
+                const winX = x + Math.round((cs - winW) / 2);
+                const winY = y + 2;
+                const winH = Math.max(6, wallH - 5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(winX - 1, winY, winW + 2, winH);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(winX, winY + 1, winW, winH - 2);
+                ctx.fillStyle = '#e0f2fe';
+                ctx.fillRect(winX + 2, winY + 2, Math.round(winW * 0.35), Math.max(2, winH - 5));
+                // 中央の縦桟＆横桟
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(winX + Math.round(winW / 2), winY + 1, 1, winH - 2);
+                ctx.fillRect(winX, winY + Math.round(winH / 2), winW, 1);
+                // 左右の小さなカーテン（空室時は外す）
+                if (!vacantMode) {
+                  ctx.fillStyle = '#f59e0b';
+                  ctx.fillRect(winX - 2, winY, 3, winH);
+                  ctx.fillRect(winX + winW - 1, winY, 3, winH);
+                }
               }
             } else {
-              // 壁面装飾（富士山壁画、掛け軸、廊下の絵、時計）
+              // 壁面装飾（富士山壁画、浴室シャワー、掛け軸、廊下の絵、時計：北壁寄せ家具と排他）
               const key = `${r},${c}`;
               const wd = wallDecoMap.get(key);
+              const blockedByFurn = Boolean(plan?.northWallOccupiedByFurn?.has(key));
               if (wd && wd.type === 'fuji') {
                 PixelAssets.drawSprite(ctx, 'wall_fuji', x + 1, y + 2, cs * 2 - 2, wallH - 5);
                 skipCells.add(`${r},${c + 1}`);
+              } else if (wd && wd.type === 'shower') {
+                PixelAssets.drawSprite(ctx, 'wall_shower', x + 1, y + 2, cs - 2, wallH - 4);
               } else if (!vacantMode && wd && wd.type === 'kakejiku') {
                 PixelAssets.drawSprite(ctx, 'wall_kakejiku', x, y + 2, cs, wallH - 4);
               } else if (!vacantMode && wd && wd.type === 'scroll_ninja') {
                 PixelAssets.drawSprite(ctx, 'wall_scroll_ninja', x, y + 2, cs, wallH - 4);
-              } else if (!vacantMode && !skipCells.has(key)) {
+              } else if (!vacantMode && !skipCells.has(key) && !blockedByFurn) {
                 if (cCur.type === T.CORRIDOR && ((r * 7 + c * 11) % 3 === 0)) {
                   const artId = ((r + c) % 2 === 0) ? 'wall_art_1' : 'wall_art_2';
                   PixelAssets.drawSprite(ctx, artId, x, y + 2, cs, wallH - 4);
@@ -2071,12 +2442,87 @@
             ctx.fillStyle = '#ef4444';
             ctx.fillRect(dx + 1, y + extH + 1, dw - 2, Math.max(2, Math.round(cs * 0.09)));
           } else if (et === E.WINDOW) {
-            const winW = Math.round(cs * 0.54);
+            const isWaTop = isWashitsuDoorCell(cTop);
+            const winW = Math.round(cs * 0.56);
             const winX = x + Math.round((cs - winW) / 2);
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(winX - 1, y + 2, winW + 2, Math.max(4, extH - 5));
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(winX, y + 3, winW, Math.max(3, extH - 7));
+            const winH = Math.max(5, extH - 5);
+            if (isWaTop) {
+              const stBadge = stageObj?.client?.typeBadge || '';
+              const useLattice = Boolean(
+                plan?.comboNames?.has('古き良き日本家屋') ||
+                stBadge.includes('和') || stBadge.includes('庭園') || stBadge.includes('シニア') ||
+                stBadge.includes('二世帯') || stBadge.includes('忍') || stBadge.includes('仙') ||
+                (((stageObj?.id || 0) + (cTop.roomId || 0)) % 3 === 0)
+              );
+              if (useLattice) {
+                // 案B：和風の縦木格子（面格子）窓
+                ctx.fillStyle = '#5c371e';
+                ctx.fillRect(winX - 1, y + 2, winW + 2, winH);
+                const upperH = Math.floor((winH - 2) / 2);
+                ctx.fillStyle = '#e0f2fe';
+                ctx.fillRect(winX, y + 3, winW, upperH);
+                ctx.fillStyle = '#fef9c3';
+                ctx.fillRect(winX, y + 3 + upperH, winW, (winH - 2) - upperH);
+                ctx.fillStyle = '#92400e';
+                ctx.fillRect(winX, y + 3 + upperH, winW, 1);
+                ctx.fillStyle = '#78350f';
+                for (let lx = winX + 2; lx < winX + winW - 1; lx += 3) {
+                  ctx.fillRect(lx, y + 3, 1, winH - 2);
+                }
+              } else {
+                // 案A：濃茶サッシ＋ガラス越し内障子透け
+                ctx.fillStyle = '#5c371e';
+                ctx.fillRect(winX - 1, y + 2, winW + 2, winH);
+                ctx.fillStyle = '#f5f2dc';
+                ctx.fillRect(winX, y + 3, winW, winH - 2);
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(winX, y + 3 + Math.floor((winH - 2) / 2), winW, 1);
+                ctx.fillRect(winX + Math.round(winW * 0.25), y + 3, 1, winH - 2);
+                ctx.fillRect(winX + Math.round(winW * 0.75), y + 3, 1, winH - 2);
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(winX + Math.floor(winW / 2), y + 3, 1, winH - 2);
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.28)';
+                ctx.fillRect(winX, y + 3, winW, winH - 2);
+                ctx.fillStyle = 'rgba(224, 242, 254, 0.72)';
+                ctx.fillRect(winX + 2, y + 4, Math.round(winW * 0.36), Math.max(2, winH - 5));
+              }
+              ctx.fillStyle = '#475569';
+              ctx.fillRect(winX - 1, y + 2 + winH, winW + 2, 1);
+            } else {
+              // 洋室・LDK 等の外観窓：濃灰外枠＋明るいアルミサッシ枠＋引き違い中桟＋水切り
+              ctx.fillStyle = '#334155';
+              ctx.fillRect(winX - 1, y + 2, winW + 2, winH);
+              ctx.fillStyle = '#e2e8f0';
+              ctx.fillRect(winX, y + 3, winW, winH - 2);
+              const midX = winX + Math.floor(winW / 2);
+              if (winW >= 8 && winH >= 7) {
+                const glassX = winX + 1;
+                const glassY = y + 4;
+                const glassW = winW - 2;
+                const glassH = winH - 4;
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(glassX, glassY, glassW, glassH);
+                ctx.fillStyle = '#bae6fd';
+                ctx.fillRect(glassX + 1, glassY + 1, Math.max(2, Math.floor((glassW - 2) * 0.42)), Math.max(2, glassH - 2));
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(glassX + 2, glassY + 1, Math.max(1, Math.floor(glassW * 0.16)), 1);
+                ctx.fillStyle = '#7dd3fc';
+                ctx.fillRect(midX + 2, glassY + 1, Math.max(1, Math.floor(glassW * 0.22)), Math.max(1, Math.floor(glassH * 0.45)));
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(midX - 1, y + 3, 2, winH - 2);
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(midX, y + 3, 1, winH - 2);
+              } else {
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(winX + 1, y + 3, Math.max(2, winW - 2), Math.max(2, winH - 2));
+                ctx.fillStyle = '#bae6fd';
+                ctx.fillRect(winX + 1, y + 3, Math.max(1, Math.floor(winW * 0.35)), Math.max(1, winH - 3));
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(midX, y + 3, 1, winH - 2);
+              }
+              ctx.fillStyle = '#94a3b8';
+              ctx.fillRect(winX - 1, y + 2 + winH, winW + 2, 1);
+            }
           }
         }
       }
@@ -2340,12 +2786,182 @@
       draw25DWallsAndDeco(ctx, targetGrid, cs, plan, stageObj, facing, vacantMode);
     }
 
-    // 3. 家具描画（ポップバウンス & 壁寄せオフセット対応！）
+    // 3. 家具描画（ポップバウンス & ピクセル実寸ベースの壁・角ピタ寄せ対応）
     if (showFurniture && plan.items) {
       const fn = typeof edgeType === 'function' ? edgeType : null;
-      for (const item of plan.items) {
+      const orderedItems = [
+        ...plan.items.filter(it => it.isFloorRug),
+        ...plan.items.filter(it => !it.isFloorRug)
+      ];
+
+      const computeTightOffset = (item, drawAssetId) => {
+        const bw = (item.wCells || 1) * cs;
+        const bh = (item.hCells || 1) * cs;
+        const wc = item.wCells || 1;
+        const hc = item.hCells || 1;
+        const isWall = (e) => (e === E.WALL || e === E.WINDOW);
+
+        let topAnyWall = false, topHasDoor = false, topHasWindow = false, topAllWall = true;
+        let botHasDoor = false, botAllWall = true;
+        let leftHasDoor = false, leftAllWall = true;
+        let rightHasDoor = false, rightAllWall = true;
+
+        for (let dc = 0; dc < wc; dc++) {
+          const t = safeEdgeType(targetGrid, item.r - 1, item.c + dc, item.r, item.c + dc, fn);
+          const b = safeEdgeType(targetGrid, item.r + hc - 1, item.c + dc, item.r + hc, item.c + dc, fn);
+          if (t === E.WALL || t === E.WINDOW || t === E.DOOR) topAnyWall = true;
+          if (t === E.DOOR) topHasDoor = true;
+          if (t === E.WINDOW) topHasWindow = true;
+          if (!isWall(t)) topAllWall = false;
+          if (b === E.DOOR) botHasDoor = true;
+          if (!isWall(b)) botAllWall = false;
+        }
+        for (let dr = 0; dr < hc; dr++) {
+          const l = safeEdgeType(targetGrid, item.r + dr, item.c - 1, item.r + dr, item.c, fn);
+          const ri = safeEdgeType(targetGrid, item.r + dr, item.c + wc - 1, item.r + dr, item.c + wc, fn);
+          if (l === E.DOOR) leftHasDoor = true;
+          if (!isWall(l)) leftAllWall = false;
+          if (ri === E.DOOR) rightHasDoor = true;
+          if (!isWall(ri)) rightAllWall = false;
+        }
+
+        const hasNorthWallDeco = Boolean(plan?.northWallDecoCells?.has(`${item.r},${item.c}`));
+
+        if (item.assetId === 'furn_futon') {
+          const boundsF = getSpriteContentBounds(drawAssetId);
+          if (!boundsF) {
+            return { offX: 0, offY: topAnyWall ? Math.round(cs * 0.22) : 0 };
+          }
+          const syF = bh / boundsF.h;
+          const bTopF = boundsF.minY * syF;
+          const bBotF = (boundsF.maxY + 1) * syF;
+          const rawTF = Math.round(cs * 0.15);
+          const halfTF = Math.max(4, rawTF % 2 === 0 ? rawTF : rawTF + 1) / 2;
+          const wallHF = Math.max(9, Math.round(cs * 0.42));
+          const reqTopF = hasNorthWallDeco
+            ? Math.round(wallHF * 0.90)
+            : (topAnyWall ? Math.round(wallHF * 0.65) : 0);
+          let offYF = 0;
+          if (reqTopF > 0 && bTopF + offYF < reqTopF) {
+            offYF = Math.ceil(reqTopF - bTopF);
+          }
+          const maxBotF = (botAllWall || botHasDoor) ? (bh - halfTF - 3) : (bh - 2);
+          if (bBotF + offYF > maxBotF) {
+            offYF = Math.floor(maxBotF - bBotF);
+          }
+          if (reqTopF > 0 && bTopF + offYF < Math.round(wallHF * 0.45)) {
+            offYF = Math.ceil(Math.round(wallHF * 0.45) - bTopF);
+          }
+          return { offX: 0, offY: offYF };
+        }
+
+        const isCenterOnly = !item.roomKey || item.floating || item.isFloorRug || item.snap === 'center' || CENTER_SNAP_ASSETS.has(item.assetId);
+        if (isCenterOnly) {
+          const boundsC = getSpriteContentBounds(drawAssetId);
+          let offYC = (topAnyWall && !item.floating && !item.isFloorRug) ? Math.round(cs * (hasNorthWallDeco ? 0.34 : 0.20)) : 0;
+          if (boundsC && !item.floating && !item.isFloorRug) {
+            const syC = bh / boundsC.h;
+            const rawTC = Math.round(cs * 0.15);
+            const halfTC = Math.max(4, rawTC % 2 === 0 ? rawTC : rawTC + 1) / 2;
+            const wallHC = Math.max(9, Math.round(cs * 0.42));
+            const bTopC = boundsC.minY * syC;
+            const bBotC = (boundsC.maxY + 1) * syC;
+            if (hasNorthWallDeco && bTopC + offYC < Math.round(wallHC * 0.88)) {
+              offYC = Math.ceil(Math.round(wallHC * 0.88) - bTopC);
+            }
+            const maxBotC = (botAllWall || botHasDoor) ? (bh - halfTC - 1) : (bh - 1);
+            if (bBotC + offYC > maxBotC) {
+              offYC = Math.floor(maxBotC - bBotC);
+            }
+            const minTopC = (topAllWall || topHasDoor) ? Math.round(wallHC * 0.40) : 1;
+            if (bTopC + offYC < minTopC) {
+              offYC = Math.ceil(minTopC - bTopC);
+            }
+          }
+          return { offX: 0, offY: offYC };
+        }
+
+        const bounds = getSpriteContentBounds(drawAssetId);
+        if (!bounds) {
+          return { offX: 0, offY: topAnyWall ? Math.round(cs * 0.22) : 0 };
+        }
+
+        const sx = bw / bounds.w;
+        const sy = bh / bounds.h;
+        const bodyLeft = bounds.minX * sx;
+        const bodyRight = (bounds.maxX + 1) * sx;
+        const bodyTop = bounds.minY * sy;
+        const bodyBot = (bounds.maxY + 1) * sy;
+
+        const rawT = Math.round(cs * 0.15);
+        const wallThick = Math.max(4, rawT % 2 === 0 ? rawT : rawT + 1);
+        const halfT = wallThick / 2;
+        const wallH = Math.max(9, Math.round(cs * 0.42));
+        const bodyH = bodyBot - bodyTop;
+        const maxBot = (botAllWall || botHasDoor) ? (bh - halfT) : (bh - 1);
+
+        const westTargetX = halfT;
+        const eastTargetRight = bw - halfT;
+        const isSideSnap = (item.snap === 'west' || item.snap === 'east');
+        const floorLineY = Math.min(wallH - 1, Math.max(halfT, Math.floor(maxBot - bodyH)));
+        const northTargetY = hasNorthWallDeco
+          ? Math.min(Math.round(wallH * 0.90), Math.max(halfT, Math.floor(maxBot - bodyH)))
+          : ((topHasWindow || isSideSnap) ? floorLineY : Math.round(wallH * 0.44));
+        const southTargetBot = bh - halfT;
+
+        let offX = 0;
+        let offY = 0;
+
+        if (item.snap === 'west' && leftAllWall && !leftHasDoor) {
+          offX = Math.round(westTargetX - bodyLeft);
+        } else if (item.snap === 'east' && rightAllWall && !rightHasDoor) {
+          offX = Math.round(eastTargetRight - bodyRight);
+        } else if (leftAllWall && !leftHasDoor && !rightAllWall && !rightHasDoor) {
+          offX = Math.round(westTargetX - bodyLeft);
+        } else if (rightAllWall && !rightHasDoor && !leftAllWall && !leftHasDoor) {
+          offX = Math.round(eastTargetRight - bodyRight);
+        }
+
+        if (item.assetId === 'furn_shoesbox_slim') {
+          if (item.snap === 'south' && botAllWall && !botHasDoor) {
+            offY = Math.round(southTargetBot - bodyBot);
+          } else if (topAllWall && !topHasDoor) {
+            offY = Math.round(northTargetY - bodyTop);
+          } else if (topAnyWall) {
+            offY = Math.round(cs * 0.18);
+          }
+        } else if ((item.snap === 'south' && botAllWall && !botHasDoor) || (topHasDoor && botAllWall && !botHasDoor)) {
+          offY = Math.round(southTargetBot - bodyBot);
+        } else if (item.snap === 'north' && topAllWall && !topHasDoor) {
+          offY = Math.round(northTargetY - bodyTop);
+        } else if (botAllWall && !botHasDoor && !topAllWall) {
+          offY = Math.round(southTargetBot - bodyBot);
+        } else if (topAllWall && !topHasDoor) {
+          offY = Math.round(northTargetY - bodyTop);
+        } else if (topHasDoor) {
+          offY = Math.max(0, Math.round(wallH * 0.88 - bodyTop));
+        }
+
+        const minLeft = (leftAllWall || leftHasDoor) ? halfT : 1;
+        const maxRight = (rightAllWall || rightHasDoor) ? (bw - halfT) : (bw - 1);
+        if (bodyLeft + offX < minLeft) offX = Math.ceil(minLeft - bodyLeft);
+        if (bodyRight + offX > maxRight) offX = Math.floor(maxRight - bodyRight);
+
+        const rawMinTop = hasNorthWallDeco
+          ? Math.round(wallH * 0.88)
+          : (topHasWindow
+            ? (wallH - 1)
+            : ((topAllWall || topHasDoor) ? Math.max(halfT, Math.round(wallH * (isSideSnap ? 0.88 : 0.38))) : 1));
+        const minTop = Math.min(rawMinTop, Math.max(1, Math.floor(maxBot - bodyH)));
+        if (bodyBot + offY > maxBot) offY = Math.floor(maxBot - bodyBot);
+        if (bodyTop + offY < minTop) offY = Math.ceil(minTop - bodyTop);
+
+        return { offX, offY };
+      };
+
+      for (const item of orderedItems) {
         if (vacantMode && !BUILTIN_ASSET_IDS.has(item.assetId)) continue;
-        const localMs = furnitureElapsedMs - (item.delayMs || 0);
+        const localMs = item.isFloorRug ? 99999 : (furnitureElapsedMs - (item.delayMs || 0));
         if (localMs <= 0) continue;
 
         const dur = 240;
@@ -2369,33 +2985,47 @@
           drawAssetId = `${item.assetId}_${item.snap}`;
         }
 
-        // 壁寄せ・2.5D北壁への食い込み防止オフセット
-        let offX = 0, offY = 0;
-        const topEt = safeEdgeType(targetGrid, item.r - 1, item.c, item.r, item.c, fn);
-        const hasNorthWall = (topEt === E.WALL || topEt === E.WINDOW || topEt === E.DOOR);
-
-        if (item.assetId === 'furn_shoesbox_slim') {
-          if (enable25DWalls && hasNorthWall && item.snap !== 'south') {
-            offY = Math.round(cs * 0.20);
+        let bx, by, bw, bh;
+        if (enable25DWalls && item.centerInRoom) {
+          const b = item.centerInRoom;
+          const rawT = Math.round(cs * 0.15);
+          const halfT = Math.max(4, rawT % 2 === 0 ? rawT : rawT + 1) / 2;
+          const wallH = Math.max(9, Math.round(cs * 0.42));
+          let hasTopWall = false;
+          for (let cc = b.minC; cc <= b.maxC; cc++) {
+            const topEt = safeEdgeType(targetGrid, b.minR - 1, cc, b.minR, cc, fn);
+            if (topEt === E.WALL || topEt === E.WINDOW || topEt === E.DOOR) {
+              hasTopWall = true;
+              break;
+            }
           }
-        } else if (enable25DWalls) {
-          const compactNorthDoor = (topEt === E.DOOR) && ((plan?.doorPlan?.cellRoomSize?.get(`${item.r},${item.c}`) || 2) <= 1);
-          if (item.snap === 'north') {
-            offY = hasNorthWall ? Math.round(cs * (compactNorthDoor ? 0.30 : 0.24)) : 0;
-          } else if (item.snap === 'west' || item.snap === 'east') {
-            // 左右壁ぴったりスプライトは x=0/x=23 側に描画済みのため offX=0 で完全密着
-            offY = hasNorthWall ? Math.round(cs * (compactNorthDoor ? 0.26 : 0.16)) : 0;
-          } else if (item.snap === 'south') {
-            offY = 0;
-          } else if (hasNorthWall) {
-            offY = Math.round(cs * (compactNorthDoor ? 0.30 : 0.22));
+          const floorTop = b.minR * cs + (hasTopWall ? wallH : halfT);
+          const floorBot = (b.maxR + 1) * cs - halfT;
+          const floorLeft = b.minC * cs + halfT;
+          const floorRight = (b.maxC + 1) * cs - halfT;
+          const spr = PixelAssets.getSprite(drawAssetId);
+          const targetW = Math.round((spr ? spr.width : 64) * (cs / 48));
+          const targetH = Math.round((spr ? spr.height : 52) * (cs / 48));
+          const availW = Math.max(16, floorRight - floorLeft - 4);
+          const availH = Math.max(16, floorBot - floorTop - 4);
+          const fitScale = Math.min(1, availW / targetW, availH / targetH);
+          bw = Math.round(targetW * fitScale);
+          bh = Math.round(targetH * fitScale);
+          bx = Math.round((floorLeft + floorRight - bw) / 2);
+          by = Math.round((floorTop + floorBot - bh) / 2);
+        } else {
+          // 壁寄せ・2.5D北壁への食い込み防止オフセット
+          let offX = 0, offY = 0;
+          if (enable25DWalls) {
+            const tightOff = computeTightOffset(item, drawAssetId);
+            offX = tightOff.offX;
+            offY = tightOff.offY;
           }
+          bx = item.c * cs + offX;
+          by = item.r * cs + offY;
+          bw = (item.wCells || 1) * cs;
+          bh = (item.hCells || 1) * cs;
         }
-
-        const bx = item.c * cs + offX;
-        const by = item.r * cs + offY;
-        const bw = (item.wCells || 1) * cs;
-        const bh = (item.hCells || 1) * cs;
         const cx = bx + bw / 2;
         const cy = by + bh / 2;
 
