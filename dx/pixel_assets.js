@@ -1827,6 +1827,119 @@
       g.rect(18, 35, 3, 2, IRON);
     });
     registerMirroredX('furn_watansu_east', 'furn_watansu_west');
+
+    // 10. お布団 方向別 (west / east / south) & 部屋中央テーブル回転版 (chabudai_lr / dining_lr / cafe_table_tb / kotatsu_v / tea_set_center_v)
+    registerCanvasAsset('furn_futon_west', 48, 48, (g) => {
+      g.shadow(7, 36, 33, 4);
+      g.roundBox(7, 11, 33, 26, '#f8fafc', '#64748b', 2);
+      g.roundBox(10, 15, 6, 18, '#e2e8f0', '#94a3b8', 2);
+      g.rect(18, 13, 20, 22, '#f43f5e');
+      g.rect(18, 13, 3, 22, '#fda4af');
+      g.rect(32, 13, 6, 22, '#e11d48');
+    });
+    registerMirroredX('furn_futon_east', 'furn_futon_west');
+    registerCanvasAsset('furn_futon_south', 48, 48, (g) => {
+      g.shadow(11, 39, 26, 4);
+      g.roundBox(11, 7, 26, 33, '#f8fafc', '#64748b', 2);
+      g.roundBox(15, 31, 18, 6, '#e2e8f0', '#94a3b8', 2);
+      g.rect(13, 9, 22, 20, '#f43f5e');
+      g.rect(13, 26, 22, 3, '#fda4af');
+      g.rect(13, 9, 22, 6, '#e11d48');
+    });
+
+    registerCanvasAsset('furn_chabudai_lr', 48, 48, (g) => {
+      g.roundBox(5, 17, 9, 14, '#15803d', '#14532d', 2);
+      g.roundBox(34, 17, 9, 14, '#15803d', '#14532d', 2);
+      g.shadow(14, 34, 20, 4);
+      g.roundBox(14, 11, 20, 26, WOOD_LT, WOOD_DK, 2);
+      g.rect(16, 13, 16, 20, WOOD_HI);
+      // 急須＆湯呑み2つ
+      g.roundBox(20, 16, 5, 5, '#f8fafc', '#94a3b8');
+      g.roundBox(18, 25, 4, 4, '#16a34a', '#14532d');
+      g.roundBox(25, 24, 4, 4, '#16a34a', '#14532d');
+    });
+
+    registerCanvasAsset('furn_dining_lr', 48, 48, (g) => {
+      g.shadow(13, 39, 22, 4);
+      g.roundBox(6, 17, 7, 14, WOOD_MD, WOOD_DK, 2);
+      g.roundBox(35, 17, 7, 14, WOOD_MD, WOOD_DK, 2);
+      g.roundBox(13, 8, 22, 32, WOOD_LT, WOOD_DK, 2);
+      g.rect(15, 10, 18, 26, WOOD_HI);
+      // お皿2枚＋赤いティーポット
+      g.roundBox(16, 13, 7, 7, '#ffffff', '#cbd5e1');
+      g.roundBox(25, 27, 7, 7, '#ffffff', '#cbd5e1');
+      g.roundBox(21, 21, 5, 5, '#ef4444', '#991b1b');
+      g.rect(22, 22, 2, 2, '#fecaca');
+    });
+
+    registerCanvasAsset('furn_cafe_table_tb', 48, 48, (g) => {
+      g.roundBox(18, 5, 12, 9, WOOD_MD, WOOD_DK, 2);
+      g.roundBox(18, 34, 12, 9, WOOD_MD, WOOD_DK, 2);
+      g.shadow(12, 34, 24, 4);
+      g.roundBox(12, 11, 24, 25, WOOD_HI, WOOD_DK, 2);
+      g.rect(15, 14, 18, 19, WOOD_LT);
+      // コーヒーカップ2客＋小皿
+      g.roundBox(18, 15, 6, 6, '#ffffff', '#64748b');
+      g.rect(20, 17, 2, 2, '#78350f');
+      g.roundBox(24, 25, 6, 6, '#ffffff', '#64748b');
+      g.rect(26, 27, 2, 2, '#78350f');
+      g.roundBox(16, 23, 5, 5, '#fde047', '#b45309');
+    });
+
+    registerCanvasAsset('furn_kotatsu_v', 48, 48, (g) => {
+      g.shadow(10, 40, 28, 4);
+      g.roundBox(10, 7, 28, 34, '#dc2626', '#7f1d1d', 2);
+      g.box(12, 9, 24, 30, '#ef4444', '#b91c1c');
+      g.roundBox(15, 12, 18, 24, WOOD_LT, WOOD_DK, 2);
+      g.rect(17, 14, 14, 20, WOOD_HI);
+      // お盆＋みかん盛り
+      g.roundBox(19, 19, 10, 9, '#78350f', WOOD_DK);
+      g.rect(21, 21, 3, 3, '#f97316');
+      g.rect(24, 22, 3, 3, '#fb923c');
+      g.rect(22, 19, 3, 3, '#f97316');
+      g.px(23, 19, '#22c55e');
+    });
+
+    registerCanvasAsset('furn_tea_set_center_v', 52, 64, (g) => {
+      // 上の藍座布団
+      g.shadow(18, 11, 16, 3);
+      g.box(18, 1, 16, 10, INK, '#1e3a8a');
+      g.rect(19, 2, 14, 8, '#2563eb');
+      g.rect(22, 4, 8, 4, '#60a5fa');
+      // 下の藍座布団
+      g.shadow(18, 61, 16, 3);
+      g.box(18, 52, 16, 10, INK, '#1e3a8a');
+      g.rect(19, 53, 14, 8, '#2563eb');
+      g.rect(22, 55, 8, 4, '#60a5fa');
+      // 中央：緋毛氈
+      g.shadow(9, 51, 34, 4);
+      g.box(9, 12, 34, 39, INK, '#b91c1c');
+      g.rect(10, 13, 32, 37, '#dc2626');
+      g.hline(11, 14, 30, '#ef4444');
+      // 明るい桧炉縁＋白灰の囲炉裏
+      g.box(14, 15, 24, 24, INK, '#d49a6a');
+      g.rect(15, 16, 22, 22, '#f3d5a5');
+      g.rect(18, 19, 16, 16, '#94a3b8');
+      g.rect(19, 20, 14, 14, '#e2e8f0');
+      g.rect(23, 30, 5, 2, '#f97316');
+      g.px(25, 30, '#fef08a');
+      // 鉄釜＋金蓋つまみ＋竹柄杓
+      g.box(21, 21, 10, 9, INK, '#334155');
+      g.rect(22, 22, 8, 5, '#475569');
+      g.hline(23, 23, 4, '#94a3b8');
+      g.rect(24, 20, 4, 2, '#facc15');
+      g.hline(30, 23, 6, '#d97706');
+      g.rect(34, 22, 3, 3, '#fde68a');
+      // 下：木製茶盆＋抹茶碗・棗・和菓子
+      g.box(14, 40, 24, 9, WOOD_DK, '#d49a6a');
+      g.box(16, 41, 7, 7, INK, '#15803d');
+      g.rect(17, 42, 5, 4, '#4ade80');
+      g.px(18, 43, '#dcfce7');
+      g.box(24, 42, 5, 5, INK, '#7f1d1d');
+      g.px(26, 43, '#facc15');
+      g.box(30, 41, 7, 6, '#4d7c0f', '#f8fafc');
+      g.rect(32, 43, 3, 3, '#f472b6');
+    });
   }
 
   /* ============================================================

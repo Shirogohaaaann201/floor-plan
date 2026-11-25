@@ -31,9 +31,10 @@
   // 部屋中央に置くもの（ラグ・マット・食卓・こたつ・アイランド・布団・囲炉裏等）
   const CENTER_SNAP_ASSETS = new Set([
     'furn_bathmat', 'furn_rug_foyer', 'furn_rug_red', 'furn_living_rug',
-    'furn_toy_box', 'furn_dining', 'furn_cafe_table', 'furn_chabudai',
-    'furn_kotatsu', 'furn_tea_set', 'furn_tea_set_center', 'furn_coffin', 'furn_island_kitchen',
-    'furn_futon'
+    'furn_toy_box', 'furn_dining', 'furn_dining_lr', 'furn_cafe_table', 'furn_cafe_table_tb',
+    'furn_chabudai', 'furn_chabudai_lr', 'furn_kotatsu', 'furn_kotatsu_v',
+    'furn_tea_set', 'furn_tea_set_center', 'furn_tea_set_center_v', 'furn_coffin', 'furn_island_kitchen',
+    'furn_futon', 'furn_futon_west', 'furn_futon_east', 'furn_futon_south'
   ]);
 
   const spriteBoundsCache = new Map();
@@ -444,21 +445,38 @@
       };
     };
 
-    const pickSnapDir = (eInfo, preferSide = false, preferNorth = true) => {
+    const pickSnapDir = (eInfo, preferSide = false, preferNorth = true, preferEast = false) => {
       if (preferSide) {
-        if (eInfo.hasSolidLeft) return 'west';
-        if (eInfo.hasSolidRight) return 'east';
-        if (eInfo.wLeft) return 'west';
-        if (eInfo.wRight) return 'east';
+        if (preferEast) {
+          if (eInfo.hasSolidRight) return 'east';
+          if (eInfo.hasSolidLeft) return 'west';
+          if (eInfo.wRight) return 'east';
+          if (eInfo.wLeft) return 'west';
+        } else {
+          if (eInfo.hasSolidLeft) return 'west';
+          if (eInfo.hasSolidRight) return 'east';
+          if (eInfo.wLeft) return 'west';
+          if (eInfo.wRight) return 'east';
+        }
       }
       if (!preferNorth && eInfo.wBottom) return 'south';
       // 窓なし壁を優先（窓の前に本棚等を置かない工夫）
       if (eInfo.hasSolidTop) return 'north';
-      if (eInfo.hasSolidLeft) return 'west';
-      if (eInfo.hasSolidRight) return 'east';
+      if (preferEast) {
+        if (eInfo.hasSolidRight) return 'east';
+        if (eInfo.hasSolidLeft) return 'west';
+      } else {
+        if (eInfo.hasSolidLeft) return 'west';
+        if (eInfo.hasSolidRight) return 'east';
+      }
       if (eInfo.wTop) return 'north';
-      if (eInfo.wLeft) return 'west';
-      if (eInfo.wRight) return 'east';
+      if (preferEast) {
+        if (eInfo.wRight) return 'east';
+        if (eInfo.wLeft) return 'west';
+      } else {
+        if (eInfo.wLeft) return 'west';
+        if (eInfo.wRight) return 'east';
+      }
       if (eInfo.wBottom) return 'south';
       return 'center';
     };
@@ -489,7 +507,7 @@
 
     // 壁寄せ配置（壁が1辺もないセルには置かない：requireWall）
     const findWallSingle = (cells, cellSet, preferNorth = true, opts = {}) => {
-      const { preferSide = false, requireWall = true } = opts;
+      const { preferSide = false, requireWall = true, preferEast = false } = opts;
       const freeCells = cells.filter(pt => isFree(pt.r, pt.c, 1, 1, cellSet));
       const candidates = freeCells.map(pt => {
         const e = getCellEdges(pt.r, pt.c);
@@ -499,6 +517,13 @@
         if (preferSide) {
           if (e.wLeft || e.wRight) score += 150;
           if (e.hasSolidLeft || e.hasSolidRight) score += 30;
+          if (preferEast) {
+            if (e.hasSolidRight) score += 20;
+            else if (e.wRight) score += 12;
+          } else {
+            if (e.hasSolidLeft) score += 20;
+            else if (e.wLeft) score += 12;
+          }
           if (e.wTop) score += 40;
           if (e.wBottom) score += 20;
         } else {
@@ -514,7 +539,7 @@
         if (dc >= 2) score -= (dc - 1) * 180;
         if (northWallDecoCells.has(`${pt.r},${pt.c}`)) score -= 180;
         score -= getSwingPenalty(pt.r, pt.c);
-        return { pt, score, hasAnyWall, snap: pickSnapDir(e, preferSide, preferNorth) };
+        return { pt, score, hasAnyWall, snap: pickSnapDir(e, preferSide, preferNorth, preferEast) };
       });
       const filtered = requireWall ? candidates.filter(c => c.hasAnyWall) : candidates;
       const list = filtered.length > 0 ? filtered : (requireWall ? [] : candidates);
@@ -1004,9 +1029,24 @@
         }
         const ldkSeed = getRoomThemeSeed(rm.cells, 0, stageObj);
         const isCafeLdk = !isFortress && (stageBadge.includes('陽だまり') || stageBadge.includes('おしゃれ') || stageBadge.includes('DINKS') || (ldkSeed % 3 === 0));
+        const pickLdkTableAsset = (pt, wantCafe, seedOffset = 0) => {
+          const e = getCellEdges(pt.r, pt.c);
+          const lrBlocked = (e.wLeft || e.left === E.DOOR ? 1 : 0) + (e.wRight || e.right === E.DOOR ? 1 : 0);
+          const tbBlocked = (e.wTop || e.top === E.DOOR ? 1 : 0) + (e.wBottom || e.bottom === E.DOOR ? 1 : 0);
+          let useLR;
+          if (lrBlocked !== tbBlocked) {
+            useLR = (lrBlocked < tbBlocked);
+          } else if (rmW !== rmH) {
+            useLR = (rmW > rmH);
+          } else {
+            useLR = (((ldkSeed + pt.r * 3 + pt.c * 5 + seedOffset) % 2) === 0);
+          }
+          if (wantCafe) return useLR ? 'furn_cafe_table' : 'furn_cafe_table_tb';
+          return useLR ? 'furn_dining_lr' : 'furn_dining';
+        };
         if (count >= 3 && count < 6) {
           const dPt = findCenterSingle(rm.cells, cellSet);
-          if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+          if (dPt) addItem(pickLdkTableAsset(dPt, isCafeLdk, 0), dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
         }
         if (count >= 6) {
           const backWallCells = placedIsland ? rm.cells.filter(pt => pt.r === islandRow - 1) : [];
@@ -1069,7 +1109,7 @@
               addItem('furn_sofa', sH.r, sH.c, 2, 1, rm.key, { snap: sH.snap });
               if (isCafeLdk) {
                 const cafePt = findCenterSingle(rm.cells, cellSet);
-                if (cafePt) addItem('furn_cafe_table', cafePt.r, cafePt.c, 1, 1, rm.key, { snap: 'center' });
+                if (cafePt) addItem(pickLdkTableAsset(cafePt, true, 1), cafePt.r, cafePt.c, 1, 1, rm.key, { snap: 'center' });
               }
             } else {
               const sV = findWallVerticalPair(rm.cells, cellSet);
@@ -1077,7 +1117,7 @@
                 addItem(`furn_sofa_v_${sV.snap}`, sV.r, sV.c, 1, 2, rm.key, { snap: sV.snap });
               } else {
                 const dPt = findCenterSingle(rm.cells, cellSet);
-                if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+                if (dPt) addItem(pickLdkTableAsset(dPt, isCafeLdk, 2), dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
               }
             }
             if (count >= 8) {
@@ -1090,7 +1130,7 @@
             }
           } else if (count >= 9) {
             const dPt = findCenterSingle(rm.cells, cellSet);
-            if (dPt) addItem(isCafeLdk ? 'furn_cafe_table' : 'furn_dining', dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
+            if (dPt) addItem(pickLdkTableAsset(dPt, isCafeLdk, 3), dPt.r, dPt.c, 1, 1, rm.key, { snap: 'center' });
           }
         }
         continue;
@@ -1137,6 +1177,30 @@
           }
           return null;
         };
+        const pickWashitsuCenterHoriz = (ptOrNull, extraSeed = 0) => {
+          if (rmW !== rmH) return rmW > rmH;
+          if (ptOrNull) {
+            const e = getCellEdges(ptOrNull.r, ptOrNull.c);
+            const lrBlocked = (e.wLeft || e.left === E.DOOR ? 1 : 0) + (e.wRight || e.right === E.DOOR ? 1 : 0);
+            const tbBlocked = (e.wTop || e.top === E.DOOR ? 1 : 0) + (e.wBottom || e.bottom === E.DOOR ? 1 : 0);
+            if (lrBlocked !== tbBlocked) return lrBlocked < tbBlocked;
+          }
+          return (((wSeed + washitsuIdx + extraSeed) % 2) === 0);
+        };
+        const pickSingleFutonAsset = (pt, idx = 0) => {
+          const e = getCellEdges(pt.r, pt.c);
+          const opts = [
+            { id: 'furn_futon', sc: (e.wTop ? 30 : 0) - (e.top === E.DOOR ? 50 : 0) + (rmH >= rmW ? 8 : 0) },
+            { id: 'furn_futon_west', sc: (e.wLeft ? 30 : 0) - (e.left === E.DOOR ? 50 : 0) + (rmW > rmH ? 8 : 0) },
+            { id: 'furn_futon_east', sc: (e.wRight ? 30 : 0) - (e.right === E.DOOR ? 50 : 0) + (rmW > rmH ? 8 : 0) }
+          ];
+          if (e.wBottom && e.top === E.DOOR) {
+            opts.push({ id: 'furn_futon_south', sc: 32 });
+          }
+          const maxSc = Math.max(...opts.map(o => o.sc));
+          const best = opts.filter(o => o.sc >= maxSc - 8);
+          return best[(wSeed + washitsuIdx + idx) % best.length].id;
+        };
 
         if (mode === 1) {
           const pairCands = rm.cells
@@ -1152,16 +1216,51 @@
               return { pt, sc };
             })
             .sort((a, b) => b.sc - a.sc || b.pt.r - a.pt.r || a.pt.c - b.pt.c);
-          if (pairCands[0]) {
-            const p = pairCands[0].pt;
+          const vPairs = rm.cells
+            .filter(pt => isFree(pt.r, pt.c, 1, 2, cellSet))
+            .map(pt => {
+              const e1 = getCellEdges(pt.r, pt.c);
+              const e2 = getCellEdges(pt.r + 1, pt.c);
+              let sc = 120;
+              if (northWallDecoCells.has(`${pt.r},${pt.c}`)) sc -= 50;
+              if (e1.hasDoor || e2.hasDoor) sc -= 80;
+              sc -= getSwingPenalty(pt.r, pt.c) + getSwingPenalty(pt.r + 1, pt.c);
+              const leftWall = (e1.wLeft ? 1 : 0) + (e2.wLeft ? 1 : 0);
+              const rightWall = (e1.wRight ? 1 : 0) + (e2.wRight ? 1 : 0);
+              const leftDoor = (e1.left === E.DOOR ? 1 : 0) + (e2.left === E.DOOR ? 1 : 0);
+              const rightDoor = (e1.right === E.DOOR ? 1 : 0) + (e2.right === E.DOOR ? 1 : 0);
+              if (leftWall === 2 || rightWall === 2) sc += 20;
+              const leftSc = leftWall * 2 - leftDoor * 3;
+              const rightSc = rightWall * 2 - rightDoor * 3;
+              let futonId;
+              if (leftSc > rightSc) futonId = 'furn_futon_west';
+              else if (rightSc > leftSc) futonId = 'furn_futon_east';
+              else futonId = (((wSeed + pt.r + pt.c) % 2) === 0) ? 'furn_futon_west' : 'furn_futon_east';
+              return { pt, sc, futonId };
+            })
+            .sort((a, b) => b.sc - a.sc || a.pt.r - b.pt.r || a.pt.c - b.pt.c);
+          const bestH = pairCands[0] || null;
+          const bestV = vPairs[0] || null;
+          const wantHorizFuton = (rmH > rmW) ? true : (rmW > rmH ? false : (((wSeed + washitsuIdx) % 2) === 1));
+          let useV = false;
+          if (bestV && !bestH) useV = true;
+          else if (bestV && bestH) {
+            useV = (wantHorizFuton && bestV.sc >= bestH.sc - 60) || (!wantHorizFuton && bestV.sc >= bestH.sc + 80);
+          }
+          if (useV) {
+            const p = bestV.pt;
+            addItem(bestV.futonId, p.r, p.c, 1, 1, rm.key, { snap: 'center' });
+            addItem(bestV.futonId, p.r + 1, p.c, 1, 1, rm.key, { snap: 'center' });
+          } else if (bestH) {
+            const p = bestH.pt;
             addItem('furn_futon', p.r, p.c, 1, 1, rm.key, { snap: 'center' });
             addItem('furn_futon', p.r, p.c + 1, 1, 1, rm.key, { snap: 'center' });
           } else {
             const f1 = findCenterSingle(rm.cells, cellSet);
-            if (f1) addItem('furn_futon', f1.r, f1.c, 1, 1, rm.key, { snap: 'center' });
+            if (f1) addItem(pickSingleFutonAsset(f1, 0), f1.r, f1.c, 1, 1, rm.key, { snap: 'center' });
             if (count >= 3) {
               const f2 = findCenterSingle(rm.cells, cellSet);
-              if (f2) addItem('furn_futon', f2.r, f2.c, 1, 1, rm.key, { snap: 'center' });
+              if (f2) addItem(pickSingleFutonAsset(f2, 1), f2.r, f2.c, 1, 1, rm.key, { snap: 'center' });
             }
           }
           if (count >= 4) {
@@ -1175,7 +1274,7 @@
         } else if (mode === 2) {
           if (coreCovered) {
             items.push({
-              assetId: 'furn_kotatsu',
+              assetId: pickWashitsuCenterHoriz(null, 2) ? 'furn_kotatsu' : 'furn_kotatsu_v',
               r: midR1, c: midC1, wCells: 1, hCells: 1,
               roomKey: rm.key, delayMs: 0, snap: 'center', centerInRoom: centerBounds
             });
@@ -1196,7 +1295,7 @@
             }
           } else {
             const kt = findCenterSingle(rm.cells, cellSet);
-            if (kt) addItem('furn_kotatsu', kt.r, kt.c, 1, 1, rm.key, { snap: 'center' });
+            if (kt) addItem(pickWashitsuCenterHoriz(kt, 2) ? 'furn_kotatsu' : 'furn_kotatsu_v', kt.r, kt.c, 1, 1, rm.key, { snap: 'center' });
             if (count >= 4) {
               const wt = pickSideOrNorthWall(rm.cells);
               if (wt) addItem('furn_watansu', wt.r, wt.c, 1, 1, rm.key, { snap: wt.snap });
@@ -1206,7 +1305,7 @@
           if (coreCovered) {
             rm.cells.forEach(pt => markUsed(pt.r, pt.c, 1, 1));
             items.push({
-              assetId: 'furn_tea_set_center',
+              assetId: pickWashitsuCenterHoriz(null, 3) ? 'furn_tea_set_center' : 'furn_tea_set_center_v',
               r: midR1, c: midC1, wCells: 1, hCells: 1,
               roomKey: rm.key, delayMs: 0, snap: 'center', steam: true, centerInRoom: centerBounds
             });
@@ -1217,7 +1316,7 @@
         } else {
           if (coreCovered) {
             items.push({
-              assetId: 'furn_chabudai',
+              assetId: pickWashitsuCenterHoriz(null, 1) ? 'furn_chabudai_lr' : 'furn_chabudai',
               r: midR1, c: midC1, wCells: 1, hCells: 1,
               roomKey: rm.key, delayMs: 0, snap: 'center', centerInRoom: centerBounds
             });
@@ -1238,7 +1337,7 @@
             }
           } else {
             const ch = findCenterSingle(rm.cells, cellSet);
-            if (ch) addItem('furn_chabudai', ch.r, ch.c, 1, 1, rm.key, { snap: 'center' });
+            if (ch) addItem(pickWashitsuCenterHoriz(ch, 1) ? 'furn_chabudai_lr' : 'furn_chabudai', ch.r, ch.c, 1, 1, rm.key, { snap: 'center' });
             if (count >= 4) {
               const bs = pickSideOrNorthWall(rm.cells);
               if (bs) addItem('furn_bonsai', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
@@ -1291,9 +1390,16 @@
           theme = ['kids', 'study', 'gaming', 'bedroom'][(rSeed + westernRoomIdx) % 4];
         }
         westernRoomIdx++;
+        const deskDirMode = (rSeed + westernRoomIdx) % 4; // 0: north, 1: west, 2: east, 3: south
+        const deskPreferNorth = (deskDirMode !== 3);
+        const deskWallOpts = (requireWall) => ({
+          requireWall,
+          preferSide: (deskDirMode === 1 || deskDirMode === 2),
+          preferEast: (deskDirMode === 2)
+        });
 
         if (theme === 'gaming') {
-          const gd = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          const gd = findWallSingle(rm.cells, cellSet, deskPreferNorth, deskWallOpts(false));
           if (gd) addItem('furn_gaming_desk', gd.r, gd.c, 1, 1, rm.key, { snap: gd.snap });
           if (count >= 3) {
             const bs = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
@@ -1311,7 +1417,7 @@
             if (tb) addItem('furn_toy_box', tb.r, tb.c, 1, 1, rm.key, { snap: tb.snap });
           }
           if (count >= 4) {
-            const dk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+            const dk = findWallSingle(rm.cells, cellSet, deskPreferNorth, deskWallOpts(false));
             if (dk) addItem('furn_desk', dk.r, dk.c, 1, 1, rm.key, { snap: dk.snap });
           }
           if (count >= 6) {
@@ -1319,7 +1425,7 @@
             if (bk) addItem('furn_bookshelf', bk.r, bk.c, 1, 1, rm.key, { snap: bk.snap });
           }
         } else if (theme === 'study') {
-          const bd = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          const bd = findWallSingle(rm.cells, cellSet, deskPreferNorth, deskWallOpts(false));
           if (bd) addItem('furn_book_desk', bd.r, bd.c, 1, 1, rm.key, { snap: bd.snap });
           if (count >= 2) {
             const bk = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
@@ -1345,14 +1451,14 @@
               if (bs) addItem('furn_bed_s', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
             }
           }
-          const dk = findWallSingle(rm.cells, cellSet, true);
+          const dk = findWallSingle(rm.cells, cellSet, deskPreferNorth, deskWallOpts(true));
           if (dk) addItem('furn_desk', dk.r, dk.c, 1, 1, rm.key, { snap: dk.snap });
           const bk = findWallSingle(rm.cells, cellSet, false);
           if (bk) addItem('furn_bookshelf', bk.r, bk.c, 1, 1, rm.key, { snap: bk.snap });
         } else if (count >= 3) {
           const bs = findWallSingle(rm.cells, cellSet, true);
           if (bs) addItem('furn_bed_s', bs.r, bs.c, 1, 1, rm.key, { snap: bs.snap });
-          const dk = findWallSingle(rm.cells, cellSet, true);
+          const dk = findWallSingle(rm.cells, cellSet, deskPreferNorth, deskWallOpts(true));
           if (dk) addItem('furn_desk', dk.r, dk.c, 1, 1, rm.key, { snap: dk.snap });
         } else {
           const bs = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
@@ -1450,7 +1556,7 @@
     const northWallOccupiedByFurn = new Set();
     for (const it of items) {
       if (!it.roomKey || it.floating || it.isFloorRug || it.snap === 'center' || CENTER_SNAP_ASSETS.has(it.assetId)) continue;
-      if (it.snap === 'south' || it.assetId === 'furn_futon' || it.assetId === 'furn_bath_stool') continue;
+      if (it.snap === 'south' || it.assetId.startsWith('furn_futon') || it.assetId === 'furn_bath_stool') continue;
       const wc = it.wCells || 1;
       for (let dc = 0; dc < wc; dc++) {
         const r = it.r, c = it.c + dc;
@@ -2827,12 +2933,15 @@
 
         const hasNorthWallDeco = Boolean(plan?.northWallDecoCells?.has(`${item.r},${item.c}`));
 
-        if (item.assetId === 'furn_futon') {
+        if (item.assetId.startsWith('furn_futon')) {
           const boundsF = getSpriteContentBounds(drawAssetId);
           if (!boundsF) {
             return { offX: 0, offY: topAnyWall ? Math.round(cs * 0.22) : 0 };
           }
+          const sxF = bw / boundsF.w;
           const syF = bh / boundsF.h;
+          const bLeftF = boundsF.minX * sxF;
+          const bRightF = (boundsF.maxX + 1) * sxF;
           const bTopF = boundsF.minY * syF;
           const bBotF = (boundsF.maxY + 1) * syF;
           const rawTF = Math.round(cs * 0.15);
@@ -2841,6 +2950,11 @@
           const reqTopF = hasNorthWallDeco
             ? Math.round(wallHF * 0.90)
             : (topAnyWall ? Math.round(wallHF * 0.65) : 0);
+          let offXF = 0;
+          const minLeftF = (leftAllWall || leftHasDoor) ? (halfTF + 2) : 1;
+          const maxRightF = (rightAllWall || rightHasDoor) ? (bw - halfTF - 2) : (bw - 1);
+          if (bLeftF + offXF < minLeftF) offXF = Math.ceil(minLeftF - bLeftF);
+          if (bRightF + offXF > maxRightF) offXF = Math.floor(maxRightF - bRightF);
           let offYF = 0;
           if (reqTopF > 0 && bTopF + offYF < reqTopF) {
             offYF = Math.ceil(reqTopF - bTopF);
@@ -2852,7 +2966,7 @@
           if (reqTopF > 0 && bTopF + offYF < Math.round(wallHF * 0.45)) {
             offYF = Math.ceil(Math.round(wallHF * 0.45) - bTopF);
           }
-          return { offX: 0, offY: offYF };
+          return { offX: offXF, offY: offYF };
         }
 
         const isCenterOnly = !item.roomKey || item.floating || item.isFloorRug || item.snap === 'center' || CENTER_SNAP_ASSETS.has(item.assetId);
