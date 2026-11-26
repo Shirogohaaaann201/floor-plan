@@ -8468,6 +8468,7 @@ function updateHomeUI() {
   let activeFurnCategory = 'すべて';
   let selectedFurnId = null;
   let selectedFurnViewIdx = 0;
+  let isFurnHintRevealed = false;
 
   function drawFurniturePreviewCanvas(canvas, item, viewIdx, unlocked) {
     if (!canvas || !window.PixelAssets) return;
@@ -8580,12 +8581,14 @@ function updateHomeUI() {
     if (!item) return;
     selectedFurnId = item.id;
     selectedFurnViewIdx = 0;
+    isFurnHintRevealed = false;
     renderRecordsModal();
   }
 
   function closeFurnitureDetail() {
     selectedFurnId = null;
     selectedFurnViewIdx = 0;
+    isFurnHintRevealed = false;
     renderRecordsModal();
   }
 
@@ -8607,6 +8610,7 @@ function updateHomeUI() {
     const nextIdx = (curIdx + delta + list.length) % list.length;
     selectedFurnId = list[nextIdx].id;
     selectedFurnViewIdx = 0;
+    isFurnHintRevealed = false;
     renderRecordsModal();
   }
 
@@ -8647,14 +8651,28 @@ function updateHomeUI() {
 
     const flavorEl = document.getElementById('furn-detail-flavor');
     if (flavorEl) {
-      flavorEl.innerHTML = unlocked
-        ? `<strong>📖 解説:</strong> ${item.flavor}`
-        : `<strong>🔒 未発見:</strong> この家具が設置された間取りを設計し、「物件を引き渡す」と図鑑へ登録されます。`;
+      if (unlocked) {
+        const sigHtml = item.reviewer ? `<div class="furn-review-sig">― ${item.reviewer}</div>` : '';
+        flavorEl.className = 'furn-detail-box furn-detail-box--review';
+        flavorEl.innerHTML = `<div class="furn-review-label">💬 入居者の声</div><div class="furn-review-quote">「${item.flavor}」</div>${sigHtml}`;
+      } else {
+        flavorEl.className = 'furn-detail-box';
+        flavorEl.innerHTML = `<strong>🔒 未発見:</strong> この家具が設置された間取りを設計し、「物件を引き渡す」と図鑑へ登録されます。`;
+      }
     }
 
     const hintEl = document.getElementById('furn-detail-hint');
     if (hintEl) {
-      hintEl.innerHTML = `<strong>💡 出現条件ヒント:</strong> ${item.hint}`;
+      if (!unlocked) {
+        hintEl.className = 'furn-detail-box furn-detail-box--hint';
+        hintEl.innerHTML = `<div class="furn-hint-label">💡 出現メモ</div><div class="furn-hint-body">${item.hint}</div>`;
+      } else if (!isFurnHintRevealed) {
+        hintEl.className = 'furn-detail-box furn-detail-box--hint is-collapsed';
+        hintEl.innerHTML = `<button id="btn-toggle-furn-hint" type="button" class="furn-hint-toggle-btn" aria-expanded="false"><span>💡 出現ヒントを見る</span><span class="furn-hint-caret">▼</span></button>`;
+      } else {
+        hintEl.className = 'furn-detail-box furn-detail-box--hint is-expanded';
+        hintEl.innerHTML = `<button id="btn-toggle-furn-hint" type="button" class="furn-hint-toggle-btn" aria-expanded="true"><span>💡 出現ヒントを隠す</span><span class="furn-hint-caret">▲</span></button><div class="furn-hint-body furn-hint-body--drawer">${item.hint}</div>`;
+      }
     }
 
     const filtered = getFilteredCatalogItems();
@@ -8668,6 +8686,7 @@ function updateHomeUI() {
     activeRecordsTab = (tabKey === 'furniture') ? 'furniture' : 'combos';
     selectedFurnId = null;
     selectedFurnViewIdx = 0;
+    isFurnHintRevealed = false;
     renderRecordsModal();
   }
 
@@ -8816,6 +8835,7 @@ function updateHomeUI() {
     if (initialTab === 'combos' || initialTab === 'furniture') activeRecordsTab = initialTab;
     selectedFurnId = null;
     selectedFurnViewIdx = 0;
+    isFurnHintRevealed = false;
     renderRecordsModal();
     const modal = document.getElementById('modal-records');
     if (modal) modal.style.display = 'flex';
@@ -8867,6 +8887,17 @@ function updateHomeUI() {
   });
   document.getElementById('btn-furn-next')?.addEventListener('click', () => {
     initAudio(); playSound('tap'); stepFurnitureDetail(1);
+  });
+  document.getElementById('furn-detail-hint')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('#btn-toggle-furn-hint');
+    if (!btn || !selectedFurnId) return;
+    const cat = window.FurnitureCatalog || null;
+    const item = cat ? cat.getById(selectedFurnId) : null;
+    if (!item) return;
+    initAudio();
+    playSound('tap');
+    isFurnHintRevealed = !isFurnHintRevealed;
+    renderFurnitureDetailView(item);
   });
 
   function switchHelpTab(tabKey, playTapSound = true) {

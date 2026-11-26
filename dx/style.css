@@ -2175,3 +2175,69 @@
       border-color: rgba(245, 158, 11, 0.3);
       color: #fde68a;
     }
+    .furn-detail-box--review {
+      border-left: 3px solid rgba(56, 189, 248, 0.55);
+      padding: 10px 12px;
+    }
+    .furn-review-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #7dd3fc;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .furn-review-quote {
+      font-size: 12px;
+      color: #f1f5f9;
+      line-height: 1.6;
+    }
+    .furn-review-sig {
+      margin-top: 6px;
+      text-align: right;
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .furn-hint-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fbbf24;
+      margin-bottom: 3px;
+    }
+    .furn-hint-body {
+      color: #fde68a;
+      font-size: 11.5px;
+      line-height: 1.55;
+    }
+    .furn-detail-box--hint.is-collapsed,
+    .furn-detail-box--hint.is-expanded {
+      padding: 0;
+      overflow: hidden;
+    }
+    .furn-hint-toggle-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.42);
+      border: none;
+      color: #fde68a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 8px 11px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+    }
+    .furn-hint-toggle-btn:hover {
+      background: rgba(245, 158, 11, 0.16);
+    }
+    .furn-hint-caret {
+      font-size: 9.5px;
+      opacity: 0.8;
+    }
+    .furn-hint-body--drawer {
+      padding: 8px 11px 10px;
+      border-top: 1px dashed rgba(245, 158, 11, 0.25);
+    }
