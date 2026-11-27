@@ -8654,7 +8654,7 @@ function updateHomeUI() {
       if (unlocked) {
         const sigHtml = item.reviewer ? `<div class="furn-review-sig">― ${item.reviewer}</div>` : '';
         flavorEl.className = 'furn-detail-box furn-detail-box--review';
-        flavorEl.innerHTML = `<div class="furn-review-label">💬 入居者の声</div><div class="furn-review-quote">「${item.flavor}」</div>${sigHtml}`;
+        flavorEl.innerHTML = `<div class="furn-review-label">💬 ひとこと口コミ</div><div class="furn-review-quote">「${item.flavor}」</div>${sigHtml}`;
       } else {
         flavorEl.className = 'furn-detail-box';
         flavorEl.innerHTML = `<strong>🔒 未発見:</strong> この家具が設置された間取りを設計し、「物件を引き渡す」と図鑑へ登録されます。`;
