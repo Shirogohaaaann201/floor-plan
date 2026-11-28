@@ -2490,56 +2490,118 @@
       g.vline(21, 0, 24, '#fbbf24');
       g.rect(4, 2, 16, 20, '#9f1239');
     });
-
-    // --- 社長デスク 4段階 ---
-    // Rank 1 (48x48): 木の作業机
-    registerCanvasAsset('off_desk_boss_0', 48, 48, (g) => {
-      g.shadow(5, 36, 38, 4);
-      g.roundBox(5, 16, 38, 21, WOOD_LT, WOOD_DK, 2);
-      g.rect(7, 30, 34, 5, WOOD_MD);
-      g.box(10, 19, 14, 9, '#f8fafc', '#64748b', 1); // 図面用紙
-      g.hline(12, 22, 8, '#38bdf8');
-      g.roundBox(29, 20, 7, 6, '#ef4444', '#991b1b'); // 電卓
-      g.rect(38, 19, 3, 4, '#334155');
+    // 来客ロビー用 石目タイル（Rank 3–4）
+    registerCanvasAsset('floor_office_lobby', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#f1f5f9');
+      g.hline(0, 11, 24, '#e2e8f0'); g.hline(0, 23, 24, '#e2e8f0');
+      g.vline(11, 0, 12, '#e2e8f0'); g.vline(23, 12, 12, '#e2e8f0');
+      g.px(4, 4, '#ffffff'); g.px(16, 16, '#ffffff');
+    });
+    // 本社ロビー用 大理石タイル（Rank 5）
+    registerCanvasAsset('floor_office_marble', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#f8fafc');
+      g.rect(1, 1, 10, 10, '#f3f1ec');
+      g.rect(13, 13, 10, 10, '#f3f1ec');
+      g.hline(0, 11, 24, '#e2e8f0'); g.hline(0, 23, 24, '#e2e8f0');
+      g.vline(11, 0, 24, '#e2e8f0'); g.vline(23, 0, 24, '#e2e8f0');
+      g.px(3, 5, '#e7e5e4'); g.px(17, 18, '#e7e5e4');
+      g.px(19, 4, '#ffffff'); g.px(6, 19, '#ffffff');
     });
 
-    // Rank 2 (48x48): 事務社長デスク
-    registerCanvasAsset('off_desk_boss_1', 48, 48, (g) => {
-      g.shadow(4, 36, 40, 4);
-      g.roundBox(4, 15, 40, 22, '#e2e8f0', SLATE_LN, 2);
-      g.rect(6, 30, 36, 5, '#94a3b8');
-      g.box(11, 17, 16, 10, '#38bdf8', INK, 2);
-      g.rect(13, 19, 6, 3, '#bae6fd');
-      g.roundBox(31, 20, 9, 7, '#f8fafc', '#94a3b8');
-      g.rect(34, 22, 4, 2, '#ef4444');
+    // --- 社長デスク 4段階（R1〜R2から 1.5マス幅へ大型化）---
+    // Rank 1 (72x48, w=1.5): 温かい木の作業机（図面・赤電卓・ペン立て・袖引出）
+    registerCanvasAsset('off_desk_boss_0', 72, 48, (g) => {
+      g.shadow(4, 37, 64, 4);
+      g.roundBox(4, 14, 64, 23, WOOD_LT, WOOD_DK, 2);
+      g.rect(6, 30, 60, 5, WOOD_MD);
+      g.rect(48, 16, 18, 17, WOOD_MD); // 右袖引出
+      g.hline(51, 22, 12, WOOD_DK);
+      g.hline(51, 28, 12, WOOD_DK);
+      g.box(9, 17, 22, 11, '#f8fafc', '#64748b', 1); // 青焼き図面
+      g.hline(12, 20, 14, '#38bdf8');
+      g.rect(14, 23, 10, 3, '#bae6fd');
+      g.roundBox(34, 19, 8, 7, '#ef4444', '#991b1b'); // 赤い電卓
+      g.px(36, 21, '#fef08a');
+      g.roundBox(52, 16, 6, 5, '#1e293b', '#0f172a'); // ペン立て
+      g.px(54, 15, '#ef4444'); g.px(56, 15, '#facc15');
     });
 
-    // Rank 3 (72x48, w=1.5): 駅前オフィス ワイド社長デスク＋袖机
-    registerCanvasAsset('off_desk_boss_1_wide', 72, 48, (g) => {
-      g.shadow(5, 37, 62, 4);
-      g.roundBox(5, 14, 62, 23, '#cbd5e1', '#334155', 2);
-      g.rect(7, 16, 40, 15, '#e2e8f0');
-      g.rect(47, 16, 18, 19, '#94a3b8'); // 右袖キャビネット
-      g.hline(51, 22, 10, '#334155');
-      g.hline(51, 29, 10, '#334155');
-      g.box(13, 17, 20, 11, '#38bdf8', INK, 2);
-      g.rect(15, 19, 8, 4, '#bae6fd');
-      g.rect(36, 21, 8, 7, '#fef3c7'); // 決裁書類
-      g.rect(52, 17, 6, 4, '#facc15'); // 金ネームプレート
+    // Rank 2 (72x48, w=1.5): 事務社長デスク＋ワイドモニタ＋決裁書類
+    registerCanvasAsset('off_desk_boss_1', 72, 48, (g) => {
+      g.shadow(4, 37, 64, 4);
+      g.roundBox(4, 14, 64, 23, '#e2e8f0', SLATE_LN, 2);
+      g.rect(6, 30, 60, 5, '#94a3b8');
+      g.rect(48, 16, 18, 17, '#cbd5e1'); // 右袖キャビネット
+      g.hline(51, 22, 12, '#475569');
+      g.hline(51, 28, 12, '#475569');
+      g.box(10, 16, 21, 11, '#38bdf8', INK, 2); // モニタ
+      g.rect(12, 18, 8, 4, '#bae6fd');
+      g.rect(15, 29, 12, 2, '#64748b'); // キーボード
+      g.roundBox(34, 19, 11, 8, '#fef3c7', '#d97706'); // 書類
+      g.rect(36, 22, 5, 2, '#ef4444'); // 決裁印
+      g.roundBox(53, 17, 7, 4, '#facc15', '#a16207'); // 金ペン皿
+    });
+
+    // Rank 3 (96x48, w=2.0): 駅前オフィス ワイド社長デスク＋袖机＋金銘板
+    registerCanvasAsset('off_desk_boss_1_wide', 96, 48, (g) => {
+      g.shadow(4, 38, 88, 4);
+      g.roundBox(4, 13, 88, 25, '#cbd5e1', '#334155', 2);
+      g.rect(6, 15, 58, 16, '#e2e8f0');
+      g.rect(64, 15, 26, 20, '#94a3b8'); // 右袖キャビネット
+      g.hline(68, 21, 18, '#334155');
+      g.hline(68, 28, 18, '#334155');
+      g.box(14, 16, 24, 11, '#38bdf8', INK, 2);
+      g.rect(16, 18, 9, 4, '#bae6fd');
+      g.rect(20, 29, 14, 2, '#64748b');
+      g.roundBox(43, 19, 15, 9, '#fef3c7', '#d97706'); // 決裁書類
+      g.rect(46, 22, 7, 2, '#ef4444');
+      g.roundBox(69, 16, 10, 5, '#facc15', '#a16207'); // 金ネームプレート
     });
 
     // Rank 4-5 (96x48, w=2.0): 重厚マホガニー重役デスク
     registerCanvasAsset('off_desk_boss_2', 96, 48, (g) => {
-      g.shadow(6, 38, 84, 4);
-      g.roundBox(6, 13, 84, 25, '#7c2d12', '#451a03', 2);
-      g.rect(8, 15, 80, 16, '#9a3412');
-      g.rect(28, 18, 28, 11, '#1e293b'); // 高級黒レザーデスクマット
-      g.box(15, 16, 20, 10, '#38bdf8', '#0f172a', 2); // 大型モニタ
-      g.rect(17, 18, 8, 4, '#bae6fd');
-      g.roundBox(41, 20, 13, 8, '#fef3c7', '#d97706'); // 決裁書類
-      g.roundBox(62, 17, 9, 8, '#facc15', '#a16207');  // 金のペン立て
-      g.roundBox(68, 27, 13, 5, '#ffffff', '#64748b');  // 社長銘板
-      g.rect(71, 29, 7, 1, '#0f172a');
+      g.shadow(5, 38, 86, 4);
+      g.roundBox(5, 13, 86, 25, '#7c2d12', '#451a03', 2);
+      g.rect(7, 15, 82, 16, '#9a3412');
+      g.rect(26, 18, 30, 11, '#1e293b'); // 高級黒レザーデスクマット
+      g.box(13, 15, 22, 11, '#38bdf8', '#0f172a', 2); // 大型モニタ
+      g.rect(15, 17, 9, 4, '#bae6fd');
+      g.roundBox(40, 20, 14, 8, '#fef3c7', '#d97706'); // 決裁書類
+      g.roundBox(61, 17, 10, 8, '#facc15', '#a16207');  // 金のペン立て
+      g.roundBox(68, 27, 16, 5, '#ffffff', '#64748b');  // 社長銘板
+      g.rect(71, 29, 9, 1, '#0f172a');
+    });
+
+    // 社長デスク足元ラグ（司令塔演出用）
+    registerCanvasAsset('off_boss_rug_warm', 96, 56, (g) => {
+      g.roundBox(2, 4, 92, 48, '#d97706', '#92400e', 2);
+      g.rect(5, 7, 86, 42, '#fde68a');
+      g.rect(8, 10, 80, 36, '#fef3c7');
+    });
+    registerCanvasAsset('off_boss_rug_blue', 96, 56, (g) => {
+      g.roundBox(2, 4, 92, 48, '#38bdf8', '#1e3a8a', 2);
+      g.rect(5, 7, 86, 42, '#dbeafe');
+      g.rect(8, 10, 80, 36, '#eff6ff');
+    });
+    registerCanvasAsset('off_boss_rug_vip', 112, 60, (g) => {
+      g.roundBox(2, 4, 108, 52, '#facc15', '#881337', 2);
+      g.rect(5, 7, 102, 46, '#be123c');
+      g.rect(9, 11, 94, 38, '#9f1239');
+    });
+    // モダンエグゼクティブラグ（ダークネイビー＆シャンパン細線）
+    registerCanvasAsset('off_boss_rug_exec', 112, 60, (g) => {
+      g.roundBox(2, 4, 108, 52, '#334155', '#1e293b', 2);
+      g.rect(5, 7, 102, 46, '#475569');
+      g.rect(7, 9, 98, 42, '#334155');
+      g.hline(9, 10, 94, '#d4af37');
+      g.hline(9, 49, 94, '#d4af37');
+      g.rect(9, 12, 94, 36, '#1e293b');
+    });
+    // 来客応接ラウンジ用 サンドベージュラグ
+    registerCanvasAsset('off_lounge_rug', 112, 84, (g) => {
+      g.roundBox(2, 3, 108, 78, '#cbd5e1', '#94a3b8', 2);
+      g.rect(5, 6, 102, 72, '#e2e8f0');
+      g.rect(8, 9, 96, 66, '#ebe7df');
     });
 
     // --- スタッフデスク (Rank2: 48x48 / Rank3: 72x48 / Rank4-5: 84x48) ---
@@ -2615,68 +2677,75 @@
     makeStaffDeskSet('off_desk_staff_mid', 72, 'mid');
     makeStaffDeskSet('off_desk_staff_pro', 84, 'pro');
 
-    // --- 受付カウンター 4段階（大きさ＆L字形状進化）---
-    // Rank 1 (48x48): コンパクト木製受付
-    registerCanvasAsset('off_counter_small', 48, 48, (g) => {
-      g.shadow(5, 36, 38, 4);
-      g.roundBox(5, 14, 38, 22, WOOD_LT, WOOD_DK, 2);
-      g.rect(7, 26, 34, 8, WOOD_MD);
-      g.roundBox(10, 17, 10, 7, '#ef4444', '#991b1b'); // 赤チラシ立て
-      g.roundBox(26, 19, 7, 5, '#facc15', '#a16207'); // 呼び出しベル
-      g.rect(35, 18, 5, 6, '#f8fafc');
+    // --- 受付カウンター 4段階（主役サイズ＆L字コーナー密着対応）---
+    // Rank 1 (72x48, w=1.5): 温かい対面木製受付カウンター
+    registerCanvasAsset('off_counter_small', 72, 48, (g) => {
+      g.shadow(4, 37, 64, 4);
+      g.roundBox(4, 13, 64, 24, WOOD_LT, WOOD_DK, 2);
+      g.rect(6, 27, 60, 8, WOOD_MD);
+      g.rect(6, 15, 60, 11, WOOD_HI);
+      g.roundBox(10, 16, 13, 8, '#ef4444', '#991b1b'); // 赤チラシ立て
+      g.rect(13, 18, 7, 3, '#fef08a');
+      g.roundBox(31, 18, 9, 6, '#facc15', '#a16207'); // 呼び出しベル
+      g.roundBox(47, 16, 14, 9, '#f8fafc', '#64748b'); // 案内ファイル＆ノート
+      g.hline(49, 19, 8, '#38bdf8');
     });
 
     // Rank 2 (96x48): 標準2マス受付カウンター
     registerCanvasAsset('off_counter', 96, 48, (g) => {
-      g.shadow(5, 38, 86, 4);
-      g.roundBox(5, 14, 86, 24, WOOD_LT, WOOD_DK, 2);
-      g.rect(7, 26, 82, 10, WOOD_MD);
-      g.roundBox(14, 17, 15, 8, '#ef4444', '#991b1b');
-      g.rect(17, 19, 9, 3, '#fef08a');
-      g.roundBox(41, 19, 9, 6, '#facc15', '#a16207');
-      g.box(61, 15, 17, 10, '#38bdf8', INK, 2);
-      g.rect(63, 17, 6, 3, '#bae6fd');
+      g.shadow(4, 38, 88, 4);
+      g.roundBox(4, 13, 88, 25, WOOD_LT, WOOD_DK, 2);
+      g.rect(6, 27, 84, 9, WOOD_MD);
+      g.rect(6, 15, 84, 11, WOOD_HI);
+      g.roundBox(12, 16, 16, 8, '#ef4444', '#991b1b');
+      g.rect(15, 18, 10, 3, '#fef08a');
+      g.roundBox(41, 18, 10, 6, '#facc15', '#a16207');
+      g.box(64, 15, 18, 10, '#38bdf8', INK, 2);
+      g.rect(66, 17, 6, 3, '#bae6fd');
     });
 
     // Rank 3 (144x48): 駅前ワイド3マス受付カウンター
     registerCanvasAsset('off_counter_wide', 144, 48, (g) => {
-      g.shadow(5, 38, 134, 4);
-      g.roundBox(5, 13, 134, 25, '#f8fafc', WOOD_DK, 2);
-      g.rect(7, 27, 130, 9, WOOD_MD);
-      g.rect(8, 15, 128, 11, WOOD_LT);
-      // パンフレットスタンド×2 + 受付端末×2 + ベル + 小花瓶
-      g.roundBox(13, 16, 16, 8, '#ef4444', '#991b1b');
-      g.rect(16, 18, 10, 3, '#fef08a');
+      g.shadow(4, 38, 136, 4);
+      g.roundBox(4, 13, 136, 25, '#f8fafc', WOOD_DK, 2);
+      g.rect(6, 27, 132, 9, WOOD_MD);
+      g.rect(7, 15, 130, 11, WOOD_LT);
+      // パンフレットスタンド + 受付端末×2 + ベル + 装花
+      g.roundBox(12, 16, 16, 8, '#ef4444', '#991b1b');
+      g.rect(15, 18, 10, 3, '#fef08a');
       g.box(37, 15, 18, 10, '#38bdf8', INK, 2);
       g.roundBox(67, 18, 10, 6, '#facc15', '#a16207');
-      g.box(88, 15, 18, 10, '#38bdf8', INK, 2);
-      g.roundBox(117, 15, 12, 9, '#16a34a', '#14532d'); // 受付装花
-      g.rect(120, 13, 6, 4, '#f43f5e');
+      g.box(89, 15, 18, 10, '#38bdf8', INK, 2);
+      g.roundBox(119, 15, 12, 9, '#16a34a', '#14532d'); // 受付装花
+      g.rect(122, 13, 6, 4, '#f43f5e');
     });
 
-    // Rank 4-5 (96x96, 2x2): L字型コンシェルジュカウンター
+    // Rank 4-5 (96x96, 2x2): 西・南コーナー密着 L字型コンシェルジュカウンター
     registerCanvasAsset('off_counter_l', 96, 96, (g) => {
-      g.shadow(6, 78, 84, 5);
-      // 横ウィング（奥側: y=10..42, x=6..90）
-      g.roundBox(6, 10, 84, 30, WOOD_LT, WOOD_DK, 2);
-      g.rect(8, 29, 80, 9, WOOD_MD);
-      // 縦ウィング（左側手前へ折れ: x=6..36, y=10..84）
-      g.roundBox(6, 10, 32, 74, WOOD_LT, WOOD_DK, 2);
-      g.rect(8, 12, 24, 66, WOOD_HI);
-      g.rect(31, 34, 5, 48, WOOD_MD); // 内側側面エッジ
+      g.shadow(2, 85, 32, 5);
+      g.shadow(2, 36, 90, 4);
+      // 横ウィング（奥側: y=6..38, x=2..92）
+      g.roundBox(2, 6, 90, 31, WOOD_LT, WOOD_DK, 2);
+      g.rect(4, 27, 86, 8, WOOD_MD);
+      // 縦ウィング（左壁側: x=2..30, y=6..90 — 内側ポケットを広く確保）
+      g.roundBox(2, 6, 29, 84, WOOD_LT, WOOD_DK, 2);
+      g.rect(4, 8, 21, 78, '#f8fafc');
+      g.rect(25, 32, 4, 56, WOOD_MD); // 内側側面エッジ
       // 大理石フロント天板ライン
-      g.rect(8, 12, 80, 16, '#f8fafc');
-      g.rect(8, 12, 22, 68, '#f8fafc');
+      g.rect(4, 8, 86, 17, '#f8fafc');
+      g.rect(4, 8, 20, 78, '#f8fafc');
       // 受付端末2台＆呼び鈴＆卓上装花＆カタログ
-      g.box(41, 14, 17, 10, '#38bdf8', INK, 2);
-      g.box(64, 14, 17, 10, '#38bdf8', INK, 2);
-      g.roundBox(14, 38, 12, 10, '#16a34a', '#14532d');
-      g.rect(17, 36, 6, 4, '#fb7185');
-      g.roundBox(15, 56, 10, 7, '#facc15', '#a16207'); // 呼び鈴
-      g.roundBox(12, 68, 14, 9, '#ef4444', '#991b1b'); // パンフ
+      g.box(38, 10, 18, 11, '#38bdf8', INK, 2);
+      g.rect(40, 12, 6, 3, '#bae6fd');
+      g.box(64, 10, 18, 11, '#38bdf8', INK, 2);
+      g.rect(66, 12, 6, 3, '#bae6fd');
+      g.roundBox(10, 36, 11, 10, '#16a34a', '#14532d');
+      g.rect(13, 34, 5, 4, '#fb7185');
+      g.roundBox(10, 55, 10, 7, '#facc15', '#a16207'); // 呼び鈴
+      g.roundBox(8, 69, 13, 10, '#ef4444', '#991b1b'); // パンフ
     });
 
-    // --- 物件ファイル棚・書庫・製図台 (48x48 / 96x48) ---
+    // --- 物件ファイル棚（互換48x48 ＋ 主役大型版 mid/wide）---
     registerCanvasAsset('off_cabinet', 48, 48, (g) => {
       g.shadow(8, 37, 32, 4);
       g.roundBox(8, 5, 32, 33, '#cbd5e1', '#475569', 2);
@@ -2684,13 +2753,78 @@
       g.rect(10, 21, 28, 15, '#cbd5e1');
       g.rect(18, 13, 12, 2, '#334155');
       g.rect(18, 27, 12, 2, '#334155');
-      // 物件ファイルタブ
       g.rect(12, 7, 4, 4, '#ef4444');
       g.rect(18, 7, 4, 4, '#3b82f6');
       g.rect(24, 7, 4, 4, '#10b981');
       g.rect(30, 7, 4, 4, '#f59e0b');
     });
 
+    // Rank 1-2 (72x52): 物件ファイル棚 ＋ マイソク間取りチラシ掲示ボード
+    registerCanvasAsset('off_cabinet_mid', 72, 52, (g) => {
+      g.shadow(2, 45, 68, 4);
+      // 左: 3段ファイルキャビネット (x=2..34)
+      g.roundBox(2, 6, 32, 41, '#cbd5e1', '#334155', 2);
+      g.rect(4, 8, 28, 10, '#e2e8f0');
+      g.rect(4, 20, 28, 11, '#cbd5e1');
+      g.rect(4, 33, 28, 12, '#e2e8f0');
+      g.rect(13, 13, 10, 2, '#334155');
+      g.rect(13, 25, 10, 2, '#334155');
+      g.rect(13, 38, 10, 2, '#334155');
+      g.rect(6, 8, 4, 4, '#ef4444');
+      g.rect(12, 8, 4, 4, '#3b82f6');
+      g.rect(18, 8, 4, 4, '#10b981');
+      g.rect(24, 8, 4, 4, '#f59e0b');
+      // 右: 物件間取りチラシ（マイソク）掲示パネル (x=35..70)
+      g.roundBox(35, 3, 35, 44, '#0f766e', '#134e4a', 2);
+      g.rect(37, 5, 31, 4, '#14b8a6'); // ヘッダ帯
+      g.rect(37, 10, 31, 35, '#f8fafc');
+      // ミニ間取りカード 2x2
+      g.box(39, 12, 13, 14, '#e0f2fe', '#0284c7');
+      g.rect(41, 14, 6, 3, '#38bdf8');
+      g.box(53, 12, 13, 14, '#fef3c7', '#d97706');
+      g.rect(55, 14, 6, 3, '#f59e0b');
+      g.box(39, 28, 13, 14, '#dcfce7', '#16a34a');
+      g.rect(41, 30, 6, 3, '#22c55e');
+      g.box(53, 28, 13, 14, '#ffe4e6', '#e11d48');
+      g.rect(55, 30, 6, 3, '#fb7185');
+    });
+
+    // Rank 3-5 (96x54): ワイド物件キャビネット ＋ LED照光 大判物件パネル
+    registerCanvasAsset('off_cabinet_wide', 96, 54, (g) => {
+      g.shadow(2, 47, 92, 4);
+      // 左: 2列ファイル棚 (x=2..43)
+      g.roundBox(2, 5, 41, 44, '#cbd5e1', '#1e293b', 2);
+      g.vline(22, 7, 40, '#64748b');
+      [8, 20, 32].forEach((yy) => {
+        g.rect(4, yy, 16, 10, '#f1f5f9');
+        g.rect(24, yy, 17, 10, '#e2e8f0');
+        g.rect(9, yy + 5, 6, 2, '#334155');
+        g.rect(29, yy + 5, 6, 2, '#334155');
+      });
+      g.rect(6, 8, 4, 4, '#ef4444');
+      g.rect(12, 8, 4, 4, '#3b82f6');
+      g.rect(26, 8, 4, 4, '#10b981');
+      g.rect(32, 8, 4, 4, '#f59e0b');
+      // 右: LED照光 大型物件情報ガラスボード (x=44..94)
+      g.roundBox(44, 2, 50, 47, '#0f172a', '#020617', 2);
+      g.rect(46, 4, 46, 4, '#10b981'); // 営業ステータス帯
+      g.rect(49, 5, 16, 2, '#a7f3d0');
+      g.rect(46, 9, 46, 38, '#f8fafc');
+      // 3x2 間取り掲示カード
+      const cardCols = [
+        ['#e0f2fe', '#0284c7'], ['#fef3c7', '#d97706'], ['#dcfce7', '#16a34a'],
+        ['#f3e8ff', '#9333ea'], ['#ffe4e6', '#e11d48'], ['#e0e7ff', '#4f46e5']
+      ];
+      cardCols.forEach((cc, idx) => {
+        const cx = 48 + (idx % 3) * 14;
+        const cy = 11 + Math.floor(idx / 3) * 17;
+        g.box(cx, cy, 13, 15, cc[0], cc[1]);
+        g.rect(cx + 2, cy + 2, 7, 3, cc[1]);
+        g.rect(cx + 2, cy + 7, 8, 4, '#ffffff');
+      });
+    });
+
+    // --- 書庫・図鑑ライブラリー（互換48x48 ＋ 主役大型版 mid/wide）---
     registerCanvasAsset('off_bookshelf', 48, 48, (g) => {
       g.shadow(8, 37, 32, 4);
       g.roundBox(8, 5, 32, 33, WOOD_MD, WOOD_DK, 2);
@@ -2703,19 +2837,79 @@
       });
     });
 
-    registerCanvasAsset('off_draft_table', 96, 48, (g) => {
-      g.shadow(9, 38, 78, 4);
-      g.roundBox(9, 10, 78, 28, '#f8fafc', '#475569', 2);
-      g.box(15, 14, 30, 18, '#dbeafe', '#3b82f6', 2); // 青焼き図面
-      g.hline(19, 19, 14, '#60a5fa');
-      g.rect(22, 22, 16, 6, '#bfdbfe');
-      // 建築立体模型
-      g.roundBox(53, 14, 24, 18, '#f1f5f9', '#475569', 2);
-      g.rect(56, 12, 18, 7, '#ef4444'); // 赤屋根
-      g.rect(59, 22, 12, 7, '#bae6fd');
+    // Rank 1-2 (72x52): 2連背高図鑑書庫 ＋ 建築ミニ模型飾棚
+    registerCanvasAsset('off_bookshelf_mid', 72, 52, (g) => {
+      g.shadow(2, 45, 68, 4);
+      g.roundBox(2, 4, 68, 43, WOOD_MD, WOOD_DK, 2);
+      g.rect(4, 2, 64, 4, WOOD_LT); // 上飾り天板
+      const cols = ['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#a855f7', '#fef3c7'];
+      // 左本棚 (x=4..42)
+      [8, 19, 30].forEach((ry, ri) => {
+        g.rect(5, ry + 8, 37, 2, WOOD_DK);
+        for (let bx = 6; bx < 40; bx += 3) {
+          g.rect(bx, ry, 2, 8, cols[(bx + ri * 2) % cols.length]);
+        }
+      });
+      // 中仕切り柱
+      g.rect(42, 6, 3, 39, WOOD_DK);
+      // 右: 建築ミニ模型＆図鑑カタログ展示 (x=45..67)
+      g.rect(46, 8, 21, 18, '#fefce8');
+      g.rect(49, 14, 15, 9, '#f1f5f9'); // 家模型
+      g.rect(48, 11, 17, 4, '#dc2626'); // 赤屋根
+      g.rect(53, 17, 5, 6, '#38bdf8');
+      g.rect(46, 26, 21, 2, WOOD_DK);
+      // 下段ファイル
+      for (let bx = 47; bx < 65; bx += 4) {
+        g.rect(bx, 30, 3, 9, cols[bx % cols.length]);
+      }
+      g.rect(46, 39, 21, 2, WOOD_DK);
     });
 
-    // --- カレンダー -> Rank 3からホワイトボード進化 ---
+    // Rank 3-5 (96x54): 3連豪華建築ライブラリー ＋ 中央ガラス模型展示ショーケース
+    registerCanvasAsset('off_bookshelf_wide', 96, 54, (g) => {
+      g.shadow(2, 47, 92, 4);
+      g.roundBox(2, 4, 92, 45, '#7c2d12', '#451a03', 2);
+      g.rect(4, 2, 88, 4, WOOD_LT); // 金縁風飾り天板
+      g.hline(6, 3, 84, '#facc15');
+      const cols = ['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#a855f7', '#fef3c7'];
+      // 左右本棚 (x=5..31, x=65..91)
+      [9, 20, 31].forEach((ry, ri) => {
+        g.rect(5, ry + 8, 26, 2, '#451a03');
+        g.rect(65, ry + 8, 26, 2, '#451a03');
+        for (let bx = 6; bx < 29; bx += 3) {
+          g.rect(bx, ry, 2, 8, cols[(bx + ri) % cols.length]);
+        }
+        for (let bx = 66; bx < 89; bx += 3) {
+          g.rect(bx, ry, 2, 8, cols[(bx + ri * 3) % cols.length]);
+        }
+      });
+      // 中央ガラス展示ケース (x=33..63)
+      g.box(33, 8, 30, 38, '#1e293b', '#facc15', 1);
+      g.rect(35, 10, 26, 17, '#e0f2fe');
+      g.rect(38, 16, 20, 9, '#ffffff');
+      g.rect(37, 13, 22, 4, '#ef4444'); // 豪華模型
+      g.rect(43, 19, 6, 6, '#38bdf8');
+      g.rect(35, 29, 26, 15, '#334155');
+      // 飾られた金メダル＆アーカイブバインダー
+      g.rect(38, 32, 6, 9, '#facc15');
+      g.rect(46, 32, 4, 9, '#38bdf8');
+      g.rect(52, 32, 4, 9, '#f43f5e');
+      g.rect(57, 32, 3, 9, '#10b981');
+    });
+
+    // 製図台（脇役：少し彩度を整えたクリーン設計卓）
+    registerCanvasAsset('off_draft_table', 96, 48, (g) => {
+      g.shadow(8, 38, 80, 4);
+      g.roundBox(8, 10, 80, 28, '#f1f5f9', '#475569', 2);
+      g.box(14, 14, 30, 18, '#e0f2fe', '#60a5fa', 2); // 青焼き図面
+      g.hline(18, 19, 14, '#93c5fd');
+      g.rect(21, 22, 16, 6, '#dbeafe');
+      g.roundBox(54, 14, 24, 18, '#f8fafc', '#64748b', 2); // 白模型
+      g.rect(57, 12, 18, 7, '#f87171');
+      g.rect(60, 22, 12, 7, '#cbd5e1');
+    });
+
+    // --- カレンダー・大型スケジュールボード（互換＋新規主役版）---
     registerCanvasAsset('off_calendar', 48, 22, (g) => {
       g.box(13, 2, 22, 18, '#ffffff', '#334155', 2);
       g.rect(15, 3, 18, 5, '#ef4444');
@@ -2725,47 +2919,133 @@
       }
     });
 
-    // Rank 3 (96x22): 大型ホワイトボードスケジュール表
+    // Rank 1-2 (72x36): 大型壁掛けカレンダー ＋ 予定ボードコンビ
+    registerCanvasAsset('off_calendar_wide', 72, 36, (g) => {
+      g.shadow(2, 31, 68, 3);
+      // 左: カレンダー本体 (x=2..33)
+      g.box(2, 2, 31, 30, '#ffffff', '#334155', 2);
+      g.rect(4, 4, 27, 7, '#ef4444');
+      g.rect(7, 6, 10, 2, '#ffffff');
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 4; col++) {
+          const isHl = (row === 1 && col === 2);
+          g.rect(6 + col * 6, 13 + row * 5, 4, 3, isHl ? '#f43f5e' : '#334155');
+        }
+      }
+      // 右: 予定ホワイトボード (x=35..70)
+      g.box(35, 2, 35, 29, '#f8fafc', '#475569', 2);
+      g.rect(37, 4, 31, 4, '#0284c7');
+      g.rect(39, 10, 18, 2, '#475569');
+      g.rect(39, 14, 24, 2, '#94a3b8');
+      g.rect(39, 18, 16, 2, '#94a3b8');
+      g.rect(60, 10, 7, 7, '#fde047'); // 付箋
+      g.rect(60, 19, 7, 6, '#fda4af');
+      // マーカー置きトレイ
+      g.rect(39, 30, 27, 3, '#334155');
+      g.rect(43, 29, 5, 1, '#ef4444');
+      g.rect(51, 29, 5, 1, '#2563eb');
+    });
+
     registerCanvasAsset('off_whiteboard_mid', 96, 22, (g) => {
       g.box(6, 1, 84, 19, '#f8fafc', '#64748b', 2);
-      // 左: 月カレンダー枠
       g.rect(10, 3, 30, 4, '#ef4444');
       g.box(10, 7, 30, 10, '#ffffff', '#94a3b8');
       for (let gx = 13; gx < 37; gx += 6) {
         g.rect(gx, 9, 3, 2, '#334155');
         g.rect(gx, 13, 3, 2, gx === 25 ? '#ef4444' : '#334155');
       }
-      // 右: 予定＆工程メモ
       g.rect(45, 4, 26, 2, '#2563eb');
       g.rect(45, 8, 36, 2, '#64748b');
       g.rect(45, 12, 28, 2, '#64748b');
-      g.rect(76, 4, 5, 5, '#facc15'); // 付箋
-      g.rect(82, 4, 4, 4, '#ef4444'); // マグネット
-      // 下トレイ＋ペン
+      g.rect(76, 4, 5, 5, '#facc15');
+      g.rect(82, 4, 4, 4, '#ef4444');
       g.rect(24, 19, 48, 2, '#334155');
-      g.rect(30, 18, 6, 1, '#ef4444');
-      g.rect(39, 18, 6, 1, '#2563eb');
     });
 
-    // Rank 4-5 (96x24): プロ仕様ガラススケジュールボード
+    // Rank 3 (96x44): 自立スタンド脚付き 大型ホワイトボード
+    registerCanvasAsset('off_whiteboard_stand_mid', 96, 44, (g) => {
+      // 金属スタンド脚（左右下端まで接地）
+      g.rect(10, 33, 4, 9, '#64748b');
+      g.rect(82, 33, 4, 9, '#64748b');
+      g.rect(6, 40, 12, 3, '#334155');
+      g.rect(78, 40, 12, 3, '#334155');
+      g.rect(14, 38, 68, 2, '#94a3b8'); // 足元横バー
+      // ボード盤面
+      g.box(4, 2, 88, 33, '#f8fafc', '#475569', 2);
+      // 左: 月カレンダー
+      g.rect(8, 5, 32, 5, '#ef4444');
+      g.box(8, 10, 32, 20, '#ffffff', '#94a3b8');
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 5; col++) {
+          g.rect(11 + col * 5, 13 + row * 5, 3, 3, (row === 1 && col === 3) ? '#ef4444' : '#334155');
+        }
+      }
+      // 右: 工程・販売スケジュール表
+      g.rect(44, 6, 28, 3, '#2563eb');
+      g.rect(44, 12, 32, 2, '#64748b');
+      g.rect(44, 17, 26, 2, '#64748b');
+      g.rect(44, 22, 34, 2, '#94a3b8');
+      g.rect(44, 27, 20, 2, '#10b981');
+      g.rect(76, 6, 8, 7, '#fde047');
+      g.rect(76, 15, 8, 7, '#fda4af');
+      // ペン置きトレイ
+      g.rect(18, 34, 60, 3, '#334155');
+      g.rect(24, 33, 7, 1, '#ef4444');
+      g.rect(34, 33, 7, 1, '#2563eb');
+    });
+
     registerCanvasAsset('off_whiteboard_pro', 96, 24, (g) => {
       g.box(4, 1, 88, 21, '#f0f9ff', '#334155', 2);
-      g.rect(6, 3, 84, 3, '#1e3a8a'); // タイトル帯
-      // 左: カレンダーグリッド
+      g.rect(6, 3, 84, 3, '#1e3a8a');
       g.box(9, 8, 32, 11, '#ffffff', '#94a3b8');
       for (let gx = 12; gx < 38; gx += 5) {
         g.rect(gx, 10, 2, 2, '#0f172a');
         g.rect(gx, 14, 2, 2, gx === 27 ? '#ef4444' : '#334155');
       }
-      // 中央: 売上グラフ
       g.rect(46, 16, 4, 3, '#10b981');
       g.rect(52, 13, 4, 6, '#38bdf8');
       g.rect(58, 10, 4, 9, '#f59e0b');
-      // 右: 付箋・KPIメモ
       g.rect(67, 8, 9, 5, '#fef08a');
       g.rect(78, 8, 9, 5, '#fecdd3');
       g.rect(67, 15, 20, 2, '#475569');
       g.rect(22, 21, 52, 2, '#475569');
+    });
+
+    // Rank 4-5 (108x48): プロ仕様 キャスター付き大型ガラススケジュールボード
+    registerCanvasAsset('off_whiteboard_stand_pro', 108, 48, (g) => {
+      // キャスター脚
+      g.rect(11, 37, 4, 9, '#475569');
+      g.rect(93, 37, 4, 9, '#475569');
+      g.rect(7, 44, 12, 3, '#1e293b');
+      g.rect(89, 44, 12, 3, '#1e293b');
+      g.rect(15, 42, 78, 2, '#64748b');
+      // ガラス盤面
+      g.box(3, 2, 102, 36, '#f0f9ff', '#1e293b', 2);
+      g.rect(5, 4, 98, 5, '#1e3a8a'); // 濃紺タイトル帯
+      g.rect(8, 6, 26, 1, '#7dd3fc');
+      // 左: カレンダー枠
+      g.box(8, 11, 34, 22, '#ffffff', '#64748b');
+      g.rect(9, 12, 32, 4, '#ef4444');
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 5; col++) {
+          g.rect(11 + col * 6, 18 + row * 4, 3, 2, (row === 1 && col === 3) ? '#ef4444' : '#0f172a');
+        }
+      }
+      // 中央: 売上グラフ
+      g.box(45, 11, 28, 22, '#ffffff', '#cbd5e1');
+      g.rect(48, 24, 4, 7, '#10b981');
+      g.rect(54, 20, 4, 11, '#38bdf8');
+      g.rect(60, 15, 4, 16, '#f59e0b');
+      g.rect(66, 13, 4, 18, '#f43f5e');
+      // 右: KPIメモ・付箋
+      g.rect(76, 11, 11, 8, '#fef08a');
+      g.rect(89, 11, 11, 8, '#fecdd3');
+      g.rect(76, 22, 24, 2, '#475569');
+      g.rect(76, 27, 19, 2, '#64748b');
+      // ペン置きトレイ
+      g.rect(20, 37, 68, 3, '#334155');
+      g.rect(27, 36, 7, 1, '#ef4444');
+      g.rect(37, 36, 7, 1, '#38bdf8');
     });
 
     registerCanvasAsset('off_trophy', 48, 22, (g) => {
@@ -2775,29 +3055,47 @@
       g.rect(18, 16, 12, 2, '#92400e');
     });
 
-    // --- 密度・オフィス感アップ用の新規什器 ---
-    // 複合コピー機 (48x48)
+    // --- 既存互換什器 ＋ 西壁・東壁向け横向き＆スリム脇役什器 ---
     registerCanvasAsset('off_printer', 48, 48, (g) => {
       g.shadow(9, 37, 30, 4);
-      g.roundBox(9, 10, 30, 28, '#f1f5f9', '#475569', 2);
-      g.rect(11, 12, 26, 6, '#e2e8f0'); // スキャナ蓋
-      g.rect(31, 14, 4, 2, '#22c55e'); // 緑ランプ
-      g.rect(13, 22, 22, 6, '#cbd5e1'); // カセット1
-      g.rect(13, 30, 22, 6, '#94a3b8'); // カセット2
-      g.rect(39, 18, 5, 6, '#ffffff');  // 給紙トレイ
+      g.roundBox(9, 10, 30, 28, '#e2e8f0', '#475569', 2);
+      g.rect(11, 12, 26, 6, '#cbd5e1');
+      g.rect(31, 14, 4, 2, '#22c55e');
+      g.rect(13, 22, 22, 6, '#cbd5e1');
+      g.rect(13, 30, 22, 6, '#94a3b8');
+      g.rect(39, 18, 5, 6, '#f8fafc');
     });
+    // 西壁密着・東向き横顔コピー機 (_west -> _east)
+    registerCanvasAsset('off_printer_west', 48, 48, (g) => {
+      g.shadow(2, 37, 26, 4);
+      g.roundBox(2, 10, 24, 28, '#e2e8f0', '#475569', 2);
+      g.rect(4, 12, 20, 5, '#cbd5e1'); // 原稿台
+      g.rect(4, 20, 18, 7, '#cbd5e1'); // 側面パネル
+      g.rect(4, 29, 18, 6, '#94a3b8');
+      g.rect(24, 18, 6, 6, '#f8fafc'); // 内側へ突き出す給紙トレイ
+      g.rect(20, 13, 3, 2, '#22c55e');
+    });
+    registerMirroredX('off_printer_east', 'off_printer_west');
 
-    // ウォーターサーバー (48x48)
     registerCanvasAsset('off_water', 48, 48, (g) => {
       g.shadow(14, 38, 20, 4);
-      g.roundBox(15, 18, 18, 21, '#f8fafc', '#64748b', 2);
-      g.roundBox(17, 6, 14, 13, '#38bdf8', '#0284c7', 2); // 水タンク
+      g.roundBox(15, 18, 18, 21, '#f1f5f9', '#64748b', 2);
+      g.roundBox(17, 6, 14, 13, '#7dd3fc', '#0284c7', 2);
       g.rect(20, 9, 4, 5, '#bae6fd');
       g.rect(19, 24, 10, 6, '#334155');
       g.px(22, 26, '#ef4444'); g.px(25, 26, '#3b82f6');
     });
+    // 西壁密着・スリムウォーターサーバー (_west -> _east)
+    registerCanvasAsset('off_water_west', 48, 48, (g) => {
+      g.shadow(2, 38, 19, 4);
+      g.roundBox(2, 18, 17, 21, '#f1f5f9', '#64748b', 2);
+      g.roundBox(4, 6, 13, 13, '#7dd3fc', '#0284c7', 2);
+      g.rect(6, 9, 3, 5, '#bae6fd');
+      g.rect(13, 23, 6, 6, '#334155'); // 内側向きコック口
+      g.px(16, 25, '#ef4444'); g.px(16, 27, '#3b82f6');
+    });
+    registerMirroredX('off_water_east', 'off_water_west');
 
-    // 社員ロッカー (48x48)
     registerCanvasAsset('off_locker', 48, 48, (g) => {
       g.shadow(8, 38, 32, 4);
       g.roundBox(8, 6, 32, 33, '#94a3b8', '#475569', 2);
@@ -2805,8 +3103,18 @@
       g.rect(12, 11, 8, 2, '#475569'); g.rect(28, 11, 8, 2, '#475569');
       g.px(21, 21, '#1e293b'); g.px(27, 21, '#1e293b');
     });
+    // 西壁密着・横向きロッカー (_west -> _east)
+    registerCanvasAsset('off_locker_west', 48, 48, (g) => {
+      g.shadow(2, 39, 22, 4);
+      g.roundBox(2, 6, 20, 34, '#94a3b8', '#475569', 2);
+      g.rect(4, 8, 8, 30, '#64748b'); // 背側奥行き
+      g.rect(12, 8, 8, 30, '#cbd5e1'); // 室内側扉面
+      g.rect(14, 12, 4, 2, '#475569'); // 通気口
+      g.rect(14, 28, 4, 2, '#475569');
+      g.px(17, 21, '#1e293b'); // 鍵穴
+    });
+    registerMirroredX('off_locker_east', 'off_locker_west');
 
-    // 建材・間取りサンプル棚 (48x48)
     registerCanvasAsset('off_shelf_sample', 48, 48, (g) => {
       g.shadow(7, 37, 34, 4);
       g.roundBox(7, 7, 34, 31, WOOD_MD, WOOD_DK, 2);
@@ -2815,43 +3123,85 @@
       g.rect(20, 10, 7, 7, '#fde68a');
       g.rect(29, 10, 7, 7, '#bae6fd');
       g.rect(12, 22, 8, 12, '#cbd5e1');
-      g.rect(24, 22, 12, 11, '#f43f5e');
+      g.rect(24, 22, 12, 11, '#e2e8f0');
     });
+    // 西壁密着・建材見本棚 (_west -> _east)
+    registerCanvasAsset('off_shelf_sample_west', 48, 48, (g) => {
+      g.shadow(2, 39, 23, 4);
+      g.roundBox(2, 7, 21, 33, WOOD_MD, WOOD_DK, 2);
+      g.rect(4, 9, 10, 29, WOOD_LT);
+      g.rect(14, 9, 7, 29, WOOD_DK);
+      // 室内側を見せる建材見本板（落ち着いたトーン）
+      g.rect(13, 11, 6, 7, '#f1f5f9');
+      g.rect(13, 20, 6, 7, '#fde68a');
+      g.rect(13, 29, 6, 7, '#bae6fd');
+    });
+    registerMirroredX('off_shelf_sample_east', 'off_shelf_sample_west');
 
-    // パンフレットスタンド (48x48)
     registerCanvasAsset('off_stand', 48, 48, (g) => {
       g.shadow(14, 37, 20, 3);
-      g.roundBox(14, 8, 20, 28, '#475569', INK, 2);
-      g.rect(16, 11, 7, 9, '#ef4444');
-      g.rect(25, 11, 7, 9, '#3b82f6');
-      g.rect(16, 22, 7, 9, '#10b981');
-      g.rect(25, 22, 7, 9, '#f59e0b');
+      g.roundBox(14, 10, 20, 27, '#475569', INK, 2);
+      g.rect(16, 13, 7, 8, '#f87171');
+      g.rect(25, 13, 7, 8, '#60a5fa');
+      g.rect(16, 23, 7, 8, '#34d399');
+      g.rect(25, 23, 7, 8, '#fbbf24');
+    });
+    registerCanvasAsset('off_stand_west', 48, 48, (g) => {
+      g.shadow(2, 38, 19, 3);
+      g.roundBox(2, 10, 17, 28, '#475569', INK, 2);
+      g.rect(11, 13, 6, 9, '#f87171');
+      g.rect(11, 24, 6, 9, '#60a5fa');
+    });
+    registerMirroredX('off_stand_east', 'off_stand_west');
+
+    // スリム観葉植物（主役を邪魔しない控えめ幅）
+    registerCanvasAsset('off_plant_slim', 48, 48, (g) => {
+      g.shadow(15, 38, 18, 4);
+      g.roundBox(16, 29, 16, 11, '#b45309', '#78350f', 2);
+      g.rect(18, 30, 12, 3, '#d97706');
+      g.roundBox(14, 14, 20, 16, '#15803d', '#14532d', 2);
+      g.roundBox(17, 11, 14, 10, '#22c55e', '#14532d', 1);
+      g.rect(20, 13, 4, 3, '#86efac');
     });
 
-    // 商談・打合せセット (96x48: テーブル＋丸椅子2脚＋図面)
+    // 商談・打合せセット (96x48: 脇役らしく落ち着いたトーン)
     registerCanvasAsset('off_meeting_set', 96, 48, (g) => {
       g.shadow(12, 36, 72, 4);
-      // 左右の椅子
-      g.roundBox(12, 16, 13, 16, '#3b82f6', '#1e3a8a', 2);
-      g.roundBox(71, 16, 13, 16, '#3b82f6', '#1e3a8a', 2);
-      // テーブル
-      g.roundBox(26, 9, 44, 30, '#f8fafc', SLATE_LN, 2);
-      g.box(33, 14, 18, 12, '#dbeafe', '#3b82f6');
+      g.roundBox(12, 16, 13, 16, '#60a5fa', '#334155', 2);
+      g.roundBox(71, 16, 13, 16, '#60a5fa', '#334155', 2);
+      g.roundBox(26, 9, 44, 30, '#f1f5f9', SLATE_LN, 2);
+      g.box(33, 14, 18, 12, '#e0f2fe', '#60a5fa');
       g.roundBox(57, 16, 8, 8, '#f8fafc', '#94a3b8');
       g.rect(59, 18, 4, 4, '#78350f');
     });
 
-    // 応接ローテーブル (96x48)
+    // 応接ローテーブル (96x48 / 縦向き 48x96)
     registerCanvasAsset('off_lounge_table', 96, 48, (g) => {
       g.shadow(14, 35, 68, 4);
       g.roundBox(14, 12, 68, 24, WOOD_LT, WOOD_DK, 2);
-      g.rect(16, 14, 64, 18, '#f8fafc');
-      g.roundBox(24, 18, 16, 10, '#f59e0b', '#b45309'); // カタログ雑誌
-      g.roundBox(54, 17, 12, 10, '#e2e8f0', '#64748b'); // お茶セット
+      g.rect(16, 14, 64, 18, '#f1f5f9');
+      g.roundBox(24, 18, 16, 10, '#fbbf24', '#b45309');
+      g.roundBox(54, 17, 12, 10, '#e2e8f0', '#64748b');
       g.rect(58, 19, 4, 4, '#16a34a');
     });
+    registerCanvasAsset('off_lounge_table_v', 48, 96, (g) => {
+      g.shadow(11, 80, 26, 4);
+      g.roundBox(11, 16, 26, 64, WOOD_LT, WOOD_DK, 2);
+      g.rect(13, 18, 22, 60, '#f8fafc');
+      // 上：パンフレット＆間取り資料
+      g.roundBox(17, 23, 14, 14, '#fbbf24', '#b45309');
+      g.rect(19, 25, 9, 4, '#fef3c7');
+      g.box(17, 39, 14, 7, '#ffffff', '#94a3b8');
+      g.hline(19, 42, 8, '#38bdf8');
+      // 下：対面2客分のお茶セット
+      g.roundBox(16, 51, 16, 18, '#e2e8f0', '#64748b');
+      g.rect(18, 53, 5, 5, '#ffffff');
+      g.rect(19, 54, 3, 3, '#16a34a');
+      g.rect(25, 61, 5, 5, '#ffffff');
+      g.rect(26, 62, 3, 3, '#16a34a');
+    });
 
-    // サーバーラック (48x48)
+    // サーバーラック (48x48 + _west/_east)
     registerCanvasAsset('off_server', 48, 48, (g) => {
       g.shadow(10, 38, 28, 4);
       g.roundBox(10, 5, 28, 34, '#1e293b', '#020617', 2);
@@ -2860,6 +3210,108 @@
         g.rect(15, yy + 2, 3, 2, idx % 2 === 0 ? '#38bdf8' : '#22c55e');
         g.rect(20, yy + 2, 3, 2, '#facc15');
       });
+    });
+    registerCanvasAsset('off_server_west', 48, 48, (g) => {
+      g.shadow(2, 39, 22, 4);
+      g.roundBox(2, 5, 20, 35, '#1e293b', '#020617', 2);
+      [9, 17, 25, 33].forEach((yy, idx) => {
+        g.rect(10, yy, 10, 5, '#334155');
+        g.rect(14, yy + 2, 3, 2, idx % 2 === 0 ? '#38bdf8' : '#22c55e');
+        g.px(18, yy + 2, '#facc15');
+      });
+    });
+    registerMirroredX('off_server_east', 'off_server_west');
+
+    // --- 見通しの良いオープン仕切り・プランター・ゲートパーツ（Rank 3〜5）---
+    // Rank 3 横向き木枠すりガラス ローパーテーション (96x28)
+    registerCanvasAsset('off_part_wood_h', 96, 28, (g) => {
+      g.shadow(2, 23, 92, 3);
+      // 両端の木柱
+      g.rect(2, 3, 4, 21, WOOD_DK);
+      g.rect(90, 3, 4, 21, WOOD_DK);
+      g.rect(46, 5, 4, 18, WOOD_MD); // 中間桟
+      // 木枠トップ＆腰板ベース
+      g.rect(2, 3, 92, 3, WOOD_LT);
+      g.rect(2, 16, 92, 8, WOOD_MD);
+      g.hline(4, 18, 88, WOOD_LT);
+      // 半透明すりガラス帯
+      g.rect(6, 6, 40, 10, 'rgba(224, 242, 254, 0.72)');
+      g.rect(50, 6, 40, 10, 'rgba(224, 242, 254, 0.72)');
+      g.hline(8, 8, 12, '#ffffff');
+      g.hline(52, 8, 12, '#ffffff');
+    });
+
+    // Rank 4–5 横向きクリアガラス・ローパーテーション (96x28)
+    registerCanvasAsset('off_part_glass_h', 96, 28, (g) => {
+      g.shadow(2, 23, 92, 3);
+      // アルミ/ブラックフレーム柱（両端・中央）
+      g.rect(2, 3, 3, 21, '#334155');
+      g.rect(91, 3, 3, 21, '#334155');
+      g.rect(47, 4, 2, 19, '#475569');
+      // 細手すり＆低いアルミ巾木ベース
+      g.rect(2, 3, 92, 2, '#475569');
+      g.hline(3, 3, 90, '#cbd5e1');
+      g.rect(2, 19, 92, 5, '#334155');
+      g.hline(4, 20, 88, '#94a3b8');
+      // 半透明クリアガラス＋斜めハイライト
+      g.rect(5, 5, 42, 14, 'rgba(186, 230, 253, 0.44)');
+      g.rect(49, 5, 42, 14, 'rgba(186, 230, 253, 0.44)');
+      g.rect(9, 7, 10, 2, 'rgba(255, 255, 255, 0.75)');
+      g.rect(13, 10, 8, 2, 'rgba(255, 255, 255, 0.55)');
+      g.rect(55, 7, 10, 2, 'rgba(255, 255, 255, 0.75)');
+      g.rect(59, 10, 8, 2, 'rgba(255, 255, 255, 0.55)');
+    });
+
+    // Rank 5 縦向きクリアガラス仕切り（社長コーナー境界用: 20x72）
+    registerCanvasAsset('off_part_glass_v', 20, 72, (g) => {
+      g.shadow(7, 4, 7, 65);
+      // 上下金属エンド柱
+      g.rect(6, 2, 8, 4, '#334155');
+      g.rect(6, 65, 8, 5, '#1e293b');
+      g.rect(8, 2, 4, 65, 'rgba(186, 230, 253, 0.52)');
+      // 縦金属フレーム線
+      g.vline(6, 4, 63, '#475569');
+      g.vline(13, 4, 63, '#475569');
+      g.hline(6, 35, 8, '#64748b'); // 中間支柱
+      // ガラス反射
+      g.vline(9, 9, 16, 'rgba(255, 255, 255, 0.75)');
+      g.vline(9, 41, 16, 'rgba(255, 255, 255, 0.75)');
+    });
+
+    // 横長プランターボックス仕切り (48x30)
+    registerCanvasAsset('off_part_planter_h', 48, 30, (g) => {
+      g.shadow(3, 24, 42, 3);
+      g.roundBox(3, 13, 42, 12, '#475569', '#1e293b', 2); // スリム植栽ボックス
+      g.rect(5, 15, 38, 4, '#64748b');
+      // 観葉グリーン植栽
+      g.roundBox(5, 4, 14, 12, '#16a34a', '#14532d', 2);
+      g.roundBox(17, 3, 14, 13, '#22c55e', '#14532d', 2);
+      g.roundBox(29, 4, 14, 12, '#16a34a', '#14532d', 2);
+      g.rect(8, 6, 4, 3, '#86efac');
+      g.rect(21, 5, 5, 3, '#bbf7d0');
+      g.rect(33, 6, 4, 3, '#86efac');
+    });
+
+    // 縦向きプランターボックス仕切り (24x48)
+    registerCanvasAsset('off_part_planter_v', 24, 48, (g) => {
+      g.shadow(5, 40, 14, 4);
+      g.roundBox(4, 14, 16, 28, '#475569', '#1e293b', 2);
+      g.rect(6, 16, 12, 24, '#64748b');
+      g.roundBox(3, 4, 18, 16, '#16a34a', '#14532d', 2);
+      g.roundBox(5, 14, 14, 14, '#22c55e', '#14532d', 2);
+      g.roundBox(4, 24, 16, 12, '#15803d', '#14532d', 2);
+      g.rect(7, 7, 4, 3, '#86efac');
+      g.rect(9, 17, 4, 3, '#bbf7d0');
+    });
+
+    // スマート案内ゲート柱 (24x32)
+    registerCanvasAsset('off_gate_post', 24, 32, (g) => {
+      g.shadow(6, 25, 12, 4);
+      g.roundBox(6, 21, 12, 7, '#1e293b', '#0f172a', 1); // 台座
+      g.rect(9, 7, 6, 16, '#94a3b8'); // メタル柱
+      g.rect(10, 8, 2, 14, '#e2e8f0');
+      g.roundBox(8, 3, 8, 5, '#38bdf8', '#0f172a', 1); // 青LEDサインヘッド
+      g.px(10, 5, '#e0f2fe');
     });
   }
 
