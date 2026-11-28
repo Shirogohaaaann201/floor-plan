@@ -218,6 +218,38 @@
       g.vline(9, 0, 6, '#bda183'); g.vline(16, 12, 6, '#bda183');
     });
 
+    // A-3 新部屋4種床タイル (防音書斎 / サンルーム / 土間ガレージ / 家事室)
+    registerCanvasAsset('floor_studio', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#1e293b');
+      g.hline(0, 11, 24, '#0f172a'); g.hline(0, 23, 24, '#0f172a');
+      g.vline(11, 0, 24, '#0f172a'); g.vline(23, 0, 24, '#0f172a');
+      g.rect(2, 2, 8, 8, '#283548'); g.rect(14, 14, 8, 8, '#283548');
+      g.px(5, 5, '#334155'); g.px(17, 17, '#334155');
+    });
+
+    registerCanvasAsset('floor_sunroom', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#fef3c7');
+      for (let y = 5; y < 24; y += 6) g.hline(0, y, 24, '#f3d999');
+      g.vline(10, 0, 6, '#f3d999'); g.vline(18, 6, 6, '#f3d999');
+      g.vline(6, 12, 6, '#f3d999'); g.vline(15, 18, 6, '#f3d999');
+      g.hline(2, 2, 6, '#fffbeb'); g.hline(12, 14, 5, '#fffbeb');
+    });
+
+    registerCanvasAsset('floor_garage', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#94a3b8');
+      g.hline(0, 11, 24, '#7f8ea3'); g.hline(0, 23, 24, '#7f8ea3');
+      g.vline(11, 0, 24, '#7f8ea3'); g.vline(23, 0, 24, '#7f8ea3');
+      g.hline(1, 21, 5, '#eab308'); g.hline(13, 21, 5, '#eab308');
+      g.px(4, 5, '#cbd5e1'); g.px(17, 14, '#cbd5e1');
+    });
+
+    registerCanvasAsset('floor_laundry', 24, 24, (g) => {
+      g.rect(0, 0, 24, 24, '#e0fdfa');
+      g.rect(0, 0, 12, 12, '#ccfbf1');
+      g.rect(12, 12, 12, 12, '#ccfbf1');
+      g.hline(0, 11, 24, '#99f6e4'); g.vline(11, 0, 24, '#99f6e4');
+    });
+
     registerCanvasAsset('floor_darkness', 24, 24, (g) => {
       g.rect(0, 0, 24, 24, '#241f3b');
       g.hline(0, 11, 24, '#1b172e'); g.hline(0, 23, 24, '#1b172e');
@@ -1940,6 +1972,312 @@
       g.box(30, 41, 7, 6, '#4d7c0f', '#f8fafc');
       g.rect(32, 43, 3, 3, '#f472b6');
     });
+
+    // ============================================================
+    // A-3 DX限定 新家具＆壁装飾 13種（全23スプライト）
+    // ============================================================
+    // 1. 配信スタジオデスク 4方向
+    registerCanvasAsset('furn_stream_desk', 48, 48, (g) => {
+      g.shadow(5, 25, 38, 3);
+      g.roundBox(5, 4, 38, 22, '#1e293b', '#020617', 2);
+      g.hline(7, 6, 34, '#38bdf8');
+      // リングライト
+      g.box(19, 1, 10, 10, '#f8fafc', '#475569', 2);
+      g.rect(22, 4, 4, 4, '#38bdf8');
+      // デュアルモニター & ミキサー
+      g.box(7, 8, 13, 10, '#38bdf8', '#020617', 2);
+      g.rect(9, 10, 9, 4, '#bae6fd');
+      g.box(28, 8, 13, 10, '#a855f7', '#020617', 2);
+      g.rect(30, 10, 9, 4, '#f0abfc');
+      g.roundBox(15, 19, 18, 5, '#334155', '#020617');
+      g.px(18, 21, '#22c55e'); g.px(22, 21, '#ef4444'); g.px(26, 21, '#38bdf8');
+      // アームマイク
+      g.hline(12, 16, 7, '#64748b');
+      g.roundBox(17, 13, 5, 5, '#0f172a', '#94a3b8');
+      // 配信チェア
+      g.roundBox(17, 27, 14, 15, '#0f172a', '#020617', 2);
+      g.rect(19, 29, 10, 10, '#06b6d4');
+    });
+    registerCanvasAsset('furn_stream_desk_west', 48, 48, (g) => {
+      g.shadow(2, 38, 22, 3);
+      g.roundBox(2, 5, 20, 38, '#1e293b', '#020617', 2);
+      g.vline(20, 7, 34, '#38bdf8');
+      g.box(3, 8, 10, 13, '#38bdf8', '#020617', 2);
+      g.box(3, 27, 10, 13, '#a855f7', '#020617', 2);
+      g.box(1, 19, 8, 10, '#f8fafc', '#475569', 2);
+      g.rect(14, 16, 5, 16, '#334155');
+      g.px(16, 20, '#22c55e'); g.px(16, 24, '#ef4444');
+      g.roundBox(24, 17, 14, 14, '#0f172a', '#020617', 2);
+      g.rect(25, 19, 10, 10, '#06b6d4');
+    });
+    registerMirroredX('furn_stream_desk_east', 'furn_stream_desk_west');
+    registerCanvasAsset('furn_stream_desk_south', 48, 48, (g) => {
+      g.shadow(5, 42, 38, 3);
+      g.roundBox(17, 7, 14, 14, '#0f172a', '#020617', 2);
+      g.rect(19, 10, 10, 8, '#06b6d4');
+      g.roundBox(5, 22, 38, 22, '#1e293b', '#020617', 2);
+      g.hline(7, 24, 34, '#38bdf8');
+      g.box(7, 30, 13, 10, '#38bdf8', '#020617', 2);
+      g.box(28, 30, 13, 10, '#a855f7', '#020617', 2);
+      g.roundBox(15, 26, 18, 5, '#334155', '#020617');
+      g.box(19, 36, 10, 9, '#f8fafc', '#475569', 2);
+    });
+
+    // 2. ギター＆アンプ機材ラック
+    registerCanvasAsset('furn_gear_rack', 48, 48, (g) => {
+      g.shadow(7, 39, 34, 4);
+      // 黒いギターアンプ
+      g.roundBox(7, 13, 16, 26, '#1e293b', '#020617', 2);
+      g.rect(10, 16, 10, 4, '#334155');
+      g.px(12, 17, '#ef4444'); g.px(15, 17, '#facc15');
+      g.box(10, 22, 10, 14, '#0f172a', '#475569');
+      g.rect(12, 24, 6, 10, '#1e293b');
+      // エレキギター on スタンド
+      g.rect(31, 7, 4, 16, '#78350f');
+      g.box(30, 5, 6, 4, '#451a03', '#020617');
+      g.roundBox(26, 21, 14, 16, '#ef4444', '#7f1d1d', 2);
+      g.rect(29, 25, 8, 6, '#f8fafc');
+      g.hline(25, 39, 16, '#64748b');
+    });
+
+    // 3. 吸音スタジオパネル＆ON AIRランプ (wall 48x22)
+    registerCanvasAsset('wall_acoustic_panel', 48, 22, (g) => {
+      g.box(4, 2, 24, 17, '#334155', '#0f172a', 1);
+      g.rect(6, 4, 9, 6, '#475569'); g.rect(17, 4, 9, 6, '#1e293b');
+      g.rect(6, 11, 9, 6, '#1e293b'); g.rect(17, 11, 9, 6, '#475569');
+      g.hline(6, 6, 9, '#64748b'); g.hline(17, 13, 9, '#64748b');
+      // ON AIR ボックス
+      g.box(31, 5, 14, 10, '#dc2626', '#450a0a', 1);
+      g.rect(33, 7, 10, 6, '#fef2f2');
+      g.rect(34, 8, 8, 4, '#ef4444');
+      g.px(35, 9, '#ffffff'); g.px(39, 9, '#ffffff');
+    });
+
+    // 4. 伝説の金の再生盾（レア wall 48x22）
+    registerCanvasAsset('wall_gold_trophy', 48, 22, (g) => {
+      g.box(12, 2, 24, 18, '#b45309', '#451a03', 1);
+      g.rect(14, 4, 20, 14, '#facc15');
+      g.hline(15, 5, 18, '#fef08a');
+      g.rect(18, 6, 12, 10, '#eab308');
+      // 再生マーク
+      g.rect(21, 8, 2, 6, '#ffffff');
+      g.rect(23, 9, 2, 4, '#ffffff');
+      g.rect(25, 10, 2, 2, '#ffffff');
+      g.px(8, 5, '#fef08a'); g.px(39, 6, '#fef08a');
+    });
+
+    // 5. エッグ型ハンギングチェア
+    registerCanvasAsset('furn_hammock_chair', 48, 48, (g) => {
+      g.shadow(12, 40, 24, 4);
+      g.roundBox(14, 38, 20, 6, '#64748b', INK, 1);
+      g.vline(23, 5, 34, '#475569'); g.vline(24, 5, 34, '#64748b');
+      g.hline(18, 4, 12, '#475569');
+      g.roundBox(11, 9, 26, 28, '#f8fafc', '#94a3b8', 3);
+      g.roundBox(14, 12, 20, 22, '#fef08a', '#f59e0b', 2);
+      g.roundBox(16, 22, 16, 10, '#fb923c', '#c2410c', 2);
+      g.hline(18, 24, 12, '#fed7aa');
+    });
+
+    // 6. キャットタワー
+    registerCanvasAsset('furn_cat_tower', 48, 48, (g) => {
+      g.shadow(9, 40, 30, 4);
+      g.roundBox(9, 36, 30, 8, '#e7d3b5', '#9c6b3b', 2);
+      g.rect(15, 14, 4, 23, '#d97706');
+      g.rect(29, 22, 4, 15, '#d97706');
+      g.roundBox(10, 20, 14, 5, '#f5e6cc', '#9c6b3b', 1);
+      g.roundBox(25, 25, 14, 5, '#f5e6cc', '#9c6b3b', 1);
+      // 最上段ハウス＋肉球＆ぶら下がりボール
+      g.roundBox(11, 6, 16, 11, '#f5e6cc', '#9c6b3b', 2);
+      g.roundBox(15, 9, 8, 6, '#451a03', '#78350f', 1);
+      g.vline(34, 30, 5, '#64748b');
+      g.rect(32, 35, 4, 4, '#f43f5e');
+      g.px(13, 39, '#fb7185'); g.px(15, 39, '#fb7185');
+    });
+
+    // 7. ハーブプランター棚
+    registerCanvasAsset('furn_sunroom_planter', 48, 48, (g) => {
+      g.shadow(8, 39, 32, 4);
+      g.roundBox(8, 9, 32, 32, WOOD_LT, WOOD_DK, 2);
+      g.rect(10, 11, 28, 28, WOOD_MD);
+      // 上段・下段ポット
+      [14, 27].forEach((py, rowIdx) => {
+        g.hline(10, py + 9, 28, WOOD_HI);
+        [12, 21, 30].forEach((px, i) => {
+          g.roundBox(px, py + 3, 6, 6, '#ea580c', '#9a3412');
+          g.roundBox(px - 1, py - 2, 8, 6, (i + rowIdx) % 2 === 0 ? '#22c55e' : '#16a34a', '#14532d');
+          if (i === 1 && rowIdx === 0) g.px(px + 2, py, '#fef08a');
+        });
+      });
+    });
+
+    // 8. 黄金の招き猫（レア furn_gold_cat 48x48）
+    registerCanvasAsset('furn_gold_cat', 48, 48, (g) => {
+      g.shadow(10, 40, 28, 4);
+      // 赤い豪華座布団
+      g.roundBox(8, 32, 32, 11, '#dc2626', '#7f1d1d', 2);
+      g.rect(11, 34, 26, 7, '#ef4444');
+      g.px(10, 41, '#facc15'); g.px(37, 41, '#facc15');
+      // 招き猫本体（黄金）
+      g.roundBox(15, 16, 18, 20, '#facc15', '#b45309', 2);
+      g.roundBox(14, 7, 20, 13, '#fde047', '#b45309', 2);
+      // 猫耳 & 小判
+      g.rect(15, 4, 4, 4, '#facc15'); g.px(16, 5, '#ef4444');
+      g.rect(29, 4, 4, 4, '#facc15'); g.px(30, 5, '#ef4444');
+      g.hline(17, 19, 14, '#ef4444'); // 赤首輪
+      g.roundBox(21, 21, 6, 9, '#fef08a', '#b45309'); // 小判
+      // 上げた右手＆顔
+      g.roundBox(10, 11, 5, 9, '#fde047', '#b45309', 1);
+      g.rect(18, 12, 3, 2, INK); g.rect(27, 12, 3, 2, INK);
+      g.px(23, 15, '#ef4444');
+      // キラキラ
+      g.px(8, 7, '#fef08a'); g.px(39, 10, '#ffffff'); g.px(37, 24, '#fef08a');
+    });
+
+    // 9. ドラム式洗濯乾燥機 4方向
+    registerCanvasAsset('furn_drum_washer', 48, 48, (g) => {
+      g.shadow(10, 40, 28, 4);
+      g.roundBox(10, 6, 28, 35, '#f8fafc', '#475569', 2);
+      g.rect(12, 8, 24, 6, '#e2e8f0');
+      g.rect(14, 10, 6, 3, '#38bdf8');
+      g.px(31, 10, '#22c55e');
+      // 前面丸ドア
+      g.roundBox(15, 16, 18, 18, '#64748b', INK, 3);
+      g.roundBox(18, 19, 12, 12, '#0ea5e9', '#1e293b', 2);
+      g.rect(20, 21, 4, 4, '#bae6fd');
+      // 上のたたみタオル
+      g.roundBox(16, 2, 16, 5, '#f472b6', '#be185d');
+    });
+    registerCanvasAsset('furn_drum_washer_west', 48, 48, (g) => {
+      g.shadow(2, 39, 25, 4);
+      g.roundBox(2, 9, 25, 30, '#f8fafc', '#475569', 2);
+      g.rect(4, 11, 16, 26, '#e2e8f0');
+      g.roundBox(22, 15, 7, 18, '#64748b', INK, 2);
+      g.rect(23, 18, 4, 12, '#0ea5e9');
+      g.rect(16, 12, 3, 5, '#38bdf8');
+    });
+    registerMirroredX('furn_drum_washer_east', 'furn_drum_washer_west');
+    registerCanvasAsset('furn_drum_washer_south', 48, 48, (g) => {
+      g.shadow(10, 41, 28, 4);
+      g.roundBox(10, 7, 28, 35, '#f8fafc', '#475569', 2);
+      g.roundBox(15, 8, 18, 16, '#64748b', INK, 3);
+      g.roundBox(18, 10, 12, 12, '#0ea5e9', '#1e293b', 2);
+      g.rect(12, 33, 24, 6, '#e2e8f0');
+      g.rect(14, 35, 6, 3, '#38bdf8');
+      g.roundBox(16, 24, 16, 7, '#f472b6', '#be185d');
+    });
+
+    // 10. アイロン台＆リネンセット
+    registerCanvasAsset('furn_ironing_set', 48, 48, (g) => {
+      g.shadow(6, 37, 36, 4);
+      // 折り畳みアイロン台
+      g.hline(12, 36, 24, '#64748b');
+      g.roundBox(6, 16, 34, 14, '#bae6fd', '#334155', 2);
+      g.rect(8, 18, 30, 10, '#e0f2fe');
+      // スチームアイロン
+      g.roundBox(15, 19, 10, 6, '#f8fafc', '#1e293b', 1);
+      g.rect(16, 17, 6, 3, '#0284c7');
+      // 横のたたみリネンカゴ
+      g.roundBox(30, 29, 12, 11, '#f5d0a9', '#92400e', 2);
+      g.rect(32, 26, 8, 4, '#ffffff');
+      g.rect(32, 30, 8, 3, '#99f6e4');
+    });
+
+    // 11. 愛車のクラシックカー (横 96x48 / 縦 48x96)
+    registerCanvasAsset('furn_classic_car', 96, 48, (g) => {
+      g.shadow(8, 36, 80, 5);
+      // 4タイヤ
+      g.roundBox(16, 6, 14, 5, '#0f172a', '#020617');
+      g.roundBox(64, 6, 14, 5, '#0f172a', '#020617');
+      g.roundBox(16, 37, 14, 5, '#0f172a', '#020617');
+      g.roundBox(64, 37, 14, 5, '#0f172a', '#020617');
+      // 赤い車体
+      g.roundBox(8, 10, 80, 28, '#dc2626', '#7f1d1d', 3);
+      g.rect(11, 13, 74, 22, '#ef4444');
+      g.hline(12, 14, 70, '#fca5a5');
+      // 白レーシングストライプ
+      g.hline(10, 22, 76, '#f8fafc');
+      g.hline(10, 25, 76, '#f8fafc');
+      // キャビン＆ガラス
+      g.roundBox(26, 13, 38, 22, '#991b1b', '#450a0a', 2);
+      g.rect(52, 15, 9, 18, '#38bdf8');
+      g.rect(54, 17, 3, 14, '#bae6fd');
+      g.rect(28, 15, 7, 18, '#38bdf8');
+      g.rect(37, 15, 13, 18, '#dc2626');
+      // 銀バンパー＆ヘッドライト
+      g.rect(85, 13, 4, 22, '#e2e8f0');
+      g.rect(84, 13, 4, 5, '#fef08a');
+      g.rect(84, 30, 4, 5, '#fef08a');
+      g.rect(6, 13, 3, 22, '#94a3b8');
+    });
+    registerCanvasAsset('furn_classic_car_v', 48, 96, (g) => {
+      g.shadow(10, 82, 28, 5);
+      g.roundBox(6, 16, 5, 14, '#0f172a', '#020617');
+      g.roundBox(37, 16, 5, 14, '#0f172a', '#020617');
+      g.roundBox(6, 64, 5, 14, '#0f172a', '#020617');
+      g.roundBox(37, 64, 5, 14, '#0f172a', '#020617');
+      g.roundBox(10, 8, 28, 80, '#dc2626', '#7f1d1d', 3);
+      g.rect(13, 11, 22, 74, '#ef4444');
+      g.vline(22, 10, 76, '#f8fafc');
+      g.vline(25, 10, 76, '#f8fafc');
+      g.roundBox(13, 26, 22, 38, '#991b1b', '#450a0a', 2);
+      g.rect(15, 52, 18, 9, '#38bdf8');
+      g.rect(17, 54, 14, 3, '#bae6fd');
+      g.rect(15, 28, 18, 7, '#38bdf8');
+      g.rect(15, 37, 18, 13, '#dc2626');
+      g.rect(13, 85, 22, 4, '#e2e8f0');
+      g.rect(13, 84, 5, 4, '#fef08a');
+      g.rect(30, 84, 5, 4, '#fef08a');
+      g.rect(13, 6, 22, 3, '#94a3b8');
+    });
+
+    // 12. 工具ワークベンチ 4方向
+    registerCanvasAsset('furn_tool_bench', 48, 48, (g) => {
+      g.shadow(6, 34, 36, 4);
+      g.roundBox(6, 8, 36, 25, WOOD_LT, WOOD_DK, 2);
+      g.rect(8, 10, 32, 6, WOOD_HI);
+      g.rect(8, 17, 32, 14, '#dc2626');
+      g.hline(10, 22, 28, '#991b1b'); g.hline(10, 27, 28, '#991b1b');
+      g.rect(20, 19, 8, 2, '#f8fafc'); g.rect(20, 24, 8, 2, '#f8fafc');
+      // 天板のスパナ
+      g.hline(14, 12, 12, '#cbd5e1');
+      g.rect(12, 11, 3, 3, '#94a3b8');
+      g.rect(30, 11, 6, 4, '#0284c7');
+    });
+    registerCanvasAsset('furn_tool_bench_west', 48, 48, (g) => {
+      g.shadow(2, 40, 22, 4);
+      g.roundBox(2, 6, 22, 36, WOOD_LT, WOOD_DK, 2);
+      g.rect(4, 8, 12, 32, WOOD_HI);
+      g.rect(17, 8, 5, 32, '#dc2626');
+      g.vline(8, 14, 12, '#cbd5e1');
+      g.rect(7, 30, 5, 6, '#0284c7');
+    });
+    registerMirroredX('furn_tool_bench_east', 'furn_tool_bench_west');
+    registerCanvasAsset('furn_tool_bench_south', 48, 48, (g) => {
+      g.shadow(6, 42, 36, 4);
+      g.roundBox(6, 15, 36, 26, WOOD_LT, WOOD_DK, 2);
+      g.rect(8, 32, 32, 7, WOOD_HI);
+      g.rect(8, 17, 32, 14, '#dc2626');
+      g.hline(10, 22, 28, '#991b1b');
+      g.hline(14, 34, 12, '#cbd5e1');
+    });
+
+    // 13. ロードバイクスタンド
+    registerCanvasAsset('furn_road_bike', 48, 48, (g) => {
+      g.shadow(8, 38, 32, 4);
+      // 前後タイヤ
+      g.box(6, 21, 13, 13, 'transparent', '#1e293b', 2);
+      g.box(29, 21, 13, 13, 'transparent', '#1e293b', 2);
+      g.px(12, 27, '#94a3b8'); g.px(35, 27, '#94a3b8');
+      // シアンフレーム
+      g.hline(15, 16, 16, '#06b6d4');
+      g.hline(12, 27, 14, '#06b6d4');
+      g.vline(20, 14, 14, '#06b6d4');
+      g.vline(32, 14, 14, '#06b6d4');
+      // サドル＆ドロップハンドル
+      g.hline(17, 13, 6, '#0f172a');
+      g.hline(31, 12, 6, '#0f172a');
+      g.vline(36, 12, 5, '#0f172a');
+    });
   }
 
   /* ============================================================
@@ -2011,10 +2349,23 @@
             // 頭上の白い手ぬぐい
             g.roundBox(17, 4 + bob, 14, 5, '#ffffff', '#94a3b8');
           }
+          if (cfg.catEars) {
+            g.rect(14, 3 + bob, 4, 4, '#f97316'); g.px(15, 4 + bob, '#fda4af');
+            g.rect(30, 3 + bob, 4, 4, '#1e293b'); g.px(31, 4 + bob, '#fda4af');
+          }
+          if (cfg.headphones) {
+            g.roundBox(11, 12 + bob, 3, 8, '#38bdf8', '#020617');
+            g.roundBox(34, 12 + bob, 3, 8, '#38bdf8', '#020617');
+            g.hline(13, 4 + bob, 22, '#0f172a');
+          }
 
           // 胴体（スーツ・作業着・着物）
           g.roundBox(13, 24 + bob, 22, 13, cloth, INK, 2);
           g.rect(15, 31 + bob, 18, 4, clothDark);
+          if (cfg.apron) {
+            g.roundBox(17, 26 + bob, 14, 11, '#f8fafc', '#cbd5e1', 1);
+            g.rect(19, 31 + bob, 10, 4, '#e2e8f0');
+          }
           // 襟＆ネクタイ／スカーフ
           g.rect(21, 25 + bob, 6, 3, '#ffffff');
           g.rect(23, 26 + bob, 2, 7, accent);
@@ -2090,6 +2441,12 @@
     makePerson('char_sento',         { cloth: '#0ea5e9', clothDark: '#0369a1', hair: '#451a03', accent: '#facc15', towel: true });
     makePerson('char_toilet_critic', { cloth: '#f8fafc', clothDark: '#cbd5e1', hair: '#334155', accent: '#3b82f6', glasses: true });
     makePerson('char_mystery',       { cloth: '#78350f', clothDark: '#451a03', hair: '#1e293b', accent: '#fde047', hat: true, glasses: true });
+
+    // A-3 DX限定 特注客4名
+    makePerson('char_streamer', { cloth: '#1e293b', clothDark: '#0f172a', hair: '#38bdf8', accent: '#a855f7', headphones: true });
+    makePerson('char_catlover', { cloth: '#fb7185', clothDark: '#e11d48', hair: '#78350f', accent: '#fef3c7', catEars: true });
+    makePerson('char_racer',    { cloth: '#dc2626', clothDark: '#991b1b', hair: '#0f172a', accent: '#f8fafc', glasses: true });
+    makePerson('char_housepro', { cloth: '#14b8a6', clothDark: '#0f766e', hair: '#451a03', accent: '#ffffff', apron: true });
 
     // オフィス社長 (Rank0 作業着 / Rank1-2 紺スーツ / Rank3-4 高級黒スーツ＋金バッジ)
     makePerson('boss_0', { cloth: '#3b82f6', clothDark: '#1d4ed8', hair: '#1e293b', accent: '#fde047', hat: true });

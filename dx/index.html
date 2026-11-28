@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
-  <link rel="stylesheet" href="style.css?v=c3c">
+  <link rel="stylesheet" href="style.css?v=a3e">
 
 </head>
 
@@ -311,7 +311,7 @@
           </button>
         </div>
 
-        <div id="upg-feedback-banner" style="display:none; padding:8px 12px; border-radius:6px; font-size:12px; font-weight:bold; margin-bottom:10px; text-align:center;"></div>
+        <div id="upg-feedback-banner" aria-live="polite"></div>
 
         <!-- Scrollable Tab Content Container -->
         <div id="upg-scroll-content" style="overflow-y:auto; flex:1; padding-right:4px;">
@@ -675,7 +675,7 @@
       </div>
     </div>
 
-    <!-- 実績・記録帳（コンボ全38種＆家具図鑑全65種）モーダル -->
+    <!-- 実績・記録帳（コンボ全46種＆家具図鑑全78種）モーダル -->
     <div id="modal-records" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); z-index:280; align-items:center; justify-content:center; padding:14px;">
       <div class="mission-card" style="position:relative; width:100%; max-width:500px; max-height:88vh; display:flex; flex-direction:column; text-align:left; box-shadow:0 12px 35px rgba(0,0,0,0.5); border:1.5px solid rgba(245,158,11,0.35); padding:14px 16px; box-sizing:border-box;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:8px;">
@@ -687,7 +687,7 @@
               </button>
             </div>
             <div id="records-progress-text" style="font-size:11.5px; color:#fde047; font-weight:bold; margin-top:3px;">
-              図鑑収集率: 0 / 38 (0%)
+              図鑑収集率: 0 / 46 (0%)
             </div>
           </div>
           <button id="btn-close-records" style="background:none; border:none; color:var(--c-text2); font-size:22px; cursor:pointer; padding:4px;"><i class="ph-bold ph-x"></i></button>
@@ -695,10 +695,10 @@
 
         <div class="records-tab-bar">
           <button id="tab-records-combos" type="button" class="records-tab-btn active">
-            🏆 コンボ記録 (<span id="tab-combos-count">0/38</span>)
+            🏆 コンボ記録 (<span id="tab-combos-count">0/46</span>)
           </button>
           <button id="tab-records-furniture" type="button" class="records-tab-btn">
-            🪑 家具図鑑 (<span id="tab-furniture-count">0/65</span>)
+            🪑 家具図鑑 (<span id="tab-furniture-count">0/78</span>)
           </button>
         </div>
 
@@ -709,7 +709,7 @@
         </div>
 
         <div id="records-list-container" style="overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
-          <!-- JSで全38種のカードまたは家具図鑑グリッドを生成 -->
+          <!-- JSで全46種のカードまたは家具図鑑グリッドを生成 -->
         </div>
 
         <!-- 家具詳細＆90°回転プレビュー -->
@@ -887,11 +887,12 @@
                 <i class="ph-bold ph-stack"></i> デッキの3層構造（20〜24枚）と技術開発
               </div>
               <div class="help-wiki-body">
-                山札はホーム「オフィス ＞ デッキ」または案件画面「デッキ編成」から組み替えできます。<br>
-                ・<strong>固定枠（11枚）</strong>：生活インフラの基礎ピース（事故防止のため変更不可）。<br>
-                ・<strong>同カテゴリ入替枠（9枠）</strong>：開発した同カテゴリの上位ピースへ差し替え可能。<br>
+                山札はホーム「オフィス ＞ デッキ」またはパズル直前画面「調整する／デッキ調整」から組み替えできます。<br>
+                ・<strong>固定枠（9枚）</strong>：生活インフラの基礎ピース（事故防止のため変更不可）。<br>
+                ・<strong>入替枠（11枠：同カテゴリ10＋設備汎用1）</strong>：開発した上位ピースへ差し替え可能（設備枠①はトイレ／洗面／浴室／収納全般と入替可）。<br>
                 ・<strong>自由追加枠（最大 +4枚）</strong>：解放済みの全カテゴリから自由に追加（空枠も可）。<br>
-                ・<strong>技術開発（10種・80〜300万）</strong>：和室・大型LDK・WIC・長3/T/Z廊下などを永久解放。<br>
+                ・<strong>名前付きデッキプリセット（2〜6枠）</strong>：会社規模（オフィス移転 Rank 1〜5）に応じて最大6枠まで拡張。パズル直前でプリセット切替や「この案件だけ一時適用」も選べます。<br>
+                ・<strong>技術開発（15種・80〜350万）</strong>：和室・スリムDK(3)・広間廊下(4)・大型LDK(6)・特大LDK(3×3)・WIC・防音書斎・サンルーム・土間ガレージ・ランドリー室などを永久解放。<br>
                 ※建築途中でオフィスから変えても<strong>今の山札には反映されず、次の「設計開始」（またはやり直し）から反映</strong>されます（案件確認画面からは即反映）。
               </div>
             </div>
@@ -955,11 +956,11 @@
 
             <div id="wiki-card-combo" class="help-wiki-card highlight-amber">
               <div class="help-wiki-title" style="color:#fbbf24;">
-                <i class="ph-bold ph-trophy"></i> コンボ（全38種）・記録帳と「珍間取り」の特性
+                <i class="ph-bold ph-trophy"></i> コンボ（全46種）・記録帳と「珍間取り」の特性
               </div>
               <div class="help-wiki-body">
-                ・<strong>コンボ評価</strong>：<strong>王道（11種）・立地（7種）・珍間取り（13種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（7種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ・幹線道路の騒音）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
-                ・<strong>珍間取りの隠れ特性</strong>：「ロングコリドー」以外の珍間取り12種には<strong>「飽きられやすい（劣化速度 +0.2〜+0.5%/月・空室時の再入居率 -5〜-20%）」</strong>というデメリットがあります。<br>
+                ・<strong>コンボ評価</strong>：<strong>王道（16種）・立地（7種）・珍間取り（16種）</strong>は家賃加算＋満足度 <strong>+5%</strong>、<strong>NG（7種：玄関直風呂・食欲減退・スケルトンバス・プライバシーゼロ・マトリョーシカ・トイレビュッフェ・幹線道路の騒音）</strong>は家賃減額＋満足度 <strong>-20%・劣化速度 +0.5%/月・再入居率 -5%</strong>。<br>
+                ・<strong>珍間取りの隠れ特性</strong>：「ロングコリドー」以外の珍間取り15種には<strong>「飽きられやすい（劣化速度 +0.1〜+0.5%/月・空室時の再入居率 0〜-20%）」</strong>というデメリットがあります。<br>
                 ・<strong>記録帳・家具図鑑</strong>：「物件を引き渡す」確定時に発生していたコンボ・設置された家具が図鑑へ自動登録されます（再設計・諦める時は未登録）。
               </div>
             </div>
@@ -1185,6 +1186,8 @@
       </div>
     </div>
 
+    <div class="mission-card" id="mission-deck-panel" style="display:none;"></div>
+
     <aside id="tutorial-mission-banner" class="tutorial-banner tutorial-banner-dark" style="display:none; width:100%; max-width:480px; margin-bottom:8px;">
       <div class="tutorial-banner-body">
         <i class="ph-fill ph-sparkle" style="color:#fbbf24; font-size:16px; flex-shrink:0;"></i>
@@ -1200,7 +1203,7 @@
       </button>
       <button class="btn btn-slate" id="btn-mission-deck" style="gap:4px; flex:1.15; padding:12px 6px; font-size:12px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
         <i class="ph-bold ph-cards" style="color:#38bdf8;"></i>
-        デッキ編成
+        デッキ調整
       </button>
       <button class="btn btn-amber" id="btn-start" style="gap:6px; flex:1.6; padding:12px 12px; font-size:14px; font-weight:bold;">
         <i class="ph-bold ph-play-circle" style="font-size:17px;"></i>
@@ -1642,6 +1645,47 @@
   </div>
 
   <!-- ==============================
+       PRE-PUZZLE DECK ADJUSTMENT MODAL
+  ============================== -->
+  <div id="pre-puzzle-deck-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:260; align-items:center; justify-content:center; padding:12px;">
+    <div class="mission-card" style="position:relative; width:100%; max-width:520px; max-height:90vh; display:flex; flex-direction:column; text-align:left; padding:14px;">
+      <button id="btn-close-pre-deck" type="button" style="position:absolute; top:10px; right:10px; padding:6px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+      <div style="display:flex; align-items:center; gap:7px; padding-right:32px; margin-bottom:10px; border-bottom:1px solid var(--c-border); padding-bottom:8px;">
+        <i class="ph-bold ph-cards" style="color:#38bdf8; font-size:18px;"></i>
+        <h3 style="margin:0; color:#f8fafc; font-size:15px; font-weight:900;">パズル直前 デッキ調整</h3>
+      </div>
+      <div id="pre-puzzle-deck-body" style="flex:1; min-height:140px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:2px;">
+        <!-- DXDeck が描画 -->
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--c-border);">
+        <button id="btn-pre-deck-cancel" type="button" class="btn btn-slate" style="padding:9px 10px; font-size:11.5px;">キャンセル</button>
+        <button id="btn-pre-deck-temp" type="button" class="btn btn-slate" style="flex:1; padding:9px 10px; font-size:11.5px; font-weight:bold; border:1px solid rgba(251,191,36,0.55); color:#fde047; justify-content:center;">⚡ この案件だけ適用</button>
+        <button id="btn-pre-deck-save" type="button" class="btn btn-primary" style="flex:1.25; padding:9px 10px; font-size:11.5px; font-weight:bold; justify-content:center;">💾 保存して適用</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       DECK MISSING REQUIRED PIECE WARNING MODAL
+  ============================== -->
+  <div id="deck-warn-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:280; align-items:center; justify-content:center; padding:14px;">
+    <div class="mission-card" style="position:relative; width:100%; max-width:420px; text-align:left; padding:18px 16px; border:1.5px solid rgba(244,63,94,0.6);">
+      <button id="btn-close-deck-warn" type="button" style="position:absolute; top:10px; right:10px; padding:6px; background:none; border:none; color:var(--c-text2); font-size:20px; cursor:pointer;"><i class="ph-bold ph-x"></i></button>
+      <div style="font-size:15px; font-weight:900; color:#fda4af; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <i class="ph-bold ph-warning-circle"></i> 必須ピースがデッキにありません
+      </div>
+      <ul id="deck-warn-confirm-list" style="margin:0 0 10px 18px; padding:0; color:#fecdd3; font-size:12px; line-height:1.5;"></ul>
+      <p style="margin:0 0 14px; font-size:11.5px; color:#cbd5e1; line-height:1.5;">
+        このまま設計を始めると必須依頼を達成できない可能性があります。デッキ調整画面から編成を見直しますか？
+      </p>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-deck-warn-proceed" type="button" class="btn btn-slate" style="flex:1; padding:10px 8px; font-size:11.5px; justify-content:center;">このまま設計開始</button>
+        <button id="btn-deck-warn-adjust" type="button" class="btn btn-amber" style="flex:1.25; padding:10px 10px; font-size:12px; font-weight:bold; justify-content:center;">🃏 デッキを調整する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================
        SANDBOX TEST TOOLS MODAL
   ============================== -->
   <div id="sandbox-tools-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:340; align-items:center; justify-content:center; padding:14px;">
@@ -1719,15 +1763,35 @@
           🔨 リフォーム案件（NG間取り修復＆固定躯体）
         </button>
       </div>
+
+      <div style="font-size:11px; font-weight:800; color:#fde047; margin-top:8px; margin-bottom:5px; padding-top:8px; border-top:1px solid #334155;">✨ DX第3段階 A-3：新部屋・特注客チェック</div>
+      <div style="display:flex; gap:6px; margin-bottom:7px;">
+        <button id="btn-sb-unlock-a3" type="button" class="btn btn-slate" style="flex:1; padding:7px 8px; font-size:11px; font-weight:bold;">
+          🔓 A-3新部屋を全解放
+        </button>
+        <button id="btn-sb-spawn-a3-specials" type="button" class="btn btn-slate" style="flex:1; padding:7px 8px; font-size:11px; font-weight:bold;">
+          🌟 A-3特注客を呼び出す
+        </button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:4px;">
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="a3_full_house" style="justify-content:flex-start; padding:7px 10px; font-size:11px; text-align:left;">
+          🐱 A-3フル展示邸（防音書斎＋サンルーム＋家事室＋ガレージ）
+        </button>
+        <button type="button" class="btn btn-slate sb-preset-btn" data-preset="a3_streamer_fortress" style="justify-content:flex-start; padding:7px 10px; font-size:11px; text-align:left;">
+          🎙️ 究極の配信要塞（全窓0＆閉じ込めガレージ）
+        </button>
+      </div>
     </div>
   </div>
 
-  <script src="pixel_assets.js?v=c3"></script>
-  <script src="furniture_catalog.js?v=c3d"></script>
-  <script src="dx_stage2.js?v=c3"></script>
-  <script src="pixel_renderer.js?v=c3"></script>
-  <script src="pixel_office.js?v=c3"></script>
-  <script src="game-1.js?v=c3"></script>
-  <script src="game-2.js?v=c3d"></script>
+  <script src="pixel_assets.js?v=a3e"></script>
+  <script src="furniture_catalog.js?v=a3e"></script>
+  <script src="dx_stage2.js?v=a3e"></script>
+  <script src="dx_stage3.js?v=a3e"></script>
+  <script src="dx_deck.js?v=a3e"></script>
+  <script src="pixel_renderer.js?v=a3e"></script>
+  <script src="pixel_office.js?v=a3e"></script>
+  <script src="game-1.js?v=a3e"></script>
+  <script src="game-2.js?v=a3e"></script>
 </body>
 </html>

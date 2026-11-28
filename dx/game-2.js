@@ -72,7 +72,7 @@
           else if (cell.type === T.WASHROOM)  counts.washroom++;
           else if (cell.type === T.CLOSET)    counts.closetRooms++;
         }
-        if (cell.roomId && (cell.type === T.TOILET || cell.type === T.BATH || cell.type === T.CLOSET)) {
+        if (cell.roomId && (cell.type === T.TOILET || cell.type === T.BATH || (cell.type === T.CLOSET && !(typeof DXStage3 !== 'undefined' && DXStage3.isGarageCell(cell))))) {
           const n = (mergedSize.get(cell.roomId) || 0) + 1;
           mergedSize.set(cell.roomId, n);
           if (cell.type === T.TOILET) counts.maxToiletSize = Math.max(counts.maxToiletSize, n);
@@ -305,7 +305,7 @@
         const key = `${nr},${nc}`;
         if (nr<0||nr>=GRID||nc<0||nc>=GRID||visitedNoCloset.has(key)) continue;
         const nextCell = grid[nr][nc];
-        if (!nextCell || nextCell.type === T.CLOSET) continue; // 収納は通り抜けない
+        if (!nextCell || (nextCell.type === T.CLOSET && !(typeof DXStage3 !== 'undefined' && DXStage3.isGarageCell(nextCell)))) continue; // 収納は通り抜けない
         const et = edgeType(cur.r, cur.c, nr, nc);
         if (et === E.NONE || et === E.DOOR) {
           visitedNoCloset.add(key);
@@ -372,6 +372,9 @@
     { id: 37, name: '防音緩衝レイアウト', category: '立地',   bonus: '+1.2万', icon: 'ph-shield-check',     hint: '幹線道路沿いで道路側窓を0にし、収納・水回り・廊下や赤壁を緩衝帯に！',   desc: '道路側の居室/LDK窓をゼロにし、緩衝部屋または遮音赤壁を配置' },
     { id: 38, name: '駅前好立地',       category: '立地',     bonus: '+1.5〜2万', icon: 'ph-train',          hint: '駅前立地の物件で玄関動線を繋ぐと…？（延床16ﾏｽ以下で高評価！）',        desc: '駅前物件で全室到達（延床16ﾏｽ以下で+2.0万・通常+1.5万・維持費-20%）' }
   ];
+  if (typeof DXStage3 !== 'undefined' && Array.isArray(DXStage3.COMBO_MASTER_ITEMS)) {
+    COMBO_MASTER_LIST.push(...DXStage3.COMBO_MASTER_ITEMS);
+  }
 
   function getPendingNewCombos(combos) {
     ensureGameState();
@@ -623,7 +626,7 @@
               if (et === E.NONE || et === E.DOOR) {
                 const nType = grid[nr][nc].type;
                 if (nType !== T.TOILET) {
-                  if (nType === T.CLOSET) connectedToCloset = true;
+                  if (nType === T.CLOSET && !(typeof DXStage3 !== 'undefined' && DXStage3.isGarageCell(grid[nr][nc]))) connectedToCloset = true;
                   else connectedToNonCloset = true;
                 }
               }
@@ -748,6 +751,10 @@
     if (typeof DXStage2 !== 'undefined' && DXStage2.detectLocationCombos && STAGE && STAGE.location) {
       const locCombos = DXStage2.detectLocationCombos(grid, STAGE, counts, visited, edgeType, hasSolidWall);
       if (Array.isArray(locCombos) && locCombos.length > 0) combos.push(...locCombos);
+    }
+    if (typeof DXStage3 !== 'undefined' && DXStage3.detectStage3Combos) {
+      const s3Combos = DXStage3.detectStage3Combos(grid, STAGE, counts, visited, edgeType, hasSolidWall, calcFootprintStats);
+      if (Array.isArray(s3Combos) && s3Combos.length > 0) combos.push(...s3Combos);
     }
 
     return combos;
@@ -1468,7 +1475,7 @@
         rctx.stroke();
         rctx.strokeStyle = '#94a3b8';
       } else {
-        const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
+        const s = (typeof DXStage3 !== 'undefined' && DXStage3.getCellStyle(cell)) || CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
         rctx.fillStyle = cell.color || s.bg;
         rctx.fillRect(c * cs, r * cs, cs, cs);
         rctx.strokeStyle = isCompact ? (s.border || '#cbd5e1') : '#e2e8f0';
@@ -2443,6 +2450,9 @@
       btnDeck.classList.toggle('tutorial-locked', isTutMission);
       btnDeck.disabled = isTutMission;
     }
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.renderMissionDeckPanel === 'function') {
+      DXDeck.renderMissionDeckPanel(STAGE);
+    }
     if (btnBackSel) {
       btnBackSel.innerHTML = isTutMission
         ? '<i class="ph-bold ph-arrow-left"></i> ホーム'
@@ -2667,16 +2677,27 @@
   }
 
   document.getElementById('btn-mission-deck')?.addEventListener('click', () => {
-    openCompanyUpgradeModal('deck');
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.openPrePuzzleEditor === 'function') {
+      DXDeck.openPrePuzzleEditor();
+    } else {
+      openCompanyUpgradeModal('deck');
+    }
   });
 
   document.getElementById('btn-start').addEventListener('click', () => {
     initAudio();
     if (!ensureCanStartBuild()) return;
-    if (GameState.attempts === undefined || GameState.attempts < 0) GameState.attempts = getMaxAttempts();
-    GameState.lastFunds = GameState.funds; // 開始時の資金を記録
-    saveGame();
-    startGame();
+    const launchPuzzle = () => {
+      if (GameState.attempts === undefined || GameState.attempts < 0) GameState.attempts = getMaxAttempts();
+      GameState.lastFunds = GameState.funds; // 開始時の資金を記録
+      saveGame();
+      startGame();
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.confirmStartWithDiagnosis === 'function') {
+      DXDeck.confirmStartWithDiagnosis(STAGE, launchPuzzle);
+    } else {
+      launchPuzzle();
+    }
   });
   document.getElementById('btn-sound-mission').addEventListener('click', toggleSound);
   document.getElementById('btn-sound-game')?.addEventListener('click', toggleSound);
@@ -3221,6 +3242,9 @@
     initAudio();
     if (!ensureCanStartBuild()) return;
     if (!GameState.availableMissions || !GameState.availableMissions[idx]) return;
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearMissionTempDeck === 'function') {
+      DXDeck.clearMissionTempDeck();
+    }
     GameState.currentMission = GameState.availableMissions[idx];
     STAGE = GameState.currentMission;
     attachRequestFunctions(STAGE);
@@ -3257,6 +3281,9 @@
 
   document.getElementById('btn-back-to-select')?.addEventListener('click', () => {
     initAudio();
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearMissionTempDeck === 'function') {
+      DXDeck.clearMissionTempDeck();
+    }
     if (STAGE && STAGE.isTutorial && isTutorialPhaseActive()) {
       updateHomeUI();
       showScreen('home');
@@ -4147,6 +4174,8 @@
   }
 
   function getShortRoomLabel(type, label, cellCount) {
+    const s3 = typeof DXStage3 !== 'undefined' ? DXStage3.getShortLabel({ type, label }) : null;
+    if (s3) return s3;
     if (type === T.LDK) return cellCount >= 4 ? 'LDK' : 'DK';
     if (type === T.ROOM) {
       if (label && label.includes('和')) return cellCount >= 2 ? '和室' : '和';
@@ -5867,23 +5896,52 @@
   ============================================================ */
   let dismissConfirmTimer = null;
   window.dismissConfirmingStaffId = null;
+  window.activeDeckSubTab = window.activeDeckSubTab || 'edit';
   let upgradeFeedbackTimer = null;
+
+  function setDeckSubTab(tab) {
+    initAudio();
+    playSound('tap');
+    window.activeDeckSubTab = (tab === 'rd') ? 'rd' : 'edit';
+    window.activeDeckEditingSlot = null;
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(true);
+    }
+    const sc = document.getElementById('upg-scroll-content');
+    if (sc) sc.scrollTop = 0;
+    renderCompanyUpgradeUI();
+  }
+  window.setDeckSubTab = setDeckSubTab;
 
   function showUpgradeFeedback(msg, color = 'var(--c-emerald)') {
     const fb = document.getElementById('upg-feedback-banner');
     if (!fb) return;
+    const isRose = (color === 'var(--c-rose)');
+    const isAmber = (color === 'var(--c-amber)' || color === 'var(--c-amber-lt)');
+    const isMuted = (color === 'var(--c-text2)');
+    const fgColor = isRose ? '#fda4af' : (isAmber ? '#fde047' : (isMuted ? '#cbd5e1' : '#6ee7b7'));
+    const borderCol = isRose ? 'rgba(244,63,94,0.65)' : (isAmber ? 'rgba(251,191,36,0.6)' : (isMuted ? 'rgba(148,163,184,0.4)' : 'rgba(16,185,129,0.6)'));
     fb.textContent = msg;
-    fb.style.color = color;
-    fb.style.background = color === 'var(--c-rose)' ? 'rgba(244,63,94,0.15)' : 'rgba(16,185,129,0.15)';
-    fb.style.border = `1px solid ${color === 'var(--c-rose)' ? 'rgba(244,63,94,0.3)' : 'rgba(16,185,129,0.3)'}`;
-    fb.style.display = 'block';
+    fb.style.color = fgColor;
+    fb.style.border = `1px solid ${borderCol}`;
+    fb.classList.add('is-visible');
     if (upgradeFeedbackTimer) clearTimeout(upgradeFeedbackTimer);
     upgradeFeedbackTimer = setTimeout(() => {
-      fb.style.display = 'none';
-    }, 3500);
+      fb.classList.remove('is-visible');
+    }, isRose ? 3600 : 2400);
   }
 
   function switchUpgradeTab(tab) {
+    const hadDismissConfirm = Boolean(window.dismissConfirmingStaffId);
+    window.dismissConfirmingStaffId = null;
+    if (dismissConfirmTimer) {
+      clearTimeout(dismissConfirmTimer);
+      dismissConfirmTimer = null;
+    }
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(false);
+    }
+    if (hadDismissConfirm) renderCompanyUpgradeUI();
     const tabCo = document.getElementById('tab-upg-company');
     const tabDk = document.getElementById('tab-upg-deck');
     const tabSt = document.getElementById('tab-upg-staff');
@@ -5934,13 +5992,28 @@
     if (modal) modal.style.display = 'none';
     window.dismissConfirmingStaffId = null;
     if (dismissConfirmTimer) clearTimeout(dismissConfirmTimer);
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(true);
+    }
+    const fb = document.getElementById('upg-feedback-banner');
+    if (fb) fb.classList.remove('is-visible');
     updateHomeUI();
+    if (typeof STAGE !== 'undefined' && STAGE && typeof DXDeck !== 'undefined' && typeof DXDeck.renderMissionDeckPanel === 'function') {
+      if (document.getElementById('screen-mission')?.classList.contains('active')) {
+        DXDeck.renderMissionDeckPanel(STAGE);
+      }
+    }
   }
   window.openCompanyUpgradeModal = openCompanyUpgradeModal;
   window.closeCompanyUpgradeModal = closeCompanyUpgradeModal;
 
   function renderCompanyUpgradeUI() {
     ensureDeckState();
+    const scrollEl = document.getElementById('upg-scroll-content');
+    const upgScrollState = (typeof DXDeck !== 'undefined' && typeof DXDeck.captureScrollState === 'function')
+      ? DXDeck.captureScrollState(scrollEl)
+      : { top: scrollEl ? scrollEl.scrollTop : 0, h: {} };
+    const isArmed = (k) => (typeof DXDeck !== 'undefined' && typeof DXDeck.isConfirming === 'function' && DXDeck.isConfirming(k));
     const co = GameState.company;
     if (co.debt === undefined) co.debt = 0;
     if (!co.features) co.features = { freeFlip: false, extraRerolls: 0, extraAttempts: 0 };
@@ -6021,6 +6094,7 @@
         });
 
         const nextCapNum = UPGRADE_CONFIG.capacity[nextDef.maxCapacityLevel]?.capacity || 4;
+        const nextPresetCnt = (typeof DXDeck !== 'undefined' && DXDeck.getMaxPresetCount) ? DXDeck.getMaxPresetCount(nextDef.level) : (2 + nextDef.level);
         nextHtml = `
           <div style="background:rgba(15,23,42,0.45); padding:10px; border-radius:6px; border:1px dashed rgba(255,255,255,0.15); margin-bottom:8px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -6032,7 +6106,7 @@
               </span>
             </div>
             <div style="font-size:10px; color:var(--c-text2); line-height:1.4; margin-bottom:6px;">
-              ${nextDef.desc}（デスク${nextDef.maxDesks}席 / 管理${nextCapNum}棟）
+              ${nextDef.desc}（デスク${nextDef.maxDesks}席 / 管理${nextCapNum}棟 / プリセット${nextPresetCnt}枠）
             </div>
 
             <div style="font-size:10.5px; font-weight:bold; color:#cbd5e1; margin-top:6px;">
@@ -6049,13 +6123,14 @@
             </div>
           </div>
 
-          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('office')" style="width:100%; padding:10px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-buildings"></i> Rank ${nextDef.level + 1} ${nextDef.name} へ移転（${effCost}万）
+          <button class="btn ${isArmed('upg:office') ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('office')" style="width:100%; padding:10px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-buildings"></i> ${isArmed('upg:office') ? `⚠️ もう一度押して確定 (-${effCost}万)` : `Rank ${nextDef.level + 1} ${nextDef.name} へ移転（${effCost}万）`}
           </button>
         `;
       }
 
       const curCapNum = UPGRADE_CONFIG.capacity[curDef.maxCapacityLevel]?.capacity || 4;
+      const curPresetCnt = (typeof DXDeck !== 'undefined' && DXDeck.getMaxPresetCount) ? DXDeck.getMaxPresetCount(curDef.level) : (2 + (curDef.level || 0));
       cardOffice.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
           <div style="display:flex; align-items:center; gap:6px;">
@@ -6069,7 +6144,7 @@
           </span>
         </div>
         <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">
-          上限: デスク <strong>${curDef.maxDesks}席</strong> / 管理 <strong>${curCapNum}棟</strong> / 営業・知名度 <strong>Lv.${curDef.maxSalesLevel}</strong>
+          上限: デスク <strong>${curDef.maxDesks}席</strong> / 管理 <strong>${curCapNum}棟</strong> / プリセット <strong>${curPresetCnt}枠</strong> / 営業・知名度 <strong>Lv.${curDef.maxSalesLevel}</strong>
         </div>
         ${nextHtml}
       `;
@@ -6105,8 +6180,8 @@
               <span style="font-size:11px; color:var(--c-emerald); font-weight:bold;">費用: ${nextDeskDef.cost}万</span>
             </div>
           </div>
-          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('desk')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-armchair"></i> デスク増設（${nextDeskDef.cost}万）
+          <button class="btn ${isArmed('upg:desk') ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('desk')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-armchair"></i> ${isArmed('upg:desk') ? `⚠️ もう一度押して確定 (-${nextDeskDef.cost}万)` : `デスク増設（${nextDeskDef.cost}万）`}
           </button>
         `;
       }
@@ -6162,8 +6237,8 @@
             </div>
             <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextCapDef.desc}</div>
           </div>
-          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('capacity')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-hard-drives"></i> ${nextCapDef.name}導入（${nextCapDef.cost}万）
+          <button class="btn ${isArmed('upg:capacity') ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('capacity')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-hard-drives"></i> ${isArmed('upg:capacity') ? `⚠️ もう一度押して確定 (-${nextCapDef.cost}万)` : `${nextCapDef.name}導入（${nextCapDef.cost}万）`}
           </button>
         `;
       }
@@ -6221,8 +6296,8 @@
             </div>
             <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextDef.desc}</div>
           </div>
-          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('sales')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-arrow-circle-up"></i> Lv.${nextDef.level} へ強化（${nextDef.cost}万）
+          <button class="btn ${isArmed('upg:sales') ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('sales')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-arrow-circle-up"></i> ${isArmed('upg:sales') ? `⚠️ もう一度押して確定 (-${nextDef.cost}万)` : `Lv.${nextDef.level} へ強化（${nextDef.cost}万）`}
           </button>
         `;
       }
@@ -6278,8 +6353,8 @@
             </div>
             <div style="font-size:10px; color:var(--c-text2); margin-top:2px;">${nextDef.desc}</div>
           </div>
-          <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('brand')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
-            <i class="ph-bold ph-arrow-circle-up"></i> Lv.${nextDef.level} へ強化（${nextDef.cost}万）
+          <button class="btn ${isArmed('upg:brand') ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('brand')" style="width:100%; padding:9px; font-size:12px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; justify-content:center; gap:6px;">
+            <i class="ph-bold ph-arrow-circle-up"></i> ${isArmed('upg:brand') ? `⚠️ もう一度押して確定 (-${nextDef.cost}万)` : `Lv.${nextDef.level} へ強化（${nextDef.cost}万）`}
           </button>
         `;
       }
@@ -6354,8 +6429,8 @@
                 <div style="color:#fde047; font-weight:bold;">次: Lv.${nextLvDef.level} ${nextLvDef.name}</div>
                 <div style="color:var(--c-text2); font-size:9.5px;">${nextLvDef.desc}</div>
               </div>
-              <button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('feature', '${key}')" style="padding:7px 11px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; white-space:nowrap;">
-                Lv.${nextLvDef.level} 導入 (${nextLvDef.cost}万)
+              <button class="btn ${isArmed(`upg:feature:${key}`) ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="buyCompanyUpgrade('feature', '${key}')" style="padding:7px 11px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.55'}; white-space:nowrap;">
+                ${isArmed(`upg:feature:${key}`) ? `⚠️ 確定 (-${nextLvDef.cost}万)` : `Lv.${nextLvDef.level} 導入 (${nextLvDef.cost}万)`}
               </button>
             </div>
           `;
@@ -6503,11 +6578,11 @@
               ${isSlotFull ? `<br><span style="color:#38bdf8;">💡 デスク満席のため、採用時は<strong>現在のスタッフとの入れ替え</strong>になります。</span>` : ''}
             </div>
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-              <button class="btn btn-primary" onclick="postJobAd()" style="padding:8px 12px; font-size:11.5px; font-weight:bold; gap:5px;">
-                <i class="ph-bold ph-megaphone"></i> 求人広告を掲載 (${adCost}万 / 翌月到着)
+              <button class="btn ${isArmed('staff:ad') ? 'btn-confirm-armed' : 'btn-primary'}" onclick="postJobAd()" style="padding:8px 12px; font-size:11.5px; font-weight:bold; gap:5px;">
+                <i class="ph-bold ph-megaphone"></i> ${isArmed('staff:ad') ? `⚠️ もう一度押して確定 (-${adCost}万)` : `求人広告を掲載 (${adCost}万 / 翌月到着)`}
               </button>
-              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:8px 12px; font-size:11.5px; font-weight:bold; gap:5px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
-                <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 即時スカウト (${scoutCost}万 / 即時到着)
+              <button class="btn ${isArmed('staff:scout') ? 'btn-confirm-armed' : 'btn-slate'}" onclick="scoutImmediately()" style="padding:8px 12px; font-size:11.5px; font-weight:bold; gap:5px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+                <i class="ph-bold ph-lightning" style="color:${isArmed('staff:scout') ? '#fff' : '#38bdf8'};"></i> ${isArmed('staff:scout') ? `⚠️ もう一度押して確定 (-${scoutCost}万)` : `即時スカウト (${scoutCost}万 / 即時到着)`}
               </button>
             </div>
           </div>
@@ -6522,8 +6597,8 @@
               （到着した翌々月以降も掲載を続けると、月${RECRUIT_MAINT_COST}万の維持費で毎月新しい候補が届きます）
             </div>
             <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
-              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:7px 12px; font-size:11px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
-                <i class="ph-bold ph-lightning" style="color:#38bdf8;"></i> 今すぐ即時スカウト (${scoutCost}万)
+              <button class="btn ${isArmed('staff:scout') ? 'btn-confirm-armed' : 'btn-slate'}" onclick="scoutImmediately()" style="padding:7px 12px; font-size:11px; font-weight:bold; gap:4px; border:1px solid rgba(56,189,248,0.4); color:#bae6fd;">
+                <i class="ph-bold ph-lightning" style="color:${isArmed('staff:scout') ? '#fff' : '#38bdf8'};"></i> ${isArmed('staff:scout') ? `⚠️ もう一度押して確定 (-${scoutCost}万)` : `今すぐ即時スカウト (${scoutCost}万)`}
               </button>
               <button class="btn btn-slate" onclick="stopJobAd()" style="padding:7px 10px; font-size:10.5px; border:1px solid rgba(244,63,94,0.35); color:#fda4af;">
                 求人を停止する
@@ -6543,8 +6618,8 @@
               </div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-              <button class="btn btn-slate" onclick="scoutImmediately()" style="padding:4px 8px; font-size:10px; font-weight:bold; gap:3px; border:1px solid rgba(56,189,248,0.3); color:#bae6fd;" title="新しい候補者3名を即時再募集">
-                <i class="ph-bold ph-arrows-clockwise" style="color:#38bdf8;"></i> 即時再募集 (${scoutCost}万)
+              <button class="btn ${isArmed('staff:scout') ? 'btn-confirm-armed' : 'btn-slate'}" onclick="scoutImmediately()" style="padding:4px 8px; font-size:10px; font-weight:bold; gap:3px; border:1px solid rgba(56,189,248,0.3); color:#bae6fd;" title="新しい候補者3名を即時再募集">
+                <i class="ph-bold ph-arrows-clockwise" style="color:${isArmed('staff:scout') ? '#fff' : '#38bdf8'};"></i> ${isArmed('staff:scout') ? `⚠️ 確定 (-${scoutCost}万)` : `即時再募集 (${scoutCost}万)`}
               </button>
               <button class="btn btn-slate" onclick="stopJobAd()" style="padding:4px 8px; font-size:10px; font-weight:bold; border:1px solid rgba(244,63,94,0.4); color:#fda4af;" title="求人掲載を終了し月次維持費を止めます">
                 掲載停止
@@ -6582,12 +6657,16 @@
             const isReplacingThis = (window.replacingCandidateId === c.id);
             let replaceSelectorHtml = '';
             if (isSlotFull && isReplacingThis) {
-              const targetBtns = co.hiredStaff.map(hs => `
-                <button class="btn btn-slate" onclick="replaceHireCandidate('${c.id}', '${hs.id}')" style="padding:5px 8px; font-size:10.5px; border:1px solid rgba(245,158,11,0.45); color:#fde68a; justify-content:space-between; width:100%; margin-top:4px;">
-                  <span>🔄 ${hs.avatar} <strong>${hs.name}</strong> (${hs.role || ''}) と入れ替える</span>
-                  <span style="font-size:9.5px; color:#fca5a5;">現給-${hs.salary.toFixed(1)}万</span>
-                </button>
-              `).join('');
+              const targetBtns = co.hiredStaff.map(hs => {
+                const rKey = `staff:replace:${c.id}:${hs.id}`;
+                const rArmed = isArmed(rKey);
+                return `
+                  <button class="btn ${rArmed ? 'btn-confirm-armed' : 'btn-slate'}" onclick="replaceHireCandidate('${c.id}', '${hs.id}')" style="padding:5px 8px; font-size:10.5px; border:1px solid rgba(245,158,11,0.45); color:#fde68a; justify-content:space-between; width:100%; margin-top:4px;">
+                    <span>${rArmed ? `⚠️ もう一度押して ${hs.name} と入替確定` : `🔄 ${hs.avatar} <strong>${hs.name}</strong> (${hs.role || ''}) と入れ替える`}</span>
+                    <span style="font-size:9.5px; color:${rArmed ? '#fff' : '#fca5a5'};">現給-${hs.salary.toFixed(1)}万</span>
+                  </button>
+                `;
+              }).join('');
               replaceSelectorHtml = `
                 <div style="margin-top:8px; padding:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(245,158,11,0.4); border-radius:6px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:#fcd34d; font-weight:bold; margin-bottom:2px;">
@@ -6599,12 +6678,13 @@
               `;
             }
 
+            const hKey = `staff:hire:${c.id}`;
             const actionBtnHtml = isSlotFull
               ? `<button class="btn btn-amber" onclick="startReplaceCandidate('${c.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
                    <i class="ph-bold ph-arrows-left-right"></i> 入替採用
                  </button>`
-              : `<button class="btn btn-primary" onclick="hireCandidate('${c.id}')" style="padding:6px 12px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
-                   <i class="ph-bold ph-user-plus"></i> 採用する
+              : `<button class="btn ${isArmed(hKey) ? 'btn-confirm-armed' : 'btn-primary'}" onclick="hireCandidate('${c.id}')" style="padding:6px 12px; font-size:11px; font-weight:bold; gap:4px; white-space:nowrap;">
+                   <i class="ph-bold ph-user-plus"></i> ${isArmed(hKey) ? '⚠️ 確定する' : '採用する'}
                  </button>`;
 
             candHtml += `
@@ -6672,8 +6752,8 @@
             <div style="font-size:10.5px; color:#fecdd3; line-height:1.4; margin-bottom:10px;">
               ⚠️ <strong>超高金利（月利 10.0%）</strong> が毎月発生しています！破産を防ぐため、手元資金ができ次第の最優先返済を強く推奨します。
             </div>
-            <button class="btn" onclick="repayEmergencyLoan('all')" ${canRepayEmerg ? '' : 'disabled'} style="background:#e11d48; color:#ffffff; width:100%; padding:9px; font-size:12px; font-weight:bold; justify-content:center; border:none; cursor:${canRepayEmerg ? 'pointer' : 'not-allowed'}; opacity:${canRepayEmerg ? '1' : '0.45'};">
-              ${GameState.funds >= emergDebt ? `街金を一括完済 (-${emergDebt.toFixed(1)}万円)` : `街金を優先返済 (-${maxEmergRepayable.toFixed(1)}万円)`}
+            <button class="btn ${isArmed('bank:repay_emerg') ? 'btn-confirm-armed' : ''}" onclick="repayEmergencyLoan('all')" ${canRepayEmerg ? '' : 'disabled'} style="background:#e11d48; color:#ffffff; width:100%; padding:9px; font-size:12px; font-weight:bold; justify-content:center; border:none; cursor:${canRepayEmerg ? 'pointer' : 'not-allowed'}; opacity:${canRepayEmerg ? '1' : '0.45'};">
+              ${isArmed('bank:repay_emerg') ? `⚠️ もう一度押して街金返済 (-${maxEmergRepayable.toFixed(1)}万)` : (GameState.funds >= emergDebt ? `街金を一括完済 (-${emergDebt.toFixed(1)}万円)` : `街金を優先返済 (-${maxEmergRepayable.toFixed(1)}万円)`)}
             </button>
           </div>
         ` : ''}
@@ -6724,16 +6804,16 @@
             </div>
           ` : `
             <div style="display:flex; gap:8px;">
-              <button class="btn ${canBorrow50 ? 'btn-primary' : 'btn-slate'}" ${canBorrow50 ? '' : 'disabled'} onclick="borrowLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow50 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow50 ? '1' : '0.45'};">
-                +50万円 借入
+              <button class="btn ${isArmed('bank:borrow:50') ? 'btn-confirm-armed' : (canBorrow50 ? 'btn-primary' : 'btn-slate')}" ${canBorrow50 ? '' : 'disabled'} onclick="borrowLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow50 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow50 ? '1' : '0.45'};">
+                ${isArmed('bank:borrow:50') ? '⚠️ 確定 (+50万借入)' : '+50万円 借入'}
               </button>
-              <button class="btn ${canBorrow100 ? 'btn-primary' : 'btn-slate'}" ${canBorrow100 ? '' : 'disabled'} onclick="borrowLoan(100)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow100 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow100 ? '1' : '0.45'};">
-                +100万円 借入
+              <button class="btn ${isArmed('bank:borrow:100') ? 'btn-confirm-armed' : (canBorrow100 ? 'btn-primary' : 'btn-slate')}" ${canBorrow100 ? '' : 'disabled'} onclick="borrowLoan(100)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canBorrow100 ? 'pointer' : 'not-allowed'}; opacity:${canBorrow100 ? '1' : '0.45'};">
+                ${isArmed('bank:borrow:100') ? '⚠️ 確定 (+100万借入)' : '+100万円 借入'}
               </button>
             </div>
             ${canBorrowRem ? `
-              <button class="btn btn-primary" onclick="borrowLoan(${remCap})" style="width:100%; margin-top:8px; padding:8px; font-size:11px; font-weight:bold; justify-content:center; cursor:pointer;">
-                残り枠すべて（+${remCap.toFixed(1)}万円）を借入
+              <button class="btn ${isArmed('bank:borrow:rem') ? 'btn-confirm-armed' : 'btn-primary'}" onclick="borrowLoan(${remCap}, 'rem')" style="width:100%; margin-top:8px; padding:8px; font-size:11px; font-weight:bold; justify-content:center; cursor:pointer;">
+                ${isArmed('bank:borrow:rem') ? `⚠️ もう一度押して確定 (+${remCap.toFixed(1)}万借入)` : `残り枠すべて（+${remCap.toFixed(1)}万円）を借入`}
               </button>
             ` : ''}
           `}
@@ -6747,11 +6827,11 @@
             手元資金に余裕があるときに元本を直接返済し、毎月の金利負担を減らせます。
           </div>
           <div style="display:flex; gap:8px;">
-            <button class="btn ${canRepay50 ? 'btn-amber' : 'btn-slate'}" ${canRepay50 ? '' : 'disabled'} onclick="repayLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepay50 ? 'pointer' : 'not-allowed'}; opacity:${canRepay50 ? '1' : '0.45'};">
-              -${Math.min(50, debt > 0 ? debt : 50).toFixed(0)}万円 返済
+            <button class="btn ${isArmed('bank:repay:50') ? 'btn-confirm-armed' : (canRepay50 ? 'btn-amber' : 'btn-slate')}" ${canRepay50 ? '' : 'disabled'} onclick="repayLoan(50)" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepay50 ? 'pointer' : 'not-allowed'}; opacity:${canRepay50 ? '1' : '0.45'};">
+              ${isArmed('bank:repay:50') ? `⚠️ 確定 (-${Math.min(50, debt > 0 ? debt : 50).toFixed(0)}万返済)` : `-${Math.min(50, debt > 0 ? debt : 50).toFixed(0)}万円 返済`}
             </button>
-            <button class="btn ${canRepayAll ? 'btn-amber' : 'btn-slate'}" ${canRepayAll ? '' : 'disabled'} onclick="repayLoan('all')" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepayAll ? 'pointer' : 'not-allowed'}; opacity:${canRepayAll ? '1' : '0.45'};">
-              ${GameState.funds >= debt && debt > 0 ? `一括完済 (-${debt.toFixed(1)}万)` : `最大返済 (-${maxRepayable.toFixed(1)}万)`}
+            <button class="btn ${isArmed('bank:repay:all') ? 'btn-confirm-armed' : (canRepayAll ? 'btn-amber' : 'btn-slate')}" ${canRepayAll ? '' : 'disabled'} onclick="repayLoan('all')" style="flex:1; padding:10px 6px; font-size:12px; font-weight:bold; justify-content:center; cursor:${canRepayAll ? 'pointer' : 'not-allowed'}; opacity:${canRepayAll ? '1' : '0.45'};">
+              ${isArmed('bank:repay:all') ? `⚠️ 確定 (-${(GameState.funds >= debt && debt > 0 ? debt : maxRepayable).toFixed(1)}万返済)` : (GameState.funds >= debt && debt > 0 ? `一括完済 (-${debt.toFixed(1)}万)` : `最大返済 (-${maxRepayable.toFixed(1)}万)`)}
             </button>
           </div>
         </div>
@@ -6770,9 +6850,12 @@
     /* --- 7. デッキ編成・新規ピース技術開発タブ（ビジュアルカードバインダーUI） --- */
     const deckContent = document.getElementById('upg-deck-content');
     if (deckContent) {
-      const activeIds = getActiveDeckPieceIds();
+      const activeIds = getActiveDeckPieceIds(co.deck);
       const totalCards = activeIds.length;
       const customAddedCount = co.deck.customSlots.filter(x => x && PIECE_MAP[x] && isPieceUnlocked(x)).length;
+      const presetBarHtml = (typeof DXDeck !== 'undefined' && typeof DXDeck.renderOfficePresetBarHtml === 'function')
+        ? DXDeck.renderOfficePresetBarHtml(co)
+        : '';
 
       // カテゴリ別枚数集計
       const catCounts = { [T.ROOM]:0, [T.CORRIDOR]:0, [T.LDK]:0, wet:0, [T.CLOSET]:0 };
@@ -6820,17 +6903,17 @@
 
         if (isLocked) {
           return `
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:8px; background:rgba(15,23,42,0.45); border:1px solid rgba(148,163,184,0.18); opacity:0.78; min-height:84px; box-sizing:border-box; position:relative;">
-              <div style="width:100%; display:flex; justify-content:space-between; align-items:center; font-size:8.5px; color:#94a3b8; padding:0 2px;">
+            <div class="deck-hscroll-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:5px 4px; border-radius:8px; background:rgba(15,23,42,0.45); border:1px solid rgba(148,163,184,0.18); opacity:0.78; min-height:76px; position:relative;">
+              <div style="width:100%; display:flex; justify-content:space-between; align-items:center; font-size:8px; color:#94a3b8; padding:0 1px;">
                 <span>🔒固定</span>
                 <span>${cells}ﾏｽ</span>
               </div>
-              <div style="margin:4px 0; min-height:26px; display:flex; align-items:center; justify-content:center;">
+              <div style="margin:3px 0; min-height:24px; display:flex; align-items:center; justify-content:center;">
                 ${renderMiniPieceShape(p, 7)}
               </div>
               <div style="text-align:center; width:100%;">
-                <div style="font-size:10px; font-weight:bold; color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-                <div style="font-size:8.5px; color:#94a3b8;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="font-size:7.5px;">${p.cost.toFixed(1)}</s>` : ''}</div>
+                <div style="font-size:9.5px; font-weight:bold; color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+                <div style="font-size:8px; color:#94a3b8;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="font-size:7px;">${p.cost.toFixed(1)}</s>` : ''}</div>
               </div>
             </div>
           `;
@@ -6846,29 +6929,33 @@
         const badgeColor = isEditing ? '#fde047' : '#38bdf8';
 
         return `
-          <div ${clickAttr} style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:8px; background:${bgStyle}; border:1.5px solid ${borderColor}; min-height:84px; box-sizing:border-box; cursor:pointer; box-shadow:${isEditing ? '0 0 0 2px rgba(245,158,11,0.35)' : '0 2px 5px rgba(0,0,0,0.25)'}; transition:transform 0.12s;">
-            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; font-size:8.5px; font-weight:bold; color:${badgeColor}; padding:0 2px;">
+          <div ${clickAttr} class="deck-hscroll-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:5px 4px; border-radius:8px; background:${bgStyle}; border:1.5px solid ${borderColor}; min-height:76px; cursor:pointer; box-shadow:${isEditing ? '0 0 0 2px rgba(245,158,11,0.35)' : '0 2px 5px rgba(0,0,0,0.25)'}; transition:transform 0.12s;">
+            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; font-size:8px; font-weight:bold; color:${badgeColor}; padding:0 1px;">
               <span>${badgeText}</span>
               <span style="color:#cbd5e1;">${cells}ﾏｽ</span>
             </div>
-            <div style="margin:4px 0; min-height:26px; display:flex; align-items:center; justify-content:center;">
+            <div style="margin:3px 0; min-height:24px; display:flex; align-items:center; justify-content:center;">
               ${renderMiniPieceShape(p, 7)}
             </div>
             <div style="text-align:center; width:100%;">
-              <div style="font-size:10px; font-weight:bold; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-              <div style="font-size:8.5px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="color:#94a3b8; font-size:7.5px;">${p.cost.toFixed(1)}</s>` : ''}</div>
+              <div style="font-size:9.5px; font-weight:bold; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+              <div style="font-size:8px; color:var(--c-emerald); font-weight:bold;">${effCost.toFixed(1)}万${isDiscounted ? ` <s style="color:#94a3b8; font-size:7px;">${p.cost.toFixed(1)}</s>` : ''}</div>
             </div>
           </div>
         `;
       };
 
       // インライン・カード選択ピッカー（カードをタップした時にその場に展開）
-      const renderPickerTray = (slotType, slotKey, curPieceId, catFilter = null, defaultPieceId = null) => {
-        const candidates = catFilter ? unlockedList.filter(p => p.cat === catFilter) : unlockedList;
-        const lockedCandidates = catFilter
-          ? PIECE_LIB.filter(p => p.cat === catFilter && !isPieceUnlocked(p.id))
-          : PIECE_LIB.filter(p => !isPieceUnlocked(p.id));
+      const renderPickerTray = (slotType, slotKey, curPieceId, catFilterOrSlot = null, defaultPieceId = null) => {
+        const allowFn = (catFilterOrSlot && typeof catFilterOrSlot === 'object')
+          ? (p) => isPieceAllowedInSlot(catFilterOrSlot, p)
+          : (catFilterOrSlot ? (p) => p.cat === catFilterOrSlot : () => true);
+        const candidates = unlockedList.filter(allowFn);
+        const lockedCandidates = PIECE_LIB.filter(p => allowFn(p) && !isPieceUnlocked(p.id));
         const defPiece = defaultPieceId ? PIECE_MAP[defaultPieceId] : null;
+        const slotHeadText = (catFilterOrSlot && typeof catFilterOrSlot === 'object' && catFilterOrSlot.label)
+          ? `${catFilterOrSlot.label}（初期: ${defPiece ? defPiece.name : ''}）`
+          : `カード選択（初期: ${defPiece ? defPiece.name : ''}）`;
 
         let cardsHtml = `<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:6px;">`;
         if (slotType === 'custom') {
@@ -6927,7 +7014,7 @@
           <div style="margin-top:8px; padding:9px 10px; border-radius:8px; background:#0f172a; border:1.5px solid #f59e0b; box-shadow:0 6px 16px rgba(0,0,0,0.4);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="font-size:11px; font-weight:bold; color:#fde047;">
-                <i class="ph-bold ph-hand-pointing"></i> ${slotType === 'upgrade' ? `カード選択（初期: ${defPiece ? defPiece.name : ''}）` : `追加枠${slotKey + 1} のカード選択`}
+                <i class="ph-bold ph-hand-pointing"></i> ${slotType === 'upgrade' ? slotHeadText : `追加枠${slotKey + 1} のカード選択`}
               </div>
               <button class="btn btn-slate" onclick="toggleDeckSlotEditor(null, null)" style="padding:2px 7px; font-size:10px; cursor:pointer;">閉じる</button>
             </div>
@@ -6962,15 +7049,15 @@
         {
           key: 'wet_closet',
           title: '🚿 水回り・収納 (8)',
-          fixedIds: ['toilet', 'toilet', 'wash', 'wash', 'bath', 'closet'],
-          slotIds: ['bath_slot_1', 'closet_slot_1'],
+          fixedIds: ['toilet', 'wash', 'bath', 'closet'],
+          slotIds: ['utility_slot_1', 'bath_slot_1', 'wash_slot_1', 'closet_slot_1'],
           cat: null
         }
       ];
 
       let binderGroupsHtml = '';
       for (const grp of binderGroups) {
-        let rowCardsHtml = `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">`;
+        let rowCardsHtml = `<div class="deck-hscroll-row" data-hscroll-key="off_${grp.key}">`;
         // 1) 固定カードを先に並べる
         for (const fid of grp.fixedIds) {
           rowCardsHtml += renderBinderCard(fid, { locked: true });
@@ -6981,7 +7068,7 @@
           const slotDef = UPGRADE_DECK_SLOTS.find(s => s.id === sid);
           if (!slotDef) continue;
           const ovId = co.deck.slotOverrides[sid];
-          const curId = (ovId && PIECE_MAP[ovId] && PIECE_MAP[ovId].cat === slotDef.cat && isPieceUnlocked(ovId)) ? ovId : slotDef.defaultPieceId;
+          const curId = (ovId && PIECE_MAP[ovId] && isPieceAllowedInSlot(slotDef, PIECE_MAP[ovId]) && isPieceUnlocked(ovId)) ? ovId : slotDef.defaultPieceId;
           const isEd = editingSlot && editingSlot.type === 'upgrade' && editingSlot.id === sid;
           if (isEd) activeSlotInGroup = { slotDef, curId };
           rowCardsHtml += renderBinderCard(curId, {
@@ -6994,20 +7081,24 @@
         rowCardsHtml += `</div>`;
 
         const pickerHtml = activeSlotInGroup
-          ? renderPickerTray('upgrade', activeSlotInGroup.slotDef.id, activeSlotInGroup.curId, activeSlotInGroup.slotDef.cat, activeSlotInGroup.slotDef.defaultPieceId)
+          ? renderPickerTray('upgrade', activeSlotInGroup.slotDef.id, activeSlotInGroup.curId, activeSlotInGroup.slotDef, activeSlotInGroup.slotDef.defaultPieceId)
           : '';
+        const hasOverflow = (grp.fixedIds.length + grp.slotIds.length) >= 5;
 
         binderGroupsHtml += `
           <div style="margin-bottom:8px; padding:8px; background:rgba(15,23,42,0.35); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
-            <div style="font-size:10.5px; font-weight:bold; color:#e2e8f0; margin-bottom:6px;">${grp.title}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px; font-weight:bold; color:#e2e8f0; margin-bottom:6px;">
+              <span>${grp.title}</span>
+              ${hasOverflow ? '<span style="font-size:9px; color:#7dd3fc; font-weight:normal;">↔ 横スクロール</span>' : ''}
+            </div>
             ${rowCardsHtml}
             ${pickerHtml}
           </div>
         `;
       }
 
-      // 自由追加枠（最大 +4枚）も4枚のカードスロットとして横並び表示
-      let customCardsGridHtml = `<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">`;
+      // 自由追加枠（最大 +4枚）も横1列カードスロットとして表示
+      let customCardsGridHtml = `<div class="deck-hscroll-row" data-hscroll-key="off_custom">`;
       let activeCustomIndex = null;
       for (let i = 0; i < CUSTOM_DECK_SLOTS_COUNT; i++) {
         const curId = co.deck.customSlots[i] || '';
@@ -7022,9 +7113,9 @@
           });
         } else {
           customCardsGridHtml += `
-            <div onclick="toggleDeckSlotEditor('custom', ${i})" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 4px; border-radius:8px; background:${isEd ? 'rgba(245,158,11,0.18)' : 'rgba(15,23,42,0.4)'}; border:1.5px dashed ${isEd ? '#f59e0b' : 'rgba(56,189,248,0.45)'}; min-height:84px; cursor:pointer;">
-              <i class="ph-bold ph-plus-circle" style="font-size:18px; color:${isEd ? '#fde047' : '#38bdf8'}; margin-bottom:3px;"></i>
-              <div style="font-size:9.5px; font-weight:bold; color:${isEd ? '#fde047' : '#bae6fd'};">＋ 追加</div>
+            <div class="deck-hscroll-card" onclick="toggleDeckSlotEditor('custom', ${i})" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:5px 4px; border-radius:8px; background:${isEd ? 'rgba(245,158,11,0.18)' : 'rgba(15,23,42,0.4)'}; border:1.5px dashed ${isEd ? '#f59e0b' : 'rgba(56,189,248,0.45)'}; min-height:76px; cursor:pointer;">
+              <i class="ph-bold ph-plus-circle" style="font-size:16px; color:${isEd ? '#fde047' : '#38bdf8'}; margin-bottom:2px;"></i>
+              <div style="font-size:9px; font-weight:bold; color:${isEd ? '#fde047' : '#bae6fd'};">＋ 追加</div>
             </div>
           `;
         }
@@ -7034,20 +7125,23 @@
         ? renderPickerTray('custom', activeCustomIndex, co.deck.customSlots[activeCustomIndex] || '', null, null)
         : '';
 
-      // 3. 新規ピース技術開発リスト (10種)
-      const rdPieces = PIECE_LIB.filter(p => p.unlockCost > 0);
-      const unlockedRdCount = rdPieces.filter(p => isPieceUnlocked(p.id)).length;
-      let rdListHtml = '';
-      for (const p of rdPieces) {
-        const owned = isPieceUnlocked(p.id);
+      // 3. 新規ピース技術開発リスト (R&D 全種：未開発→開発済順)
+      const rdPieces = PIECE_LIB.filter(p => p.unlockCost > 0).sort((a, b) => (a.unlockCost || 0) - (b.unlockCost || 0));
+      const unownedRd = rdPieces.filter(p => !isPieceUnlocked(p.id));
+      const ownedRd = rdPieces.filter(p => isPieceUnlocked(p.id));
+      const unlockedRdCount = ownedRd.length;
+      const affordableRdCount = unownedRd.filter(p => GameState.funds >= p.unlockCost).length;
+
+      const renderRdRow = (p, owned) => {
         const canAfford = GameState.funds >= p.unlockCost;
         const cells = countCellsInShape(p.shape);
         const perCell = (p.cost / cells).toFixed(1);
+        const rdKey = `rd:${p.id}`;
+        const armed = isArmed(rdKey);
         const actionBtn = owned
           ? `<span style="font-size:10px; font-weight:bold; padding:5px 8px; border-radius:5px; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399; white-space:nowrap;"><i class="ph-bold ph-check"></i> 開発済</span>`
-          : `<button class="btn ${canAfford ? 'btn-primary' : 'btn-slate'}" ${canAfford ? '' : 'disabled'} onclick="unlockPiece('${p.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.5'}; white-space:nowrap;"><i class="ph-bold ph-flask"></i> 開発 (${p.unlockCost}万)</button>`;
-
-        rdListHtml += `
+          : `<button class="btn ${armed ? 'btn-confirm-armed' : (canAfford ? 'btn-primary' : 'btn-slate')}" ${canAfford ? '' : 'disabled'} onclick="unlockPiece('${p.id}')" style="padding:6px 10px; font-size:11px; font-weight:bold; cursor:${canAfford ? 'pointer' : 'not-allowed'}; opacity:${canAfford ? '1' : '0.5'}; white-space:nowrap;"><i class="ph-bold ph-flask"></i> ${armed ? `⚠️ 確定 (-${p.unlockCost}万)` : `開発 (${p.unlockCost}万)`}</button>`;
+        return `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(15,23,42,0.45); border:1px solid ${owned ? 'rgba(16,185,129,0.28)' : 'rgba(255,255,255,0.08)'}; border-radius:7px; margin-bottom:6px; gap:8px;">
             <div style="display:flex; align-items:center; gap:9px; flex:1; min-width:0;">
               <div style="min-width:38px; display:flex; justify-content:center; align-items:center; background:rgba(15,23,42,0.6); padding:5px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
@@ -7066,10 +7160,32 @@
             <div style="flex-shrink:0;">${actionBtn}</div>
           </div>
         `;
-      }
+      };
 
-      deckContent.innerHTML = `
-        <!-- 現在の山札デッキヘッダー -->
+      const unownedRdHtml = unownedRd.length > 0
+        ? unownedRd.map(p => renderRdRow(p, false)).join('')
+        : `<div style="padding:12px; text-align:center; border-radius:7px; background:rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.35); color:#6ee7b7; font-size:11.5px; font-weight:bold; margin-bottom:8px;">🎉 すべての技術開発（${rdPieces.length}種）が完了しています！</div>`;
+      const ownedRdHtml = ownedRd.length > 0
+        ? `<div style="margin-top:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.12);">
+             <div style="font-size:11px; font-weight:bold; color:#6ee7b7; margin-bottom:6px;">✅ 開発済み (${ownedRd.length}種)</div>
+             ${ownedRd.map(p => renderRdRow(p, true)).join('')}
+           </div>`
+        : '';
+
+      const subTab = (window.activeDeckSubTab === 'rd') ? 'rd' : 'edit';
+      const subTabBarHtml = `
+        <div class="deck-subtab-bar">
+          <button type="button" class="deck-subtab-btn ${subTab === 'edit' ? 'active' : ''}" onclick="setDeckSubTab('edit')">
+            🃏 デッキ編成 (${totalCards}枚)
+          </button>
+          <button type="button" class="deck-subtab-btn ${subTab === 'rd' ? 'active' : ''}" onclick="setDeckSubTab('rd')">
+            🔬 ピース開発 (${unlockedRdCount}/${rdPieces.length})${affordableRdCount > 0 ? `<span style="font-size:9px; padding:1px 5px; border-radius:999px; background:rgba(16,185,129,0.25); border:1px solid rgba(16,185,129,0.5); color:#6ee7b7;">開発可 ${affordableRdCount}</span>` : ''}
+          </button>
+        </div>
+      `;
+
+      const editBodyHtml = `
+        ${presetBarHtml}
         <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:9px 12px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div style="display:flex; align-items:baseline; gap:8px;">
@@ -7089,7 +7205,6 @@
           </div>
         </div>
 
-        <!-- ビジュアル・カードバインダー（基本20枚） -->
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 10px 2px; margin-bottom:10px;">
           <div style="font-size:12px; font-weight:bold; color:var(--c-amber-lt); margin-bottom:8px; display:flex; align-items:center; gap:5px;">
             <i class="ph-bold ph-cards"></i> 基本デッキ (20枚)
@@ -7097,32 +7212,41 @@
           ${binderGroupsHtml}
         </div>
 
-        <!-- 自由追加カード枠（最大 +4枚） -->
-        <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px; margin-bottom:12px;">
+        <div style="background:var(--c-surface2); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px; margin-bottom:8px;">
           <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
             <i class="ph-bold ph-plus-square"></i> 追加枠（最大 +4枚）
           </div>
           ${customCardsGridHtml}
           ${customPickerHtml}
         </div>
+      `;
 
-        <!-- 新規ピース技術開発 (R&D 10種) -->
+      const rdBodyHtml = `
         <div style="background:var(--c-surface2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:11px 12px; margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div style="font-size:12.5px; font-weight:bold; color:var(--c-emerald); display:flex; align-items:center; gap:5px;">
-              <i class="ph-bold ph-flask"></i> ピース開発
+              <i class="ph-bold ph-flask"></i> ピース開発（2回押しで確定）
             </div>
             <span style="font-size:10px; font-weight:bold; color:#6ee7b7;">${unlockedRdCount} / ${rdPieces.length}</span>
           </div>
-          ${rdListHtml}
+          ${unownedRdHtml}
+          ${ownedRdHtml}
         </div>
       `;
+
+      deckContent.innerHTML = `${subTabBarHtml}${subTab === 'rd' ? rdBodyHtml : editBodyHtml}`;
+    }
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.restoreScrollState === 'function') {
+      DXDeck.restoreScrollState(scrollEl, upgScrollState);
     }
   }
 
   function toggleDeckSlotEditor(type, id) {
     initAudio();
     playSound('rotate');
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(true);
+    }
     if (!type || (window.activeDeckEditingSlot && window.activeDeckEditingSlot.type === type && window.activeDeckEditingSlot.id === id)) {
       window.activeDeckEditingSlot = null;
     } else {
@@ -7143,20 +7267,27 @@
       showUpgradeFeedback('技術開発のための所持資金が足りません！', 'var(--c-rose)');
       return;
     }
-    GameState.funds = Math.round((GameState.funds - p.unlockCost) * 10) / 10;
-    GameState.company.unlockedPieces.push(pieceId);
-    playSound('clear');
-    showUpgradeFeedback(`🔬 新ピース「${p.name}」を開発しました！上のカードをタップしてデッキに編成できます！`, 'var(--c-emerald)');
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
+    const execUnlock = () => {
+      GameState.funds = Math.round((GameState.funds - p.unlockCost) * 10) / 10;
+      GameState.company.unlockedPieces.push(pieceId);
+      playSound('clear');
+      showUpgradeFeedback(`🔬 新ピース「${p.name}」を開発しました！編成タブからデッキに入れられます！`, 'var(--c-emerald)');
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
 
-    const deadEnd = checkDeadEndBankruptcy();
-    if (deadEnd.isBankrupt) {
-      closeCompanyUpgradeModal();
-      showGameOverModal(deadEnd.reason);
-    } else if (GameState.funds < MIN_BUILD_FUNDS) {
-      showUpgradeFeedback(`💡 建築資金が${MIN_BUILD_FUNDS}万円未満になりました。「🏦 銀行」タブから運転資金を借り入れできます！`, 'var(--c-rose)');
+      const deadEnd = checkDeadEndBankruptcy();
+      if (deadEnd.isBankrupt) {
+        closeCompanyUpgradeModal();
+        showGameOverModal(deadEnd.reason);
+      } else if (GameState.funds < MIN_BUILD_FUNDS) {
+        showUpgradeFeedback(`💡 建築資金が${MIN_BUILD_FUNDS}万円未満になりました。「🏦 銀行」タブから運転資金を借り入れできます！`, 'var(--c-rose)');
+      }
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute(`rd:${pieceId}`, execUnlock);
+    } else {
+      execUnlock();
     }
   }
 
@@ -7166,11 +7297,14 @@
     const slot = UPGRADE_DECK_SLOTS.find(s => s.id === slotId);
     if (!slot) return;
     const p = PIECE_MAP[pieceId];
-    if (!p || p.cat !== slot.cat || !isPieceUnlocked(pieceId)) return;
+    if (!p || !isPieceAllowedInSlot(slot, p) || !isPieceUnlocked(pieceId)) return;
     if (pieceId === slot.defaultPieceId) {
       delete GameState.company.deck.slotOverrides[slotId];
     } else {
       GameState.company.deck.slotOverrides[slotId] = pieceId;
+    }
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.syncActivePresetFromDeck === 'function') {
+      DXDeck.syncActivePresetFromDeck(GameState.company);
     }
     window.activeDeckEditingSlot = null;
     playSound('place');
@@ -7186,16 +7320,22 @@
     if (index < 0 || index >= CUSTOM_DECK_SLOTS_COUNT) return;
     if (!pieceId) {
       GameState.company.deck.customSlots[index] = null;
+      if (typeof DXDeck !== 'undefined' && typeof DXDeck.syncActivePresetFromDeck === 'function') {
+        DXDeck.syncActivePresetFromDeck(GameState.company);
+      }
       window.activeDeckEditingSlot = null;
       playSound('rotate');
-      showUpgradeFeedback(`🃏 追加枠${index + 1} を空枠にしました（現在デッキ ${getActiveDeckPieceIds().length}枚）`, 'var(--c-text2)');
+      showUpgradeFeedback(`🃏 追加枠${index + 1} を空枠にしました（現在デッキ ${getActiveDeckPieceIds(GameState.company.deck).length}枚）`, 'var(--c-text2)');
     } else {
       const p = PIECE_MAP[pieceId];
       if (!p || !isPieceUnlocked(pieceId)) return;
       GameState.company.deck.customSlots[index] = pieceId;
+      if (typeof DXDeck !== 'undefined' && typeof DXDeck.syncActivePresetFromDeck === 'function') {
+        DXDeck.syncActivePresetFromDeck(GameState.company);
+      }
       window.activeDeckEditingSlot = null;
       playSound('place');
-      showUpgradeFeedback(`🃏 追加枠${index + 1} に「${p.name}」を編成しました（現在デッキ ${getActiveDeckPieceIds().length}枚）`, 'var(--c-emerald)');
+      showUpgradeFeedback(`🃏 追加枠${index + 1} に「${p.name}」を編成しました（現在デッキ ${getActiveDeckPieceIds(GameState.company.deck).length}枚）`, 'var(--c-emerald)');
     }
     saveGame();
     renderCompanyUpgradeUI();
@@ -7209,15 +7349,20 @@
       slotOverrides: {},
       customSlots: [null, null, null, null]
     };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.syncActivePresetFromDeck === 'function') {
+      DXDeck.syncActivePresetFromDeck(GameState.company);
+    }
     window.activeDeckEditingSlot = null;
     playSound('rotate');
-    showUpgradeFeedback('🃏 デッキ編成を初期の20枚構成にリセットしました', 'var(--c-emerald)');
+    const ap = (typeof DXDeck !== 'undefined' && DXDeck.getActivePreset) ? DXDeck.getActivePreset(GameState.company) : null;
+    const pLabel = ap ? `「${ap.name}」を` : '';
+    showUpgradeFeedback(`🃏 ${pLabel}初期の20枚構成にリセットしました`, 'var(--c-emerald)');
     saveGame();
     renderCompanyUpgradeUI();
     updateHomeUI();
   }
 
-  function borrowLoan(amount) {
+  function borrowLoan(amount, tag = '') {
     initAudio();
     if (!GameState.company) return;
     if ((GameState.company.emergencyDebt || 0) > 0) {
@@ -7232,13 +7377,21 @@
       showUpgradeFeedback('融資限度額に達しているため、これ以上借り入れできません！', 'var(--c-rose)');
       return;
     }
-    GameState.company.debt = Math.round(((GameState.company.debt || 0) + borrowAmt) * 10) / 10;
-    GameState.funds = Math.round((GameState.funds + borrowAmt) * 10) / 10;
-    playSound('clear');
-    showUpgradeFeedback(`🏦 銀行から ${borrowAmt.toFixed(1)}万円 の融資を受けました！`, 'var(--c-emerald)');
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
+    const bKey = tag ? `bank:borrow:${tag}` : `bank:borrow:${amount}`;
+    const execBorrow = () => {
+      GameState.company.debt = Math.round(((GameState.company.debt || 0) + borrowAmt) * 10) / 10;
+      GameState.funds = Math.round((GameState.funds + borrowAmt) * 10) / 10;
+      playSound('clear');
+      showUpgradeFeedback(`🏦 銀行から ${borrowAmt.toFixed(1)}万円 の融資を受けました！`, 'var(--c-emerald)');
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute(bKey, execBorrow);
+    } else {
+      execBorrow();
+    }
   }
 
   function repayLoan(amount) {
@@ -7253,22 +7406,29 @@
       showUpgradeFeedback('返済するための所持資金が足りません！', 'var(--c-rose)');
       return;
     }
-    GameState.funds = Math.max(0, Math.round((GameState.funds - repayAmt) * 10) / 10);
-    GameState.company.debt = Math.max(0, Math.round((debt - repayAmt) * 10) / 10);
-    playSound('clear');
-    if (GameState.company.debt === 0) {
-      showUpgradeFeedback(`🎉 銀行からの借入金を全額完済しました！`, 'var(--c-emerald)');
-    } else {
-      showUpgradeFeedback(`💸 借入金を ${repayAmt.toFixed(1)}万円 繰上返済しました（残債 ${GameState.company.debt.toFixed(1)}万）`, 'var(--c-emerald)');
-    }
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
+    const execRepay = () => {
+      GameState.funds = Math.max(0, Math.round((GameState.funds - repayAmt) * 10) / 10);
+      GameState.company.debt = Math.max(0, Math.round((debt - repayAmt) * 10) / 10);
+      playSound('clear');
+      if (GameState.company.debt === 0) {
+        showUpgradeFeedback(`🎉 銀行からの借入金を全額完済しました！`, 'var(--c-emerald)');
+      } else {
+        showUpgradeFeedback(`💸 借入金を ${repayAmt.toFixed(1)}万円 繰上返済しました（残債 ${GameState.company.debt.toFixed(1)}万）`, 'var(--c-emerald)');
+      }
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
 
-    const deadEnd = checkDeadEndBankruptcy();
-    if (deadEnd.isBankrupt) {
-      closeCompanyUpgradeModal();
-      showGameOverModal(deadEnd.reason);
+      const deadEnd = checkDeadEndBankruptcy();
+      if (deadEnd.isBankrupt) {
+        closeCompanyUpgradeModal();
+        showGameOverModal(deadEnd.reason);
+      }
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute(`bank:repay:${amount}`, execRepay);
+    } else {
+      execRepay();
     }
   }
 
@@ -7308,17 +7468,24 @@
       showUpgradeFeedback('返済するための所持資金が足りません！', 'var(--c-rose)');
       return;
     }
-    GameState.funds = Math.max(0, Math.round((GameState.funds - repayAmt) * 10) / 10);
-    GameState.company.emergencyDebt = Math.max(0, Math.round((debt - repayAmt) * 10) / 10);
-    playSound('clear');
-    if (GameState.company.emergencyDebt === 0) {
-      showUpgradeFeedback(`🎉 街金・緊急融資を全額完済しました！重い利息から解放されました！`, 'var(--c-emerald)');
+    const execRepayEmerg = () => {
+      GameState.funds = Math.max(0, Math.round((GameState.funds - repayAmt) * 10) / 10);
+      GameState.company.emergencyDebt = Math.max(0, Math.round((debt - repayAmt) * 10) / 10);
+      playSound('clear');
+      if (GameState.company.emergencyDebt === 0) {
+        showUpgradeFeedback(`🎉 街金・緊急融資を全額完済しました！重い利息から解放されました！`, 'var(--c-emerald)');
+      } else {
+        showUpgradeFeedback(`💸 街金に ${repayAmt.toFixed(1)}万円 返済しました（残債 ${GameState.company.emergencyDebt.toFixed(1)}万）`, 'var(--c-emerald)');
+      }
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute('bank:repay_emerg', execRepayEmerg);
     } else {
-      showUpgradeFeedback(`💸 街金に ${repayAmt.toFixed(1)}万円 返済しました（残債 ${GameState.company.emergencyDebt.toFixed(1)}万）`, 'var(--c-emerald)');
+      execRepayEmerg();
     }
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
   }
 
   function showEmergencyLoanPrompt(deficit = 0) {
@@ -7497,6 +7664,8 @@
     const co = GameState.company;
     const curOfficeDef = UPGRADE_CONFIG.office[co.officeLevel || 0] || UPGRADE_CONFIG.office[0];
     let triggeredEnding = false;
+    let confirmKey = null;
+    let doApply = null;
 
     if (type === 'office') {
       const curLevel = co.officeLevel || 0;
@@ -7508,16 +7677,22 @@
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds = Math.round((GameState.funds - effCost) * 10) / 10;
-      co.officeLevel++;
-      playSound('clear');
-      showUpgradeFeedback(`🏢 本社オフィスを「Rank ${co.officeLevel + 1} ${nextDef.name}」へ移転しました！各機能の上限が拡張されました！`, 'var(--c-emerald)');
-      if (co.officeLevel >= UPGRADE_CONFIG.office.length - 1 && !GameState.hasCleared) {
-        GameState.hasCleared = true;
-        GameState.clearedMonth = GameState.month || 1;
-        GameState.clearedSnapshot = captureClearedSnapshot();
-        triggeredEnding = true;
-      }
+      confirmKey = 'upg:office';
+      doApply = () => {
+        GameState.funds = Math.round((GameState.funds - effCost) * 10) / 10;
+        co.officeLevel++;
+        if (typeof DXDeck !== 'undefined' && typeof DXDeck.ensurePresets === 'function') {
+          DXDeck.ensurePresets(co);
+        }
+        playSound('clear');
+        showUpgradeFeedback(`🏢 本社オフィスを「Rank ${co.officeLevel + 1} ${nextDef.name}」へ移転しました！プリセット枠・各種上限が拡張されました！`, 'var(--c-emerald)');
+        if (co.officeLevel >= UPGRADE_CONFIG.office.length - 1 && !GameState.hasCleared) {
+          GameState.hasCleared = true;
+          GameState.clearedMonth = GameState.month || 1;
+          GameState.clearedSnapshot = captureClearedSnapshot();
+          triggeredEnding = true;
+        }
+      };
     } else if (type === 'desk') {
       const curDesks = co.deskCount || 0;
       if (curDesks >= UPGRADE_CONFIG.desks.length) return;
@@ -7532,10 +7707,13 @@
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds = Math.round((GameState.funds - deskDef.cost) * 10) / 10;
-      co.deskCount = curDesks + 1;
-      playSound('clear');
-      showUpgradeFeedback(`🪑 「${deskDef.name}」を設置しました！（雇用枠 ${co.deskCount}席）`, 'var(--c-emerald)');
+      confirmKey = 'upg:desk';
+      doApply = () => {
+        GameState.funds = Math.round((GameState.funds - deskDef.cost) * 10) / 10;
+        co.deskCount = curDesks + 1;
+        playSound('clear');
+        showUpgradeFeedback(`🪑 「${deskDef.name}」を設置しました！（雇用枠 ${co.deskCount}席）`, 'var(--c-emerald)');
+      };
     } else if (type === 'capacity') {
       const curCapLv = co.capacityLevel || 0;
       if (curCapLv >= UPGRADE_CONFIG.capacity.length - 1) return;
@@ -7550,10 +7728,13 @@
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds = Math.round((GameState.funds - nextCapDef.cost) * 10) / 10;
-      co.capacityLevel = curCapLv + 1;
-      playSound('clear');
-      showUpgradeFeedback(`📂 「${nextCapDef.name}」を導入しました！（基本管理枠 ${nextCapDef.capacity}棟）`, 'var(--c-emerald)');
+      confirmKey = 'upg:capacity';
+      doApply = () => {
+        GameState.funds = Math.round((GameState.funds - nextCapDef.cost) * 10) / 10;
+        co.capacityLevel = curCapLv + 1;
+        playSound('clear');
+        showUpgradeFeedback(`📂 「${nextCapDef.name}」を導入しました！（基本管理枠 ${nextCapDef.capacity}棟）`, 'var(--c-emerald)');
+      };
     } else if (type === 'sales') {
       const curLevel = co.salesLevel || 1;
       if (curLevel >= UPGRADE_CONFIG.sales.length) return;
@@ -7568,10 +7749,13 @@
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds = Math.round((GameState.funds - nextDef.cost) * 10) / 10;
-      co.salesLevel++;
-      playSound('clear');
-      showUpgradeFeedback(`✨ 営業力 Lv.${co.salesLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
+      confirmKey = 'upg:sales';
+      doApply = () => {
+        GameState.funds = Math.round((GameState.funds - nextDef.cost) * 10) / 10;
+        co.salesLevel++;
+        playSound('clear');
+        showUpgradeFeedback(`✨ 営業力 Lv.${co.salesLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
+      };
     } else if (type === 'brand') {
       const curLevel = co.brandLevel || 1;
       if (curLevel >= UPGRADE_CONFIG.brand.length) return;
@@ -7586,10 +7770,13 @@
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds = Math.round((GameState.funds - nextDef.cost) * 10) / 10;
-      co.brandLevel++;
-      playSound('clear');
-      showUpgradeFeedback(`✨ ブランド知名度 Lv.${co.brandLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
+      confirmKey = 'upg:brand';
+      doApply = () => {
+        GameState.funds = Math.round((GameState.funds - nextDef.cost) * 10) / 10;
+        co.brandLevel++;
+        playSound('clear');
+        showUpgradeFeedback(`✨ ブランド知名度 Lv.${co.brandLevel}（${nextDef.name}）へ強化しました！`, 'var(--c-emerald)');
+      };
     } else if (type === 'feature') {
       const featGroup = UPGRADE_CONFIG.features[key];
       if (!featGroup || !featGroup.levels) return;
@@ -7608,56 +7795,70 @@
         showUpgradeFeedback('所持資金が足りません！', 'var(--c-rose)');
         return;
       }
-      GameState.funds = Math.round((GameState.funds - nextLvDef.cost) * 10) / 10;
-      co.features[key] = curLv + 1;
-      if (key === 'extraAttempts') {
-        GameState.attempts = getMaxAttempts();
-      }
-      if (key === 'handSize') {
-        const targetSlots = getMaxHandSlots();
-        while (draftSlots.length < targetSlots) {
-          draftSlots.push(drawPieceFromDeck());
-          keepStates.push(false);
-          keepCounts.push(0);
+      confirmKey = `upg:feature:${key}`;
+      doApply = () => {
+        GameState.funds = Math.round((GameState.funds - nextLvDef.cost) * 10) / 10;
+        co.features[key] = curLv + 1;
+        if (key === 'extraAttempts') {
+          GameState.attempts = getMaxAttempts();
         }
-        if (GameState.activeBuild && Array.isArray(GameState.activeBuild.draftSlots)) {
-          while (GameState.activeBuild.draftSlots.length < targetSlots) {
-            GameState.activeBuild.draftSlots.push(drawPieceFromDeck());
-            if (Array.isArray(GameState.activeBuild.keepStates)) GameState.activeBuild.keepStates.push(false);
-            if (Array.isArray(GameState.activeBuild.keepCounts)) GameState.activeBuild.keepCounts.push(0);
+        if (key === 'handSize') {
+          const targetSlots = getMaxHandSlots();
+          while (draftSlots.length < targetSlots) {
+            draftSlots.push(drawPieceFromDeck());
+            keepStates.push(false);
+            keepCounts.push(0);
           }
-          GameState.activeBuild.drawPile = drawPile;
-          GameState.activeBuild.discardPile = discardPile;
+          if (GameState.activeBuild && Array.isArray(GameState.activeBuild.draftSlots)) {
+            while (GameState.activeBuild.draftSlots.length < targetSlots) {
+              GameState.activeBuild.draftSlots.push(drawPieceFromDeck());
+              if (Array.isArray(GameState.activeBuild.keepStates)) GameState.activeBuild.keepStates.push(false);
+              if (Array.isArray(GameState.activeBuild.keepCounts)) GameState.activeBuild.keepCounts.push(0);
+            }
+            GameState.activeBuild.drawPile = drawPile;
+            GameState.activeBuild.discardPile = discardPile;
+          }
+          if (screens.game?.classList.contains('active')) {
+            renderDraftUI();
+          }
         }
-        if (screens.game?.classList.contains('active')) {
-          renderDraftUI();
+        if (key === 'freeFlip') {
+          updateMirrorButton();
         }
-      }
-      if (key === 'freeFlip') {
-        updateMirrorButton();
-      }
-      playSound('clear');
-      showUpgradeFeedback(`✨ 設備投資「${featGroup.name} Lv.${co.features[key]}（${nextLvDef.name}）」を導入しました！`, 'var(--c-emerald)');
+        playSound('clear');
+        showUpgradeFeedback(`✨ 設備投資「${featGroup.name} Lv.${co.features[key]}（${nextLvDef.name}）」を導入しました！`, 'var(--c-emerald)');
+      };
     }
 
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
+    if (!doApply) return;
 
-    if (triggeredEnding) {
-      closeCompanyUpgradeModal();
-      setTimeout(() => {
-        openEndingModal(true);
-      }, 350);
-      return;
-    }
+    const finalizeUpgrade = () => {
+      doApply();
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
 
-    const deadEnd = checkDeadEndBankruptcy();
-    if (deadEnd.isBankrupt) {
-      closeCompanyUpgradeModal();
-      showGameOverModal(deadEnd.reason);
-    } else if (GameState.funds < MIN_BUILD_FUNDS) {
-      showUpgradeFeedback(`💡 建築資金が${MIN_BUILD_FUNDS}万円未満になりました。「🏦 銀行融資」タブから運転資金を借り入れできます！`, 'var(--c-rose)');
+      if (triggeredEnding) {
+        closeCompanyUpgradeModal();
+        setTimeout(() => {
+          openEndingModal(true);
+        }, 350);
+        return;
+      }
+
+      const deadEnd = checkDeadEndBankruptcy();
+      if (deadEnd.isBankrupt) {
+        closeCompanyUpgradeModal();
+        showGameOverModal(deadEnd.reason);
+      } else if (GameState.funds < MIN_BUILD_FUNDS) {
+        showUpgradeFeedback(`💡 建築資金が${MIN_BUILD_FUNDS}万円未満になりました。「🏦 銀行融資」タブから運転資金を借り入れできます！`, 'var(--c-rose)');
+      }
+    };
+
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute(confirmKey, finalizeUpgrade);
+    } else {
+      finalizeUpgrade();
     }
   }
 
@@ -7677,15 +7878,22 @@
       showUpgradeFeedback(`資金不足です！（掲載費: ${adCost}万円）`, 'var(--c-rose)');
       return;
     }
-    GameState.funds = Math.round((GameState.funds - adCost) * 10) / 10;
-    if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
-    co.recruitment.status = 'posted';
-    window.replacingCandidateId = null;
-    playSound('clear');
-    showUpgradeFeedback(`📢 求人広告を掲載しました（-${adCost}万）。来月応募者が届きます！`, 'var(--c-emerald)');
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
+    const execAd = () => {
+      GameState.funds = Math.round((GameState.funds - adCost) * 10) / 10;
+      if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
+      co.recruitment.status = 'posted';
+      window.replacingCandidateId = null;
+      playSound('clear');
+      showUpgradeFeedback(`📢 求人広告を掲載しました（-${adCost}万）。来月応募者が届きます！`, 'var(--c-emerald)');
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute('staff:ad', execAd);
+    } else {
+      execAd();
+    }
   }
 
   function scoutImmediately() {
@@ -7704,16 +7912,23 @@
       showUpgradeFeedback(`資金不足です！（即時スカウト費: ${scoutCost}万円）`, 'var(--c-rose)');
       return;
     }
-    GameState.funds = Math.round((GameState.funds - scoutCost) * 10) / 10;
-    if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
-    co.recruitment.status = 'active';
-    co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
-    window.replacingCandidateId = null;
-    playSound('clear');
-    showUpgradeFeedback(`⚡ 人材紹介エージェントから応募者3名が到着しました！（-${scoutCost}万）`, 'var(--c-emerald)');
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
+    const execScout = () => {
+      GameState.funds = Math.round((GameState.funds - scoutCost) * 10) / 10;
+      if (!co.recruitment) co.recruitment = { status: 'none', candidates: [] };
+      co.recruitment.status = 'active';
+      co.recruitment.candidates = generateCandidateBatch(3, co.officeLevel || 1);
+      window.replacingCandidateId = null;
+      playSound('clear');
+      showUpgradeFeedback(`⚡ 人材紹介エージェントから応募者3名が到着しました！（-${scoutCost}万）`, 'var(--c-emerald)');
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute('staff:scout', execScout);
+    } else {
+      execScout();
+    }
   }
 
   function stopJobAd() {
@@ -7731,6 +7946,9 @@
 
   function startReplaceCandidate(candId) {
     initAudio();
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(true);
+    }
     window.replacingCandidateId = (window.replacingCandidateId === candId) ? null : candId;
     playSound('tap');
     renderCompanyUpgradeUI();
@@ -7738,6 +7956,9 @@
 
   function cancelReplaceCandidate() {
     initAudio();
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(true);
+    }
     window.replacingCandidateId = null;
     playSound('tap');
     renderCompanyUpgradeUI();
@@ -7752,36 +7973,46 @@
     const staffIdx = co.hiredStaff.findIndex(s => s.id === targetStaffId);
     if (candIdx === -1 || candIdx === undefined || staffIdx === -1) return;
 
-    const cand = co.recruitment.candidates[candIdx];
-    const oldStaff = co.hiredStaff[staffIdx];
+    const execReplace = () => {
+      const cIdx = co.recruitment?.candidates?.findIndex(c => c.id === candId);
+      const sIdx = co.hiredStaff.findIndex(s => s.id === targetStaffId);
+      if (cIdx === -1 || cIdx === undefined || sIdx === -1) return;
+      const cand = co.recruitment.candidates[cIdx];
+      const oldStaff = co.hiredStaff[sIdx];
 
-    co.hiredStaff[staffIdx] = {
-      id: cand.id,
-      name: cand.name,
-      avatar: cand.avatar,
-      rank: cand.rank,
-      rankLabel: cand.rankLabel,
-      stars: cand.stars,
-      role: cand.role,
-      salary: cand.salary,
-      skills: cand.skills
+      co.hiredStaff[sIdx] = {
+        id: cand.id,
+        name: cand.name,
+        avatar: cand.avatar,
+        rank: cand.rank,
+        rankLabel: cand.rankLabel,
+        stars: cand.stars,
+        role: cand.role,
+        salary: cand.salary,
+        skills: cand.skills
+      };
+
+      co.recruitment.candidates.splice(cIdx, 1);
+      window.replacingCandidateId = null;
+
+      // 満席での入替採用完了後は、意図しない維持費発生を防ぐため求人掲載を自動終了する
+      const maxSlots = getMaxStaffSlots();
+      if (co.hiredStaff.length >= maxSlots || co.recruitment.candidates.length === 0) {
+        co.recruitment.status = 'none';
+        co.recruitment.candidates = [];
+      }
+
+      playSound('clear');
+      showUpgradeFeedback(`🔄 ${oldStaff.name}を解雇し、新たに${cand.name}を迎え入れました！`, 'var(--c-emerald)');
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
     };
-
-    co.recruitment.candidates.splice(candIdx, 1);
-    window.replacingCandidateId = null;
-
-    // 満席での入替採用完了後は、意図しない維持費発生を防ぐため求人掲載を自動終了する
-    const maxSlots = getMaxStaffSlots();
-    if (co.hiredStaff.length >= maxSlots || co.recruitment.candidates.length === 0) {
-      co.recruitment.status = 'none';
-      co.recruitment.candidates = [];
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute(`staff:replace:${candId}:${targetStaffId}`, execReplace);
+    } else {
+      execReplace();
     }
-
-    playSound('clear');
-    showUpgradeFeedback(`🔄 ${oldStaff.name}を解雇し、新たに${cand.name}を迎え入れました！`, 'var(--c-emerald)');
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
   }
 
   function hireCandidate(candId) {
@@ -7796,37 +8027,49 @@
     }
     const candIdx = co.recruitment?.candidates?.findIndex(c => c.id === candId);
     if (candIdx === -1 || candIdx === undefined) return;
-    const cand = co.recruitment.candidates[candIdx];
 
-    co.hiredStaff.push({
-      id: cand.id,
-      name: cand.name,
-      avatar: cand.avatar,
-      rank: cand.rank,
-      rankLabel: cand.rankLabel,
-      stars: cand.stars,
-      role: cand.role,
-      salary: cand.salary,
-      skills: cand.skills
-    });
+    const execHire = () => {
+      const idx = co.recruitment?.candidates?.findIndex(c => c.id === candId);
+      if (idx === -1 || idx === undefined) return;
+      const cand = co.recruitment.candidates[idx];
+      co.hiredStaff.push({
+        id: cand.id,
+        name: cand.name,
+        avatar: cand.avatar,
+        rank: cand.rank,
+        rankLabel: cand.rankLabel,
+        stars: cand.stars,
+        role: cand.role,
+        salary: cand.salary,
+        skills: cand.skills
+      });
 
-    co.recruitment.candidates.splice(candIdx, 1);
-    window.replacingCandidateId = null;
+      co.recruitment.candidates.splice(idx, 1);
+      window.replacingCandidateId = null;
 
-    if (co.hiredStaff.length >= maxSlots || co.recruitment.candidates.length === 0) {
-      co.recruitment.status = 'none';
-      co.recruitment.candidates = [];
+      if (co.hiredStaff.length >= maxSlots || co.recruitment.candidates.length === 0) {
+        co.recruitment.status = 'none';
+        co.recruitment.candidates = [];
+      }
+
+      playSound('clear');
+      showUpgradeFeedback(`🤝 ${cand.name}を採用しました！`, 'var(--c-emerald)');
+      saveGame();
+      renderCompanyUpgradeUI();
+      updateHomeUI();
+    };
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.armOrExecute === 'function') {
+      DXDeck.armOrExecute(`staff:hire:${candId}`, execHire);
+    } else {
+      execHire();
     }
-
-    playSound('clear');
-    showUpgradeFeedback(`🤝 ${cand.name}を採用しました！`, 'var(--c-emerald)');
-    saveGame();
-    renderCompanyUpgradeUI();
-    updateHomeUI();
   }
 
   function startDismissStaff(staffId) {
     initAudio();
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearConfirm === 'function') {
+      DXDeck.clearConfirm(true);
+    }
     window.dismissConfirmingStaffId = staffId;
     if (dismissConfirmTimer) clearTimeout(dismissConfirmTimer);
     dismissConfirmTimer = setTimeout(() => {
@@ -8494,6 +8737,10 @@ function updateHomeUI() {
       let trim = '#b4845a';
       if (floorId === 'floor_washitsu') { wallBg = '#e3d5b8'; shade = '#d6c5a3'; trim = '#855832'; }
       else if (floorId === 'floor_bath') { wallBg = '#e0f4fe'; shade = '#bae6fd'; trim = '#7dd3fc'; }
+      else if (floorId === 'floor_studio') { wallBg = '#1e293b'; shade = '#0f172a'; trim = '#38bdf8'; }
+      else if (floorId === 'floor_sunroom') { wallBg = '#fefce8'; shade = '#fef08a'; trim = '#38bdf8'; }
+      else if (floorId === 'floor_garage') { wallBg = '#cbd5e1'; shade = '#94a3b8'; trim = '#475569'; }
+      else if (floorId === 'floor_laundry') { wallBg = '#ecfeff'; shade = '#cffafe'; trim = '#2dd4bf'; }
       ctx.fillStyle = wallBg;
       ctx.fillRect(0, 0, cw, wallH);
       ctx.fillStyle = shade;
@@ -9365,6 +9612,9 @@ function updateHomeUI() {
         }
         const rk = Math.max(0, Math.min(4, parseInt(btn.dataset.rank, 10) || 0));
         GameState.company.officeLevel = rk;
+        if (typeof DXDeck !== 'undefined' && typeof DXDeck.ensurePresets === 'function') {
+          DXDeck.ensurePresets(GameState.company);
+        }
         const maxDesks = UPGRADE_CONFIG.office[rk]?.maxDesks ?? rk;
         GameState.company.deskCount = maxDesks;
         if (Array.isArray(GameState.company.hiredStaff) && GameState.company.hiredStaff.length > maxDesks) {
@@ -9422,6 +9672,9 @@ function updateHomeUI() {
           GameState.tutorialPhase = 'done';
         }
         const pid = btn.dataset.preset;
+        if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearMissionTempDeck === 'function') {
+          DXDeck.clearMissionTempDeck();
+        }
         closeSb();
         if (window.PixelRenderer) window.PixelRenderer.loadTestPreset(pid);
         if (typeof syncTutorialPuzzleUI === 'function') syncTutorialPuzzleUI();
@@ -9461,6 +9714,55 @@ function updateHomeUI() {
       updateHomeUI();
       closeSb();
       showFloatingText('✨ 特注クライアントを受付へ招待しました！', '#c084fc');
+    });
+
+    document.getElementById('btn-sb-unlock-a3')?.addEventListener('click', () => {
+      initAudio();
+      playSound('coin');
+      ensureDeckState();
+      if (typeof DXStage3 !== 'undefined' && Array.isArray(DXStage3.PIECES)) {
+        for (const p of DXStage3.PIECES) {
+          if (!GameState.company.unlockedPieces.includes(p.id)) {
+            GameState.company.unlockedPieces.push(p.id);
+          }
+        }
+      }
+      if (!GameState.company.unlockedPieces.includes('ldk-33')) {
+        GameState.company.unlockedPieces.push('ldk-33');
+      }
+      saveGame();
+      updateHomeUI();
+      closeSb();
+      showFloatingText('🔓 A-3 新部屋4種＆特大LDK(9)をR&D解放しました！', '#34d399');
+    });
+
+    document.getElementById('btn-sb-spawn-a3-specials')?.addEventListener('click', () => {
+      initAudio();
+      playSound('combo');
+      ensureDeckState();
+      if (GameState.tutorialPhase && GameState.tutorialPhase !== 'done') {
+        GameState.tutorialPhase = 'done';
+      }
+      if (typeof DXStage3 !== 'undefined' && Array.isArray(DXStage3.PIECES)) {
+        for (const p of DXStage3.PIECES) {
+          if (!GameState.company.unlockedPieces.includes(p.id)) {
+            GameState.company.unlockedPieces.push(p.id);
+          }
+        }
+      }
+      GameState.company.officeLevel = Math.max(3, GameState.company.officeLevel || 0);
+      GameState.company.brandLevel = Math.max(4, GameState.company.brandLevel || 1);
+      GameState.currentMission = null;
+      GameState.activeBuild = null;
+      const a3List = (typeof DXStage3 !== 'undefined' && Array.isArray(DXStage3.SPECIAL_CLIENTS)) ? DXStage3.SPECIAL_CLIENTS : [];
+      if (a3List.length > 0 && typeof generateStage === 'function') {
+        GameState.availableMissions = a3List.slice(0, 3).map(tpl => generateStage(Math.max(3, GameState.level || 0), tpl.clientType, tpl, { allowLocation: false }));
+      }
+      saveGame();
+      updateHomeUI();
+      closeSb();
+      if (typeof openMissionSelect === 'function') openMissionSelect();
+      showFloatingText('✨ A-3 特注客を受付へ招待しました！', '#f472b6');
     });
 
     document.getElementById('btn-sb-spawn-locations')?.addEventListener('click', () => {
@@ -9533,4 +9835,31 @@ function updateHomeUI() {
 
     syncTogglePixelBtn();
     if (window.PixelOffice) window.PixelOffice.init();
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.init === 'function') {
+      DXDeck.init({
+        getGameState: () => GameState,
+        getStage: () => STAGE,
+        getPieceMap: () => PIECE_MAP,
+        getPieceLib: () => PIECE_LIB,
+        getFixedDeck: () => FIXED_BASE_DECK,
+        getUpgradeSlots: () => UPGRADE_DECK_SLOTS,
+        getCustomSlotsCount: () => CUSTOM_DECK_SLOTS_COUNT,
+        getUpgradeConfig: () => UPGRADE_CONFIG,
+        getT: () => T,
+        isPieceUnlocked,
+        isPieceAllowedInSlot,
+        getPieceCost,
+        getActiveDeckPieceIds,
+        renderMiniPieceShape,
+        renderCompanyUpgradeUI,
+        updateHomeUI,
+        openCompanyUpgradeModal,
+        saveGame,
+        initAudio,
+        playSound,
+        showUpgradeFeedback,
+        showFloatingText,
+        setDeckSubTab
+      });
+    }
   })();

@@ -453,7 +453,7 @@
             if (!isBlockingRoomCell(cell)) continue;
             const nr = r + step.dr, nc = c + step.dc;
             if (!cellHasSightlineWithoutBuilding(targetGrid, r, c, loc.side)) continue;
-            const isBufferType = (cell.type === closetT || cell.type === corrT || cell.type === washT || cell.type === bathT || cell.type === toiletT || cell.type === entT);
+            const isBufferType = (cell.type === closetT || cell.type === corrT || cell.type === washT || cell.type === bathT || cell.type === toiletT || cell.type === entT || (typeof DXStage3 !== 'undefined' && DXStage3.isStudioCell(cell)));
             const hasSolidBlock = (cell.type === ldkT || cell.type === roomT) && hasSolidWallFn && hasSolidWallFn(r, c, nr, nc);
             if (isBufferType || hasSolidBlock) {
               hasBufferOrWall = true;

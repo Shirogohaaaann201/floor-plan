@@ -1,8 +1,8 @@
 'use strict';
 /**
  * furniture_catalog.js
- * 家具・インテリア収集図鑑マスターカタログ & ID正規化モジュール (C-3)
- * - 全65種（向き差分を統合した正規ID・カテゴリ・レア度・90°回転ビュー・フレーバー・出現ヒント）
+ * 家具・インテリア収集図鑑マスターカタログ & ID正規化モジュール (C-3 / A-3)
+ * - 全78種（向き差分を統合した正規ID・カテゴリ・レア度・90°回転ビュー・フレーバー・出現ヒント）
  */
 (function (global) {
   const CATEGORIES = [
@@ -28,7 +28,9 @@
     scroll_ninja: 'wall_scroll_ninja',
     art_1: 'wall_art_1',
     art_2: 'wall_art_2',
-    clock: 'wall_clock'
+    clock: 'wall_clock',
+    acoustic_panel: 'wall_acoustic_panel',
+    gold_trophy: 'wall_gold_trophy'
   };
 
   const ITEMS = [
@@ -1081,6 +1083,215 @@
       flavor: '遊びに来た友達がみんな、まず風呂場へ直行するんだよね！『今日もいい湯だった』って帰っていくから、うちが銭湯みたいになってきたよ。',
       reviewer: '30代・風呂好き',
       hint: '浴室を8マス以上つなげて「もはや銭湯」を実現すると、横に2マス並んだ北の壁一面が壮観に染まる。'
+    },
+
+    // =========================================================================
+    //  6. A-3 DX限定 新部屋・特注コンボ家具（No.66〜No.78）
+    // =========================================================================
+    {
+      id: 'furn_stream_desk',
+      name: '配信スタジオデスク',
+      category: 'リビング・洋室',
+      rarity: 'uncommon',
+      floorId: 'floor_studio',
+      isWall: false,
+      views: [
+        { label: '北壁', spriteId: 'furn_stream_desk' },
+        { label: '東壁', spriteId: 'furn_stream_desk_east' },
+        { label: '南壁', spriteId: 'furn_stream_desk_south' },
+        { label: '西壁', spriteId: 'furn_stream_desk_west' }
+      ],
+      aliases: [],
+      flavor: 'モニター二枚並べてもまだ飲み物置けるの、ほんと助かる！配線もすっきり隠せるし、気づいたら朝の五時までゲームと配信ぶっ続けでやっちゃってたよ。',
+      reviewer: '20代・夜型ストリーマー',
+      hint: '防音仕様の書斎を間取りに組み込むと、作業と収録の要として部屋の特等席に据えられる。'
+    },
+    {
+      id: 'furn_gear_rack',
+      name: '音響機材ラック',
+      category: 'リビング・洋室',
+      rarity: 'uncommon',
+      floorId: 'floor_studio',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_gear_rack' }
+      ],
+      aliases: [],
+      flavor: 'ミキサーやらオーディオインターフェースやら、ついつい増えちゃう機材の定位置ができて大満足！ランプがぴかぴか光ってるだけで、なんだかプロっぽくてテンション上がるんだよね。',
+      reviewer: '30代・音響マニア',
+      hint: '防音仕様の書斎に複数のマスがあると、メインの作業場のとなりへ録音用の設備一式が並ぶ。'
+    },
+    {
+      id: 'furn_hammock_chair',
+      name: 'ハンモックチェア',
+      category: 'リビング・洋室',
+      rarity: 'uncommon',
+      floorId: 'floor_sunroom',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_hammock_chair' }
+      ],
+      aliases: [],
+      flavor: 'ポカポカの昼下がりにゆらゆら揺られてたら、五分と持たずに夢の中だよ。ここで読む漫画と昼寝が休日のいちばんの贅沢かもしれないなぁ。',
+      reviewer: '30代・休日ゴロゴロ派',
+      hint: 'ガラス張りのサンルームを建てると、日差しを浴びてくつろげる特等席がまず最初に用意される。'
+    },
+    {
+      id: 'furn_cat_tower',
+      name: 'ネコの爪とぎタワー',
+      category: 'リビング・洋室',
+      rarity: 'uncommon',
+      floorId: 'floor_sunroom',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_cat_tower' }
+      ],
+      aliases: [],
+      flavor: '組み立てた瞬間からうちの子が最上階を占領しちゃってさ！お日さま浴びながらてっぺんで丸くなってる姿を見られるだけで、家賃元取った気分だよニャ。',
+      reviewer: '20代・ネコ飼い',
+      hint: 'サンルームを二マス以上の広さでつくると、ひなたぼっこ好きな愛猫の遊び場まで置けるようになる。'
+    },
+    {
+      id: 'furn_sunroom_planter',
+      name: '観葉プランター棚',
+      category: 'リビング・洋室',
+      rarity: 'uncommon',
+      floorId: 'floor_sunroom',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_sunroom_planter' }
+      ],
+      aliases: [],
+      flavor: '日当たり抜群のおかげで、ズボラな私が育ててるハーブまでわさわさ元気に育ってる！朝起きてここへ水やりしに来るのが、毎日のちょっとした楽しみなんだ。',
+      reviewer: '40代・家庭菜園ビギナー',
+      hint: 'サンルームにさらにゆとりがあると、お日さまが大好きな鉢植えたちがずらりと並んでくれる。'
+    },
+    {
+      id: 'furn_drum_washer',
+      name: 'ドラム式洗濯乾燥機',
+      category: '水回り・玄関・収納',
+      rarity: 'uncommon',
+      floorId: 'floor_laundry',
+      isWall: false,
+      views: [
+        { label: '北壁', spriteId: 'furn_drum_washer' },
+        { label: '東壁', spriteId: 'furn_drum_washer_east' },
+        { label: '南壁', spriteId: 'furn_drum_washer_south' },
+        { label: '西壁', spriteId: 'furn_drum_washer_west' }
+      ],
+      aliases: [],
+      flavor: '洗剤も勝手に計ってくれるし乾燥まで一発だから、前の家より洗濯にかける時間が体感三分の一だよ！夜にスイッチ押して朝ふわふわなの、ほんと革命だね。',
+      reviewer: '30代・共働きパパ',
+      hint: 'ランドリー専用の家事室を採用すると、頼もしい主力家電が迷わずここに構えられる。'
+    },
+    {
+      id: 'furn_ironing_set',
+      name: 'スチームアイロン台',
+      category: '水回り・玄関・収納',
+      rarity: 'uncommon',
+      floorId: 'floor_laundry',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_ironing_set' }
+      ],
+      aliases: [],
+      flavor: '乾いたシャツを別の部屋へ運ばずその場でピシッと伸ばせる動線、想像以上に快適！おかげでアイロン掛けのハードルがぐんと下がって助かってるよ。',
+      reviewer: '40代・きれい好き',
+      hint: '家事室に洗う場所以外のスペースがあると、たたんだりシワを伸ばしたりする仕上げスペースも隣にそろう。'
+    },
+    {
+      id: 'furn_classic_car',
+      name: '愛車のクラシックカー',
+      category: '水回り・玄関・収納',
+      rarity: 'special',
+      floorId: 'floor_garage',
+      isWall: false,
+      views: [
+        { label: '横向き', spriteId: 'furn_classic_car' },
+        { label: '縦向き', spriteId: 'furn_classic_car_v' }
+      ],
+      aliases: [],
+      flavor: '部屋の中からガラス越しにこのボディライン眺められるだけで、もうご飯三杯いけるね！雨の日の心配もいらないし、週末のドライブが楽しみで仕方ないよ！',
+      reviewer: '40代・旧車オーナー',
+      hint: '土間ガレージを縦横二マス以上のまとまった広さで確保すると、とっておきの一台がどっしり収まる。'
+    },
+    {
+      id: 'furn_tool_bench',
+      name: 'ガレージ工具ワークベンチ',
+      category: '水回り・玄関・収納',
+      rarity: 'uncommon',
+      floorId: 'floor_garage',
+      isWall: false,
+      views: [
+        { label: '北壁', spriteId: 'furn_tool_bench' },
+        { label: '東壁', spriteId: 'furn_tool_bench_east' },
+        { label: '南壁', spriteId: 'furn_tool_bench_south' },
+        { label: '西壁', spriteId: 'furn_tool_bench_west' }
+      ],
+      aliases: [],
+      flavor: 'スパナもドライバーも壁掛けできれいに並べておけるから、ちょっとした部品いじりが楽しくてさ。DIY好きにはたまらない基地って感じだよ！',
+      reviewer: '30代・日曜大工好き',
+      hint: '土間ガレージのスペースに空きがあると、メンテナンスや日曜大工がはかどる作業机が備わる。'
+    },
+    {
+      id: 'furn_road_bike',
+      name: '愛用のロードバイク',
+      category: '水回り・玄関・収納',
+      rarity: 'uncommon',
+      floorId: 'floor_garage',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_road_bike' }
+      ],
+      aliases: [],
+      flavor: '屋外置きだと盗難やサビが怖かったんだけど、この屋内ガレージなら安心だし見た目も最高！休日の朝にここからサッと漕ぎ出す瞬間がいちばん気持ちいいんだよね。',
+      reviewer: '20代・週末サイクリスト',
+      hint: '土間ガレージの広さにさらに余裕があると、休日のツーリングに使われる二輪車まで停めておける。'
+    },
+    {
+      id: 'furn_gold_cat',
+      name: '黄金の招き猫',
+      category: '特別・珍間取り',
+      rarity: 'rare',
+      floorId: 'floor_sunroom',
+      isWall: false,
+      views: [
+        { label: '正面', spriteId: 'furn_gold_cat' }
+      ],
+      aliases: [],
+      flavor: '内見のとき眩しすぎて二度見しちゃったんだけど、うちの子が毎朝この子の前でお手してるのが可愛くてさ！おかげで最近なんか運気もバッチリな気がするニャ。',
+      reviewer: '30代・愛猫家',
+      hint: 'サンルームを建てたうえで、室内や廊下をぐるりと一周できる回遊ループの動線をつくると姿を見せる。'
+    },
+    {
+      id: 'wall_acoustic_panel',
+      name: '防音吸音ウォールパネル',
+      category: '壁装飾',
+      rarity: 'uncommon',
+      floorId: 'floor_studio',
+      isWall: true,
+      views: [
+        { label: '壁掛け', spriteId: 'wall_acoustic_panel' }
+      ],
+      aliases: [],
+      flavor: '声の反響がピタッと収まるから、マイク乗りが段違いにクリアになってびっくりしたよ！見た目もスタジオ感バッチリで、カメラに映り込むたびちょっと誇らしいんだ。',
+      reviewer: '20代・実況プレイヤー',
+      hint: '防音書斎の北側に窓のない壁面を用意しておくと、音漏れや反響を抑える専用の壁仕上げが施される。'
+    },
+    {
+      id: 'wall_gold_trophy',
+      name: '登録者100万人金の盾',
+      category: '壁装飾',
+      rarity: 'rare',
+      floorId: 'floor_studio',
+      isWall: true,
+      views: [
+        { label: '壁掛け', spriteId: 'wall_gold_trophy' }
+      ],
+      aliases: [],
+      flavor: 'こんなすごいお部屋に住んでたら気合が入っちゃってさ、夢だった大台をついに突破したよ！記念のプレートが壁でキラキラ輝いてるの見ると、ちょっと泣きそうになるね。',
+      reviewer: '20代・トップ配信者',
+      hint: '防音書斎を設けたうえで建物全体の外壁から窓をひとつも無くしてしまうと、偉業をたたえる輝きが北の壁に飾られる。'
     }
   ];
 

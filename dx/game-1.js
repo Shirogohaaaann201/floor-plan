@@ -100,7 +100,7 @@
   let buildRerollCost = 0;      // 更新(リロール)・KEEP維持による費用合計
   let deckCycle = 1;            // 現在の山札周回数 (1周目: 1, 2周目: 2, 3周目以降: 3...)
 
-  // Piece library (Starter 11 types + R&D Unlockable 10 types = 21 types)
+  // Piece library (Starter 11 types + R&D Unlockable 15 types = 26 types)
   // Large/advanced pieces feature bulk-discount per-cell pricing (1マスあたり割安)
   const PIECE_LIB = [
     // --- 初期解放ピース (11種: unlockCost = 0) ---
@@ -116,45 +116,59 @@
     { id:'unit-bath', name:'UB(2)',      cat:T.BATH,     label:'UB',   shape:[[1,1]],             cost:10.0, unlockCost:0,   desc:'1枚で風呂＋トイレを兼ねる省スペースUB (5.0万/マス)' },
     { id:'bath',      name:'浴室(2)',    cat:T.BATH,     label:'浴室', shape:[[1,1]],             cost:12.0, unlockCost:0,   desc:'「風呂・トイレ別」を達成できる独立浴室 (6.0万/マス)' },
 
-    // --- 技術開発（R&D）で解放される大型・特殊ピース (10種: unlockCost > 0) ---
+    // --- 技術開発（R&D）で解放される大型・特殊ピース (unlockCost > 0) ---
     { id:'corr-i3',   name:'廊下(長3)',  cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1]],           cost:2.7,  unlockCost:80,  desc:'直線3マスを一気に伸ばせる割安廊下 (0.9万/マス)' },
     { id:'closet-2',  name:'WIC収納(2)', cat:T.CLOSET,   label:'収納', shape:[[1,1]],             cost:2.4,  unlockCost:100, desc:'1枚で「収納充実(2マス)」を達成する割安WIC (1.2万/マス)' },
     { id:'room-wa',   name:'和室(4)',    cat:T.ROOM,     label:'和室', shape:[[1,1],[1,1]],       cost:12.0, unlockCost:120, desc:'洋室より3万安く居室数を確保できる2×2和室 (3.0万/マス)' },
     { id:'corr-t',    name:'廊下(T4)',   cat:T.CORRIDOR, label:'廊下', shape:[[1,1,1],[0,1,0]],   cost:3.2,  unlockCost:150, desc:'3方向へ動線を分岐できるハブ廊下 (0.8万/マス)' },
-    { id:'corr-s',    name:'廊下(Z4)',   cat:T.CORRIDOR, label:'廊下', shape:[[0,1],[1,1],[1,0]], cost:3.2,  unlockCost:150, desc:'障害物をかわして動線を通せるクランク廊下 (0.8万/マス)' },
-    { id:'ldk-l',     name:'LDK(L5)',    cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,0]],   cost:23.0, unlockCost:200, desc:'角地にフィットする割安5マスL字LDK (4.6万/マス)' },
+    { id:'corr-s',    name:'広間廊下(4)',cat:T.CORRIDOR, label:'廊下', shape:[[1,1],[1,1]],       cost:3.2,  unlockCost:150, desc:'玄関前の広間や分岐ハブに使える2×2廊下。大ホワイエ狙いにも最適 (0.8万/マス)' },
+    { id:'ldk-l',     name:'スリムDK(3)',cat:T.LDK,      label:'DK',   shape:[[1,1,1]],           cost:14.4, unlockCost:140, desc:'細長い3マスDK。大型LDK(2×3)に添えれば3×3化でき変形敷地にも便利 (4.8万/マス)' },
     { id:'room-23',   name:'洋室(中6)',  cat:T.ROOM,     label:'洋室', shape:[[1,1,1],[1,1,1]],   cost:20.0, unlockCost:220, desc:'1枚で「広々居室(6マス)」を達成する割安大部屋 (3.3万/マス)' },
     { id:'room-wa2',  name:'和室(中6)',  cat:T.ROOM,     label:'和室', shape:[[1,1,1],[1,1,1]],   cost:16.0, unlockCost:240, desc:'6マス居室をわずか16万で建てられる高コスパ和室 (2.7万/マス)' },
     { id:'bath-wide', name:'大型浴室(4)',cat:T.BATH,     label:'浴室', shape:[[1,1],[1,1]],       cost:20.0, unlockCost:260, desc:'1枚で「セレブ浴室(+4.0万)」＆ゆったり浴室達成 (5.0万/マス)' },
     { id:'ldk-23',    name:'大型LDK(6)', cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,1]],   cost:26.0, unlockCost:300, desc:'ファミリー・豪邸の主役になる割安6マスLDK (4.3万/マス)' },
+    { id:'ldk-33',    name:'特大LDK(9)', cat:T.LDK,      label:'LDK',  shape:[[1,1,1],[1,1,1],[1,1,1]], cost:36.0, unlockCost:350, desc:'1枚で3×3(9マス)を満たす豪邸の主役。対面アイランドやリビングラグの要 (4.0万/マス)' },
   ];
+  if (typeof DXStage3 !== 'undefined' && Array.isArray(DXStage3.PIECES)) {
+    PIECE_LIB.push(...DXStage3.PIECES);
+  }
 
   const PIECE_MAP = Object.fromEntries(PIECE_LIB.map(p => [p.id, p]));
   const STARTER_UNLOCKED_IDS = PIECE_LIB.filter(p => !p.unlockCost).map(p => p.id);
 
-  // 基礎インフラ固定枠（11枚：事故防止のため変更不可）
+  // 基礎インフラ固定枠（9枚：事故防止のため変更不可）
   const FIXED_BASE_DECK = [
     'corr-1', 'corr-i2',
     'k-1',
     'room-22', 'room-22',
-    'toilet', 'toilet',
-    'wash', 'wash',
+    'toilet',
+    'wash',
     'bath',
     'closet'
   ];
 
-  // 同カテゴリ入替枠（9枠：解放済みの同カテゴリピースと自由に入れ替え可能）
+  // 入替可能枠（11枠：基本は同カテゴリ、設備枠①は水回り・収納全般と入替可能）
   const UPGRADE_DECK_SLOTS = [
-    { id: 'corr_slot_1',   label: '廊下枠①', cat: T.CORRIDOR, defaultPieceId: 'corr-1' },
-    { id: 'corr_slot_2',   label: '廊下枠②', cat: T.CORRIDOR, defaultPieceId: 'corr-l' },
-    { id: 'ldk_slot_1',    label: 'LDK枠①',  cat: T.LDK,      defaultPieceId: 'dk-22' },
-    { id: 'ldk_slot_2',    label: 'LDK枠②',  cat: T.LDK,      defaultPieceId: 'dk-22' },
-    { id: 'room_slot_1',   label: '居室枠①', cat: T.ROOM,     defaultPieceId: 'room-22' },
-    { id: 'room_slot_2',   label: '居室枠②', cat: T.ROOM,     defaultPieceId: 'room-22' },
-    { id: 'room_slot_3',   label: '居室枠③', cat: T.ROOM,     defaultPieceId: 'room-22' },
-    { id: 'bath_slot_1',   label: '浴室枠①', cat: T.BATH,     defaultPieceId: 'unit-bath' },
-    { id: 'closet_slot_1', label: '収納枠①', cat: T.CLOSET,   defaultPieceId: 'closet' },
+    { id: 'corr_slot_1',    label: '廊下枠①', cat: T.CORRIDOR, defaultPieceId: 'corr-1' },
+    { id: 'corr_slot_2',    label: '廊下枠②', cat: T.CORRIDOR, defaultPieceId: 'corr-l' },
+    { id: 'ldk_slot_1',     label: 'LDK枠①',  cat: T.LDK,      defaultPieceId: 'dk-22' },
+    { id: 'ldk_slot_2',     label: 'LDK枠②',  cat: T.LDK,      defaultPieceId: 'dk-22' },
+    { id: 'room_slot_1',    label: '居室枠①', cat: T.ROOM,     defaultPieceId: 'room-22' },
+    { id: 'room_slot_2',    label: '居室枠②', cat: T.ROOM,     defaultPieceId: 'room-22' },
+    { id: 'room_slot_3',    label: '居室枠③', cat: T.ROOM,     defaultPieceId: 'room-22' },
+    { id: 'utility_slot_1', label: '設備枠①', cat: null, cats: [T.TOILET, T.WASHROOM, T.BATH, T.CLOSET], defaultPieceId: 'toilet' },
+    { id: 'bath_slot_1',    label: '浴室枠①', cat: T.BATH,     defaultPieceId: 'unit-bath' },
+    { id: 'wash_slot_1',    label: '洗面枠①', cat: T.WASHROOM, defaultPieceId: 'wash' },
+    { id: 'closet_slot_1',  label: '収納枠①', cat: T.CLOSET,   defaultPieceId: 'closet' },
   ];
+
+  function isPieceAllowedInSlot(slot, piece) {
+    if (!slot || !piece) return false;
+    if (Array.isArray(slot.cats) && slot.cats.length > 0) {
+      return slot.cats.includes(piece.cat);
+    }
+    return piece.cat === slot.cat;
+  }
 
   // 自由追加枠（最大 +4枚：解放済みの全カテゴリから自由に追加可能、空枠も可）
   const CUSTOM_DECK_SLOTS_COUNT = 4;
@@ -315,6 +329,9 @@
       }
     }
   };
+  if (typeof DXStage3 !== 'undefined' && DXStage3.REQUEST_DEFS) {
+    Object.assign(REQUEST_REGISTRY, DXStage3.REQUEST_DEFS);
+  }
 
   // ============================================================
   // LOT DEFINITIONS (全18種)
@@ -1253,6 +1270,9 @@
       }
     }
   ];
+  if (typeof DXStage3 !== 'undefined' && Array.isArray(DXStage3.SPECIAL_CLIENTS)) {
+    SPECIAL_CLIENT_TEMPLATES.push(...DXStage3.SPECIAL_CLIENTS);
+  }
 
   function generateStage(level = 0, overrideType = null, specialTemplate = null, stageOpts = null) {
     let clientType = 'single';
@@ -1782,6 +1802,7 @@
       requests: requests,
       optionalRequests: optionalRequests,
       customCombo: customComboData,
+      requiredPieceId: (specialTemplate && specialTemplate.requiredPieceId) || null,
       location: locationData,
       renovation: null
     };
@@ -1802,7 +1823,7 @@
     const salesLevel = (GameState && GameState.company && GameState.company.salesLevel) || 1;
     const salesMultiplier = 1.0 + (salesLevel - 1) * 0.15;
     const eligibleSpecials = brandLevel >= 2
-      ? SPECIAL_CLIENT_TEMPLATES.filter(t => brandLevel >= t.minBrand)
+      ? SPECIAL_CLIENT_TEMPLATES.filter(t => brandLevel >= t.minBrand && (!t.requiredPieceId || isPieceUnlocked(t.requiredPieceId)))
       : [];
     const usedSpecialIds = new Set();
     const usedLocationIds = [];
@@ -2226,6 +2247,9 @@
     if (co.deck.customSlots.length > CUSTOM_DECK_SLOTS_COUNT) {
       co.deck.customSlots = co.deck.customSlots.slice(0, CUSTOM_DECK_SLOTS_COUNT);
     }
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.ensurePresets === 'function') {
+      DXDeck.ensurePresets(co);
+    }
   }
 
   function isPieceUnlocked(pieceId) {
@@ -2236,23 +2260,33 @@
     return GameState.company.unlockedPieces.includes(pieceId);
   }
 
-  function getActiveDeckPieceIds() {
-    if (typeof isTutorialPuzzleActive === 'function' && isTutorialPuzzleActive()) {
+  function getActiveDeckPieceIds(overrideDeckObj = null) {
+    if (!overrideDeckObj && typeof isTutorialPuzzleActive === 'function' && isTutorialPuzzleActive()) {
       return [...TUTORIAL_DECK_IDS];
     }
     ensureDeckState();
     const co = GameState.company;
+    const tempDeck = (!overrideDeckObj && typeof DXDeck !== 'undefined' && typeof DXDeck.getMissionTempDeck === 'function')
+      ? DXDeck.getMissionTempDeck()
+      : null;
+    const deckSrc = overrideDeckObj || tempDeck || co.deck;
+    const overrides = (deckSrc && deckSrc.slotOverrides && typeof deckSrc.slotOverrides === 'object')
+      ? deckSrc.slotOverrides
+      : {};
+    const customSlots = (deckSrc && Array.isArray(deckSrc.customSlots))
+      ? deckSrc.customSlots
+      : [];
     const ids = [...FIXED_BASE_DECK];
     for (const slot of UPGRADE_DECK_SLOTS) {
-      const ov = co.deck.slotOverrides[slot.id];
-      if (ov && PIECE_MAP[ov] && PIECE_MAP[ov].cat === slot.cat && isPieceUnlocked(ov)) {
+      const ov = overrides[slot.id];
+      if (ov && PIECE_MAP[ov] && isPieceAllowedInSlot(slot, PIECE_MAP[ov]) && isPieceUnlocked(ov)) {
         ids.push(ov);
       } else {
         ids.push(slot.defaultPieceId);
       }
     }
     for (let i = 0; i < CUSTOM_DECK_SLOTS_COUNT; i++) {
-      const cid = co.deck.customSlots[i];
+      const cid = customSlots[i];
       if (cid && PIECE_MAP[cid] && isPieceUnlocked(cid)) {
         ids.push(cid);
       }
@@ -2287,6 +2321,9 @@
     '封印されし闇':       { deg: 0.5, fill: -20 },
     'もはや公園':         { deg: 0.4, fill: -10 }
   };
+  if (typeof DXStage3 !== 'undefined' && DXStage3.FUNNY_LAYOUT_PROPS) {
+    Object.assign(FUNNY_LAYOUT_PROPS, DXStage3.FUNNY_LAYOUT_PROPS);
+  }
 
   function calcFillChance(p) {
     if (!p) return 40;
@@ -3558,7 +3595,10 @@
         discardPile: discardPile,
         selectedSlot: selectedSlot,
         selectedRot: selectedRot,
-        isMirrored: isMirrored
+        isMirrored: isMirrored,
+        tempDeck: (typeof DXDeck !== 'undefined' && typeof DXDeck.getMissionTempDeck === 'function')
+          ? DXDeck.getMissionTempDeck()
+          : null
       };
       saveGame();
     } catch(e) {
@@ -3568,6 +3608,9 @@
 
   function clearActiveBuild() {
     GameState.activeBuild = null;
+    if (typeof DXDeck !== 'undefined' && typeof DXDeck.clearMissionTempDeck === 'function') {
+      DXDeck.clearMissionTempDeck();
+    }
     saveGame();
   }
 
@@ -3579,6 +3622,9 @@
       STAGE = ab.stage;
       attachRequestFunctions(STAGE);
       GameState.currentMission = STAGE;
+      if (typeof DXDeck !== 'undefined' && typeof DXDeck.setMissionTempDeck === 'function') {
+        DXDeck.setMissionTempDeck(ab.tempDeck || null);
+      }
 
       deserializeGrid(ab.grid);
       nextRoomId = ab.nextRoomId || (GRID * GRID + 1);
@@ -3989,7 +4035,7 @@
     if (!piece || !piece.shape) return '';
     const shape = piece.shape;
     const rows = shape.length, cols = shape[0].length;
-    const style = CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
+    const style = (typeof DXStage3 !== 'undefined' && DXStage3.getCellStyle(piece)) || CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
     let html = `<div style="display:inline-grid; grid-template-columns:repeat(${cols},${cellPx}px); gap:1px; vertical-align:middle;">`;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -4005,7 +4051,7 @@
     card.className = 'draft-card' + (isSelected ? ' selected' : '');
     const shape = isSelected ? getShape(piece, selectedRot, isMirrored) : piece.shape;
     const rows = shape.length, cols = shape[0].length;
-    const style = CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
+    const style = (typeof DXStage3 !== 'undefined' && DXStage3.getCellStyle(piece)) || CELL_STYLE[piece.cat] || { bg:'#e2e8f0', border:'#94a3b8' };
     const pCycle = piece.deckCycle || 1;
     let cycleBadgeHtml = '';
     if (pCycle >= 2) {
@@ -4549,7 +4595,7 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
             ctx.fillStyle = inBox ? '#ecfccb' : '#f8fafc';
           }
         } else {
-          const s = CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
+          const s = (typeof DXStage3 !== 'undefined' && DXStage3.getCellStyle(cell)) || CELL_STYLE[cell.type] || CELL_STYLE[T.EMPTY];
           ctx.fillStyle = s.bg;
         }
         ctx.fillRect(x, y, cellSize, cellSize);
@@ -5162,10 +5208,15 @@ filled ? `border:1.5px solid ${style.border};` : ''}">`;
   function mergeKey(cell) {
     // 和室は統合せず、独立した部屋（襖で繋がる続き間）として扱う
     if (cell.type === T.ROOM && cell.label === '和室') return null;
-    // 洋室と和室は同じ T.ROOM だが別種として扱う
+    // 洋室・和室・防音書斎・サンルームは別種として扱う
     if (cell.type === T.ROOM) return `${cell.type}:${cell.label}`;
     // ユニットバスは一般浴室と別種として扱う
     if (cell.pieceLibId === 'unit-bath' || cell.label === 'UB') return 'unit-bath';
+    // ガレージ・家事室も通常収納・通常洗面と合体させず別種として扱う
+    if (typeof DXStage3 !== 'undefined') {
+      if (DXStage3.isGarageCell(cell)) return 'closet:ガレージ';
+      if (DXStage3.isLaundryCell(cell)) return 'washroom:家事室';
+    }
     return cell.type;
   }
 

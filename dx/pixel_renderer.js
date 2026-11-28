@@ -28,13 +28,15 @@
     'furn_stepping_stone', 'furn_rose_arch', 'furn_birdbath'
   ]);
 
-  // 部屋中央に置くもの（ラグ・マット・食卓・こたつ・アイランド・布団・囲炉裏等）
+  // 部屋中央に置くもの（ラグ・マット・食卓・こたつ・アイランド・布団・囲炉裏・A-3中央設置物等）
   const CENTER_SNAP_ASSETS = new Set([
     'furn_bathmat', 'furn_rug_foyer', 'furn_rug_red', 'furn_living_rug',
     'furn_toy_box', 'furn_dining', 'furn_dining_lr', 'furn_cafe_table', 'furn_cafe_table_tb',
     'furn_chabudai', 'furn_chabudai_lr', 'furn_kotatsu', 'furn_kotatsu_v',
     'furn_tea_set', 'furn_tea_set_center', 'furn_tea_set_center_v', 'furn_coffin', 'furn_island_kitchen',
-    'furn_futon', 'furn_futon_west', 'furn_futon_east', 'furn_futon_south'
+    'furn_futon', 'furn_futon_west', 'furn_futon_east', 'furn_futon_south',
+    'furn_hammock_chair', 'furn_cat_tower', 'furn_ironing_set',
+    'furn_classic_car', 'furn_classic_car_v', 'furn_gold_cat'
   ]);
 
   const spriteBoundsCache = new Map();
@@ -416,7 +418,9 @@
         scroll_ninja: 'wall_scroll_ninja',
         art_1: 'wall_art_1',
         art_2: 'wall_art_2',
-        clock: 'wall_clock'
+        clock: 'wall_clock',
+        acoustic_panel: 'wall_acoustic_panel',
+        gold_trophy: 'wall_gold_trophy'
       };
       for (const wd of plan.wallDecoRooms) {
         if (wd && wd.type) addId(decoMap[wd.type] || `wall_${wd.type}`);
@@ -704,7 +708,7 @@
             if (nbRm && nbRm.key === rm.key) continue;
             const et = safeEdgeType(targetGrid, pt.r, pt.c, nr, nc, fnEdge);
             if (et === E.NONE || et === E.DOOR) {
-              if (nbCell.type === T.CLOSET) sawCloset = true;
+              if (nbCell.type === T.CLOSET && !(global.DXStage3 && global.DXStage3.isGarageCell(nbCell))) sawCloset = true;
               else sawOther = true;
             }
           }
@@ -970,8 +974,17 @@
         continue;
       }
 
-      // 6) 洗面所（壁寄せ・扉塞ぎ洗濯機の抑止）
+      // 6) 洗面所 / ランドリー家事室（壁寄せ・扉塞ぎ洗濯機の抑止）
       if (rm.type === T.WASHROOM) {
+        if (global.DXStage3 && global.DXStage3.isLaundryCell(rm)) {
+          const dwPt = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          if (dwPt) addItem('furn_drum_washer', dwPt.r, dwPt.c, 1, 1, rm.key, { snap: dwPt.snap });
+          if (count >= 2) {
+            const irPt = findCenterSingle(rm.cells, cellSet) || findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+            if (irPt) addItem('furn_ironing_set', irPt.r, irPt.c, 1, 1, rm.key, { snap: irPt.snap });
+          }
+          continue;
+        }
         const p1 = findWallSingle(rm.cells, cellSet, true);
         if (p1) addItem('furn_washbasin', p1.r, p1.c, 1, 1, rm.key, { snap: p1.snap });
         if (count >= 2) {
@@ -989,8 +1002,23 @@
         continue;
       }
 
-      // 7) 収納（通常 / 倉庫付き / 収納が本体: 台車・木箱・金庫も並べて完全倉庫化）
+      // 7) 収納 / 土間ガレージ（通常 / 倉庫付き / 収納が本体 / ガレージ: 車・工具台・ロードバイク）
       if (rm.type === T.CLOSET) {
+        if (global.DXStage3 && global.DXStage3.isGarageCell(rm)) {
+          if (count >= 4) {
+            const carH = rm.cells
+              .filter(pt => isFree(pt.r, pt.c, 2, 1, cellSet))
+              .sort((a, b) => (countCellDoors(a.r, a.c) + countCellDoors(a.r, a.c + 1)) - (countCellDoors(b.r, b.c) + countCellDoors(b.r, b.c + 1)))[0];
+            const carV = !carH ? rm.cells.filter(pt => isFree(pt.r, pt.c, 1, 2, cellSet))[0] : null;
+            if (carH) addItem('furn_classic_car', carH.r, carH.c, 2, 1, rm.key, { snap: 'center' });
+            else if (carV) addItem('furn_classic_car_v', carV.r, carV.c, 1, 2, rm.key, { snap: 'center' });
+          }
+          const tbPt = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+          if (tbPt) addItem('furn_tool_bench', tbPt.r, tbPt.c, 1, 1, rm.key, { snap: tbPt.snap });
+          const rbPt = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+          if (rbPt) addItem('furn_road_bike', rbPt.r, rbPt.c, 1, 1, rm.key, { snap: rbPt.snap });
+          continue;
+        }
         if (count >= 8) {
           const targetCount = Math.ceil(count * 0.60);
           for (let i = 0; i < targetCount; i++) {
@@ -1400,6 +1428,49 @@
         continue;
       }
 
+      // 9.5) A-3 DX限定部屋（防音書斎 / サンルーム）
+      if (rm.type === T.ROOM && global.DXStage3 && global.DXStage3.isStudioCell(rm)) {
+        const northCells = rm.cells.filter(pt => getCellEdges(pt.r, pt.c).hasSolidTop);
+        if (comboNames.has('究極の配信要塞') && northCells[0]) {
+          registerWallDeco('gold_trophy', northCells[0].r, northCells[0].c, 1);
+          if (northCells[1]) registerWallDeco('acoustic_panel', northCells[1].r, northCells[1].c, 1);
+        } else if (northCells[0]) {
+          registerWallDeco('acoustic_panel', northCells[0].r, northCells[0].c, 1);
+        }
+        const sdPt = findWallSingle(rm.cells, cellSet, true, { requireWall: false });
+        if (sdPt) addItem('furn_stream_desk', sdPt.r, sdPt.c, 1, 1, rm.key, { snap: sdPt.snap });
+        if (count >= 2) {
+          const grPt = findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+          if (grPt) addItem('furn_gear_rack', grPt.r, grPt.c, 1, 1, rm.key, { snap: grPt.snap });
+        }
+        continue;
+      }
+
+      if (rm.type === T.ROOM && global.DXStage3 && global.DXStage3.isSunroomCell(rm)) {
+        const hasCatLoop = comboNames.has('ネコと回遊サンルーム');
+        const hasSunny = comboNames.has('ひなたぼっこ空間');
+        const placeSunItem = (id) => {
+          const pt = findCenterSingle(rm.cells, cellSet) || findWallSingle(rm.cells, cellSet, false, { requireWall: false });
+          if (pt) addItem(id, pt.r, pt.c, 1, 1, rm.key, { snap: 'center' });
+        };
+        if (hasCatLoop) {
+          placeSunItem('furn_cat_tower');
+          if (count >= 2) placeSunItem('furn_gold_cat');
+          if (count >= 3) placeSunItem('furn_hammock_chair');
+          if (count >= 4) placeSunItem('furn_sunroom_planter');
+        } else {
+          placeSunItem('furn_hammock_chair');
+          if (count >= 2) {
+            if (hasSunny && !stageBadge.includes('愛猫')) placeSunItem('furn_sunroom_planter');
+            else placeSunItem('furn_cat_tower');
+          }
+          if (count >= 3) {
+            placeSunItem(hasSunny && !stageBadge.includes('愛猫') ? 'furn_cat_tower' : 'furn_sunroom_planter');
+          }
+        }
+        continue;
+      }
+
       // 10) 洋室 (隠し部屋 / 要塞化 / 通常テーマ別：bedroom / gaming / kids / study)
       if (rm.type === T.ROOM) {
         if (isHiddenAccess) {
@@ -1653,11 +1724,12 @@
         if (cCur.type === T.ENTRANCE && !occTop && facing && facing.dir === 'top') continue;
 
         const isWashitsuCell = (cCur.type === T.ROOM) && (cCur.label === '和室' || cCur.pieceLibId === 'room-wa' || cCur.pieceLibId === 'room-wa2');
+        const isStage3RoomCell = Boolean(global.DXStage3 && (global.DXStage3.isStudioCell(cCur) || global.DXStage3.isSunroomCell(cCur)));
         if (cCur.type === T.CORRIDOR && ((r * 7 + c * 11) % 3 === 0)) {
           registerWallDeco(((r + c) % 2 === 0) ? 'art_1' : 'art_2', r, c, 1);
         } else if (cCur.type === T.LDK && ((r * 3 + c * 5) % 4 === 1)) {
           registerWallDeco('clock', r, c, 1);
-        } else if (cCur.type === T.ROOM && !isWashitsuCell && ((r * 5 + c * 9) % 4 === 0)) {
+        } else if (cCur.type === T.ROOM && !isWashitsuCell && !isStage3RoomCell && ((r * 5 + c * 9) % 4 === 0)) {
           registerWallDeco('art_1', r, c, 1);
         }
       }
@@ -1697,6 +1769,10 @@
       if (cell.label === '和室' || cell.pieceLibId === 'room-wa' || cell.pieceLibId === 'room-wa2') {
         return 'floor_washitsu';
       }
+      if (global.DXStage3) {
+        if (global.DXStage3.isStudioCell(cell)) return 'floor_studio';
+        if (global.DXStage3.isSunroomCell(cell)) return 'floor_sunroom';
+      }
       return 'floor_room';
     }
     if (cell.type === T.BATH) {
@@ -1704,8 +1780,14 @@
       return 'floor_bath';
     }
     if (cell.type === T.TOILET) return 'floor_toilet';
-    if (cell.type === T.WASHROOM) return 'floor_washroom';
-    if (cell.type === T.CLOSET) return 'floor_closet';
+    if (cell.type === T.WASHROOM) {
+      if (global.DXStage3 && global.DXStage3.isLaundryCell(cell)) return 'floor_laundry';
+      return 'floor_washroom';
+    }
+    if (cell.type === T.CLOSET) {
+      if (global.DXStage3 && global.DXStage3.isGarageCell(cell)) return 'floor_garage';
+      return 'floor_closet';
+    }
     return 'floor_outside';
   }
 
@@ -2405,6 +2487,7 @@
         // A. 室内マスの北側立ち上がり壁（y から下へ wallH 分）
         if (occCur) {
           const isWashitsu = cCur.type === T.ROOM && (cCur.label === '和室' || cCur.pieceLibId === 'room-wa' || cCur.pieceLibId === 'room-wa2');
+          const s3Sub = global.DXStage3 ? global.DXStage3.getSubtype(cCur) : null;
           const isBath = cCur.type === T.BATH;
           const isDark = cCur.roomId && plan.darkRooms.has(`id_${cCur.roomId}`) && !plan.isFortress;
 
@@ -2412,6 +2495,10 @@
           let wallTopShade = '#e8e2d5';
           let trimCol = '#b4845a';
           if (isWashitsu) { wallBg = '#e3d5b8'; wallTopShade = '#d6c5a3'; trimCol = '#855832'; }
+          else if (s3Sub === 'studio') { wallBg = '#1e293b'; wallTopShade = '#0f172a'; trimCol = '#38bdf8'; }
+          else if (s3Sub === 'sunroom') { wallBg = '#fefce8'; wallTopShade = '#fef08a'; trimCol = '#38bdf8'; }
+          else if (s3Sub === 'garage') { wallBg = '#cbd5e1'; wallTopShade = '#94a3b8'; trimCol = '#475569'; }
+          else if (s3Sub === 'laundry') { wallBg = '#ecfeff'; wallTopShade = '#cffafe'; trimCol = '#2dd4bf'; }
           else if (isBath) { wallBg = '#e0f4fe'; wallTopShade = '#bae6fd'; trimCol = '#7dd3fc'; }
           else if (isDark) { wallBg = '#2c2547'; wallTopShade = '#201a36'; trimCol = '#141024'; }
 
@@ -2619,6 +2706,10 @@
                 PixelAssets.drawSprite(ctx, 'wall_art_2', x, y + 2, cs, wallH - 4);
               } else if (!vacantMode && wd && !skipCells.has(key) && wd.type === 'clock') {
                 PixelAssets.drawSprite(ctx, 'wall_clock', x, y + 2, cs, wallH - 5);
+              } else if (!vacantMode && wd && !skipCells.has(key) && wd.type === 'acoustic_panel') {
+                PixelAssets.drawSprite(ctx, 'wall_acoustic_panel', x, y + 2, cs, wallH - 4);
+              } else if (!vacantMode && wd && !skipCells.has(key) && wd.type === 'gold_trophy') {
+                PixelAssets.drawSprite(ctx, 'wall_gold_trophy', x, y + 2, cs, wallH - 4);
               }
             }
           }
@@ -3405,6 +3496,18 @@
     if (badge.includes('ミステリー')) {
       return { actors: ['char_mystery'], isVampire: false, label: '作家' };
     }
+    if (badge.includes('配信')) {
+      return { actors: ['char_streamer'], isVampire: false, label: '人気配信者' };
+    }
+    if (badge.includes('愛猫') || badge.includes('猫')) {
+      return { actors: ['char_catlover'], isVampire: false, label: '愛猫家' };
+    }
+    if (badge.includes('車')) {
+      return { actors: ['char_racer'], isVampire: false, label: '車マニア' };
+    }
+    if (badge.includes('家事')) {
+      return { actors: ['char_housepro'], isVampire: false, label: '家事の達人' };
+    }
     if (badge.includes('美食サロン')) {
       return { actors: ['char_lady_vip', 'char_sp'], isVampire: false, label: '貴婦人＋SP' };
     }
@@ -3543,6 +3646,16 @@
       if (comboNames.has('オーシャンビュー')) return { text: '🌊 部屋から海が見えるなんて贅沢！', mood: 'love' };
       if (comboNames.has('パークビュー')) return { text: '🌳 公園の緑に癒やされる部屋だね', mood: 'love' };
       if (comboNames.has('桜並木ビュー')) return { text: '🌸 窓いっぱいの桜並木が素敵！', mood: 'love' };
+      if (global.DXStage3 && global.DXStage3.isStudioCell(rm)) {
+        if (comboNames.has('究極の配信要塞')) return { text: '🏆 究極の防音要塞！金の再生盾も狙えちゃう！', mood: 'love' };
+        if (comboNames.has('完全防音スタジオ')) return { text: '🎙️ 窓ゼロ完全防音！深夜配信もバッチリだね！', mood: 'love' };
+        return { text: '🎧 機材ばっちり！いい音で収録できそう♪', mood: 'good' };
+      }
+      if (global.DXStage3 && global.DXStage3.isSunroomCell(rm)) {
+        if (comboNames.has('ネコと回遊サンルーム')) return { text: '🐱 ぽかぽか陽気＋回遊ルート！猫ちゃん大歓喜だニャ！', mood: 'love' };
+        if (comboNames.has('ひなたぼっこ空間')) return { text: '☀️ 日差しが心地よすぎるサンルーム♪', mood: 'love' };
+        return { text: '🌿 明るくくつろげるサンルームだね！', mood: 'good' };
+      }
       if (comboNames.has('要塞化')) return { text: '🛡️ 光ゼロ！完璧な要塞シェルター', mood: 'weird' };
       if (rm.label === '和室' && comboNames.has('古き良き日本家屋')) return { text: '🏮 伝統の田の字和室だ…！', mood: 'love' };
       if (comboNames.has('マトリョーシカ')) {
@@ -3557,6 +3670,13 @@
       return { text: '🛏️ 落ち着けるお部屋だ！', mood: 'good' };
     }
     if (rm.type === T.CLOSET) {
+      if (global.DXStage3 && global.DXStage3.isGarageCell(rm)) {
+        if (comboNames.has('閉じ込めガレージ')) return { text: '🔒 壁に囲まれて外に出られない展示車庫！？面白い！', mood: 'weird' };
+        if (comboNames.has('インナーガレージ') && comboNames.has('ガレージライフ')) return { text: '🏎️ 玄関からもLDKからも愛車を眺められる最高ガレージ！', mood: 'love' };
+        if (comboNames.has('インナーガレージ')) return { text: '🏎️ 雨の日も玄関からそのまま愛車に乗れる！', mood: 'love' };
+        if (comboNames.has('ガレージライフ')) return { text: '🔧 お部屋から愛車を眺めながら暮らせるね！', mood: 'love' };
+        return { text: '🚘 立派な屋内ガレージだ！', mood: 'good' };
+      }
       if (comboNames.has('防音緩衝レイアウト')) return { text: '🧱 収納が道路側の防音壁になってる！賢い！', mood: 'good' };
       if (comboNames.has('収納が本体') && rm.cells.length >= 8) return { text: '📦 ほぼ倉庫なんですけど！？', mood: 'weird' };
       return { text: '👕 たっぷり収納できそう！', mood: 'good' };
@@ -3570,7 +3690,13 @@
       if (comboNames.has('大ホワイエ')) return { text: '🏛️ 玄関ホールが豪邸みたい！', mood: 'love' };
       if (comboNames.has('ロングコリドー')) return { text: '🏃 長い廊下で気持ちいい！', mood: 'good' };
     }
-    if (rm.type === T.WASHROOM) return { text: '🫧 朝の身支度バッチリ', mood: 'good' };
+    if (rm.type === T.WASHROOM) {
+      if (global.DXStage3 && global.DXStage3.isLaundryCell(rm)) {
+        if (comboNames.has('神家事動線')) return { text: '🧺 神家事動線！洗う・干す・しまうが1か所で完結！', mood: 'love' };
+        return { text: '✨ 広々ランドリーで家事がはかどりそう！', mood: 'good' };
+      }
+      return { text: '🫧 朝の身支度バッチリ', mood: 'good' };
+    }
     return { text: '👀 なるほど〜！', mood: null };
   }
 
@@ -4229,6 +4355,8 @@
       fillRect(4, 2, 1, 1, T.TOILET, 'WC', 'toilet', 4);
       fillRect(4, 3, 2, 2, T.ROOM, '洋室', 'room-22', 3.7);
       fillRect(6, 6, 3, 3, T.LDK, 'LDK', 'ldk-23', 4.3);
+    } else if (global.DXStage3 && global.DXStage3.applyTestPreset(presetId, { stage: STAGE, grid, setEnt, fillRect, applyLotObstacles, T })) {
+      // handled by DXStage3.applyTestPreset
     }
 
     if (presetId === 'vampire_dark' && typeof REQUEST_REGISTRY !== 'undefined') {
